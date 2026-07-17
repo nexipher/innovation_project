@@ -112,3 +112,15 @@
 * **执行结果与验证状态**：pytest: 95 passed in 15.09s — 全部通过，无失败
 * **置信度或遗留待办（TODO）**：无
 ---
+### 2026-07-17 12:45:17 - README.md 工程规范重构
+
+* **当前操作动作**：README.md 工程规范重构
+* **核心变更说明**：
+  1. 按标准开源项目格式重写 README.md：Overview / Architecture / Quick Start / Pipeline Output / Experts / Halting / SFT / Achievements / Roadmap
+  2. 包含完整项目结构树、CLI 使用示例、Evidence Token 示例 JSON、阶段性成果汇总
+  3. 添加 badges、citation、license 等工程规范元素
+* **涉及/修改的文件清单**：
+  - `README.md (Modified)`
+* **执行结果与验证状态**：README 覆盖项目全貌，可直接用于 GitHub 项目首页展示
+* **置信度或遗留待办（TODO）**：无
+---
