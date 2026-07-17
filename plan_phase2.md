@@ -221,3 +221,133 @@ python scripts/generate_sft_data.py --report-only
 - [ ] SFT 数据通过 Schema 校验和多样性检查
 - [ ] 全部测试通过
 - [ ] 操作日志完整
+
+---
+
+## 九、阶段一 vs 阶段二：输出对比
+
+以同一张 Midjourney 图像 `0_midjourney_169.png` 为例。
+
+### 阶段一输出（现在 — Mock MLLM）
+
+```
+============================================================
+Image:   dataset/GenImage_Test/Midjourney/0_midjourney_169.png
+GT:      Fake
+Mode:    two_calls
+============================================================
+
+  Verdict:    Fake
+  Confidence: 0.9206
+  Steps:      1
+  Halting:    verdict_output
+  Evidence:   1 expert(s) called
+    - frequency_expert: strength=0.0110 → Real
+  SFT data:   traces/sft_sessions/session_xxx.json
+```
+
+**阶段一的根本问题**：
+
+- Mock 没有真正"看"图。Planning 写 "unnaturally smooth textures" 是模板固定文本——无论哪张 Fake 图都输出同一句话
+- Evidence 显示 frequency=0.01（完全没检测到异常），但 Mock 仍然判 Fake(0.92)
+- **证据和结论脱节**：MLLM 的 reasoning 不依赖 Expert 的实际输出，而是按模板拼接
+
+### 阶段二完成后（理论输出 — 真实 Qwen2.5-VL）
+
+```
+============================================================
+Image:   dataset/GenImage_Test/Midjourney/0_midjourney_169.png
+GT:      Fake
+MLLM:    Qwen2.5-VL-7B (vLLM)
+Mode:    two_calls
+============================================================
+
+  Verdict:    Fake
+  Confidence: 0.87
+  Steps:      2
+  Halting:    verdict_output
+  Evidence:   2 expert(s) called
+    - noise_expert:      strength=0.7630 → AI-generated
+    - frequency_expert:  strength=0.4200 → Uncertain
+  SFT data:   traces/sft_sessions/session_xxx.json
+  MLLM retries: 0
+```
+
+### 逐维度对比
+
+| 维度 | 阶段一（Mock） | 阶段二（真实 Qwen2.5-VL） |
+|------|---------------|--------------------------|
+| **Planning** | 模板固定文本，所有 Fake 图一样 | 模型真实观察图像，描述*这张图具体*的视觉异常 |
+| **专家选择** | 模板预设（Fake→freq, Real→jpeg） | 模型根据视觉观察*自主决定*：看到过平滑纹理→优先调 noise，看到边缘锯齿→调 freq |
+| **BBox 定位** | 固定坐标（中心 70%） | 模型锁定*实际可疑区域*的像素坐标 |
+| **证据解读** | 模板拼接 strength 数值 | 真实交叉质证：将 noise 的"方差塌陷"与视觉上的"过度平滑"在因果链上关联 |
+| **环境污染分析** | 模板一句话带过 | 具体分析：如"该图为 PNG 格式，无 JPEG 压缩污染，noise 信号可信度高" |
+| **Verdict 置信度** | 伪随机 0.82-0.95 | 由证据链真实支撑，冲突时主动降置信度 |
+| **专家校准** | freq 几乎永远 0.01（无效） | 校准后 freq 敏感度提升，三个专家各司其职 |
+| **SFT 数据质量** | 模板拼接的"假数据" | 真实模型推理行为的忠实记录，可直接用于微调 |
+
+### 阶段二理论输出：接近真实学术场景的完整交互
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MLLM 第 0 轮 ─ Planning:
+
+  Suspected Region: [180, 220, 820, 780]
+  Visual Anomalies: 前景主体与背景交界处存在不自然的羽化过渡；
+                    皮肤纹理在高倍放大后呈现水彩画式的均匀平滑，
+                    缺乏真实相机传感器的微观噪点颗粒感。
+  Expert Target: 优先调用 noise 专家 — 验证局部噪声方差是否存在塌陷。
+
+→ 状态机调用 NoiseExpert(bbox=[184, 225, 839, 798])
+→ 返回 Evidence Token:
+   strength=0.76, support=AI-generated
+   phenomenon: "该区域噪声方差为 1.87，远低于全图背景方差 5.43，
+               方差塌陷率约 65%，与 AI 局部重绘/羽化操作一致"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MLLM 第 1 轮 ─ Reasoning + 二次调用:
+
+  【物理-语义一致性校验】
+  noise 专家在该区域检测到显著的噪声方差塌陷（strength=0.76）。
+  这与我在视觉层观察到的"边缘羽化"和"皮肤纹理过平滑"在因果链上高度吻合——
+  AI 重绘/羽化操作会抹除原始传感器噪声并引入均匀合成纹理。
+
+  【环境污染质询】
+  该图为 PNG 格式（无 JPEG 压缩），不存在压缩污染导致噪声信号衰减的干扰因素，
+  noise 专家的 0.76 置信度可信度较高。
+
+  为进一步确证，补充调取 freq 专家检测高频段是否存在上采样网格伪迹。
+
+→ 调用 FrequencyExpert(bbox=[184, 225, 839, 798])
+→ 返回: strength=0.42, support=Uncertain
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MLLM 第 2 轮 ─ Verdict:
+
+  【综合判定】
+  - noise 专家：局部方差塌陷 65%（强判假，可信度高）
+  - freq 专家：高频段存在微弱网格状能量聚集，但未达显著阈值（判 Uncertain）
+  - 综合来看，噪声层面的物理指纹断层是确定性证据，频域信号提供了辅助线索。
+
+  <verdict>
+  {
+    "verdict": "Fake",
+    "confidence": 0.87,
+    "primary_evidence": ["noise_residual_inconsistency"],
+    "report": "图像前景区域经噪声残差分析确认存在显著的局部方差塌陷（65%），
+              与AI后处理（局部重绘/边缘羽化）的物理特征一致。频域分析发现辅助性
+              线索但未达独立判定阈值。综合判定为 AI 生成/篡改图像。"
+  }
+  </verdict>
+```
+
+### 阶段二本质变化
+
+> **阶段一证明了"管道能跑"** —— Mock MLLM + 真实专家 + 状态机的工程可行性。
+>
+> **阶段二实现了"管道能用"** —— 真实 MLLM 看图、自主决策、交叉质证、
+> 生成真正证据锚定的法证报告。生成的 SFT 数据不再是模板拼接的假数据，
+> 而是真实模型推理行为的忠实记录，可直接用于阶段三的监督微调训练。
