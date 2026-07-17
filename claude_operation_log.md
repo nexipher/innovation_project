@@ -138,3 +138,15 @@
 * **执行结果与验证状态**：plan_phase2.md 完整覆盖阶段二目标、子阶段划分、实现顺序、测试策略、完成标准
 * **置信度或遗留待办（TODO）**：阶段 2.1 需要 GPU 审批后方可开始
 ---
+### 2026-07-17 13:01:37 - 模型就绪 — 验证 Qwen2.5-VL-7B-Instruct 可用性
+
+* **当前操作动作**：模型就绪 — 验证 Qwen2.5-VL-7B-Instruct 可用性
+* **核心变更说明**：
+  1. 确认模型已下载至 psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master
+  2. 通过 transformers AutoConfig + AutoTokenizer 验证模型可加载：qwen2_5_vl, 151K vocab, 5×safetensors (16.60 GB), chat_template 完整
+  3. config.py 新增 QWEN_MODEL_PATH 指向模型快照目录
+* **涉及/修改的文件清单**：
+  - `config.py (Modified)`
+* **执行结果与验证状态**：模型路径已配置，等待 GPU 开启后即可进入阶段 2.1
+* **置信度或遗留待办（TODO）**：无
+---

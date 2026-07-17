@@ -61,6 +61,25 @@
 1. **Real** (`dataset/Real/`)：真实照片。
 2. **GenImage_Test** (`dataset/GenImage_Test`)：内涵包括 Wukong、Midjourney、BigGAN 在内的八个文件夹，对应各模型的伪造照片。
 
+### 3.2 MLLM 模型资产
+
+**Qwen2.5-VL-7B-Instruct**（阶段二核心模型）
+
+| 项目 | 详情 |
+|------|------|
+| 路径 | `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master` |
+| 配置引用 | `config.py` → `QWEN_MODEL_PATH` |
+| 下载方式 | ModelScope `snapshot_download` |
+| 模型类型 | `qwen2_5_vl` |
+| 参数量 | 7B |
+| 体积 | 16.60 GB（5 × safetensors 分片） |
+| 词表 | 151,643 tokens |
+| 视觉编码器 | 32 层 / 1280 hidden / patch_size=14 / 112 window |
+| Chat Template | ✅ 内置（支持 image/video 多模态输入） |
+| 推理框架 | vLLM（本地部署，端口 6006）/ transformers |
+
+**显存需求**：FP16 推理 ~16 GB，RTX 4090 (24 GB) 可满足。加载前必须获得用户 GPU 授权（见 §2.2）。
+
 
 ## 四、工程维护与协作规范（Engineering & Maintenance）
 

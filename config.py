@@ -16,6 +16,13 @@ GENIMAGE_TEST_DIR = os.path.join(DATASET_DIR, "GenImage_Test")
 # GenImage_Test subdirectories (each contains 1000 AI-generated images)
 GENIMAGE_SUBDIRS = ["ADM", "BigGAN", "Glide", "Midjourney", "SD14", "SD15", "VQDM", "Wukong"]
 
+# Qwen2.5-VL-7B-Instruct model path (ModelScope snapshot)
+QWEN_MODEL_PATH = os.path.join(
+    os.path.dirname(PROJECT_ROOT),
+    "psychology_video_project", "models", "models",
+    "qwen--Qwen2.5-VL-7B-Instruct", "snapshots", "master",
+)
+
 # Output directories
 TRACES_DIR = os.path.join(PROJECT_ROOT, "traces")
 SFT_SESSIONS_DIR = os.path.join(TRACES_DIR, "sft_sessions")
