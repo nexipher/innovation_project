@@ -124,3 +124,17 @@
 * **执行结果与验证状态**：README 覆盖项目全貌，可直接用于 GitHub 项目首页展示
 * **置信度或遗留待办（TODO）**：无
 ---
+### 2026-07-17 12:51:21 - 阶段二计划编写
+
+* **当前操作动作**：阶段二计划编写
+* **核心变更说明**：
+  1. 基于阶段一成果 + README + plan_phase1 + active_forensic_agent_tasks + Reasoning_Framework 综合编写 plan_phase2.md
+  2. 阶段二核心目标：真实 Qwen2.5-VL 接入、SFT 数据规模化（1000+条）、专家算法校准（ROC 优化 sigmoid）、格式纠错反馈环实战验证
+  3. 保留 BaseMLLMClient 接口不变，QwenVLClient 支持 vLLM 本地推理和 DashScope API 两种后端
+  4. A/B 双线 SFT 数据构造策略（正常破案流 70% + 拦截冲突流 30%）
+  5. 专家校准方案：340 张基准测试集 → 全图分析 → ROC 网格搜索 → 更新 config.py
+* **涉及/修改的文件清单**：
+  - `plan_phase2.md (Created)`
+* **执行结果与验证状态**：plan_phase2.md 完整覆盖阶段二目标、子阶段划分、实现顺序、测试策略、完成标准
+* **置信度或遗留待办（TODO）**：阶段 2.1 需要 GPU 审批后方可开始
+---
