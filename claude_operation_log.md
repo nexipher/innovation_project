@@ -86,3 +86,29 @@
 * **执行结果与验证状态**：全管道 4 场景验证通过：verdict_output / evidence_conflict / info_gain_converged 均正确触发；SFT JSON 正常生成
 * **置信度或遗留待办（TODO）**：Frequency Expert 在 GenImage 图像上 sensitivity 偏低(0.011)，需后续调参
 ---
+### 2026-07-17 12:37:29 - 阶段 1.6 main.py 入口 + 测试套件
+
+* **当前操作动作**：阶段 1.6 main.py 入口 + 测试套件
+* **核心变更说明**：
+  1. 实现 main.py CLI 入口：支持 --image 单张分析、--batch 批量（Real/all/GenImage子目录）、--mode 行为模式、--max 数量限制
+  2. 创建完整测试套件 (95 tests)：parser(18) + coordinate_transformer(10) + image_utils(8) + frequency(5) + noise(5) + jpeg(4) + tokenizer(6) + halting(14) + mock_mllm(6) + controller(6) + pipeline(12)
+  3. 端到端管道测试覆盖 Real/Midjourney/SD15/ADM 四种图像 + conflict/explore_all 模式
+  4. 修复 conftest dtype 重复参数 bug + noise 测试阈值 + controller 测试路径
+* **涉及/修改的文件清单**：
+  - `main.py (Created)`
+  - `tests/__init__.py (Created)`
+  - `tests/conftest.py (Created)`
+  - `tests/test_parser.py (Created)`
+  - `tests/test_coordinate_transformer.py (Created)`
+  - `tests/test_image_utils.py (Created)`
+  - `tests/test_frequency_expert.py (Created)`
+  - `tests/test_noise_expert.py (Created)`
+  - `tests/test_jpeg_expert.py (Created)`
+  - `tests/test_evidence_tokenizer.py (Created)`
+  - `tests/test_halting.py (Created)`
+  - `tests/test_mock_mllm.py (Created)`
+  - `tests/test_controller.py (Created)`
+  - `tests/test_pipeline.py (Created)`
+* **执行结果与验证状态**：pytest: 95 passed in 15.09s — 全部通过，无失败
+* **置信度或遗留待办（TODO）**：无
+---
