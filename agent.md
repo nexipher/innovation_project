@@ -60,3 +60,19 @@
 当前环境已完成以下核心数据资产的下载与部署，具体位于/dataset中，Claude Code 在编写数据加载器（Data Loader）和测试用例时应直接挂载以下资源：
 1. **Real** (`dataset/Real/`)：真实照片。
 2. **GenImage_Test** (`dataset/GenImage_Test`)：内涵包括 Wukong、Midjourney、BigGAN 在内的八个文件夹，对应各模型的伪造照片。
+
+
+## 四、工程维护与协作规范（Engineering & Maintenance）
+
+### 4.1 版本控制与 Git 同步规范
+
+Claude Code 在每个 Batch 完成后自动提交，但不需要推送到远端。
+
+Git 同步时，遵循以下规范：
+
+* **Git 同步流程**：
+  1. `git add -A` — 暂存所有变更
+  2. `git commit -m "<描述性提交信息>"` — 提交变更
+* **提交信息格式**：`<type>(<scope>): <description>`，如 `feat(A1): Batch 1 — project structure and config`
+* **每个 Batch 独立提交**：一个 Batch 对应一个 commit，不合并
+* **提交前检查**：确保所有模块通过导入验证和基础功能测试后，方可提交
