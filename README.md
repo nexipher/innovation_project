@@ -1,7 +1,7 @@
 # Forensic-Agent
 
-**Active Exploration Dual-Branch Image Forensic System**  
-MLLM-driven, evidence-grounded AI-generated image detection with explainable forensic reports.
+**主动探索型双分支图像取证系统**  
+MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的法证报告。
 
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
@@ -10,148 +10,146 @@ MLLM-driven, evidence-grounded AI-generated image detection with explainable for
 
 ---
 
-## Overview
+## 项目背景
 
-Modern Multi-modal Large Language Models (MLLMs) excel at high-level semantic understanding but are fundamentally blind to low-level forensic signals — frequency-domain artifacts, micro-scale noise patterns, and JPEG compression traces — because their visual encoders (e.g., CLIP) discard this information during downsampling.
+多模态大语言模型（MLLM，如 GPT-4o、Qwen2.5-VL）长于高层语义理解，却对频域伪迹、微观噪声分布、JPEG 压缩痕迹等底层物理法证特征处于"睁眼瞎"状态——其视觉编码器（CLIP）在下采样过程中丢弃了这些关键信息。
 
-**Forensic-Agent** bridges this gap by combining an MLLM "judge" with a team of traditional forensic "experts" in an active exploration loop:
+**本系统**将 MLLM 作为"法官"，与传统法证"专家组"结合，构建主动探索式闭环：
 
-1. The MLLM inspects the image and identifies suspicious regions
-2. It dynamically invokes forensic experts (`freq` / `noise` / `jpeg`) on specific bounding boxes
-3. Expert outputs are abstracted into structured **Evidence Tokens** with physical-semantic descriptions
-4. The MLLM cross-examines all evidence and produces a reasoned, evidence-grounded verdict
+1. MLLM 扫描图像，锁定可疑区域
+2. 按需动态调用法证专家（`freq` / `noise` / `jpeg`），传入具体 bbox
+3. 专家输出被抽象为结构化 **Evidence Token**（含物理现象描述 + 置信度）
+4. MLLM 交叉质证全部证据，生成证据锚定的可解释真伪判定报告
 
-> **Key Insight:** _FakeXplain teaches MLLMs to reason over human-annotated visible artifacts, while our method teaches MLLMs to reason over machine-extracted forensic evidence._
+> **核心差异**：FakeXplain 教模型推理人类标注的可见伪迹，而本方法教模型推理机器提取的法证级证据。
 
 ---
 
-## Architecture
+## 系统架构
 
 ```
-                    [Input Image]
+                    [输入图像]
                          │
         ┌────────────────┴────────────────┐
         ▼                                 ▼
-  [MLLM "Judge"]  ◄───────────  [State Machine Controller]
-  (semantic analysis               │
-   + decision making)              │  Action Tokens
-        │                          │  <call_freq/noise/jpeg>[bbox]
-        │ SOP output               ▼
-        │                  [Forensic Experts]
-        │                  ├── FrequencyExpert  (2D-FFT grid artifacts)
-        │                  ├── NoiseExpert      (SRM noise residual)
-        │                  └── JPEGExpert       (blockiness + double quant.)
-        │                          │
-        │                          │ Evidence Tokens (structured JSON)
-        ▼                          ▼
-  [Evidence-Grounded Verdict + SFT Training Data]
+  [MLLM "法官"]   ◄───────────  [状态机控制器]
+  (语义分析+决策)                    │
+        │                            │ Action Token
+        │ SOP 结构化输出              │ <call_freq/noise/jpeg>[bbox]
+        ▼                            ▼
+                          [法证专家组]
+                          ├── 频域专家 (2D-FFT 网格伪迹)
+                          ├── 噪声专家 (SRM 残差一致性)
+                          └── JPEG专家 (块效应+双重量化)
+                                    │
+                                    │ Evidence Token (JSON)
+                                    ▼
+                  [证据锚定的真伪判定 + SFT 训练数据]
 ```
 
-### Project Structure
+### 项目结构
 
 ```
 innovation_project/
-├── main.py                         # CLI entry point
-├── config.py                       # Centralized constants, thresholds, system prompt
-├── requirements.txt                # Dependencies
+├── main.py                         # CLI 入口
+├── config.py                       # 集中配置常量、阈值、System Prompt
+├── requirements.txt                # 依赖清单
 │
-├── experts/                        # Forensic expert modules (CPU-friendly)
-│   ├── base.py                     # BaseExpert ABC + ExpertResult dataclass
-│   ├── frequency.py                # 2D-FFT power spectrum peak detection
-│   ├── noise.py                    # SRM high-pass filter + variance inconsistency
-│   └── jpeg.py                     # Blockiness metric + DCT double-quantization
+├── experts/                        # 法证专家模块（纯 CPU）
+│   ├── base.py                     # BaseExpert 抽象类 + ExpertResult 数据结构
+│   ├── frequency.py                # 2D-FFT 功率谱峰值检测
+│   ├── noise.py                    # SRM 高通滤波 + 局部方差不一致性
+│   └── jpeg.py                     # 块效应度量 + DCT 双重量化检测
 │
-├── mllm/                           # MLLM client abstraction layer
-│   ├── base.py                     # BaseMLLMClient abstract interface
-│   └── mock_client.py              # Template-driven mock (4 behaviour modes)
+├── mllm/                           # MLLM 客户端抽象层
+│   ├── base.py                     # BaseMLLMClient 抽象接口
+│   └── mock_client.py              # 模板驱动 Mock（4 种行为模式）
 │
-├── state_machine/                  # Core orchestration
-│   ├── controller.py               # Main while-loop: parse → execute → inject → halt
-│   ├── halting.py                  # 4-tier halting guards (verdict/max/info_gain/conflict)
+├── state_machine/                  # 状态机核心
+│   ├── controller.py               # 主循环：解析→执行专家→Evidence Token 注入→终止判断
+│   ├── halting.py                  # 四重终止守卫（verdict/max_steps/conflict/info_gain）
 │   └── evidence_tokenizer.py       # ExpertResult → Evidence Token Schema JSON
 │
-├── utils/                          # Tool layer
-│   ├── image_utils.py              # Load / crop / grayscale / format conversion
-│   ├── coordinate_transformer.py   # [0,1000] rel ↔ abs pixel (Qwen2.5-VL convention)
-│   ├── parser.py                   # Regex-based XML tag extraction + validation
-│   └── logger.py                   # SessionLogger (ShareGPT SFT) + operation log
+├── utils/                          # 工具层
+│   ├── image_utils.py              # 图像加载 / 裁剪 / 灰度化 / 格式转换
+│   ├── coordinate_transformer.py   # 相对坐标 [0,1000] ↔ 绝对像素坐标
+│   ├── parser.py                   # 正则解析器（XML 标签提取 + 结构化校验）
+│   └── logger.py                   # SessionLogger (ShareGPT SFT) + 操作审计日志
 │
-├── tests/                          # Test suite (95 tests)
-│   ├── conftest.py                 # Shared fixtures (synthetic images, mock clients)
-│   ├── test_parser.py              # 18 tests
-│   ├── test_pipeline.py            # 12 E2E tests (Real/MJ/SD15/ADM)
-│   ├── test_halting.py             # 14 tests
-│   ├── test_coordinate_transformer.py  # 10 tests
-│   ├── test_image_utils.py         # 8 tests
-│   ├── test_mock_mllm.py           # 6 tests
-│   ├── test_controller.py          # 6 tests
-│   ├── test_evidence_tokenizer.py  # 6 tests
-│   ├── test_frequency_expert.py    # 5 tests
-│   ├── test_noise_expert.py        # 5 tests
-│   └── test_jpeg_expert.py         # 4 tests
+├── tests/                          # 测试套件（95 个用例）
+│   ├── conftest.py                 # 共享 fixtures（合成图像、Mock 配置）
+│   ├── test_parser.py              # 18 个
+│   ├── test_pipeline.py            # 12 个（端到端：Real/MJ/SD15/ADM）
+│   ├── test_halting.py             # 14 个
+│   ├── test_coordinate_transformer.py  # 10 个
+│   ├── test_image_utils.py         # 8 个
+│   ├── test_mock_mllm.py           # 6 个
+│   ├── test_controller.py          # 6 个
+│   ├── test_evidence_tokenizer.py  # 6 个
+│   ├── test_frequency_expert.py    # 5 个
+│   ├── test_noise_expert.py        # 5 个
+│   └── test_jpeg_expert.py         # 4 个
 │
-├── traces/sft_sessions/            # Generated SFT training data (ShareGPT JSON)
-└── claude_operation_log.md         # Development audit log
+├── traces/sft_sessions/            # SFT 训练数据输出（ShareGPT 格式 JSON）
+└── claude_operation_log.md         # 开发操作审计日志
 ```
 
 ---
 
-## Quick Start
+## 快速开始
 
-### Prerequisites
+### 环境要求
 
 - Python 3.12+
-- CPU-only mode is fully supported (no GPU required for experts)
+- 纯 CPU 模式完全可用（专家算法无需 GPU）
 
-### Install
+### 安装
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Run a Single Image
+### 单张图像分析
 
 ```bash
 python main.py --image dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg
 python main.py --image dataset/GenImage_Test/Midjourney/0_midjourney_169.png
 ```
 
-### Batch Mode
+### 批量分析
 
 ```bash
-# Run all Real images (limit 5)
+# 分析 Real 子集（限制 5 张）
 python main.py --batch Real --max 5
 
-# Run all Midjourney images
+# 分析全部 Midjourney 图像
 python main.py --batch Midjourney
 
-# Run all categories (Real + 8 GenImage subdirs)
+# 分析全部类别
 python main.py --batch all --max 10
 ```
 
-### Behaviour Modes
+### 行为模式
 
 ```bash
-python main.py --image path/to/img.png --mode fast_verdict   # 2 turns, quick conclusion
-python main.py --image path/to/img.png --mode two_calls      # 2 turns, balanced (default)
-python main.py --image path/to/img.png --mode explore_all    # exhaust all 3 experts
-python main.py --image path/to/img.png --mode conflict       # creates contradictory evidence
+python main.py --image path/to/img.png --mode fast_verdict   # 2 轮快速结案
+python main.py --image path/to/img.png --mode two_calls      # 2 轮均衡分析（默认）
+python main.py --image path/to/img.png --mode explore_all    # 遍历 3 个专家
+python main.py --image path/to/img.png --mode conflict       # 制造证据冲突
 ```
 
-### Run Tests
+### 运行测试
 
 ```bash
-pytest tests/ -v              # All 95 tests
-pytest tests/test_pipeline.py # End-to-end only
+pytest tests/ -v              # 全部 95 个测试
+pytest tests/test_pipeline.py # 仅端到端测试
 ```
 
 ---
 
-## Pipeline Output
+## 管道输出
 
-Running `main.py` produces:
-
-### 1. Console Verdict
+### 1. 控制台判定
 
 ```
 ============================================================
@@ -169,9 +167,9 @@ Mode:    two_calls
   SFT data:   traces/sft_sessions/session_xxx.json
 ```
 
-### 2. SFT Training Data (ShareGPT Format)
+### 2. SFT 训练数据（ShareGPT 格式）
 
-Each run generates a multi-turn conversation JSON under `traces/sft_sessions/`:
+每次运行在 `traces/sft_sessions/` 下生成一份多轮对话 JSON：
 
 ```json
 {
@@ -189,98 +187,97 @@ Each run generates a multi-turn conversation JSON under `traces/sft_sessions/`:
 }
 ```
 
-Ready for Qwen2.5-VL supervised fine-tuning.
+可直接用于 Qwen2.5-VL 监督微调（SFT）。
 
 ---
 
-## Forensic Experts
+## 法证专家
 
-| Expert | Algorithm | What It Detects | CPU |
-|--------|-----------|-----------------|-----|
-| **Frequency** (`freq`) | Hanning window → 2D-FFT → power spectrum → radial high-pass → periodic peak detection | GAN/Diffusion upsampling grid artifacts | ✓ |
-| **Noise** (`noise`) | SRM 5×5 high-pass kernel → local variance vs. global → inconsistency scoring | Splicing / inpainting / AI local editing | ✓ |
-| **JPEG** (`jpeg`) | 8×8 block-boundary gradient ratio + DCT coefficient histogram hollowing detection | Double JPEG compression / re-save traces | ✓ |
+| 专家 | 算法 | 检测目标 | CPU |
+|------|------|----------|-----|
+| **频域专家** (`freq`) | Hanning 窗 → 2D-FFT → 功率谱 → 高频径向峰值检测 | GAN/Diffusion 上采样网格伪迹 | ✓ |
+| **噪声专家** (`noise`) | SRM 5×5 高通滤波核 → 局部方差 vs 全局方差 → 不一致性评分 | 拼接 / AI 局部重绘 / 边缘羽化 | ✓ |
+| **JPEG 专家** (`jpeg`) | 8×8 块边界梯度比 + DCT 系数直方图"挖空"检测 | 双重 JPEG 压缩 / 二次保存痕迹 | ✓ |
 
-Each expert outputs an **Evidence Token** with physical phenomenon descriptions and normalized anomaly scores (0–1), preventing the MLLM from "number-only" lazy reasoning.
-
----
-
-## Halting Criteria
-
-| Priority | Criterion | Trigger |
-|----------|-----------|---------|
-| 1 | **Verdict Output** | MLLM produces `<verdict>` tag |
-| 2 | **Max Steps** | ≥ 5 expert-call iterations |
-| 3 | **Evidence Conflict** | One expert strongly says Fake (strength > 0.7), another strongly says Real (strength < 0.3) |
-| 4 | **Information Gain** | KL divergence between successive confidence distributions < threshold |
+每个专家输出 **Evidence Token**，包含物理现象的自然语言描述和归一化异常值（0–1），防止 MLLM"只看数值不看物理含义"的惰性推理。
 
 ---
 
-## SFT Data Pipeline
+## 终止机制
 
-The system is designed from the ground up for supervised fine-tuning:
-
-- Every pipeline run automatically generates a **ShareGPT-format** multi-turn conversation JSON
-- Full evidence chain with physical phenomenon descriptions is preserved
-- Metadata includes: ground truth, source model, halting reason, mock mode
-- Ready to feed into Qwen2.5-VL SFT training (Phase 2)
-
----
-
-## Stage 1 Achievements
-
-| Capability | Status |
-|---|---|
-| End-to-end pipeline (image → verdict) | ✅ |
-| 3 real forensic expert algorithms (CPU) | ✅ |
-| 4 Mock MLLM behaviour modes | ✅ |
-| 4-tier halting mechanism | ✅ |
-| SFT data generation (ShareGPT JSON) | ✅ |
-| Coordinate system (Qwen2.5-VL [0,1000] spec) | ✅ |
-| Full test suite (95 tests, 100% pass) | ✅ |
-| Operation audit log | ✅ |
-
-### Current Limitations
-
-- **MLLM is Mock**: Template-driven responses; does not perform real visual understanding
-- **Frequency Expert sensitivity**: Low on small cropped regions; sigmoid calibration needed
-- **No real SFT yet**: Training data is generated, but Qwen2.5-VL fine-tuning is Phase 2
+| 优先级 | 条件 | 触发逻辑 |
+|--------|------|----------|
+| 1 | **模型主动结案** | MLLM 输出 `<verdict>` 标签 |
+| 2 | **最大步数封顶** | 专家调用 ≥ 5 轮 |
+| 3 | **证据强冲突** | 一专家强判假（strength > 0.7），另一专家强判真（strength < 0.3） |
+| 4 | **信息增益收敛** | 连续两轮 Evidence Token 置信度变化低于阈值 |
 
 ---
 
-## Roadmap
+## SFT 数据管道
 
-| Phase | Scope |
-|-------|-------|
-| **1.1–1.6** (done) | Infrastructure, experts, MLLM abstraction, state machine, tests |
-| **2** | Real Qwen2.5-VL API integration (GPU required); frequency expert calibration |
-| **3** | SFT training on generated data; GRPO reinforcement alignment |
-| **4** | Multi-region attention-evidence alignment; full dataset evaluation |
+系统从底层设计即面向监督微调：
 
----
-
-## Environment
-
-Developed and tested on **AutoDL Cloud Platform**:
-- **GPU**: NVIDIA RTX 4090 (24 GB) — available on-demand
-- **CPU mode**: Default for development (no GPU cost)
-- **Base image**: Ubuntu 22.04 / Python 3.12 / PyTorch 2.5.1 / CUDA 12.4
+- 每次管道运行自动生成 **ShareGPT 格式**多轮对话 JSON
+- 完整保留证据链（物理现象、原理解释、置信度）
+- 元数据包含：ground truth、生成模型来源、终止原因、Mock 模式
+- 可直接作为 Qwen2.5-VL SFT 阶段的训练样本（阶段二）
 
 ---
 
-## Citation
+## 阶段一成果
 
-If you use this work in your research, please cite:
+| 能力 | 状态 |
+|------|------|
+| 端到端管道（图像 → 判定） | ✅ |
+| 3 个真实法证专家算法（纯 CPU） | ✅ |
+| 4 种 Mock MLLM 行为模式 | ✅ |
+| 四重终止机制 | ✅ |
+| SFT 训练数据生成（ShareGPT JSON） | ✅ |
+| 坐标系统（Qwen2.5-VL [0,1000] 规范） | ✅ |
+| 完整测试套件（95 用例，100% 通过） | ✅ |
+| 操作审计日志 | ✅ |
+
+### 当前局限
+
+- **MLLM 为 Mock**：决策逻辑基于模板，非真实视觉理解
+- **频域专家敏感度偏低**：在小尺寸裁剪区域上不明显（sigmoid 参数需校准）
+- **尚未进行真实 SFT**：训练数据已生成，Qwen2.5-VL 微调属于阶段二工作
+
+---
+
+## 路线图
+
+| 阶段 | 范围 |
+|------|------|
+| **1.1–1.6**（已完成） | 基础设施、专家算法、MLLM 抽象、状态机、测试 |
+| **二** | 接入真实 Qwen2.5-VL API（需 GPU）；频域专家校准 |
+| **三** | SFT 监督微调 + GRPO 强化学习对齐 |
+| **四** | 多区域注意力-证据对齐；全数据集评估 |
+
+---
+
+## 运行环境
+
+基于 **AutoDL 算力云平台** 开发与测试：
+
+- **GPU**：NVIDIA RTX 4090 (24 GB) — 按需开启
+- **CPU 模式**：日常开发默认模式，零 GPU 费用
+- **基础镜像**：Ubuntu 22.04 / Python 3.12 / PyTorch 2.5.1 / CUDA 12.4
+
+---
+
+## 引用
 
 ```bibtex
 @misc{forensic-agent,
   author = {HJ},
-  title  = {Forensic-Agent: Active Exploration Dual-Branch Image Forensic System},
+  title  = {Forensic-Agent: 主动探索型双分支图像取证系统},
   year   = {2026},
   note   = {MLLM-driven, evidence-grounded AI-generated image detection},
 }
 ```
 
-## License
+## 许可证
 
 MIT
