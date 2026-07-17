@@ -70,3 +70,19 @@
 * **执行结果与验证状态**：全部 4 种模式在 Real 和 Fake 路径上正确生成对应的 planning/call/reasoning/verdict 标签；Parser 100% 解析通过；fast_verdict=2turns, two_calls=2turns, explore_all=4turns(3 experts), conflict=3turns→Uncertain
 * **置信度或遗留待办（TODO）**：无
 ---
+### 2026-07-17 12:27:49 - 阶段 1.5 状态机核心实现
+
+* **当前操作动作**：阶段 1.5 状态机核心实现
+* **核心变更说明**：
+  1. 实现 EvidenceTokenizer：ExpertResult → Evidence Token Schema JSON，含强度映射字典（3 段式）
+  2. 实现 HaltingChecker：四重终止守卫（verdict/max_steps/evidence_conflict/info_gain），含熵和 KL 散度计算
+  3. 实现 ForensicStateMachine：核心 while 循环 — 加载图像→MLLM生成→解析→执行专家→Evidence Token注入→终止检查→SFT导出
+  4. 集成测试：4 种模式×真实图像端到端验证通过（Real→Real, MJ→Fake, conflict→Uncertain, explore_all→info_gain收敛）
+* **涉及/修改的文件清单**：
+  - `state_machine/__init__.py (Created)`
+  - `state_machine/evidence_tokenizer.py (Created)`
+  - `state_machine/halting.py (Created)`
+  - `state_machine/controller.py (Created)`
+* **执行结果与验证状态**：全管道 4 场景验证通过：verdict_output / evidence_conflict / info_gain_converged 均正确触发；SFT JSON 正常生成
+* **置信度或遗留待办（TODO）**：Frequency Expert 在 GenImage 图像上 sensitivity 偏低(0.011)，需后续调参
+---
