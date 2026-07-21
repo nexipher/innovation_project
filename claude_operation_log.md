@@ -217,3 +217,17 @@
 * **执行结果与验证状态**：阶段二 4 个子阶段全部完成。准确率低是预期结果（基座模型无训练），SFT 数据已就绪进入阶段三
 * **置信度或遗留待办（TODO）**：freq 专家调用过多（64%）但几乎无区分度——阶段三 SFT 训练前建议改善 expert 选择策略或重新设计 freq 算法
 ---
+### 2026-07-21 15:14:01 - 阶段三计划编写
+
+* **当前操作动作**：阶段三计划编写
+* **核心变更说明**：
+  1. 3.1 SFT 微调：816 条数据 → 8:1:1 划分 → LoRA (rank=64) → LLaMA-Factory 训练
+  2. 3.2 专家重构：Frequency Expert v2（全图 FFT + 多尺度）、调用策略优化、System Prompt 调用指南
+  3. 3.3 GRPO 对齐：4 项 Rule-governed Reward（Format / Anti-Laziness / Attention Consistency / Outcome Accuracy）
+  4. 3.4 全数据集评估：分类准确率（按生成模型细分）、消融实验（Mock/SFT/GRPO × 单/双/三专家）、论文级指标
+  5. 阶段三本质变化：从"管道能跑真模型"到"模型能用法证"——注入法证推理能力，产出专用 Qwen2.5-VL 变体
+* **涉及/修改的文件清单**：
+  - `plan.md (Appended — Phase 3 plan)`
+* **执行结果与验证状态**：plan.md 已追加完整阶段三计划（4 个子阶段、GPU 时间预估、完成标准、阶段本质变化）
+* **置信度或遗留待办（TODO）**：GRPO 需要 TRL GRPOTrainer 等 RL 框架，可作为 SFT 后的进阶优化，非硬交付
+---

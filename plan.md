@@ -776,3 +776,250 @@ MLLM 第 2 轮 ─ Verdict:
 > **阶段二实现了"管道能用"** —— 真实 MLLM 看图、自主决策、交叉质证、
 > 生成真正证据锚定的法证报告。生成的 SFT 数据不再是模板拼接的假数据，
 > 而是真实模型推理行为的忠实记录，可直接用于阶段三的监督微调训练。
+
+---
+
+# 阶段三实现计划：SFT 监督微调、GRPO 对齐与专家重构
+
+## Context
+
+阶段二产出：816 条有效 ShareGPT SFT 数据 + 校准后的专家参数 + 真实 Qwen2.5-VL 推理管道。
+阶段二验证：格式覆盖率 98%+，但端到端准确率仅 25%（Real=53%, Fake=20%）。
+
+**基座 Qwen2.5-VL 根本问题**：
+1. 不懂法证推理——收到 Evidence Token 后不知如何解读
+2. 调用策略差——freq 被过度调用（64%）但其信号几乎为 0
+3. 缺乏多轮意识——平均 1.9 steps 就结案，不会交叉验证
+4. 不会反思——冲突场景下很少主动输出 Uncertain
+
+**阶段三核心目标**：通过 SFT 微调注入法证推理能力 + GRPO 强化对齐固化行为模式 + 重构 freq 专家。
+
+---
+
+## 一、子阶段划分
+
+### 3.1 SFT 监督微调
+
+**目标**：用 816 条 ShareGPT 数据对 Qwen2.5-VL-7B 进行全参数或 LoRA 微调。
+
+#### 3.1.1 数据预处理
+
+- 从 `traces/sft_sessions/` 中筛选 verdict 非 null + evidence_chain 非空的样本
+- 按 8:1:1 划分 train/val/test
+- 确保 Real/Fake/Uncertain 三类 verdict 分布均衡
+- 将 Qwen conversation 格式化为模型可接收的 messages 格式
+- 输出标准化训练集到 `sft_data/train/`
+
+#### 3.1.2 训练配置
+
+| 参数 | 建议值 | 说明 |
+|------|--------|------|
+| 框架 | LLaMA-Factory / transformers Trainer | 前者更便捷，后者更灵活 |
+| 微调方式 | LoRA (rank=64, alpha=128) | 节省显存，24 GB 可承载 |
+| 学习率 | 2e-5 | 标准 SFT 学习率 |
+| Batch size | 2 (gradient accumulation ×4) | 有效 batch=8 |
+| Epochs | 3 | 避免过拟合 |
+| Max length | 2048 | 覆盖多轮对话 |
+| GPU | RTX 4090 × 1 (24 GB) | LoRA 模式足够 |
+
+#### 3.1.3 训练目标
+
+- **格式硬收敛**：`<planning>/<call_*>/<reasoning>/<verdict>` 标签错漏率 < 0.1%
+- **多轮状态感应**：模型能分辨"首轮看图→中轮收证据→末轮结案"的阶段职责
+- **法证推理注入**：学会将 Evidence Token 的定性描述与视觉观察交叉关联
+
+#### 3.1.4 实现内容
+
+- `scripts/prepare_sft_data.py`：数据清洗 + train/val/test 划分 + Qwen 格式转换
+- `scripts/train_sft.py` 或 `sft_config.yaml`：LLaMA-Factory 训练配置
+- 训练完成后保存 LoRA adapter 到 `checkpoints/sft_lora/`
+
+### 3.2 专家算法重构
+
+**目标**：解决阶段二发现的两个核心问题。
+
+#### 3.2.1 Frequency Expert 重设计
+
+**当前状态**：raw_metric 恒 ~0，分离度 0.05，完全无效。
+
+**根因分析**：
+- 当前算法在 bbox 区域（通常 200×200~400×400）上做 2D-FFT
+- GenImage 图像多为 PNG，无压缩伪迹，且生成质量高
+- 高频周期性峰值检测在中小 patch 上分辨率不足
+
+**改进方案**：
+- 对**全图**而非 bbox crop 做 FFT（阶段二校准已证明全图分析可行）
+- 增加**多尺度 FFT**（在不同分辨率下检测）
+- 引入**预训练 CNN 分类器**作为替代方案（在 GenImage 上训练一个轻量 ResNet-18 频域特征提取器）
+- 保持 `BaseExpert` 接口不变，替换内部实现
+
+#### 3.2.2 专家调用策略优化
+
+**当前状态**：freq 被 Qwen 调用 64%，但其信号为 0——浪费推理预算。
+
+**改进方案**：
+- 在 System Prompt 中增加**调用指南**：明确告诉模型 freq 适用于哪些场景、noise/jpeg 适用于哪些场景
+- 可选：在状态机层面增加**智能路由**——用简单的图像特征（分辨率、格式、压缩率）预判应优先调哪个专家
+- 训练数据中**增加不同专家调用顺序的多样性**
+
+#### 3.2.3 实现内容
+
+- `experts/frequency_v2.py`：重写的频域专家（全图 FFT + 多尺度）
+- `scripts/calibrate_experts_v2.py`：更新校准脚本，验证新 freq 的分离度
+- `config.py`：更新 freq 参数和 System Prompt 调用指南
+
+### 3.3 GRPO 强化学习对齐
+
+**目标**：使用规则奖励对 SFT 后的模型进行组内相对策略优化，固化行为模式。
+
+#### 3.3.1 Reward 设计（来自任务书 §8）
+
+| Reward | 权重 | 触发条件 |
+|--------|------|----------|
+| **Format** | +0.2 / -0.5 | 严格遵循 SOP 标签格式 |
+| **Anti-Numerical Laziness** | +0.5 / -0.6 | reasoning 中引用了定性描述词（如 "grid residual"）而非仅提分数 |
+| **Attention-Evidence Consistency** | +0.4 | verdict 声称异常的区域与 call 的 bbox 有空间一致性（IoU > 0.5） |
+| **Outcome Accuracy** | +1.0 / -1.0 | 分类正确；对 Uncertain +0.5 额外奖励 |
+
+#### 3.3.2 实现内容
+
+- `scripts/grpo_reward.py`：实现 4 个 Reward 函数的计算逻辑
+- 奖励计算依赖状态机 Trace Log（已在阶段一实现）
+- 与 SFT 后的模型组成 GRPO 训练循环
+- 输出：GRPO 对齐后的模型权重
+
+**注意**：GRPO 需要 RL 训练框架（如 TRL 的 GRPOTrainer），且需要 GPU 长时间运行。此子阶段可作为 SFT 之后的进阶优化，不一定是阶段三的硬性交付。
+
+### 3.4 全数据集评估与论文素材
+
+**目标**：在完整 GenImage 测试集上评估最终系统性能，产出论文级指标。
+
+#### 3.4.1 评估指标
+
+- **分类准确率**：Real vs Fake 二分类 + Real/Fake/Uncertain 三分类
+- **按生成模型细分**：ADM/BigGAN/Glide/Midjourney/SD14/SD15/VQDM/Wukong 各子类准确率
+- **法证报告质量**（人工评估子集）：
+  - 证据-结论一致性
+  - 物理-语义交叉质证完整性
+  - 环境污染分析的覆盖度
+- **消融实验**：
+  - 仅 MLLM（无专家）vs 单专家 vs 双专家 vs 三专家
+  - Mock vs SFT 后 vs GRPO 后
+  - 校准前 vs 校准后的专家参数
+
+#### 3.4.2 实现内容
+
+- `scripts/evaluate_full.py`：全数据集批量评估脚本
+- `scripts/ablation.py`：消融实验脚本
+- 输出评估报告（JSON + 可视化图表）
+
+---
+
+## 二、目录结构变更
+
+```
+innovation_project/
+├── experts/
+│   └── frequency_v2.py              # [NEW] 重写的频域专家
+│
+├── checkpoints/                      # [NEW] 模型权重
+│   ├── sft_lora/                    # SFT LoRA adapter
+│   └── grpo/                        # GRPO 对齐权重
+│
+├── sft_data/
+│   └── train/                       # [NEW] 标准化训练集
+│       ├── train.json
+│       ├── val.json
+│       └── test.json
+│
+├── scripts/
+│   ├── prepare_sft_data.py          # [NEW] SFT 数据预处理
+│   ├── train_sft.py                 # [NEW] SFT 训练脚本
+│   ├── grpo_reward.py               # [NEW] GRPO Reward 函数
+│   ├── evaluate_full.py             # [NEW] 全数据集评估
+│   └── ablation.py                  # [NEW] 消融实验
+│
+├── evaluation/                       # [NEW] 评估报告
+│   ├── full_eval_report.json
+│   └── ablation_report.json
+│
+└── config.py                        # [MODIFIED] 更新 freq 参数和 System Prompt
+```
+
+---
+
+## 三、实现顺序
+
+```
+阶段 3.1a ─ 数据预处理（CPU，可立即开始）
+  ├── scripts/prepare_sft_data.py
+  ├── 数据清洗 + 8:1:1 划分
+  └── Qwen messages 格式转换
+
+阶段 3.2 ─ 专家重构（CPU，可并行于 3.1a）
+  ├── experts/frequency_v2.py
+  ├── scripts/calibrate_experts_v2.py
+  └── System Prompt 调用指南更新
+
+阶段 3.1b ─ SFT 训练（GPU，依赖 3.1a）
+  ├── scripts/train_sft.py / LLaMA-Factory 配置
+  ├── LoRA 微调（~4-6 小时 RTX 4090）
+  └── 保存 adapter → checkpoints/sft_lora/
+
+阶段 3.3 ─ GRPO 对齐（GPU，依赖 3.1b，可选）
+  ├── scripts/grpo_reward.py
+  ├── GRPO 训练循环
+  └── 保存 GRPO 权重 → checkpoints/grpo/
+
+阶段 3.4 ─ 全数据集评估（GPU，依赖 3.1b + 3.2）
+  ├── scripts/evaluate_full.py
+  ├── scripts/ablation.py
+  └── 论文指标 + 图表
+```
+
+---
+
+## 四、关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| 微调方式 | LoRA (rank=64) | 24 GB VRAM 可承载，训练快，可回滚 |
+| 训练框架 | LLaMA-Factory | 支持 Qwen2.5-VL，开箱即用 |
+| freq 重构 | 全图 FFT + 多尺度 → 最终替换为轻量 CNN | 逐级升级，保持接口不变 |
+| GRPO | SFT 后可选 | SFT 是硬交付，GRPO 是学术加分项 |
+| 评估基线 | 阶段二未训练的 Qwen2.5-VL 作为 baseline | 量化 SFT 的提升幅度 |
+
+---
+
+## 五、GPU 时间预估
+
+| 子阶段 | 预估时间 | 是否需要 GPU |
+|--------|---------|-------------|
+| 3.1a 数据预处理 | ~10 min | CPU |
+| 3.2 专家重构 | ~30 min | CPU |
+| 3.1b SFT 训练 | ~4-6 hours | GPU |
+| 3.3 GRPO 对齐 | ~8-12 hours | GPU |
+| 3.4 全数据集评估 | ~2-3 hours | GPU |
+
+---
+
+## 六、阶段三完成标准
+
+- [ ] SFT 训练数据预处理完成（train/val/test 划分，格式标准化）
+- [ ] LoRA 微调完成，loss 收敛，格式错漏率 < 0.5%
+- [ ] Frequency Expert v2: 分离度 > 0.3（当前 0.05）
+- [ ] 端到端准确率 > 50%（当前 25%），至少翻倍
+- [ ] 消融实验完成：SFT 后 vs SFT 前、单专家 vs 多专家
+- [ ] 法证报告质量人工评估：证据-结论一致性 > 80%
+- [ ] 操作日志完整
+
+---
+
+## 七、阶段三本质变化
+
+> **阶段二证明了"管道能跑通真模型"** —— 真实 Qwen2.5-VL 的推理行为被忠实地记录下来。
+>
+> **阶段三实现"模型能用法证"** —— 通过 SFT 微调将 816 条真实推理样本中的模式注入模型，
+> 使其学会：(1) 如何解读 Evidence Token 的物理含义，(2) 何时应该交叉验证而非轻信单个专家，
+> (3) 如何在证据冲突时退回到 Uncertain 并给出置信度校准。最终产出一个具备法证推理能力的
+> 专用 Qwen2.5-VL 变体。
