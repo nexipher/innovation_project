@@ -1,0 +1,73 @@
+{
+  "id": "session_20260721_145410_002baac0-bacd-496c-981c-a4a9d66b8472",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.95,
+    "primary_evidence": [
+      "borderline_signal_v1",
+      "borderline_signal_v2"
+    ],
+    "report": "图像中的轻微频率异常信号强度较低，且专家认为可能是自然变异。综合现有证据，图像看起来是真实的。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 120, 300, 300]\nVisual Anomalies: 石像的面部细节显得有些模糊和不自然。\nExpert Target & Hypothesis: 首先调用 <call_noise>[100, 120, 300, 300]，因为面部细节的模糊可能与噪声残留有关。\n</planning>\n<call_noise>[100, 120, 300, 300]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"borderline_signal_v1\", \"region\": \"patch_coordinates_[200, 200, 800, 600]\", \"phenomenon\": \"Minor frequency anomaly at 0.42σ above baseline.\", \"reasoning\": \"Weak signal, likely natural variation.\", \"strength\": 0.45, \"source\": \"frequency_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted.\"}"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"borderline_signal_v2\", \"region\": \"patch_coordinates_[220, 180, 780, 620]\", \"phenomenon\": \"Minor frequency anomaly at 0.44σ above baseline.\", \"reasoning\": \"Weak signal, likely natural variation.\", \"strength\": 0.46, \"source\": \"frequency_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 信息增益收敛 — 连续两轮 Evidence Token 提供的新信息不足。请基于已有全部证据做出最终判定。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的证据，我们观察到在两个不同的区域（[200, 200, 800, 600] 和 [220, 180, 780, 620]）中存在轻微的频率异常，强度分别为 0.42σ 和 0.44σ。这些异常信号强度较低，且专家认为可能是自然变异。综合来看，这些信号不足以构成有力的造假证据。因此，图像看起来是真实的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.95, \"primary_evidence\": [\"borderline_signal_v1\", \"borderline_signal_v2\"], \"report\": \"图像中的轻微频率异常信号强度较低，且专家认为可能是自然变异。综合现有证据，图像看起来是真实的。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "borderline_signal_v1",
+      "region": "patch_coordinates_[200, 200, 800, 600]",
+      "phenomenon": "Minor frequency anomaly at 0.42σ above baseline.",
+      "reasoning": "Weak signal, likely natural variation.",
+      "strength": 0.45,
+      "source": "frequency_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted."
+    },
+    {
+      "evidence_name": "borderline_signal_v2",
+      "region": "patch_coordinates_[220, 180, 780, 620]",
+      "phenomenon": "Minor frequency anomaly at 0.44σ above baseline.",
+      "reasoning": "Weak signal, likely natural variation.",
+      "strength": 0.46,
+      "source": "frequency_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      512,
+      512
+    ],
+    "total_steps": 5,
+    "halting_reason": "b_line_constructed",
+    "mock_mode": "b_line_constructed",
+    "session_timestamp": "2026-07-21T14:54:10.707079"
+  }
+}
