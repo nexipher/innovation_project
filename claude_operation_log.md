@@ -250,3 +250,23 @@
 * **执行结果与验证状态**：3.1a 和 3.2 CPU 部分完成。SFT 训练数据 365 条已就绪。3.1b (LoRA 微调) 需 GPU
 * **置信度或遗留待办（TODO）**：Expert 信号强度不足（GenImage PNG 天然偏 Real）是已知限制——SFT 训练的重点是教模型推理模式而非依赖完美 Expert 信号
 ---
+### 2026-07-21 16:38:34 - SFT 数据准备完成
+
+* **当前操作动作**：SFT 数据准备完成
+* **核心变更说明**：
+  1. Step 1: 从 A 线 610 条筛选 verdict==GT → 196 条真实 Qwen 正确推理（比预期多 56 条）
+  2. Step 2: 从基准集选取 strength 在 [0.25,0.6] 的图像 → 合成 100 条 borderline 谨慎推理
+  3. Step 3: 从 A 线抽取格式完整（planning+call+reasoning+verdict）的样本 → 100 条 format
+  4. Step 4: 加载已有 conflict 200 条（合成模板）
+  5. 最终数据集: 596 条（correct=196, conflict=200, borderline=100, format=100）
+  6. correct 来源为真实 Qwen 推理而非模板——推理风格自然，正确率保证（verdict=GT）
+* **涉及/修改的文件清单**：
+  - `scripts/finalize_sft_data.py (Created)`
+  - `sft_data/train/final/sft_correct.json (196 records)`
+  - `sft_data/train/final/sft_conflict.json (200 records)`
+  - `sft_data/train/final/sft_borderline.json (100 records)`
+  - `sft_data/train/final/sft_format.json (100 records)`
+  - `sft_data/train/final/metadata.json`
+* **执行结果与验证状态**：596 条 SFT 数据已全部就绪。A 线真实 Qwen 推理为主（196），合成冲突+边界+格式为辅（400）。可进入 3.1b LoRA 微调
+* **置信度或遗留待办（TODO）**：GT 字段全部完整。correct 中少数 bbox 异常（如[0,0,100,100]），SFT 训练时需要清理
+---
