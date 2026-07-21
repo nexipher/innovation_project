@@ -1,0 +1,89 @@
+{
+  "config": {
+    "num_real": 20,
+    "num_fake": 64
+  },
+  "distributions": {
+    "freq": {
+      "real_mean": 0.0001000164899018649,
+      "real_median": 5.7794782389241646e-05,
+      "real_std": 0.00014564572998552027,
+      "fake_mean": 8.477912605831854e-05,
+      "fake_median": 1.7809365728221056e-05,
+      "fake_std": 0.00015636927538519258,
+      "real_p5": 0.0,
+      "real_p95": 0.00032157862901614775,
+      "fake_p5": 0.0,
+      "fake_p95": 0.0004146979315769533,
+      "separation": 0.050452340355880754
+    },
+    "noise": {
+      "real_mean": 3.9247521874278695,
+      "real_median": 3.8085911139113744,
+      "real_std": 1.2181977560193051,
+      "fake_mean": 1.9898383716988635,
+      "fake_median": 1.8298458537148068,
+      "fake_std": 1.104010778716219,
+      "real_p5": 2.225397127866321,
+      "real_p95": 5.881405668406821,
+      "fake_p5": 0.5862355506307938,
+      "fake_p95": 3.7811642480474608,
+      "separation": 0.8332213867904731
+    },
+    "jpeg": {
+      "real_mean": 2.3669926124122287,
+      "real_median": 2.384945782900994,
+      "real_std": 0.3885665612164192,
+      "fake_mean": 1.6643123050907511,
+      "fake_median": 1.642647332862377,
+      "fake_std": 0.29962558250489996,
+      "real_p5": 1.7737559645000647,
+      "real_p95": 2.944126241302492,
+      "fake_p5": 1.2400550935525916,
+      "fake_p95": 2.2219102294113178,
+      "separation": 1.0210524978123339
+    }
+  },
+  "calibration": {
+    "freq": {
+      "midpoint": 0.0,
+      "steepness": 100.0,
+      "youden": 0.028124999999999997,
+      "tpr": 0.078125,
+      "fpr": 0.05,
+      "threshold": 0.5091836734693878,
+      "real_median_strength": 0.5014448654943331,
+      "fake_median_strength": 0.5004452339992507
+    },
+    "noise": {
+      "midpoint": 0.6134716881465178,
+      "steepness": 0.1,
+      "youden": 0.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "threshold": 0.05,
+      "real_median_strength": 0.5792028164142499,
+      "fake_median_strength": 0.5303719153995117
+    },
+    "jpeg": {
+      "midpoint": 1.3047037962152885,
+      "steepness": 0.1,
+      "youden": 0.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "threshold": 0.05,
+      "real_median_strength": 0.5269798185248776,
+      "fake_median_strength": 0.5084477842112831
+    }
+  },
+  "recommended_config": {
+    "freq_sigmoid_midpoint": 0.0,
+    "freq_sigmoid_steepness": 100.0,
+    "noise_sigmoid_midpoint": 0.6134716881465178,
+    "noise_sigmoid_steepness": 0.1,
+    "jpeg_sigmoid_midpoint": 1.3047037962152885,
+    "jpeg_sigmoid_steepness": 0.1,
+    "strength_threshold_low": 0.1,
+    "strength_threshold_high": 0.6
+  }
+}

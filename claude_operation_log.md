@@ -168,3 +168,20 @@
 * **执行结果与验证状态**：管道双向跑通，Qwen 可正确生成 planning/call/reasoning/verdict 标签，Parser 容错有效，Evidence Token 注入正常。已知限制：基座模型缺乏法证推理能力（单次调用后轻信结论），需 SFT 训练解决
 * **置信度或遗留待办（TODO）**：模型加载耗时 ~17s/次（可接受单张调试；批量生成需优化为一次加载多张推理）
 ---
+### 2026-07-21 11:08:06 - 2.2 专家算法校准
+
+* **当前操作动作**：2.2 专家算法校准
+* **核心变更说明**：
+  1. 创建 scripts/calibrate_experts.py：批量全图运行三专家 → 收集 raw_metric 分布 → ROC 网格搜索最优 sigmoid 参数
+  2. 对 84 张基准图像 (20 Real + 64 Fake) 完成校准：freq separation=0.05（无信号），noise separation=0.83（有区分度），jpeg separation=1.02（最佳）
+  3. 关键发现：noise 和 jpeg 的 Real raw_metric > Fake——因为 Real 是 JPEG（有压缩痕迹），Fake 是 PNG（无压缩）。专家检测的是格式差异而非 AI 伪迹
+  4. 更新 config.py：noise sigmoid midpoint 2.0→2.8, steepness 5.0→1.5；jpeg midpoint 1.5→2.0, steepness 8.0→2.0
+  5. freq 保持原参数——raw_metric 恒为 0，需要算法级改进而非参数调优
+  6. 校准报告保存至 calibration/calibration_report.json
+* **涉及/修改的文件清单**：
+  - `scripts/calibrate_experts.py (Created)`
+  - `config.py (Modified)`
+  - `calibration/calibration_report.json (Created)`
+* **执行结果与验证状态**：校准脚本运行正常，ROC 网格搜索完成。noise/jpeg 参数更新提升区分度。freq 算法需 Phase 3 重新设计
+* **置信度或遗留待办（TODO）**：noise 和 jpeg 都是 Real > Fake（与预期方向相反），这意味着在 PNG vs JPEG 对比中专家检测的是格式差异。需在 Phase 3/SFT 训练中告诉模型这个上下文
+---

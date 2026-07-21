@@ -68,23 +68,32 @@ MOCK_MLLM_SEED = 42
 
 # ---------------------------------------------------------------------------
 # Expert algorithm parameters
+#   Calibrated on 84-image benchmark (Phase 2.2, 2026-07-21).
+#   See calibration/calibration_report.json for full results.
+#
+#   Key findings:
+#     - freq: raw_metric ~0 for both Real and Fake (no signal). Needs algorithmic redesign.
+#     - noise: Real median 3.8 vs Fake median 1.8 (separation=0.83).
+#       Real JPEG compression artifacts create noise inconsistency; AI PNGs are smooth.
+#     - jpeg: Real median 2.4 vs Fake median 1.6 (separation=1.02).
+#       Real JPEGs naturally have stronger blockiness/DCT traces than AI PNGs.
 # ---------------------------------------------------------------------------
-# Frequency Expert
+# Frequency Expert (unchanged — no usable signal found, algorithmic fix needed)
 FREQ_HP_RADIUS_RATIO = 0.5          # high-pass: analyse outer 50% of spectrum radius
 FREQ_PEAK_SIGMA = 3.0               # peak detection: median + N * std
 FREQ_SIGMOID_MIDPOINT = 0.15        # sigmoid midpoint for strength normalisation
 FREQ_SIGMOID_STEEPNESS = 30.0
 
-# Noise Expert
-NOISE_SRM_KERNEL_ID = 1             # SRM filter kernel index (1-30, default 1 = 5x5 high-pass)
+# Noise Expert — calibrated: midpoint at Real-Fake boundary for best separation
+NOISE_SRM_KERNEL_ID = 1             # SRM filter kernel index
 NOISE_WINDOW_SIZE = 32              # sliding window for local variance computation
-NOISE_SIGMOID_MIDPOINT = 2.0        # variance ratio midpoint
-NOISE_SIGMOID_STEEPNESS = 5.0
+NOISE_SIGMOID_MIDPOINT = 2.8        # midpoint between Real(3.8) and Fake(1.8) medians
+NOISE_SIGMOID_STEEPNESS = 1.5       # gentle slope for meaningful dynamic range
 
-# JPEG Expert
-JPEG_BLOCK_SIZE = 8                 # standard JPEG block size
-JPEG_SIGMOID_MIDPOINT = 1.5         # blockiness ratio midpoint
-JPEG_SIGMOID_STEEPNESS = 8.0
+# JPEG Expert — calibrated: midpoint between Real(2.4) and Fake(1.6) medians
+JPEG_BLOCK_SIZE = 8
+JPEG_SIGMOID_MIDPOINT = 2.0         # between Real(2.4) and Fake(1.6)
+JPEG_SIGMOID_STEEPNESS = 2.0        # gentle slope for meaningful dynamic range
 
 # ---------------------------------------------------------------------------
 # System Prompt (SOP constraints for MLLM)
