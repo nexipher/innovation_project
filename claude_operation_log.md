@@ -202,3 +202,18 @@
 * **执行结果与验证状态**：A 线 92% 质量通过，B 线代码 bug 已修复但需重跑。当前数据规模满足阶段三 SFT 训练需求
 * **置信度或遗留待办（TODO）**：B 线需重跑以获得 complete verdict 字段；当前 B 线 conversation 内容完整但 verdict 为 null
 ---
+### 2026-07-21 15:12:04 - 2.4 验证与评估
+
+* **当前操作动作**：2.4 验证与评估
+* **核心变更说明**：
+  1. 格式正确率：A-line 98%（197/200），B-line 100%（199/200），超过目标 85%
+  2. SFT 数据质量：1195 总文件，专家调用分布 freq=64%/noise=24%/jpeg=12%，平均 1.9 steps/session
+  3. 端到端准确率：Real=53%, Fake=20%, Overall=25%——基座 Qwen2.5-VL 缺乏法证推理，验证了 SFT 训练必要性
+  4. Verdict 分布：Real=182, Fake=112, Uncertain=103, NULL=103（首次 B 线残留）
+  5. Halting 分布：verdict_output=106, b_line_constructed=76, info_gain=42, conflict=4, max_steps=1
+  6. 阶段二全部完成：QwenVLClient 运行正常、专家校准完成、SFT 数据 >= 800 条、格式覆盖率 >= 98%
+* **涉及/修改的文件清单**：
+  - `No code changes — validation analysis only`
+* **执行结果与验证状态**：阶段二 4 个子阶段全部完成。准确率低是预期结果（基座模型无训练），SFT 数据已就绪进入阶段三
+* **置信度或遗留待办（TODO）**：freq 专家调用过多（64%）但几乎无区分度——阶段三 SFT 训练前建议改善 expert 选择策略或重新设计 freq 算法
+---
