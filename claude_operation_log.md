@@ -231,3 +231,22 @@
 * **执行结果与验证状态**：plan.md 已追加完整阶段三计划（4 个子阶段、GPU 时间预估、完成标准、阶段本质变化）
 * **置信度或遗留待办（TODO）**：GRPO 需要 TRL GRPOTrainer 等 RL 框架，可作为 SFT 后的进阶优化，非硬交付
 ---
+### 2026-07-21 16:17:06 - 3.1a + 3.2 SFT 数据构造 + 专家重构
+
+* **当前操作动作**：3.1a + 3.2 SFT 数据构造 + 专家重构
+* **核心变更说明**：
+  1. 3.1a: 创建 scripts/build_sft_data.py — 运行三专家→四类分类→模板合成理想推理链
+  2. 产出：365 条合成 SFT 数据（correct=165, conflict=200），borderline/format 待补充
+  3. 3.2: 创建 experts/frequency_v2.py — 全图多尺度 FFT，raw_metric 提升 5-8×（0.0001→0.0005），strength ~0.24
+  4. freq_v2 对 GenImage PNG 的区分度仍未达独立判定水平——依赖 noise/jpeg 专家为主信号
+  5. 分类逻辑修复：冲突先行→correct 次之，Fake GT 样本均纳入 correct 以弥补 Expert 偏 Real 的先天缺陷
+  6. plan.md 已追加四种 SFT 数据类型的详细构造策略和示例
+* **涉及/修改的文件清单**：
+  - `scripts/build_sft_data.py (Created)`
+  - `experts/frequency_v2.py (Created)`
+  - `sft_data/train/sft_correct.json (Created — 165 records)`
+  - `sft_data/train/sft_conflict.json (Created — 200 records)`
+  - `plan.md (Modified — Phase 3 plan + 4 data types)`
+* **执行结果与验证状态**：3.1a 和 3.2 CPU 部分完成。SFT 训练数据 365 条已就绪。3.1b (LoRA 微调) 需 GPU
+* **置信度或遗留待办（TODO）**：Expert 信号强度不足（GenImage PNG 天然偏 Real）是已知限制——SFT 训练的重点是教模型推理模式而非依赖完美 Expert 信号
+---
