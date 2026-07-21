@@ -124,18 +124,36 @@ class Parser:
             results.append(bbox)
         return results
 
+    # ------------------------------------------------------------------
+    # Tag normalisation — maps common LLM mistakes to correct tag names
+    # ------------------------------------------------------------------
+    _TAG_NORMALIZE = {
+        "call_call_freq": "freq",
+        "call_call_noise": "noise",
+        "call_call_jpeg": "jpeg",
+        "call_frequency": "freq",
+        "call_noise_residual": "noise",
+        "call_jpeg_compression": "jpeg",
+    }
+
+    @classmethod
+    def _normalize_expert_name(cls, name: str) -> str:
+        """Normalise common LLM hallucinated expert names to canonical names."""
+        return cls._TAG_NORMALIZE.get(name.lower(), name.lower())
+
     @classmethod
     def extract_all_calls(cls, text: str) -> List[Tuple[str, List[int]]]:
         """
         Extract ALL expert calls (any type) from the text.
-        Uses the generic _RE_CALL pattern.
+        Uses the generic _RE_CALL pattern + tag normalisation.
 
         Returns:
             List of (expert_name, bbox) tuples.
         """
         results = []
         for m in cls._RE_CALL.finditer(text):
-            expert_name = m.group(1).lower()
+            raw_name = m.group(1)
+            expert_name = cls._normalize_expert_name(raw_name)
             if expert_name in ("freq", "noise", "jpeg"):
                 bbox = [int(m.group(i)) for i in range(2, 6)]
                 results.append((expert_name, bbox))

@@ -21,7 +21,9 @@ from config import (
     GENIMAGE_SUBDIRS,
     MOCK_MLLM_MODE,
 )
+import torch
 from mllm.mock_client import MockMLLMClient
+from mllm.qwen_client import QwenVLClient
 from experts.frequency import FrequencyExpert
 from experts.noise import NoiseExpert
 from experts.jpeg import JPEGExpert
@@ -29,9 +31,18 @@ from state_machine.controller import ForensicStateMachine
 from utils.logger import SessionLogger, log_operation
 
 
-def build_pipeline(mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
-    """Construct the full forensic pipeline with default components."""
-    mllm = MockMLLMClient(mode=mode)
+def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
+    """Construct the full forensic pipeline."""
+    if mllm_type == "qwen":
+        if not torch.cuda.is_available():
+            print("Warning: CUDA not available. Falling back to MockMLLMClient.")
+            mllm = MockMLLMClient(mode=mode)
+        else:
+            print("Using Qwen2.5-VL-7B-Instruct (GPU)")
+            mllm = QwenVLClient()
+    else:
+        mllm = MockMLLMClient(mode=mode)
+
     experts = {
         "frequency_expert": FrequencyExpert(),
         "noise_expert": NoiseExpert(),
@@ -40,7 +51,7 @@ def build_pipeline(mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
     return ForensicStateMachine(mllm, experts)
 
 
-def run_single(image_path: str, mode: str = MOCK_MLLM_MODE):
+def run_single(image_path: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE):
     """Run forensic analysis on a single image and print the result."""
     if not os.path.exists(image_path):
         print(f"Error: image not found — {image_path}")
@@ -52,10 +63,11 @@ def run_single(image_path: str, mode: str = MOCK_MLLM_MODE):
     print(f"{'='*60}")
     print(f"Image:   {image_path}")
     print(f"GT:      {gt}")
+    print(f"MLLM:    {mllm_type}")
     print(f"Mode:    {mode}")
     print(f"{'='*60}")
 
-    fsm = build_pipeline(mode)
+    fsm = build_pipeline(mllm_type, mode)
     result = fsm.run(image_path, ground_truth=gt)
 
     verdict = result["final_verdict"]
@@ -72,7 +84,7 @@ def run_single(image_path: str, mode: str = MOCK_MLLM_MODE):
     return result
 
 
-def run_batch(category: str, mode: str = MOCK_MLLM_MODE, max_images: int = None):
+def run_batch(category: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE, max_images: int = None):
     """Run forensic analysis on a batch of images."""
     if category == "Real":
         image_dir = REAL_DIR
@@ -83,10 +95,10 @@ def run_batch(category: str, mode: str = MOCK_MLLM_MODE, max_images: int = None)
     elif category == "all":
         results = []
         # Real
-        results.extend(run_batch("Real", mode, max_images))
+        results.extend(run_batch("Real", mllm_type, mode, max_images))
         # Each GenImage subdir
         for sub in GENIMAGE_SUBDIRS:
-            results.extend(run_batch(sub, mode, max_images))
+            results.extend(run_batch(sub, mllm_type, mode, max_images))
         return results
     else:
         print(f"Unknown category: {category}")
@@ -112,7 +124,7 @@ def run_batch(category: str, mode: str = MOCK_MLLM_MODE, max_images: int = None)
         path = os.path.join(image_dir, fname)
         print(f"[{i+1}/{len(images)}] {fname} ... ", end="", flush=True)
         try:
-            result = run_single(path, mode)
+            result = run_single(path, mllm_type, mode)
             results.append(result)
             v = result["final_verdict"].get("verdict", "")
             if (gt == "Real" and v == "Real") or (gt == "Fake" and v == "Fake"):
@@ -137,6 +149,10 @@ def main():
         help="Path to a single image file for forensic analysis.",
     )
     parser.add_argument(
+        "--mllm", type=str, default="mock", choices=["mock", "qwen"],
+        help="MLLM backend: 'mock' (template) or 'qwen' (Qwen2.5-VL-7B, needs GPU).",
+    )
+    parser.add_argument(
         "--batch", "-b", type=str,
         help="Run batch analysis: 'Real', 'all', or a GenImage subdir name.",
     )
@@ -153,9 +169,9 @@ def main():
     args = parser.parse_args()
 
     if args.image:
-        run_single(args.image, args.mode)
+        run_single(args.image, args.mllm, args.mode)
     elif args.batch:
-        run_batch(args.batch, args.mode, args.max)
+        run_batch(args.batch, args.mllm, args.mode, args.max)
     else:
         parser.print_help()
         print("\nExample: python main.py --image dataset/Real/xxx.jpg")

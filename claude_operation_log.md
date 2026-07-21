@@ -150,3 +150,21 @@
 * **执行结果与验证状态**：模型路径已配置，等待 GPU 开启后即可进入阶段 2.1
 * **置信度或遗留待办（TODO）**：无
 ---
+### 2026-07-21 10:57:08 - 2.1 真实 Qwen2.5-VL 接入
+
+* **当前操作动作**：2.1 真实 Qwen2.5-VL 接入
+* **核心变更说明**：
+  1. 实现 mllm/qwen_client.py：加载 Qwen2.5-VL-7B-Instruct (FP16, 16.6 GB VRAM)，实现 BaseMLLMClient 接口，支持多轮对话 + 格式纠错反馈环
+  2. 修复 Parser 容错：增加 _TAG_NORMALIZE 字典，映射常见 LLM 标签错误 (call_call_noise→noise, call_frequency→freq 等)
+  3. 更新 main.py：新增 --mllm qwen/mock 参数，自动 GPU 检测 + 降级提示
+  4. 更新 mllm/__init__.py 注册 QwenVLClient
+  5. 强化 System Prompt：增加显式标签示例、FORBIDDEN 禁止项、更严格的格式约束
+  6. 端到端验证：Real 图正确判定 Real(0.99)；MJ 假图错误判定 Real(0.99)——基座模型缺乏法证推理训练，这正是后续 SFT 阶段要解决的问题
+* **涉及/修改的文件清单**：
+  - `mllm/qwen_client.py (Created)`
+  - `mllm/__init__.py (Modified)`
+  - `main.py (Modified)`
+  - `utils/parser.py (Modified)`
+* **执行结果与验证状态**：管道双向跑通，Qwen 可正确生成 planning/call/reasoning/verdict 标签，Parser 容错有效，Evidence Token 注入正常。已知限制：基座模型缺乏法证推理能力（单次调用后轻信结论），需 SFT 训练解决
+* **置信度或遗留待办（TODO）**：模型加载耗时 ~17s/次（可接受单张调试；批量生成需优化为一次加载多张推理）
+---

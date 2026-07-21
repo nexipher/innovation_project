@@ -2,5 +2,6 @@
 
 from .base import BaseMLLMClient
 from .mock_client import MockMLLMClient
+from .qwen_client import QwenVLClient
 
-__all__ = ["BaseMLLMClient", "MockMLLMClient"]
+__all__ = ["BaseMLLMClient", "MockMLLMClient", "QwenVLClient"]

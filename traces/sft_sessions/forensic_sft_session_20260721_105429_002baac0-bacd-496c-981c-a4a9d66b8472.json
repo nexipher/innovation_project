@@ -1,0 +1,39 @@
+{
+  "id": "session_20260721_105429_002baac0-bacd-496c-981c-a4a9d66b8472",
+  "image_path": "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_residue"
+    ],
+    "report": "图像中存在明显的噪声残留，特别是在面部细节区域。这表明图像可能经过了多次处理或压缩，导致了这些视觉异常。然而，由于没有其他专家的反馈，我们无法确定这些噪声是否是由伪造引起的。因此，我们不能排除图像的真实性。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 120, 300, 300]\nVisual Anomalies: 石像的面部细节显得有些模糊，尤其是眼睛和鼻子部分。\nExpert Target & Hypothesis: 首先调用噪声残留专家，因为面部细节的模糊可能与图像中的噪声有关。\n</planning>\n<call_call_noise>[100, 120, 300, 300]</call_call_noise>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n噪声残留专家指出，图像中存在明显的噪声残留，尤其是在面部细节区域。这表明图像可能经过了多次处理或压缩，导致了这些视觉异常。然而，由于没有其他专家的反馈，我们无法确定这些噪声是否是由伪造引起的。因此，我们不能排除图像的真实性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residue\"], \"report\": \"图像中存在明显的噪声残留，特别是在面部细节区域。这表明图像可能经过了多次处理或压缩，导致了这些视觉异常。然而，由于没有其他专家的反馈，我们无法确定这些噪声是否是由伪造引起的。因此，我们不能排除图像的真实性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 1,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T10:54:29.922274"
+  }
+}
