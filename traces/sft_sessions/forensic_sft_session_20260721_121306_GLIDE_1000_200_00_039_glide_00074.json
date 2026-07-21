@@ -1,0 +1,73 @@
+{
+  "id": "session_20260721_121306_GLIDE_1000_200_00_039_glide_00074",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Glide/GLIDE_1000_200_00_039_glide_00074.png",
+  "ground_truth": "Fake",
+  "source_model": "Glide",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.9858,
+    "primary_evidence": [
+      "noise_residual_inconsistency",
+      "abnormal_high_frequency_residual"
+    ],
+    "report": "图像的统计模式与正常硬件相机捕获的特征相符，且未发现显著的局部噪声变异或高频率周期性峰值。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 100, 100]\nVisual Anomalies: 图像中蜥蜴的边缘模糊，可能表明存在拼接或低分辨率。\nExpert Target & Hypothesis: 首先调用 <call_noise>[0, 0, 100, 100] 来检查是否存在噪声残留，然后调用 <call_freq>[0, 0, 100, 100] 来评估频率域特征。\n</planning>\n\n<call_noise>[0, 0, 100, 100]</call_noise>\n<call_freq>[0, 0, 100, 100]</call_freq>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[0, 0, 26, 26]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.5306). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.0322, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"abnormal_high_frequency_residual\", \"region\": \"patch_coordinates_[0, 0, 26, 26]\", \"phenomenon\": \"The spatial-frequency spectrum shows no significant periodic peaks. (peak ratio: 0.0103)\", \"reasoning\": \"This spectral pattern is mathematically consistent with upsampling / deconvolution grid artifacts common in GAN and Diffusion-based image synthesis. Real camera-captured images rarely exhibit such structured high-frequency periodicity.\", \"strength\": 0.0149, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据噪声残留专家的分析，局部噪声变异指标在正常范围内（异常比：0.5306），没有显著的局部变异异常。这表明图像可能是通过正常硬件相机捕获的。\n\n频率域专家指出，空间频谱图中没有显著的周期性峰值（峰值比：0.0103）。这种频谱模式与GAN和Diffusion基生成图像中常见的上采样/反卷积网格伪影一致。真实相机捕捉的图像很少表现出这种结构化的高频率周期性。\n\n综合以上两个专家的意见，图像的统计模式符合正常硬件相机捕获的特征。因此，可以推断图像的真实性。\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.9858, \"primary_evidence\": [\"noise_residual_inconsistency\", \"abnormal_high_frequency_residual\"], \"report\": \"图像的统计模式与正常硬件相机捕获的特征相符，且未发现显著的局部噪声变异或高频率周期性峰值。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[0, 0, 26, 26]",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.5306). No significant local variance anomaly.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.0322,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    },
+    {
+      "evidence_name": "abnormal_high_frequency_residual",
+      "region": "patch_coordinates_[0, 0, 26, 26]",
+      "phenomenon": "The spatial-frequency spectrum shows no significant periodic peaks. (peak ratio: 0.0103)",
+      "reasoning": "This spectral pattern is mathematically consistent with upsampling / deconvolution grid artifacts common in GAN and Diffusion-based image synthesis. Real camera-captured images rarely exhibit such structured high-frequency periodicity.",
+      "strength": 0.0149,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 1,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T12:13:06.160482"
+  }
+}

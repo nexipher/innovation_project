@@ -1,0 +1,54 @@
+{
+  "id": "session_20260721_113942_24e024c2-7405-47be-bde1-70fb9e11b5a7",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/24e024c2-7405-47be-bde1-70fb9e11b5a7.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.5732,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像中存在轻微的数学失真，疑似局部压缩或模糊。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 238, 437, 599]\nVisual Anomalies: 狗的面部细节模糊，尤其是眼睛和鼻子区域。\nExpert Target & Hypothesis: 首先调用 <call_noise>[100, 238, 437, 599]，因为面部细节模糊可能表明存在噪声或压缩残留。\n</planning>\n<call_noise>[100, 238, 437, 599]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[78, 119, 341, 300]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9966). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5732, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据证据令牌“noise_residual_inconsistency”，在区域 [78, 119, 341, 300] 内检测到局部噪声方差异常（异常比为 2.9966），这表明存在噪声残留。这种现象可能是由于图像拼接、修复或基于AI的局部编辑导致的，这些操作会破坏空间均匀性，从而引起方差崩溃或膨胀。此外，图像中的微噪声模式通过SRM高通滤波器检测到了局部方差异常。\n\n结合专家意见，图像中存在轻微的数学失真，疑似局部压缩或模糊。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.5732, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中存在轻微的数学失真，疑似局部压缩或模糊。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[78, 119, 341, 300]",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 2.9966). Variance collapse or inflation detected.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.5732,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      780,
+      500
+    ],
+    "total_steps": 1,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T11:39:42.674742"
+  }
+}

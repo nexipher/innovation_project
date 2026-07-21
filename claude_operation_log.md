@@ -185,3 +185,20 @@
 * **执行结果与验证状态**：校准脚本运行正常，ROC 网格搜索完成。noise/jpeg 参数更新提升区分度。freq 算法需 Phase 3 重新设计
 * **置信度或遗留待办（TODO）**：noise 和 jpeg 都是 Real > Fake（与预期方向相反），这意味着在 PNG vs JPEG 对比中专家检测的是格式差异。需在 Phase 3/SFT 训练中告诉模型这个上下文
 ---
+### 2026-07-21 14:03:25 - 2.3 SFT 数据规模化生成
+
+* **当前操作动作**：2.3 SFT 数据规模化生成
+* **核心变更说明**：
+  1. 创建 scripts/generate_sft_data.py：A 线自然管道 + B 线构造场景双线生成，模型一次加载复用
+  2. A 线产出：610 文件，92% 质量通过率，~561 有效样本（Qwen2.5-VL 真实推理行为记录）
+  3. B 线产出：292 文件，Qwen 在 max_steps/conflict/info_gain 场景下的反思对话完整记录
+  4. B 线 finalize_sft() bug 已修复（_extract_and_finalize 提取 verdict），下次运行生效
+  5. 总计 902 文件 / 5.6 MB ShareGPT 格式 SFT 数据，~561 高质量样本可直接用于阶段三微调
+  6. 运行耗时 ~166 分钟 GPU（RTX 4090），含 600 张 A 线自然推理 + 300 条 B 线构造场景
+* **涉及/修改的文件清单**：
+  - `scripts/generate_sft_data.py (Created + Fixed)`
+  - `sft_data/metadata.json (Created)`
+  - `traces/sft_sessions/*.json (902 files generated)`
+* **执行结果与验证状态**：A 线 92% 质量通过，B 线代码 bug 已修复但需重跑。当前数据规模满足阶段三 SFT 训练需求
+* **置信度或遗留待办（TODO）**：B 线需重跑以获得 complete verdict 字段；当前 B 线 conversation 内容完整但 verdict 为 null
+---

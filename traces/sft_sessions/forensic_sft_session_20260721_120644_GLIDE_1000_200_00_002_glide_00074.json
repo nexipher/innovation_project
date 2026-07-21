@@ -1,0 +1,54 @@
+{
+  "id": "session_20260721_120644_GLIDE_1000_200_00_002_glide_00074",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Glide/GLIDE_1000_200_00_002_glide_00074.png",
+  "ground_truth": "Fake",
+  "source_model": "Glide",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.99,
+    "primary_evidence": [
+      "abnormal_high_frequency_residual"
+    ],
+    "report": "图像中的高频残差模式与GAN和Diffusion模型生成的图像一致，而真实相机捕捉的图像通常不会出现这种结构化的高频率周期性。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [50, 50, 900, 250]\nVisual Anomalies: 图像中的鲨鱼看起来过于光滑，没有明显的纹理细节。\nExpert Target & Hypothesis: 调用频率域专家（<call_freq>），因为图像可能经过了过度平滑处理。\n</planning>\n<call_call_freq>[50, 50, 900, 250]</call_call_freq>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"abnormal_high_frequency_residual\", \"region\": \"patch_coordinates_[13, 13, 230, 64]\", \"phenomenon\": \"The spatial-frequency spectrum shows no significant periodic peaks. (peak ratio: 0.0000)\", \"reasoning\": \"This spectral pattern is mathematically consistent with upsampling / deconvolution grid artifacts common in GAN and Diffusion-based image synthesis. Real camera-captured images rarely exhibit such structured high-frequency periodicity.\", \"strength\": 0.011, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据频率域专家的分析，图像中存在异常高频残差现象。该现象表明图像可能是通过GAN或Diffusion模型生成的，而不是由正常相机拍摄的。这种结构化的高频率周期性在真实相机捕捉的图像中很少出现。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.99, \"primary_evidence\": [\"abnormal_high_frequency_residual\"], \"report\": \"图像中的高频残差模式与GAN和Diffusion模型生成的图像一致，而真实相机捕捉的图像通常不会出现这种结构化的高频率周期性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "abnormal_high_frequency_residual",
+      "region": "patch_coordinates_[13, 13, 230, 64]",
+      "phenomenon": "The spatial-frequency spectrum shows no significant periodic peaks. (peak ratio: 0.0000)",
+      "reasoning": "This spectral pattern is mathematically consistent with upsampling / deconvolution grid artifacts common in GAN and Diffusion-based image synthesis. Real camera-captured images rarely exhibit such structured high-frequency periodicity.",
+      "strength": 0.011,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 1,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T12:06:44.689661"
+  }
+}

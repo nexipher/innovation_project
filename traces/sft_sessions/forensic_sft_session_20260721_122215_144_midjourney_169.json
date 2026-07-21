@@ -1,0 +1,54 @@
+{
+  "id": "session_20260721_122215_144_midjourney_169",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Midjourney/144_midjourney_169.png",
+  "ground_truth": "Fake",
+  "source_model": "Midjourney",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.9899,
+    "primary_evidence": [
+      "abnormal_high_frequency_residual"
+    ],
+    "report": "图像中的高频率残差频谱显示了与GAN和Diffusion基生成图像一致的特征，表明图像可能经过了处理或合成。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 130, 700, 900]\nVisual Anomalies: 眼睛周围的羽毛看起来有些不自然，颜色过渡也不均匀。\nExpert Target & Hypothesis: 首先调用频率域专家，检查眼睛周围区域的频率特性是否正常。\n</planning>\n<call_call_freq>[200, 130, 700, 900]</call_call_freq>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"abnormal_high_frequency_residual\", \"region\": \"patch_coordinates_[205, 133, 717, 922]\", \"phenomenon\": \"The spatial-frequency spectrum shows no significant periodic peaks. (peak ratio: 0.0002)\", \"reasoning\": \"This spectral pattern is mathematically consistent with upsampling / deconvolution grid artifacts common in GAN and Diffusion-based image synthesis. Real camera-captured images rarely exhibit such structured high-frequency periodicity.\", \"strength\": 0.0111, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据频率域专家提供的证据，该图像在高频率残差区域的频谱显示出没有显著的周期性峰值（峰值比：0.0002）。这种频谱模式与GAN和Diffusion基生成图像中常见的上采样/反卷积网格伪影一致。真实相机拍摄的图像很少表现出这种结构化的高频率周期性。\n\n鉴于此，可以推断图像可能是经过处理或合成的，而非直接由相机拍摄的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.9899, \"primary_evidence\": [\"abnormal_high_frequency_residual\"], \"report\": \"图像中的高频率残差频谱显示了与GAN和Diffusion基生成图像一致的特征，表明图像可能经过了处理或合成。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "abnormal_high_frequency_residual",
+      "region": "patch_coordinates_[205, 133, 717, 922]",
+      "phenomenon": "The spatial-frequency spectrum shows no significant periodic peaks. (peak ratio: 0.0002)",
+      "reasoning": "This spectral pattern is mathematically consistent with upsampling / deconvolution grid artifacts common in GAN and Diffusion-based image synthesis. Real camera-captured images rarely exhibit such structured high-frequency periodicity.",
+      "strength": 0.0111,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      1024,
+      1024
+    ],
+    "total_steps": 1,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T12:22:15.693904"
+  }
+}

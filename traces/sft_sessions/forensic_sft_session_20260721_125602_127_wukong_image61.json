@@ -1,0 +1,72 @@
+{
+  "id": "session_20260721_125602_127_wukong_image61",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/127_wukong_image61.png",
+  "ground_truth": "Fake",
+  "source_model": "Wukong",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.95,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像中存在严重的统计异常，与人工生成的指纹匹配。此外，鸟类的翅膀和身体比例不一致，可能暗示了拼接或合成。因此，可以推断出图像经过了编辑处理。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [230, 170, 504, 371]\nVisual Anomalies: 鸟类的翅膀和身体比例不一致，可能暗示了拼接或合成。\nExpert Target & Hypothesis: <call_noise>[230, 170, 504, 371]</call_noise> → 检查是否有噪声残留，以判断是否经过编辑。\n</planning>\n\n<call_noise>[230, 170, 504, 371]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[118, 87, 258, 190]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 3.7857). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.8144, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Severe statistical anomaly matching artificial generative fingerprints.\"}"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[118, 87, 258, 190]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 3.7857). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.8144, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Severe statistical anomaly matching artificial generative fingerprints.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据<call_noise>[118, 87, 258, 190]</call_noise>的专家意见，图像中存在严重的统计异常，这与人工生成的指纹匹配。结合视觉观察，鸟类的翅膀和身体比例不一致，可能暗示了拼接或合成。综合这些证据，可以推断出图像经过了编辑处理。\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.95, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中存在严重的统计异常，与人工生成的指纹匹配。此外，鸟类的翅膀和身体比例不一致，可能暗示了拼接或合成。因此，可以推断出图像经过了编辑处理。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[118, 87, 258, 190]",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 3.7857). Variance collapse or inflation detected.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.8144,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints."
+    },
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[118, 87, 258, 190]",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 3.7857). Variance collapse or inflation detected.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.8144,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      512,
+      512
+    ],
+    "total_steps": 1,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T12:56:02.195900"
+  }
+}

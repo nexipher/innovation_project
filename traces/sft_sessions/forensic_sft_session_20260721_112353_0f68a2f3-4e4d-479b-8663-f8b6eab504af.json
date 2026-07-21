@@ -1,0 +1,54 @@
+{
+  "id": "session_20260721_112353_0f68a2f3-4e4d-479b-8663-f8b6eab504af",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/0f68a2f3-4e4d-479b-8663-f8b6eab504af.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.9648,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像的地平线附近颜色过渡不自然现象不符合噪声残留的特征，且检测到的局部微小噪声变异在正常范围内。因此，图像中的颜色过渡可能是由于图像编辑或拼接造成的，而非噪声残留。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 100, 100]\nVisual Anomalies: 地平线附近存在明显的颜色过渡不自然现象。\nExpert Target & Hypothesis: 调用 call_noise 专家，因为地平线附近的颜色过渡可能表明存在噪声残留。\n</planning>\n<call_noise>[0, 0, 100, 100]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[0, 0, 33, 50]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.5929). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.0352, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析，地平线附近的颜色过渡不自然现象并不符合噪声残留的特征。SRM 高通滤波器检测到局部微小噪声变异，但这些变异在正常范围内（异常比：0.5929）。这表明图像中的颜色过渡可能是由于图像编辑或拼接造成的，而不是噪声残留的结果。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.9648, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像的地平线附近颜色过渡不自然现象不符合噪声残留的特征，且检测到的局部微小噪声变异在正常范围内。因此，图像中的颜色过渡可能是由于图像编辑或拼接造成的，而非噪声残留。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[0, 0, 33, 50]",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.5929). No significant local variance anomaly.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.0352,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      333,
+      500
+    ],
+    "total_steps": 1,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T11:23:53.056617"
+  }
+}

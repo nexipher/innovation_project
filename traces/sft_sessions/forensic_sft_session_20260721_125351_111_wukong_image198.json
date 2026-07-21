@@ -1,0 +1,109 @@
+{
+  "id": "session_20260721_125351_111_wukong_image198",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/111_wukong_image198.png",
+  "ground_truth": "Fake",
+  "source_model": "Wukong",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "取证资源耗尽，无法做出确定结论。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 100, 100]\nVisual Anomalies: 图像中存在明显的低分辨率和块状纹理。\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 100, 100]</call_jpeg>\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[0, 0, 51, 51]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0302, DCT anomaly: 3.0098)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.412, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 51, 51]\nVisual Anomalies: 图像局部区域显示了明显的块状纹理，可能表明经过多次JPEG压缩。\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 51, 51]</call_jpeg>\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[0, 0, 26, 26]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0239, DCT anomaly: 1.8547)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.2163, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 26, 26]\nVisual Anomalies: 图像局部区域显示了明显的块状纹理，可能表明经过多次JPEG压缩。\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 26, 26]</call_jpeg>\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[0, 0, 16, 16]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1284, DCT anomaly: 2.6247)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3668, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 16, 16]\nVisual Anomalies: 图像局部区域显示了明显的块状纹理，可能表明经过多次JPEG压缩。\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 16, 16]</call_jpeg>\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[0, 0, 16, 16]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1284, DCT anomaly: 2.6247)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3668, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 16, 16]\nVisual Anomalies: 图像局部区域显示了明显的块状纹理，可能表明经过多次JPEG压缩。\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 16, 16]</call_jpeg>\n</planning>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 51, 51]",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0302, DCT anomaly: 3.0098)",
+      "reasoning": "Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.",
+      "strength": 0.412,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected."
+    },
+    {
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 26, 26]",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0239, DCT anomaly: 1.8547)",
+      "reasoning": "Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.",
+      "strength": 0.2163,
+      "source": "jpeg_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    },
+    {
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 16, 16]",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1284, DCT anomaly: 2.6247)",
+      "reasoning": "Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.",
+      "strength": 0.3668,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected."
+    },
+    {
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 16, 16]",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1284, DCT anomaly: 2.6247)",
+      "reasoning": "Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.",
+      "strength": 0.3668,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      512,
+      512
+    ],
+    "total_steps": 4,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T12:53:51.579860"
+  }
+}

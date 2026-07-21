@@ -1,0 +1,76 @@
+{
+  "id": "session_20260721_122719_019_sdv4_00035",
+  "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/SD14/019_sdv4_00035.png",
+  "ground_truth": "Fake",
+  "source_model": "SD14",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.95,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像中的局部噪声变异不一致现象在正常范围内，且没有显著的局部变异异常。结合专家意见，这些区域的统计模式与正常硬件相机捕捉的模式相符。因此，可以推断图像经过了后期处理或拼接的可能性较低。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 100, 400, 300]\nVisual Anomalies: 眼部周围有明显的阴影和高光对比，这可能是后期处理的结果。\nExpert Target & Hypothesis: <call_noise>[200, 100, 400, 300]</call_noise> → 检查是否有噪声残留，以确定是否经过了过度的编辑。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[102, 51, 205, 154]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.2972). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.0229, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [102, 51, 205, 154]\nVisual Anomalies: 该区域存在局部噪声变异不一致的现象，这表明可能存在后期处理或拼接。\nExpert Target & Hypothesis: <call_noise>[102, 51, 205, 154]</call_noise> → 检查是否存在噪声残留，以确定是否经过了过度的编辑。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[52, 26, 105, 79]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.1582). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.0187, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的证据，我们观察到图像中存在局部噪声变异不一致的现象，特别是在 [102, 51, 205, 154] 和 [52, 26, 105, 79] 区域。这些区域的局部噪声变异在正常范围内，且没有显著的局部变异异常。结合专家意见，这些区域的统计模式与正常硬件相机捕捉的模式相符。\n\n综合以上分析，图像中的局部噪声变异不一致现象并不强烈，且符合正常硬件相机捕捉的模式。因此，可以推断图像经过了后期处理或拼接的可能性较低。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.95, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中的局部噪声变异不一致现象在正常范围内，且没有显著的局部变异异常。结合专家意见，这些区域的统计模式与正常硬件相机捕捉的模式相符。因此，可以推断图像经过了后期处理或拼接的可能性较低。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[102, 51, 205, 154]",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.2972). No significant local variance anomaly.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.0229,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    },
+    {
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[52, 26, 105, 79]",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.1582). No significant local variance anomaly.",
+      "reasoning": "Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.",
+      "strength": 0.0187,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      512,
+      512
+    ],
+    "total_steps": 2,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-07-21T12:27:19.274796"
+  }
+}
