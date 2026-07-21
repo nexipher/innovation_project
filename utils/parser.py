@@ -128,9 +128,14 @@ class Parser:
     # Tag normalisation — maps common LLM mistakes to correct tag names
     # ------------------------------------------------------------------
     _TAG_NORMALIZE = {
+        # <call_call_*> patterns — LLM doubles the "call_" prefix
         "call_call_freq": "freq",
         "call_call_noise": "noise",
         "call_call_jpeg": "jpeg",
+        "call_freq": "freq",
+        "call_noise": "noise",
+        "call_jpeg": "jpeg",
+        # Other common LLM variations
         "call_frequency": "freq",
         "call_noise_residual": "noise",
         "call_jpeg_compression": "jpeg",
