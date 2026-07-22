@@ -16,7 +16,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1464, DCT anomaly: 2.6153)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.37, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1464, DCT anomaly: 2.6153)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.1464, DCT anomaly=2.6153). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.37, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -41,7 +41,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.4670). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3777, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.4670). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.4670). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3777, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -66,7 +66,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1750, DCT anomaly: 2.6771)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3898, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1750, DCT anomaly: 2.6771)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.1750, DCT anomaly=2.6771). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3898, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -91,7 +91,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0016, half=0.0012)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2524, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0016, half=0.0012)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2524, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -116,7 +116,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2960, DCT anomaly: 2.5800)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4059, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2960, DCT anomaly: 2.5800)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2960, DCT anomaly=2.5800). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4059, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -141,7 +141,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.4131, DCT anomaly: 2.9665)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5172, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.4131, DCT anomaly: 2.9665)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.4131, DCT anomaly=2.9665). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5172, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -166,7 +166,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.2702). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3112, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.2702). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.2702). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3112, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -191,7 +191,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.4031, DCT anomaly: 2.5873)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4387, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.4031, DCT anomaly: 2.5873)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.4031, DCT anomaly=2.5873). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4387, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -216,7 +216,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.8845). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5317, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.8845). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.8845). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5317, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -241,7 +241,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0025, full=0.0020, half=0.0032)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2688, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0025, full=0.0020, half=0.0032)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2688, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -266,7 +266,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.3111). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3245, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.3111). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.3111). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3245, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -291,7 +291,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.6627). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.4487, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.6627). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.6627). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.4487, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -316,7 +316,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5998). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.4255, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5998). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.5998). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.4255, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -341,7 +341,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2485, DCT anomaly: 3.1175)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.498, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2485, DCT anomaly: 3.1175)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2485, DCT anomaly=3.1175). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.498, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -366,7 +366,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9190). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5445, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9190). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.9190). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5445, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -391,7 +391,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2109, DCT anomaly: 3.5512)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.573, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2109, DCT anomaly: 3.5512)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2109, DCT anomaly=3.5512). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.573, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -416,7 +416,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0015, half=0.0014)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2532, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0015, half=0.0014)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2532, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -441,7 +441,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0016, full=0.0016, half=0.0018)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2556, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0016, full=0.0016, half=0.0018)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2556, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -466,7 +466,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1847, DCT anomaly: 3.5512)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5653, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1847, DCT anomaly: 3.5512)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.1847, DCT anomaly=3.5512). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5653, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -491,7 +491,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2902, DCT anomaly: 3.1175)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5106, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2902, DCT anomaly: 3.1175)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2902, DCT anomaly=3.1175). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5106, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -516,7 +516,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5033). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3905, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5033). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.5033). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3905, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -541,7 +541,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.3444, DCT anomaly: 3.2394)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.551, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.3444, DCT anomaly: 3.2394)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.3444, DCT anomaly=3.2394). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.551, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -566,7 +566,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.7520). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.482, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.7520). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.7520). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.482, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -591,7 +591,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1319, DCT anomaly: 3.0470)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4491, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1319, DCT anomaly: 3.0470)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.1319, DCT anomaly=3.0470). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4491, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -616,7 +616,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.0967). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.2583, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.0967). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.0967), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.2583, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -641,7 +641,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2995, DCT anomaly: 3.3991)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5692, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2995, DCT anomaly: 3.3991)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2995, DCT anomaly=3.3991). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5692, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -666,7 +666,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 3.0101). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5781, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 3.0101). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=3.0101). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5781, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -691,7 +691,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 3.0340). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5868, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 3.0340). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=3.0340). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5868, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -716,7 +716,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0010, half=0.0028)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2569, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0010, half=0.0028)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2569, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -741,7 +741,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.0761). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.2524, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.0761). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.0761), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.2524, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -766,7 +766,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5249). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3983, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5249). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.5249). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3983, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -791,7 +791,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9894). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5706, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9894). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.9894). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5706, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -816,7 +816,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2509, DCT anomaly: 3.0206)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4794, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2509, DCT anomaly: 3.0206)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2509, DCT anomaly=3.0206). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4794, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -841,7 +841,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2002, DCT anomaly: 3.2802)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5161, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2002, DCT anomaly: 3.2802)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2002, DCT anomaly=3.2802). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5161, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -866,7 +866,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5569). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.4098, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5569). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.5569). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.4098, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -891,7 +891,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0019, full=0.0018, half=0.0020)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2599, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0019, full=0.0018, half=0.0020)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2599, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -916,7 +916,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.3622). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3415, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.3622). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.3622). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3415, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -941,7 +941,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0015, half=0.0012)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2516, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0015, half=0.0012)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2516, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -966,7 +966,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1511, DCT anomaly: 3.2778)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5009, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1511, DCT anomaly: 3.2778)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.1511, DCT anomaly=3.2778). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5009, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -991,7 +991,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0012, half=0.0016)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2518, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0012, half=0.0016)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2518, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1016,7 +1016,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2798, DCT anomaly: 3.3166)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5471, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2798, DCT anomaly: 3.3166)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2798, DCT anomaly=3.3166). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5471, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1041,7 +1041,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.1011). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.2595, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.1011). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.1011), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.2595, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1066,7 +1066,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9350, DCT anomaly: 3.2608)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4331, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9350, DCT anomaly: 3.2608)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9350, DCT anomaly=3.2608). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4331, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1091,7 +1091,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9760, DCT anomaly: 2.5404)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3108, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9760, DCT anomaly: 2.5404)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9760, DCT anomaly=2.5404). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3108, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1116,7 +1116,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9520, DCT anomaly: 2.6870)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.33, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9520, DCT anomaly: 2.6870)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9520, DCT anomaly=2.6870). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.33, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1141,7 +1141,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.3733). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3452, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.3733). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.3733). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3452, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1166,7 +1166,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9479, DCT anomaly: 3.2721)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4391, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9479, DCT anomaly: 3.2721)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9479, DCT anomaly=3.2721). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4391, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1191,7 +1191,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.4911). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3862, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.4911). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.4911). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3862, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1216,7 +1216,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9687, DCT anomaly: 2.8757)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3689, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9687, DCT anomaly: 2.8757)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9687, DCT anomaly=2.8757). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3689, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1241,7 +1241,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5719). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.4153, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.5719). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.5719). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.4153, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1266,7 +1266,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9345, DCT anomaly: 2.4678)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.2882, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9345, DCT anomaly: 2.4678)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2882, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1291,7 +1291,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9649, DCT anomaly: 3.3717)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4639, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9649, DCT anomaly: 3.3717)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9649, DCT anomaly=3.3717). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4639, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1316,7 +1316,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9314, DCT anomaly: 3.1062)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.402, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9314, DCT anomaly: 3.1062)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9314, DCT anomaly=3.1062). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.402, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1341,7 +1341,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9795, DCT anomaly: 3.3482)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4635, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9795, DCT anomaly: 3.3482)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9795, DCT anomaly=3.3482). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4635, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1366,7 +1366,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9772, DCT anomaly: 3.9392)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5803, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9772, DCT anomaly: 3.9392)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9772, DCT anomaly=3.9392). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5803, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1391,7 +1391,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.8859, DCT anomaly: 2.8475)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.341, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.8859, DCT anomaly: 2.8475)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.8859, DCT anomaly=2.8475). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.341, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1416,7 +1416,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9013, DCT anomaly: 2.7797)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.333, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9013, DCT anomaly: 2.7797)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9013, DCT anomaly=2.7797). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.333, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1441,7 +1441,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9763, DCT anomaly: 2.7204)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3425, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9763, DCT anomaly: 2.7204)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9763, DCT anomaly=2.7204). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3425, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1466,7 +1466,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.4575). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.3743, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.4575). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.4575). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.3743, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1491,7 +1491,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0013, half=0.0022)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2561, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0013, half=0.0022)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2561, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1516,7 +1516,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9727, DCT anomaly: 3.3008)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4521, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9727, DCT anomaly: 3.3008)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9727, DCT anomaly=3.3008). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4521, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1541,7 +1541,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9828, DCT anomaly: 3.0171)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3997, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9828, DCT anomaly: 3.0171)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9828, DCT anomaly=3.0171). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3997, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1566,7 +1566,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9996, DCT anomaly: 2.9734)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3961, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9996, DCT anomaly: 2.9734)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9996, DCT anomaly=2.9734). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3961, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1591,7 +1591,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0493, DCT anomaly: 3.7281)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.5601, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0493, DCT anomaly: 3.7281)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0493, DCT anomaly=3.7281). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5601, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1616,7 +1616,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0009, half=0.0022)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2527, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0009, half=0.0022)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2527, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1641,7 +1641,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0141, DCT anomaly: 3.3566)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4756, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0141, DCT anomaly: 3.3566)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0141, DCT anomaly=3.3566). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4756, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1666,7 +1666,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0212, DCT anomaly: 3.0511)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4173, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0212, DCT anomaly: 3.0511)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0212, DCT anomaly=3.0511). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4173, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1691,7 +1691,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0827, DCT anomaly: 2.4705)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3264, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0827, DCT anomaly: 2.4705)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0827, DCT anomaly=2.4705). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3264, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1716,7 +1716,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0210, DCT anomaly: 3.3660)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4795, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0210, DCT anomaly: 3.3660)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0210, DCT anomaly=3.3660). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4795, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1741,7 +1741,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0009, half=0.0022)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2527, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0009, half=0.0022)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2527, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1766,7 +1766,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9832, DCT anomaly: 3.0626)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4085, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9832, DCT anomaly: 3.0626)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.9832, DCT anomaly=3.0626). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4085, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1791,7 +1791,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0016, full=0.0007, half=0.0030)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2555, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0016, full=0.0007, half=0.0030)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2555, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1816,7 +1816,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0316, DCT anomaly: 3.3521)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4799, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0316, DCT anomaly: 3.3521)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0316, DCT anomaly=3.3521). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4799, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1841,7 +1841,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.8375, DCT anomaly: 2.7506)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3112, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.8375, DCT anomaly: 2.7506)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.8375, DCT anomaly=2.7506). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3112, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1866,7 +1866,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2092, DCT anomaly: 2.3232)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3339, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2092, DCT anomaly: 2.3232)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.2092, DCT anomaly=2.3232). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3339, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -1891,7 +1891,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.1708). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.2801, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.1708). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.1708), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.2801, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1916,7 +1916,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.1127). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.2629, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.1127). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.1127), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.2629, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1941,7 +1941,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0018, full=0.0024, half=0.0009)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2579, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0018, full=0.0024, half=0.0009)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2579, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1966,7 +1966,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0028, full=0.0038, half=0.0013)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2741, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0028, full=0.0038, half=0.0013)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2741, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -1991,7 +1991,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0022, full=0.0031, half=0.0007)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2636, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0022, full=0.0031, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2636, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2016,7 +2016,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9798, DCT anomaly: 2.3503)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.2801, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9798, DCT anomaly: 2.3503)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2801, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2041,7 +2041,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0017, half=0.0009)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.252, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0014, full=0.0017, half=0.0009)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.252, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2066,7 +2066,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0024, half=0.0007)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2568, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0024, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2568, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2091,7 +2091,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9309, DCT anomaly: 2.4086)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.2777, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9309, DCT anomaly: 2.4086)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2777, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2116,7 +2116,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0018, half=0.0011)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2539, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0018, half=0.0011)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2539, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2141,7 +2141,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9653). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5617, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9653). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.9653). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5617, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -2166,7 +2166,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0366, DCT anomaly: 2.6168)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3402, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0366, DCT anomaly: 2.6168)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0366, DCT anomaly=2.6168). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3402, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -2191,7 +2191,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0018, half=0.0009)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2528, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0018, half=0.0009)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2528, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2216,7 +2216,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0020, full=0.0029, half=0.0006)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2607, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0020, full=0.0029, half=0.0006)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2607, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2241,7 +2241,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0027, half=0.0002)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2563, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0027, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2563, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2266,7 +2266,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0020, full=0.0013, half=0.0032)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2617, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0020, full=0.0013, half=0.0032)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2617, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2291,7 +2291,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.6245). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.4346, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.6245). No significant local variance anomaly.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.6245). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.4346, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -2316,7 +2316,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.2027). No significant local variance anomaly.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.2899, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 2.2027). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.2027), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.2899, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2341,7 +2341,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0018, half=0.0006)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2502, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0018, half=0.0006)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2502, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2366,7 +2366,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0601, DCT anomaly: 2.8800)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.3956, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0601, DCT anomaly: 2.8800)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0601, DCT anomaly=2.8800). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3956, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -2391,7 +2391,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0016, full=0.0021, half=0.0009)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2556, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0016, full=0.0021, half=0.0009)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2556, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2416,7 +2416,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0094, DCT anomaly: 3.2380)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.4506, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0094, DCT anomaly: 3.2380)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=1.0094, DCT anomaly=3.2380). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4506, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -2441,7 +2441,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0018, half=0.0006)\", \"reasoning\": \"Spectral patterns at multiple scales are analysed for GAN/Diffusion upsampling grid artifacts. Multi-scale approach catches artifacts that may only manifest at specific resolutions.\", \"strength\": 0.2506, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0018, half=0.0006)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2506, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",
@@ -2466,7 +2466,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.8610). Variance collapse or inflation detected.\", \"reasoning\": \"Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). The micro-noise pattern exhibits localised variance anomalies detected via SRM high-pass filtering.\", \"strength\": 0.5229, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.8610). Variance collapse or inflation detected.\", \"reasoning\": \"Mild noise inconsistency detected (ratio=2.8610). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.\", \"strength\": 0.5229, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\"}"
       },
       {
         "from": "gpt",
@@ -2491,7 +2491,7 @@
       },
       {
         "from": "user",
-        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9829, DCT anomaly: 2.2132)\", \"reasoning\": \"Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries (blockiness metric), and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic digital forgery markers.\", \"strength\": 0.2592, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9829, DCT anomaly: 2.2132)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2592, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
       },
       {
         "from": "gpt",

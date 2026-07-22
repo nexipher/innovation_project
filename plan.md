@@ -931,6 +931,24 @@ GT: Real
 | 格式示范流 | ~100 | 待生成 |
 | **总计** | **~700** | Ready for SFT |
 
+#### 3.1.1d Expert reasoning 修复与数据重生成评估 (2026-07-21)
+
+**修复**：四个专家（`frequency`/`noise`/`jpeg`/`frequency_v2`）的 `reasoning` 字段从硬编码模板改为三段式条件化输出。此前无论 strength=0.01 还是 0.9，reasoning 永远输出"这是 AI 生成特征"——导致 Evidence Token 内部自相矛盾，误导 Qwen。
+
+**波及范围评估**：
+
+| 数据文件 | 来源 | 受旧 reasoning 影响？ | 需要重生成？ | 需要 GPU？ |
+|----------|------|----------------------|-------------|-----------|
+| `sft_correct.json` (196) | A 线筛选，真实 Qwen 输出 | Evidence Token 中包含旧 reasoning，但 Qwen 的最终 verdict=GT | ⚠️ 不理想但可用 | 是 |
+| `sft_conflict.json` (200) | `build_sft_data.py` 合成 | 合成模板中嵌入了旧 Expert reasoning | ⚠️ 同上 | 否 (CPU) |
+| `sft_borderline.json` (100) | `finalize_sft_data.py` 合成 | 同上 | **是** (CPU 几分钟) | 否 |
+| `sft_format.json` (100) | A 线抽取 | 格式训练不看内容 | ❌ 不需要 | — |
+
+**决策**：
+- borderline **立即重生成**（CPU，几分钟）——数据量小，影响直接
+- correct/conflict **暂不重生成**——verdict 与 GT 一致，训练目标正确；Evidence Token 中的旧 reasoning 恰好模拟真实场景中 Expert 信号不完美的情形
+- GPU 开启后如有剩余时间，可选重跑 A 线部分样本作为对比
+
 #### 3.1.2 训练配置
 
 | 参数 | 建议值 | 说明 |
