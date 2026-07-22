@@ -286,3 +286,29 @@
 * **执行结果与验证状态**：验证：Real 图和 MJ 假图的 reasoning 均与各自 strength 值匹配，无矛盾
 * **置信度或遗留待办（TODO）**：SFT 数据中包含 freq Expert 的样本需要重新生成——因为旧数据中的 reasoning 是错误的
 ---
+### 2026-07-22 12:25:00 - 3.1a SFT 数据集最终状态更新
+
+* **当前操作动作**：3.1a SFT 数据集最终状态更新
+* **核心变更说明**：
+  1. 对应计划锚点: plan.md §3.1.1d Expert reasoning 修复与数据重生成
+  2. 修复四个专家的 reasoning 硬编码问题: frequency/noise/jpeg/frequency_v2 新增 _get_reasoning() 方法, 三段式条件化输出
+  3. 重跑 build_sft_data.py: 冲突数据 181 条用修复后 Expert 重新合成, reasoning 与 strength 一致
+  4. 重跑 finalize_sft_data.py: borderline 100 条修复重生成, 同步 conflict 到 final 目录
+  5. 最终 SFT 数据集 (sft_data/train/final/): correct=196, conflict=181, borderline=100, format=100, 总计 577 条
+  6. correct 保持 A 线真实 Qwen 推理 (verdict=GT), 不替换为合成模板
+  7. format 从 A 线抽取, 不受 Expert 修复影响
+  8. 数据全部就绪, 等待 GPU 开启后进入 3.1b LoRA 微调
+* **涉及/修改的文件清单**：
+  - `experts/frequency.py (Modified — _get_reasoning)`
+  - `experts/noise.py (Modified — _get_reasoning)`
+  - `experts/jpeg.py (Modified — _get_reasoning)`
+  - `experts/frequency_v2.py (Modified — _get_reasoning)`
+  - `sft_data/train/sft_conflict.json (Regenerated — 181 records)`
+  - `sft_data/train/final/sft_borderline.json (Regenerated — 100 records)`
+  - `sft_data/train/final/sft_conflict.json (Synced — 181 records)`
+  - `sft_data/train/final/metadata.json (Updated)`
+  - `plan.md (Modified — added §3.1.1d)`
+  - `claude_operation_log.md (Modified)`
+* **执行结果与验证状态**：所有 Expert reasoning 验证通过: low-strength→正常描述, high-strength→异常描述, 无矛盾。SFT 数据集 577 条全部就绪
+* **置信度或遗留待办（TODO）**：correct/conflict 中的旧 Evidence Token reasoning 不影响训练目标 (Qwen 的 response 正确)。GPU 开启后可直接开始微调, 无需额外数据准备
+---
