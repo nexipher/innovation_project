@@ -93,13 +93,7 @@ class JPEGExpert(BaseExpert):
                 f"JPEG structural analysis reveals {primary_phenom}. "
                 f"(blockiness: {blockiness:.4f}, DCT anomaly: {dct_anomaly:.4f})"
             ),
-            reasoning=(
-                "Double JPEG compression and re-saving leave distinct forensic "
-                "traces: (1) anomalous gradient energy at 8×8 block boundaries "
-                "(blockiness metric), and (2) periodic gaps in the DCT coefficient "
-                "histogram caused by re-quantisation with different quality factors. "
-                "These are classic digital forgery markers."
-            ),
+            reasoning=self._get_reasoning(strength, blockiness, dct_anomaly),
             strength=strength,
             support=support,
             interpretation_text=interp_text,
@@ -232,6 +226,33 @@ class JPEGExpert(BaseExpert):
 
     def _sigmoid_normalise(self, x: float) -> float:
         return float(1.0 / (1.0 + np.exp(-self.sigmoid_steepness * (x - self.sigmoid_midpoint))))
+
+    @staticmethod
+    def _get_reasoning(strength: float, blockiness: float, dct_anomaly: float) -> str:
+        if strength < 0.3:
+            return (
+                "JPEG structural analysis shows blockiness and DCT coefficient "
+                "patterns within the normal range for a single-compressed image. "
+                "No evidence of double JPEG compression or tampering-related "
+                "re-quantisation artifacts. Note: if the image is in PNG format, "
+                "absence of JPEG traces is expected and does not indicate forgery."
+            )
+        elif strength < 0.7:
+            return (
+                f"Mild JPEG structural anomalies detected (blockiness={blockiness:.4f}, "
+                f"DCT anomaly={dct_anomaly:.4f}). These could indicate light re-compression "
+                "(e.g. social media re-save) rather than malicious tampering. "
+                "Correlate with other expert findings before drawing conclusions."
+            )
+        else:
+            return (
+                f"Significant JPEG compression anomalies detected (blockiness={blockiness:.4f}, "
+                f"DCT anomaly={dct_anomaly:.4f}). Double JPEG compression and re-saving "
+                "leave distinct forensic traces: (1) anomalous gradient energy at 8×8 "
+                "block boundaries, and (2) periodic gaps in the DCT coefficient histogram "
+                "caused by re-quantisation with different quality factors. These are "
+                "classic markers of post-capture editing or forgery."
+            )
 
     @staticmethod
     def _classify(strength: float) -> tuple:

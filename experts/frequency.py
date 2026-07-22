@@ -99,17 +99,42 @@ class FrequencyExpert(BaseExpert):
                 f"{'concentrated periodic grids' if strength > 0.5 else 'no significant periodic peaks'}. "
                 f"(peak ratio: {peak_ratio:.4f})"
             ),
-            reasoning=(
-                "This spectral pattern is mathematically consistent with "
-                "upsampling / deconvolution grid artifacts common in GAN and "
-                "Diffusion-based image synthesis. Real camera-captured images "
-                "rarely exhibit such structured high-frequency periodicity."
-            ),
+            reasoning=self._get_reasoning(strength, peak_ratio),
             strength=strength,
             support=support,
             interpretation_text=interp_text,
             raw_metric=peak_ratio,
         )
+
+    # ------------------------------------------------------------------
+    # Conditional reasoning
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _get_reasoning(strength: float, peak_ratio: float) -> str:
+        if strength < 0.3:
+            return (
+                "No significant periodic peaks detected in the high-frequency "
+                "power spectrum. The spectral pattern is consistent with natural "
+                "image content — real camera-captured images do not exhibit the "
+                "structured high-frequency periodicity characteristic of GAN or "
+                "Diffusion upsampling artifacts."
+            )
+        elif strength < 0.7:
+            return (
+                f"Weak periodic energy concentration detected (peak ratio={peak_ratio:.4f}), "
+                "but below the confident detection threshold. This could indicate "
+                "mild post-processing or natural image texture rather than definitive "
+                "AI generation. Additional expert analysis is recommended."
+            )
+        else:
+            return (
+                f"Strong periodic peaks detected in the high-frequency power spectrum "
+                f"(peak ratio={peak_ratio:.4f}). This spectral pattern is mathematically "
+                "consistent with upsampling / deconvolution grid artifacts common in "
+                "GAN and Diffusion-based image synthesis. Real camera-captured images "
+                "rarely exhibit such structured high-frequency periodicity."
+            )
 
     # ------------------------------------------------------------------
     # Internal methods

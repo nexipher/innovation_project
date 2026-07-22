@@ -69,11 +69,7 @@ class FrequencyExpertV2(BaseExpert):
                 + (f", half={raw_half:.4f}" if min(h, w) >= 128 else "")
                 + ")"
             ),
-            reasoning=(
-                "Spectral patterns at multiple scales are analysed for GAN/Diffusion "
-                "upsampling grid artifacts. Multi-scale approach catches artifacts that "
-                "may only manifest at specific resolutions."
-            ),
+            reasoning=self._get_reasoning(strength, raw_metric),
             strength=strength,
             support=support,
             interpretation_text=interp_text,
@@ -151,6 +147,33 @@ class FrequencyExpertV2(BaseExpert):
 
     def _sigmoid_normalise(self, x: float) -> float:
         return float(1.0 / (1.0 + np.exp(-self.sigmoid_steepness * (x - self.sigmoid_midpoint))))
+
+    @staticmethod
+    def _get_reasoning(strength: float, raw_metric: float) -> str:
+        if strength < 0.3:
+            return (
+                "Multi-scale frequency analysis reveals no significant periodic "
+                "structure in the high-frequency spectrum. The spectral decay "
+                "pattern is consistent with natural image content, not the "
+                "structured grid artifacts characteristic of GAN/Diffusion "
+                "upsampling operations."
+            )
+        elif strength < 0.7:
+            return (
+                f"Multi-scale frequency analysis detects weak periodic energy "
+                f"(raw={raw_metric:.4f}) below the confident detection threshold. "
+                "This may indicate mild post-processing or natural texture patterns. "
+                "Cross-reference with other forensic experts is recommended."
+            )
+        else:
+            return (
+                f"Multi-scale frequency analysis reveals concentrated periodic peaks "
+                f"(raw={raw_metric:.4f}) consistent with GAN/Diffusion upsampling "
+                "grid artifacts. The multi-scale approach confirms the artifact "
+                "persists across resolutions, increasing confidence in the finding. "
+                "Natural camera-captured images rarely exhibit such structured "
+                "high-frequency periodicity."
+            )
 
     @staticmethod
     def _classify(strength: float) -> tuple:

@@ -106,14 +106,7 @@ class NoiseExpert(BaseExpert):
                 f"(inconsistency ratio: {inconsistency:.4f}). "
                 f"{'Variance collapse or inflation detected' if strength > 0.5 else 'No significant local variance anomaly'}."
             ),
-            reasoning=(
-                "Real camera sensors produce spatially homogeneous micro-noise "
-                "(shot noise + PRNU). Splicing, inpainting, or AI-based local "
-                "editing disrupts this homogeneity, causing either variance "
-                "collapse (over-smoothing) or inflation (unnatural texture). "
-                "The micro-noise pattern exhibits localised variance anomalies "
-                "detected via SRM high-pass filtering."
-            ),
+            reasoning=self._get_reasoning(strength, inconsistency),
             strength=strength,
             support=support,
             interpretation_text=interp_text,
@@ -191,6 +184,33 @@ class NoiseExpert(BaseExpert):
 
     def _sigmoid_normalise(self, x: float) -> float:
         return float(1.0 / (1.0 + np.exp(-self.sigmoid_steepness * (x - self.sigmoid_midpoint))))
+
+    @staticmethod
+    def _get_reasoning(strength: float, inconsistency: float) -> str:
+        if strength < 0.3:
+            return (
+                f"The micro-noise pattern exhibits uniform variance across the "
+                f"analysed region (inconsistency={inconsistency:.4f}), consistent "
+                "with a single camera sensor capture. No evidence of local editing, "
+                "splicing, or AI-based inpainting that would disrupt noise homogeneity."
+            )
+        elif strength < 0.7:
+            return (
+                f"Mild noise inconsistency detected (ratio={inconsistency:.4f}). "
+                "This could indicate localised post-processing (e.g. light denoising, "
+                "sharpening) or natural texture variation. The signal is below the "
+                "threshold for definitive tampering conclusion."
+            )
+        else:
+            return (
+                f"Significant localised noise variance anomaly detected "
+                f"(inconsistency ratio={inconsistency:.4f}). Real camera sensors "
+                "produce spatially homogeneous micro-noise (shot noise + PRNU). "
+                "Splicing, inpainting, or AI-based local editing disrupts this "
+                "homogeneity, causing either variance collapse (over-smoothing) "
+                "or inflation (unnatural texture). This level of inconsistency "
+                "is characteristic of manipulated or AI-generated image regions."
+            )
 
     @staticmethod
     def _classify(strength: float) -> tuple:
