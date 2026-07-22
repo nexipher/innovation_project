@@ -270,3 +270,19 @@
 * **执行结果与验证状态**：596 条 SFT 数据已全部就绪。A 线真实 Qwen 推理为主（196），合成冲突+边界+格式为辅（400）。可进入 3.1b LoRA 微调
 * **置信度或遗留待办（TODO）**：GT 字段全部完整。correct 中少数 bbox 异常（如[0,0,100,100]），SFT 训练时需要清理
 ---
+### 2026-07-22 11:14:40 - 修复 — 三个专家的 reasoning 从硬编码改为条件化
+
+* **当前操作动作**：修复 — 三个专家的 reasoning 从硬编码改为条件化
+* **核心变更说明**：
+  1. frequency.py/noise.py/jpeg.py/frequency_v2.py 新增 _get_reasoning() 方法
+  2. 三个 strength 区间输出不同 reasoning：<0.3→解释为何正常，0.3-0.7→描述模糊建议交叉验证，>=0.7→说明为何判 AI 生成
+  3. 修复前：reasoning 永远说"这是 AI 生成特征"——即使 strength=0.01 判 Real 时也如此——导致 Evidence Token 内部自相矛盾
+  4. 修复后：reasoning 与 strength/support 保持一致，不再误导 Qwen 产生矛盾论述
+* **涉及/修改的文件清单**：
+  - `experts/frequency.py (Modified)`
+  - `experts/noise.py (Modified)`
+  - `experts/jpeg.py (Modified)`
+  - `experts/frequency_v2.py (Modified)`
+* **执行结果与验证状态**：验证：Real 图和 MJ 假图的 reasoning 均与各自 strength 值匹配，无矛盾
+* **置信度或遗留待办（TODO）**：SFT 数据中包含 freq Expert 的样本需要重新生成——因为旧数据中的 reasoning 是错误的
+---
