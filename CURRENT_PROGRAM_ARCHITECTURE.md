@@ -312,3 +312,218 @@ sequenceDiagram
 6. `state_machine/halting.py`：理解循环退出条件；
 7. `mllm/mock_client.py` 与 `mllm/qwen_client.py`：比较测试后端和真实后端；
 8. `utils/logger.py`：理解 Trace 和 SFT 数据落盘方式。
+
+## 9. 新增参考论文与项目借鉴分析
+
+本节对照以下两篇本地参考论文：
+
+1. [From Pixels to Semantics: A Novel MLLM-Driven Approach for Explainable Tampered Text Detection](ref/From%20Pixels%20to%20Semantics%20A%20Novel%20%7BMLLM%7D-Driven%20Approach%20for%20Explainable%20Tampered%20Text%20Detection.pdf)，ACM MM 2025，提出 TVSIP；
+2. [Propose and Rectify: A Forensics-Driven MLLM Framework for Image Manipulation Localization](ref/Propose_and_Rectify_A_Forensics-Driven_MLLM_Framework_for_Image_Manipulation_Localization.pdf)，IEEE TIFS 2026，提出 Propose-Rectify。
+
+两篇论文的任务都包含图像篡改定位，而当前项目主要处理 Real/Fake/Uncertain 图像级真实性判断。因此，应借鉴它们的系统原则和验证方法，不宜把文本 OCR 或像素级分割模块不加区分地直接移植到当前代码中。
+
+### 9.1 与当前工作的总体关系
+
+| 维度 | 当前 Forensic-Agent | TVSIP | Propose-Rectify |
+|------|----------------------|-------|-----------------|
+| MLLM 角色 | 主动选择专家并生成最终 verdict | 语义定位分支 + 解释器 | 提出初始假设，不直接拥有最终裁决权 |
+| 低层证据 | 三个独立专家输出标量与文本 | 专家像素掩码 | SRM、Bayar、Sobel、Noiseprint++ 特征图 |
+| 融合方式 | Evidence Token 文本回灌 | 视觉掩码与语义框相加 | 分析引导门控 + 多尺度交叉注意力纠偏 |
+| 空间输出 | MLLM bbox，专家分析局部 patch | OCR 校正 bbox + 像素掩码 | SAM 输出精细篡改掩码 |
+| 解释约束 | reasoning 引用 Evidence Token | 对最终高亮区域进行解释 | 最终输出由法证特征纠偏后的表示产生 |
+| 当前最值得借鉴 | — | 语义分支、定位—解释对齐、退化评估 | 提案—纠偏职责划分、多特征自适应验证 |
+
+这两篇论文共同支持当前项目的基本出发点：MLLM 的语义能力和传统法证特征是互补的，单独依赖任一分支都不够可靠。不过，它们也指出当前设计的一个关键不足：专家证据不应只作为供 MLLM 自由解读的附加文本，还应对初始判断形成可验证、可校准的纠偏约束。
+
+### 9.2 TVSIP 可以带来的启发
+
+#### 9.2.1 将“语义异常”显式建模为第四类证据
+
+TVSIP 的 Locator 包含低层视觉线索分支（LLVCB）和高层语义线索分支（HLSCB）。论文在第 4-5 页将 HLSCB 拆为检测、位置描述和 bbox 提取三个连续任务，再与专家掩码融合。其消融实验显示，HLSCB 单独定位能力有限，但与多个不同专家模型组合时都能提高结果；在 JPEG、缩放、噪声和模糊退化下，语义线索还能补偿低层痕迹衰减（第 7 页，表 4、表 6、表 7）。
+
+当前项目的 `planning` 已包含视觉异常描述，但这部分没有形成独立、可审计的结构化证据。可以增加 `semantic_observation` Evidence Token，例如：
+
+```json
+{
+  "evidence_name": "semantic_physical_inconsistency",
+  "region": "patch_coordinates_[...]",
+  "phenomenon": "主体阴影方向与场景主光源不一致",
+  "reasoning": "该现象可能来自生成或局部合成，也可能由多光源环境造成",
+  "strength": 0.58,
+  "source": "semantic_expert",
+  "support": "Uncertain"
+}
+```
+
+这样可以把“MLLM 看到了什么”和“传统专家测到了什么”放入同一证据链，而不是让语义观察只存在于不可统计的自由文本中。
+
+#### 9.2.2 分离定位器与解释器，避免定位—报告错位
+
+TVSIP 明确区分 Locator 和 Interpreter，并要求 Interpreter 同时查看原图和标出最终可疑区域的高亮图。论文第 5 页和第 8 页的实验表明，相比仅提供非融合掩码或不提供 Locator，最终融合区域有助于检测、定位和解释保持一致。
+
+当前项目可以先进行不依赖新模型的轻量改造：
+
+1. 状态机汇总所有专家调用 bbox，生成一张半透明高亮图；
+2. 最终结案轮同时向 Qwen 提供原图和高亮图；
+3. verdict 中新增 `regions` 与 `evidence_ids`，要求每个报告结论绑定区域和证据；
+4. 增加自动一致性检查：报告引用的区域必须与实际调用 bbox 具有足够 IoU。
+
+这比仅在文本中写 `patch_coordinates_[...]` 更能帮助 MLLM 保留空间上下文，也更适合后续实现 Attention-Evidence Consistency Reward。
+
+#### 9.2.3 借鉴框校正思想，但不直接照搬 OCR
+
+TVSIP 使用 OCR 文本候选校正 MLLM 漂移的 bbox。这对文档篡改十分有效，但当前项目处理一般自然图像，不能直接依赖 OCR。
+
+可迁移的是“MLLM 粗定位 + 外部结构校正”的原则。一般图像可以考虑：
+
+- 使用 SAM 或边缘/显著性区域把粗 bbox 吸附到物体或异常边界；
+- 将 bbox 扩展为多尺度区域：局部、上下文环带和全图；
+- 对过小、越界、极端长宽比区域进行确定性校正；
+- 在 Trace 中同时保存原始 bbox 与校正后 bbox，便于审计定位漂移。
+
+#### 9.2.4 改进 SFT 数据结构和质量控制
+
+TVSIP 的 TextDDLE 将输出拆成 Description、Detection、Localization、Explanation 四项，并采用 GPT-4o 生成后人工筛查；其训练采用大量合成数据预训练，再用较少真实困难样本进行 SFT（第 3-5 页）。解释又进一步拆为低层视觉线索和高层语义线索。
+
+对当前 577 条数据，可借鉴以下结构：
+
+- 在训练响应中显式分开 `visual_observation`、`forensic_evidence`、`contamination_analysis` 和 `conclusion`；
+- 训练样本同时保留“无语义异常”和“无低层异常”的合法情况，避免模型强行编造两类证据；
+- 对自动生成的 reasoning 做人工抽样审核，重点删除不存在的视觉现象和错误因果关系；
+- 未来扩充数据时采用“廉价合成格式训练 → 高质量真实推理 SFT”的两阶段策略。
+
+### 9.3 Propose-Rectify 可以带来的启发
+
+#### 9.3.1 将 MLLM 从最终法官调整为假设提出者
+
+Propose-Rectify 最重要的原则是：MLLM 负责提出初始分析和可疑区域，最终判断必须接受正交法证证据的系统纠偏。论文强调“refinement”只是把已经正确的预测做精，而“rectification”需要验证初始推理是否可能错误（第 4 页）。
+
+这与当前系统非常接近，但权责不同：当前专家返回 Evidence Token 后，最终 verdict 仍完全由 MLLM 自由生成。更稳健的演进方式是增加独立的 `EvidenceRectifier`：
+
+```text
+MLLM Proposal
+    → 专家证据与可靠性校准
+    → RectificationDecision
+    → MLLM 仅负责把纠偏结果解释成人类可读报告
+```
+
+`RectificationDecision` 至少应包含：
+
+```json
+{
+  "proposal": "Fake",
+  "rectified_label": "Uncertain",
+  "confidence": 0.54,
+  "supporting_evidence": ["E1"],
+  "contradicting_evidence": ["E2"],
+  "reliability_context": {
+    "image_format": "PNG",
+    "compression_detected": false
+  },
+  "reason": "频域信号较弱，噪声证据受图像格式混杂影响"
+}
+```
+
+短期可以用规则和校准概率实现，不必立即训练神经网络。这样能防止模型无视低强度或冲突证据，直接输出高置信度结论。
+
+#### 9.3.2 从离散专家调用升级为分析引导的证据路由
+
+论文的 Analysis-Informed Feature Gating 让 MLLM 分析表示查询法证特征，并分别为局部、中尺度和全局特征生成权重（第 6 页）。消融中移除门控后，检测 F1 从 0.809 降至 0.750，定位 F1 从 0.423 降至 0.360（第 11 页，表 5-6）。
+
+当前 `<call_freq|noise|jpeg>` 已经是离散版门控，但缺少可靠性建模。可以把路由从“调用/不调用”扩展为：
+
+- 根据图像格式、尺寸、压缩程度和 MLLM 假设计算每个专家的适用度；
+- 记录 `requested_reason`、`expected_signal` 和 `reliability_weight`；
+- 禁止把不同物理含义的 strength 当作可直接比较的同尺度概率；
+- 使用校准后的证据似然或置信区间进行融合，而不是只使用统一的 0.3/0.7 阈值。
+
+这能直接缓解当前 Real=JPEG、Fake=PNG 造成的 noise/jpeg 格式混杂问题。
+
+#### 9.3.3 专家应输出多尺度空间特征，而不只是单个标量
+
+Propose-Rectify 同时使用 SRM、Bayar、Sobel 和 Noiseprint++，并在局部、中尺度和全局三个尺度上逐步纠偏语义表示（第 4-6 页）。当前系统的三个专家主要把一个 patch 压缩为单个 `strength`，会丢失异常究竟位于 patch 内部何处的信息。
+
+建议逐步扩展 `ExpertResult`：
+
+```text
+现有：strength + phenomenon + reasoning
+下一步：增加 raw_metric、reliability、scale_scores
+再下一步：增加 heatmap_path / mask_path / region_statistics
+长期：保留可学习的 feature map，进入跨注意力纠偏模块
+```
+
+其中 Sobel 边界和多尺度 SRM 可以先用 CPU 实现；Bayar 约束卷积和 Noiseprint++ 属于需要训练或加载权重的后续模块。
+
+#### 9.3.4 像素级定位是合理的长期方向
+
+论文通过 Enhanced Segmentation Module 对齐 SAM 语义特征和法证特征，并显式放大二者的差值与乘积响应（第 7 页）。在消融实验中，移除该模块后定位 F1 从 0.423 降至 0.403、IoU 从 0.351 降至 0.334（第 11 页）。
+
+当前项目尚不具备像素级 GT，也主要面向 AI 生成图像的全局判断，因此现在直接训练 SAM 分支成本较高。更合适的顺序是：
+
+1. 先保存专家 heatmap 和高亮 bbox；
+2. 在具有局部篡改 mask 的数据集上单独验证定位能力；
+3. 再引入 SAM 解码器和分割损失；
+4. 最终联合优化图像级检测、区域级证据一致性和像素级定位。
+
+### 9.4 推荐的项目演进路径
+
+```mermaid
+flowchart LR
+    A["当前系统<br/>MLLM 调用专家<br/>标量 Evidence Token"] --> B["阶段 A：规则纠偏<br/>EvidenceRectifier<br/>格式/退化可靠性"]
+    B --> C["阶段 B：空间证据<br/>多尺度分数<br/>heatmap + 高亮图"]
+    C --> D["阶段 C：自适应路由<br/>分析引导专家权重<br/>概率校准"]
+    D --> E["阶段 D：学习式纠偏<br/>法证特征图融合<br/>跨注意力"]
+    E --> F["阶段 E：精细定位<br/>SAM/分割头<br/>多任务训练"]
+```
+
+建议优先级如下：
+
+| 优先级 | 建议 | 原因 | GPU |
+|--------|------|------|-----|
+| P0 | 修复 Qwen 多轮图像历史并引入 `EvidenceRectifier` | 保证主管道逻辑正确，防止 MLLM 无视证据 | 否 |
+| P0 | 为专家增加格式/退化条件下的可靠性字段 | 直接处理当前 JPEG/PNG 混杂 | 否 |
+| P1 | 保存专家 raw metric、多尺度分数和 heatmap | 避免空间证据被压缩成单个标量 | 否/可选 |
+| P1 | 最终轮输入原图 + 可疑区域高亮图 | 提高定位—解释一致性 | Qwen 推理需要 |
+| P1 | 扩充 SFT Schema 并抽样人工复核 | 降低自动 reasoning 幻觉和错误因果 | 否 |
+| P2 | 加入 Sobel/Bayar/Noiseprint++ 并学习门控 | 获得更强、多样的法证表征 | 是 |
+| P3 | 引入 SAM 和检测/分割联合训练 | 将系统扩展到局部篡改定位 | 是，且需要 mask 数据 |
+
+### 9.5 建议增加的实验
+
+两篇论文都通过消融、跨域和退化实验来证明语义—法证融合确实有效。当前项目后续评估至少应包含：
+
+#### 消融实验
+
+- MLLM only；
+- MLLM + 单专家；
+- 当前三专家 Evidence Token；
+- 三专家 + 规则 `EvidenceRectifier`；
+- 加入语义 Evidence Token；
+- 加入多尺度证据和高亮图；
+- Frequency v1 与 v2 对比。
+
+#### 鲁棒性实验
+
+- JPEG 不同质量；
+- 图像缩放；
+- 高斯模糊与高斯噪声；
+- 亮度、对比度和暗化；
+- PNG/JPEG 格式配平后的重新评估。
+
+#### 泛化与可信度指标
+
+- 按 ADM、BigGAN、Glide、Midjourney、SD14、SD15、VQDM、Wukong 分模型报告；
+- 使用“留一生成器”进行跨生成器测试；
+- 除 Accuracy/F1 外，报告 ECE、Brier Score 和 Uncertain 覆盖率；
+- 报告证据—结论一致率、区域 IoU、平均专家调用数和单位图像耗时；
+- 对专家可靠性按图像格式和退化类型分层统计。
+
+### 9.6 不宜直接照搬的部分
+
+- TVSIP 的 OCR 框校正是文本图像专用设计，一般自然图像应替换为 SAM、边缘或对象候选校正；
+- Propose-Rectify 使用 8 张 RTX 4090 进行端到端训练，当前单卡环境更适合先验证规则纠偏和轻量 LoRA；
+- 两篇论文主要研究局部篡改，而 GenImage 当前任务多数是整图生成，定位指标的意义需要针对数据类型重新定义；
+- 深层特征融合虽然性能更强，但会降低 Evidence Token 的直接可读性。长期设计应同时保留可学习特征和人类可审计的结构化证据；
+- 论文结果不能直接作为本项目性能预期，必须在格式配平、跨生成器和独立测试集上重新验证。
+
+总体而言，最值得立即采用的不是直接增加大型分割网络，而是把当前系统从“MLLM 阅读专家分数后自由裁决”升级为“MLLM 提出假设—法证模块显式纠偏—MLLM解释纠偏结果”。这既保持当前状态机和 Evidence Token 的可解释优势，也更符合两篇论文共同验证的可靠取证范式。
