@@ -329,3 +329,19 @@
 * **执行结果与验证状态**：数据核对通过：SFT 数据集实际 577 条（correct=196/conflict=181/borderline=100/format=100），测试 95 个，与 README 描述一致
 * **置信度或遗留待办（TODO）**：GitHub 网络不通，commit 保留在本地。GPU 开启后进入 3.1b
 ---
+### 2026-09-15 20:16:31 - 4.1 当前程序框架与运行逻辑介绍文档
+
+* **当前操作动作**：创建独立程序架构与运行逻辑说明文档
+* **对应计划锚点**：实现 `plan.md` 中的 4.1 小节
+* **核心变更说明**：
+  1. 新增 `CURRENT_PROGRAM_ARCHITECTURE.md`，说明程序定位、分层框架及核心组件职责
+  2. 使用 Mermaid 绘制整体控制流与单次分析时序图
+  3. 按当前源码描述 CLI 启动、MLLM 决策、Parser 解析、专家调度、Evidence Token 回灌、终止判断和 Trace 保存流程
+  4. 明确 Mock/Qwen、Frequency v1/v2、步数统计和未接入阶段三功能等当前实现边界
+* **涉及/修改的文件清单**：
+  - `CURRENT_PROGRAM_ARCHITECTURE.md` (Created)
+  - `plan.md` (Modified — added §4.1)
+  - `claude_operation_log.md` (Modified)
+* **执行结果与验证状态**：Markdown 结构检查通过；共 314 行、2 个 Mermaid 图，代码围栏成对闭合；文档引用的主要源码路径均存在
+* **置信度或遗留待办（TODO）**：无
+---
