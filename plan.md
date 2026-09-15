@@ -800,15 +800,14 @@ MLLM 第 2 轮 ─ Verdict:
 
 ### 3.1 SFT 监督微调
 
-**目标**：用 816 条 ShareGPT 数据对 Qwen2.5-VL-7B 进行全参数或 LoRA 微调。
+**目标**：用 **577 条** ShareGPT 数据对 Qwen2.5-VL-7B 进行 LoRA 微调。
 
 #### 3.1.1 数据预处理
 
-- 从 `traces/sft_sessions/` 中筛选 verdict 非 null + evidence_chain 非空的样本
-- 按 8:1:1 划分 train/val/test
-- 确保 Real/Fake/Uncertain 三类 verdict 分布均衡
-- 将 Qwen conversation 格式化为模型可接收的 messages 格式
-- 输出标准化训练集到 `sft_data/train/`
+- ✅ **已完成**：数据筛选与四类构造（见 §3.1.1c），输出至 `sft_data/train/final/`（577 条）
+- ⏳ **待执行**（GPU 前）：按 8:1:1 划分 train/val/test
+- ⏳ **待执行**：确保 Real/Fake/Uncertain 三类 verdict 分布均衡
+- ⏳ **待执行**：将 ShareGPT conversation 格式化为 Qwen 可接收的 messages 格式（含 `<image>` 占位符绑定）
 
 #### 3.1.1b SFT 数据构造策略
 
@@ -909,27 +908,29 @@ GT: Real
 → <verdict>Real(0.72)
 ```
 
-#### 3.1.1c 当前数据状态与待改进项
+#### 3.1.1c 数据状态演变与问题处置
 
-**已产出**：365 条合成数据（correct=165, conflict=200），borderline=0, format=0。
+**第一轮产出**（`build_sft_data.py` 初版）：365 条合成数据（correct=165, conflict=200），borderline=0, format=0。
 
-**三个根本问题与改进方案**：
+**发现的三个根本问题与最终处置**：
 
-| # | 问题 | 改进方案 | 优先级 |
-|---|------|----------|--------|
-| 1 | 模板 reasoning 公式化——"填空式写作"，非真正法证推理 | 从阶段二 A 线数据中筛选 verdict 与 GT 一致的样本（~25%×610≈140 条），将其作为"真实正确推理"数据；手写 10 条高质量 ideal reasoning 作为风格种子 | **高** |
-| 2 | Expert 信号方向错误——GenImage PNG 假图的 noise/jpeg 偏 Real | 在合成模板中显式加入"格式差异分析"段落（"该图为 PNG 格式，无 JPEG 压缩历史，noise/jpeg 信号受格式影响"），让模型学会区分格式伪影和 AI 伪影 | **高** |
-| 3 | borderline + format 类型缺失 | 从现有 390 张基准集中选取 strength 在 [0.25,0.6] 的样本生成 borderline（~100 条）；从任意样本生成 format 类型（~100 条），纯 XML 标签格式强化 | **中** |
+| # | 问题 | 处置方案 | 最终结果 |
+|---|------|----------|----------|
+| 1 | 模板 reasoning 公式化——"填空式写作"，非真正法证推理 | ❌ 放弃"手写风格种子"，改为**直接从阶段二 A 线筛选 verdict=GT 的真实 Qwen 推理**（`finalize_sft_data.py` Step 1） | ✅ 196 条真实推理，推理风格自然 |
+| 2 | Expert 信号方向错误——GenImage PNG 假图的 noise/jpeg 偏 Real | ✅ 在四专家的 `_get_reasoning()` 中加入**格式差异说明**（如"若为 PNG 格式，无 JPEG 痕迹属正常，不代表伪造"） | ✅ 见 §3.1.1d |
+| 3 | borderline + format 类型缺失 | ✅ 从 390 张基准集选取 strength ∈ [0.25,0.6] 生成 borderline；从 A 线抽取格式完整样本生成 format | ✅ 各 100 条 |
 
-**改进后目标数据分布**：
+**最终数据分布（实际值）**：
 
-| 类型 | 目标数量 | 来源 |
-|------|----------|------|
-| 正确答案流 | ~300 | 165 合成 + 140 筛选自 A 线 |
-| 冲突反思流 | ~200 | 已就绪 |
-| 边界案例流 | ~100 | 待生成 |
-| 格式示范流 | ~100 | 待生成 |
-| **总计** | **~700** | Ready for SFT |
+| 类型 | 实际数量 | 来源 | 生成脚本 |
+|------|----------|------|----------|
+| 正确答案流 (`sft_correct`) | **196** | A 线筛选（verdict=GT，真实 Qwen 推理） | `finalize_sft_data.py` Step 1 |
+| 冲突反思流 (`sft_conflict`) | **181** | 三专家合成（reasoning 已修复） | `build_sft_data.py` |
+| 边界案例流 (`sft_borderline`) | **100** | 灰色地带样本合成 | `finalize_sft_data.py` Step 2 |
+| 格式示范流 (`sft_format`) | **100** | A 线格式完整样本抽取 | `finalize_sft_data.py` Step 3 |
+| **总计** | **577** | 输出至 `sft_data/train/final/` | — |
+
+> 注：目标 700 条未达成的部分主要是 correct 类型（目标 300，实际 196，因 A 线中 verdict 恰好正确的样本占比有限）。577 条已达 SFT 最小可用规模。
 
 #### 3.1.1d Expert reasoning 修复与数据重生成评估 (2026-07-21)
 
@@ -937,17 +938,17 @@ GT: Real
 
 **波及范围评估**：
 
-| 数据文件 | 来源 | 受旧 reasoning 影响？ | 需要重生成？ | 需要 GPU？ |
-|----------|------|----------------------|-------------|-----------|
-| `sft_correct.json` (196) | A 线筛选，真实 Qwen 输出 | Evidence Token 中包含旧 reasoning，但 Qwen 的最终 verdict=GT | ⚠️ 不理想但可用 | 是 |
-| `sft_conflict.json` (200) | `build_sft_data.py` 合成 | 合成模板中嵌入了旧 Expert reasoning | ⚠️ 同上 | 否 (CPU) |
-| `sft_borderline.json` (100) | `finalize_sft_data.py` 合成 | 同上 | **是** (CPU 几分钟) | 否 |
-| `sft_format.json` (100) | A 线抽取 | 格式训练不看内容 | ❌ 不需要 | — |
+| 数据文件 | 来源 | 受旧 reasoning 影响？ | 处置 | 需要 GPU？ |
+|----------|------|----------------------|------|-----------|
+| `sft_correct.json` (196) | A 线筛选，真实 Qwen 输出 | Evidence Token 中包含旧 reasoning，但 Qwen 的最终 verdict=GT | 保持原样 | 否 |
+| `sft_conflict.json` (181) | `build_sft_data.py` 合成 | 合成模板中嵌入了旧 Expert reasoning | ✅ **已重跑**（CPU ~6 min） | 否 |
+| `sft_borderline.json` (100) | `finalize_sft_data.py` 合成 | 同上 | ✅ **已重跑**（CPU ~3 min） | 否 |
+| `sft_format.json` (100) | A 线抽取 | 格式训练不看内容 | 不需要 | — |
 
-**决策**：
-- borderline **立即重生成**（CPU，几分钟）——数据量小，影响直接
-- correct/conflict **暂不重生成**——verdict 与 GT 一致，训练目标正确；Evidence Token 中的旧 reasoning 恰好模拟真实场景中 Expert 信号不完美的情形
-- GPU 开启后如有剩余时间，可选重跑 A 线部分样本作为对比
+**执行结果**：
+- ✅ conflict 与 borderline **均已用修复后的专家重生成**，reasoning 与 strength 一致（验证：low-strength→正常描述，high-strength→异常描述）
+- ✅ correct **保持原样**——verdict 与 GT 一致，训练目标正确；Evidence Token 中的旧 reasoning 恰好模拟真实场景中 Expert 信号不完美的情形
+- 最终数据集：**577 条**（correct=196, conflict=181, borderline=100, format=100）
 
 #### 3.1.2 训练配置
 
@@ -969,9 +970,11 @@ GT: Real
 
 #### 3.1.4 实现内容
 
-- `scripts/prepare_sft_data.py`：数据清洗 + train/val/test 划分 + Qwen 格式转换
-- `scripts/train_sft.py` 或 `sft_config.yaml`：LLaMA-Factory 训练配置
-- 训练完成后保存 LoRA adapter 到 `checkpoints/sft_lora/`
+- ✅ `scripts/build_sft_data.py`：三专家运行 + 四类分类 + 合成（已完成）
+- ✅ `scripts/finalize_sft_data.py`：A 线筛选 + borderline/format 生成 + 数据整合（已完成）
+- ⏳ `scripts/train_sft.py` 或 `sft_config.yaml`：LLaMA-Factory 训练配置（待 GPU）
+- ⏳ 训练数据 8:1:1 划分 + Qwen messages 格式转换（待 GPU 前执行）
+- ⏳ 训练完成后保存 LoRA adapter 到 `checkpoints/sft_lora/`
 
 ### 3.2 专家算法重构
 

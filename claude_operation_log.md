@@ -312,3 +312,20 @@
 * **执行结果与验证状态**：所有 Expert reasoning 验证通过: low-strength→正常描述, high-strength→异常描述, 无矛盾。SFT 数据集 577 条全部就绪
 * **置信度或遗留待办（TODO）**：correct/conflict 中的旧 Evidence Token reasoning 不影响训练目标 (Qwen 的 response 正确)。GPU 开启后可直接开始微调, 无需额外数据准备
 ---
+### 2026-09-15 10:38:57 - 文档同步 — plan.md 数据状态修正 + README 阶段二/三内容更新
+
+* **当前操作动作**：文档同步 — plan.md 数据状态修正 + README 阶段二/三内容更新
+* **核心变更说明**：
+  1. plan.md §3.1.1c 重写：从"目标分布"改为"实际最终分布"表（correct=196/conflict=181/borderline=100/format=100，总计 577）
+  2. plan.md §3.1.1d 更新：conflict 计数 200→181，决策说明改为实际执行结果（conflict+borderline 均已重生成）
+  3. plan.md §3.1 标题修正：816 条 → 577 条；§3.1.1 数据预处理标记完成状态；§3.1.4 更新实际脚本名（build_sft_data.py / finalize_sft_data.py）
+  4. README.md 按 agent.md §6.1 规范重构：新增 Mermaid 整体数据流图 + 状态机时序图（替代原 ASCII 图）
+  5. README.md 新增 §5 接口规范：Evidence Token Schema、强度映射字典、SOP 标签协议、Verdict Schema、SFT 数据 Schema
+  6. README.md 新增 §8 维护说明：四轨文件驱动、版本控制规范、测试命令、操作日志格式、GPU 使用规范
+  7. README.md 更新：快速开始增加 --mllm qwen；工程目录补充 frequency_v2/qwen_client/scripts；进展表覆盖阶段一/二/三；局限更新为实际发现（基座准确率 25%、格式差异、freq 信号弱、无视频支持）
+* **涉及/修改的文件清单**：
+  - `plan.md (Modified — 数据状态修正)`
+  - `README.md (Modified — 阶段二/三内容 + Mermaid + 接口规范 + 维护说明)`
+* **执行结果与验证状态**：数据核对通过：SFT 数据集实际 577 条（correct=196/conflict=181/borderline=100/format=100），测试 95 个，与 README 描述一致
+* **置信度或遗留待办（TODO）**：GitHub 网络不通，commit 保留在本地。GPU 开启后进入 3.1b
+---
