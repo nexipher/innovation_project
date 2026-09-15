@@ -361,3 +361,21 @@
 * **执行结果与验证状态**：两篇 PDF 共 24 页均完成文本阅读，代表性方法页和实验页完成 PNG 渲染核验；架构文档现为 529 行、3 个 Mermaid 图、Markdown 围栏成对闭合，论文链接均指向存在的本地文件
 * **置信度或遗留待办（TODO）**：论文方法与当前任务存在“局部篡改定位 vs 整图生成检测”的任务差异，文档已明确区分可直接应用、需改造和暂不适合照搬的部分
 ---
+### 2026-09-15 20:53:16 - 4.3 FakeReasoning 与 ForenX 对照及架构更新
+
+* **当前操作动作**：阅读新加入的两篇整图 AI 生成检测论文，并更新当前程序架构与实施建议
+* **对应计划锚点**：实现 `plan.md` 中的 4.3 小节
+* **核心变更说明**：
+  1. 完整阅读 FakeReasoning（IEEE TIP 2026）与 ForenX 两篇论文，核对任务定义、方法、数据构造、泛化实验、解释评测、消融和限制
+  2. 将整图生成场景中的 bbox 明确定义为“诊断证据区域”，避免误称为篡改像素或 forged mask
+  3. 提炼 FakeReasoning 的 CLIP+DINO 互补、FAFF、分类概率映射、分层推理和专家数据审核流程
+  4. 提炼 ForenX 的 forensic prompt、辅助检测损失、两阶段训练、少量人工区域标注和提示词扰动评测
+  5. 将建议映射到当前状态机：三类 token logits、EvidenceRectifier、证据绑定解释、SFT 内容审核、留一生成器与重复稳定性评测
+  6. 保留第一组论文的历史分析，同时移除对当前已不存在 PDF 文件的失效链接说明
+* **涉及/修改的文件清单**：
+  - `CURRENT_PROGRAM_ARCHITECTURE.md` (Modified — added §10 and refreshed §9 source note)
+  - `plan.md` (Modified — added §4.3)
+  - `claude_operation_log.md` (Modified)
+* **执行结果与验证状态**：两篇新 PDF 共 36 页完成文本阅读，代表性方法与实验页完成 PNG 渲染核验；架构文档现为 756 行、4 个 Mermaid 图，46 个 Markdown 围栏成对闭合，新论文链接均指向存在的本地文件；`git diff --check` 通过
+* **置信度或遗留待办（TODO）**：论文 PDF 保持为用户新增的未跟踪文件，未纳入本次文档提交；近期优先完成 577 条 SFT reasoning 内容审核与 verdict 概率校准
+---
