@@ -754,3 +754,410 @@ flowchart LR
 - FakeReasoning 的推理文本可能受语言分布支配，视觉模块提升检测不一定同步提升文本指标，因此训练与评测必须分别报告检测和解释结果。
 
 总体判断：**两篇论文都有明显借鉴价值，而且能够进一步收敛当前项目路线。** 近期最值得实施的不是立即叠加更大的视觉编码器，而是先完成三件事：审核现有 SFT reasoning、把 verdict 变成可校准且可交叉核验的概率、让每条解释绑定真实证据。完成这三项后，再投入 CLIP/DINO 或连续 forensic token 的学习式融合，收益与风险会更容易测量。
+
+## 11. ForgeryVCR 对照与后续工作路线
+
+本节分析 [ForgeryVCR: Visual-Centric Reasoning via Efficient Forensic Tools in MLLMs for Image Forgery Detection and Localization](ref/15.ForgeryVCR%20Visual-Centric%20Reasoning%20via%20Efficient%20Forensic%20Tools%20in%20MLLMs.pdf)。该工作使用 MLLM 主动调用 ELA、FFT、NoisePrint++ 与 Zoom-In，将不可见的低层痕迹转换为可重新输入视觉编码器的图像，再输出图像级真假结论和篡改 bbox，并用 SAM2 将 bbox 细化为像素掩码。
+
+ForgeryVCR 与当前 Forensic-Agent 的控制流高度相似，是目前最直接支持“MLLM 主动调度外部法证工具”路线的参考工作。不过，两者的当前任务不同：本项目目前主要检测完全生成图像，ForgeryVCR 主要检测局部拼接、复制移动和移除/修补。因此，后续设计应保持同一套状态机和 Expert 接口，同时对全局生成与局部篡改使用不同的证据语义和输出目标。
+
+### 11.1 当前全局任务与未来局部任务的统一边界
+
+| 维度 | 当前：完全生成图像检测 | 后续：局部篡改检测与定位 |
+|------|------------------------|----------------------------|
+| 任务类型 | `fully_generated` | `locally_manipulated` |
+| 最终标签 | Real / Fake / Uncertain | Real / Manipulated / Uncertain |
+| 区域含义 | 诊断证据区域，不表示该区域才是伪造像素 | 候选篡改区域，可与真实 mask 比较 |
+| 主要监督 | 图像级来源标签、生成器类型 | 图像级标签 + bbox/mask + 篡改类型 |
+| 工具目标 | 判断整图生成统计特征、语义/物理异常 | 找到局部来源、压缩、噪声和边界不一致 |
+| 定位指标 | Evidence coverage、区域稳定性，不使用篡改 IoU | BBox-IoU、Pixel F1、Mask IoU |
+| SAM2 作用 | 不需要 | bbox 到像素 mask 的可选细化器 |
+
+建议从现在开始在 Trace 中加入：
+
+```json
+{
+  "task_type": "fully_generated",
+  "evidence_scope": "global",
+  "region_semantics": "diagnostic_evidence_region"
+}
+```
+
+未来局部数据则使用：
+
+```json
+{
+  "task_type": "locally_manipulated",
+  "evidence_scope": "local",
+  "region_semantics": "candidate_manipulation_region"
+}
+```
+
+这样可以避免当前 bbox 在训练中被错误理解为篡改真值，也能在后续加入 SAM2 或分割头时保持数据兼容。
+
+### 11.2 ForgeryVCR 对当前架构的关键证据
+
+ForgeryVCR 的核心不是简单增加工具，而是改变工具证据进入 MLLM 的方式：
+
+```text
+当前项目：Expert → strength / explanation → Evidence Token 文本 → Qwen
+ForgeryVCR：Tool → ELA/FFT/NPP 可视化图 → 视觉编码器 → MLLM
+建议方案：Expert → Evidence Bundle（数值 + 可视化图 + 可靠性）→ Qwen + Rectifier
+```
+
+其消融结果显示：无 CoT 时检测 F1/ACC 为 0.7351/0.7561；仅增加文本 CoT 后下降到 0.6431/0.7215；视觉与文本并用为 0.7756/0.7711；仅使用视觉中心推理达到 0.8271/0.8261。像素定位 IoU 也从无 CoT 的 0.4357 提升到视觉中心推理的 0.5306。该结果说明低层法证痕迹如果先被压缩成语言，可能出现信息损失和语义幻觉。
+
+因此，Evidence Token 仍应保留用于日志、规则融合和人工审计，但不应继续作为专家证据进入 Qwen 的唯一通道。
+
+论文还给出三项对当前项目特别重要的结论：
+
+1. **工具需要准入测试**：论文从八种候选法证描述子中只保留 ELA、FFT、NPP 和 Zoom-In；继续增加 CFA、DCT、PSCC、VAE residual 与 SRM 后理论性能上限几乎饱和；
+2. **轨迹需要按样本增益生成**：只有单工具模型优于无工具基线且超过有效阈值时，该工具才进入该样本的 SFT 轨迹；
+3. **SFT 只教会调用格式，RL 才改善选择策略**：论文观察到 SFT 模型倾向机械调用工具，GRPO 后会替换无效工具、删除模糊视图并减少冗余 Zoom-In。
+
+### 11.3 Expert 是否需要更新
+
+结论是：**需要更新，但第一步应更新输出接口和验证方法，而不是立即替换所有算法。**
+
+当前 `ExpertResult` 主要输出 `strength`、`support`、`phenomenon` 与 `reasoning`，随后 `EvidenceTokenizer` 又只保留这些文本和标量字段。该设计存在三个问题：
+
+- 一个标量无法保留异常在 patch 内部的空间分布；
+- 不同专家的 strength 没有统一概率含义，不能直接比较或投票；
+- Qwen 无法看到 FFT 频谱、噪声残差或 JPEG 块结构，只能相信专家写出的解释。
+
+#### 11.3.1 将 ExpertResult 升级为 Evidence Bundle
+
+建议兼容性扩展如下：
+
+```json
+{
+  "evidence_id": "E-noise-0003",
+  "source": "noise_expert",
+  "task_applicability": ["fully_generated", "locally_manipulated"],
+  "scope": "global|local",
+  "region": [100, 120, 500, 520],
+  "region_semantics": "diagnostic_evidence_region",
+  "raw_metric": 1.82,
+  "calibrated_likelihood": {
+    "Real": 0.25,
+    "Fake": 0.58,
+    "Uncertain": 0.17
+  },
+  "reliability": 0.63,
+  "reliability_factors": {
+    "image_format": "PNG",
+    "jpeg_quality": null,
+    "resolution_sufficient": true
+  },
+  "visual_artifacts": [
+    {
+      "type": "noise_residual_map",
+      "path": "traces/evidence/E-noise-0003.png"
+    }
+  ],
+  "phenomenon": "...",
+  "counter_explanation": "重采样或去噪也可能产生相似现象"
+}
+```
+
+其中：
+
+- `visual_artifacts` 提供给 Qwen 视觉编码器；
+- `raw_metric`、`calibrated_likelihood` 和 `reliability` 提供给 EvidenceRectifier；
+- `phenomenon` 与 `counter_explanation` 提供给人工审计和最终报告；
+- 旧字段保留一段过渡期，避免立即破坏现有 Trace 与测试。
+
+#### 11.3.2 三个现有 Expert 的具体改造
+
+| Expert | 当前问题 | 全局检测近期改造 | 局部篡改后续改造 |
+|--------|----------|------------------|------------------|
+| Frequency | v1 分离度弱，patch 标量丢失频谱结构 | 以 v2 为候选，输出全图频谱、径向谱、周期峰和空间频率热图；按生成器与缩放条件校准 | 输出局部/背景频谱差异图和边界上下文特征 |
+| Noise | strength 易受 JPEG、去噪、分辨率影响 | 输出噪声残差图、分块方差图、全局一致性分布和条件可靠性 | 接入 NoisePrint++ 或等价模型，比较候选区与背景噪声指纹 |
+| JPEG | 当前块效应/DCT 指标可能学习 Real JPEG 与 Fake PNG 捷径 | 增加 ELA 可视化与编码历史估计；在格式配平数据上重新校准 | 比较候选区和背景的压缩历史，生成局部不一致热图 |
+| Zoom-In（新增） | 当前裁剪只是状态机内部动作，不是显式工具 | 将高分辨率裁剪注册为 Expert，保留上下文环带和缩放参数 | 支持迭代缩放与 bbox 收缩，作为 SAM2 前的定位步骤 |
+
+不建议现在直接加入全部 ForgeryVCR 工具。应先建立 Expert 准入实验：
+
+```text
+Qwen/RGB baseline
+RGB + 单 Expert 文本
+RGB + 单 Expert 可视化图
+RGB + 文本和可视化双通道
+```
+
+每个 Expert 至少应报告：
+
+- 全局 Real/Fake 的 Accuracy、F1、AUROC、ECE；
+- 按生成器、PNG/JPEG、分辨率和后处理类型分层的增益；
+- 相对 RGB baseline 的净提升；
+- 平均耗时、失败率和可视化图 token 成本；
+- 与其他 Expert 的错误重叠和互补性。
+
+只有稳定产生正增益且与已有工具互补的 Expert 才进入正式工具箱。
+
+### 11.4 停止策略是否需要改进
+
+结论是：**需要，而且应在 Expert 校准后改。** 当前四个条件 `verdict → max_steps → conflict → strength delta` 是固定优先级；ForgeryVCR 则通过 no-tool、single-tool、multi-tool 轨迹和工具效用优化，使模型学习何时直接回答、何时继续调用工具。
+
+论文的样本级工具筛选为：
+
+```text
+工具性能 Pt > max(无工具性能 Pbase, 有效阈值 τ)
+```
+
+这可以转换为当前项目的停止原则：
+
+> 只有下一工具的预期净增益为正时继续；否则根据融合后的证据输出 Real、Fake 或 Uncertain。
+
+#### 11.4.1 当前实现需要修正的语义
+
+- `<verdict>` 只能视为候选结论，不能绕过证据冲突和概率校准立即退出；
+- `MAX_STEPS` 只表示不能继续获取证据，不应直接决定最终标签；
+- Evidence conflict 是需要消歧的状态，不一定立即停止；有可靠且未调用的正交专家时应继续验证；
+- 当前所谓信息增益实际是最后两个不同专家 strength 的绝对差，并非 KL divergence；不同专家的标量也不具可比性；
+- 当前 `step` 统计包含工具调用的模型轮数，一轮可能执行多个专家，不能准确表达调用预算。
+
+#### 11.4.2 建议的决策状态
+
+```json
+{
+  "posterior": {"Real": 0.24, "Fake": 0.58, "Uncertain": 0.18},
+  "candidate_verdict": "Fake",
+  "conflict_score": 0.31,
+  "expert_call_count": 2,
+  "accumulated_cost": 1.7,
+  "remaining_tools": ["jpeg_expert"],
+  "best_next_action": "jpeg_expert",
+  "expected_tool_gain": 0.08,
+  "expected_net_utility": 0.05
+}
+```
+
+#### 11.4.3 建议的停止流程
+
+```mermaid
+flowchart TD
+    A["MLLM 候选 verdict + token 概率"] --> B["EvidenceRectifier<br/>融合可靠性加权证据"]
+    E["Evidence Bundles"] --> B
+    B --> C{"存在强冲突？"}
+    C -->|是| D{"有预算且存在<br/>正收益消歧工具？"}
+    D -->|是| T["调用最有价值的正交工具"]
+    D -->|否| U["停止：Uncertain"]
+    C -->|否| F{"立即决策风险<br/>是否可接受？"}
+    F -->|是| V["停止：Real 或 Fake"]
+    F -->|否| G{"最佳工具净收益 > 0<br/>且预算可用？"}
+    G -->|是| T
+    G -->|否且低置信| U
+    G -->|否且置信足够| V
+```
+
+建议让 `HaltingChecker` 返回决策对象而不是 `(bool, reason)`：
+
+```text
+HaltingDecision
+├── action: continue / halt
+├── verdict: Real / Fake / Uncertain / null
+├── primary_reason
+├── all_reasons
+├── next_expert
+├── posterior
+├── conflict_score
+└── expected_net_utility
+```
+
+停止原因应允许同时存在。例如达到预算且证据冲突时：
+
+```json
+{
+  "primary_reason": "unresolved_evidence_conflict",
+  "all_reasons": ["max_budget_reached", "evidence_conflict"],
+  "verdict": "Uncertain"
+}
+```
+
+#### 11.4.4 工具增益的实现顺序
+
+短期尚无学习式增益模型时，可使用校准集统计构造：
+
+```text
+expected_gain(tool)
+  = historical_accuracy_gain
+  × condition_applicability
+  × current_uncertainty
+  × non_redundancy
+  × reliability
+
+expected_net_utility
+  = expected_gain - call_cost - latency_cost
+```
+
+中期收集足够 Trace 后，再训练轻量路由器预测：
+
+```text
+当前后验 + 图像元数据 + 已调用工具 + 工具摘要
+    → 每个候选工具的预期风险下降
+```
+
+不应直接复制 ForgeryVCR 的工具奖励公式。其公开 `Rtool` 主要依据“是否调用工具且最终正确/IoU 超阈值”给正奖励，没有显式按调用次数扣分，一个工具与多个工具可能得到相同工具奖励。当前项目更适合：
+
+```text
+Rtool
+  = 任务风险下降
+  - λcall × 调用次数
+  - λrepeat × 重复/同源调用
+  - λlatency × 运行成本
+  - λinvalid × 无效或不适用调用
+```
+
+### 11.5 SFT 数据是否需要人工审计
+
+结论是：**需要，并且应在任何 LoRA 训练之前完成。** 当前 577 条数据中：
+
+- `correct=196` 只保证最终 verdict 与 GT 一致，不保证观察、专家引用和因果解释正确；
+- `conflict=181` 与 `borderline=100` 为合成数据，需要检查模板是否形成捷径或不符合真实专家行为；
+- `format=100` 的元数据已明确说明内容可能错误，只能用于格式训练，不能默认用于事实性 reasoning 训练；
+- 旧 Trace 主要依赖文字 Evidence Token，尚未包含 ForgeryVCR 式可视化证据。
+
+577 条规模足以进行全量人工首审。建议采用“单人全量 + hard case 双人复核”，而不是只抽样少量数据。
+
+#### 11.5.1 审计字段
+
+每条数据至少记录：
+
+```json
+{
+  "sample_id": "...",
+  "review_status": "accept|revise|reject|unsure",
+  "image_label_correct": true,
+  "visible_observation_grounded": true,
+  "expert_value_matches_text": true,
+  "expert_applicable_to_input": true,
+  "reasoning_overclaims_causality": false,
+  "verdict_supported_by_evidence": true,
+  "bbox_semantics_correct": true,
+  "format_valid": true,
+  "suspected_shortcut": null,
+  "reviewer_notes": "...",
+  "second_review_required": false
+}
+```
+
+重点检查以下失败模式：
+
+- 图中不存在 reasoning 描述的视觉异常；
+- strength/support 与 reasoning 相互矛盾；
+- 把 PNG/JPEG 格式差异写成生成证据；
+- 把相关性描述成确定因果；
+- Fake 标签导致模型必须编造一个可疑区域；
+- conflict 样本只是人为拼接高低 strength，没有真实物理冲突；
+- format 样本虽然 XML/JSON 合法，但内容结论错误；
+- bbox 被描述成篡改区域，而当前数据其实是整图生成。
+
+#### 11.5.2 审计后的数据分层
+
+不要把所有样本混合成一个训练集，建议形成：
+
+| 层级 | 用途 | 内容要求 |
+|------|------|----------|
+| A：事实金标 | detection + evidence alignment | 人工确认图像观察、专家值和结论一致 |
+| B：工具策略 | tool routing | 包含 no-tool、single-tool、multi-tool 的真实增益轨迹 |
+| C：冲突与拒判 | Uncertain calibration | 真实可靠专家冲突、低置信和工具失效样本 |
+| D：格式恢复 | syntax repair | 只训练标签/XML/JSON 修复，不参与法证事实学习 |
+| R：拒绝集 | 不训练 | 幻觉、标签污染、无法修正或证据不可核验 |
+
+#### 11.5.3 借鉴 ForgeryVCR 重建增益轨迹
+
+在完成 Expert 单工具基线后，为每张图生成：
+
+```text
+[]                              no-tool
+[best_tool]                     single-tool
+[second_independent_tool]       alternative single-tool
+[best_tool, second_tool]        multi-tool verification
+```
+
+但只保留实际改善图像级分类风险或证据可靠性的路径。不能仅因为某工具生成了图就认为它有信息增益。
+
+对当前全局任务，性能 `P` 应优先使用校准后的图像级分类概率、负对数损失或 Brier Score，而不是局部 IoU。进入局部篡改阶段后，再把 bbox/mask IoU 加入工具收益。
+
+### 11.6 全局优先、局部兼容的实施路线
+
+```mermaid
+flowchart LR
+    G0["G0 数据审计<br/>577 条全量首审"] --> G1["G1 Expert 基线<br/>格式配平 + 单工具增益"]
+    G1 --> G2["G2 视觉证据<br/>Evidence Bundle + 多图回灌"]
+    G2 --> G3["G3 决策停止<br/>Rectifier + 工具净收益"]
+    G3 --> G4["G4 增益 SFT<br/>no/single/multi-tool"]
+    G4 --> G5["G5 可选 GRPO<br/>准确率 - 成本 - 冗余"]
+    G5 --> L1["L1 局部数据<br/>bbox/mask + 篡改类型"]
+    L1 --> L2["L2 定位工具<br/>局部热图 + Zoom-In"]
+    L2 --> L3["L3 精细分割<br/>SAM2 或分割头"]
+```
+
+#### G0：现有数据审计
+
+- 全量审计 577 条 SFT 数据；
+- 分离事实训练、工具策略、冲突拒判和格式修复数据；
+- 暂停直接使用未经审计的 reasoning 进行 LoRA。
+
+#### G1：Expert 准入与校准
+
+- 建立格式配平的 Real/Fake 验证集；
+- 分别测试 Frequency v1/v2、Noise、JPEG/ELA 和 Zoom-In；
+- 保存每个样本的原始指标、预测、可视化图和耗时；
+- 删除无稳定增益或高度冗余的 Expert。
+
+#### G2：视觉证据通道
+
+- 扩展 `ExpertResult` 与 Trace Schema；
+- 让专家落盘可视化证据图；
+- 修复 Qwen 多轮消息，使原图和工具图可共同进入后续轮次；
+- 对比“文本 only / 视觉 only / 双通道”三组消融。
+
+#### G3：停止策略与校准
+
+- 提取 Real/Fake/Uncertain 候选概率；
+- 实现 EvidenceRectifier 和条件可靠性；
+- 用 `expert_call_count` 与加权成本替代当前轮数预算；
+- 用后验变化和候选工具净收益替代 strength delta。
+
+#### G4：增益驱动 SFT
+
+- 按真实工具增益构造 no-tool、single-tool 和 multi-tool 轨迹；
+- 保留简单样本直接回答能力；
+- 让复杂样本学习正交验证而不是固定工具顺序；
+- 单独评估工具选择准确率、无效调用率和平均调用数。
+
+#### G5：可选 GRPO
+
+只有 SFT 后能够稳定输出合法调用、Expert 已完成校准且 reward 可离线复算时才进入。否则 RL 会放大格式捷径、数据格式偏差或虚假的专家指标。
+
+#### L1-L3：局部篡改扩展
+
+- 引入带 bbox/mask 的 CASIA、IMD2020、Coverage 等局部篡改数据；
+- 增加 `task_type`，避免整图生成与局部篡改监督混淆；
+- 训练 MLLM 输出候选篡改 bbox；
+- 评估原始 BBox-IoU 后再接 SAM2，避免用分割器掩盖粗定位不足；
+- 联合报告图像级检测、bbox 定位、像素分割和工具成本。
+
+### 11.7 阶段门槛与下一步优先级
+
+| 顺序 | 工作项 | 完成门槛 | 是否需要 GPU |
+|------|--------|----------|--------------|
+| 1 | 577 条 SFT 人工审计 | 100% 有审核状态；unsure 完成二审 | 否 |
+| 2 | 格式配平与单 Expert 基线 | 每个工具有分层增益、可靠性和成本报告 | Qwen 对比需要 |
+| 3 | Evidence Bundle 与可视化图 | 三个 Expert 均能生成可审计 artifact，旧接口兼容 | 否 |
+| 4 | Qwen 多图回灌 | 原图和工具图在多轮中不丢失，消融可复现 | 是 |
+| 5 | 停止策略 v2 | 无效调用率下降；冲突时不被候选 verdict 覆盖 | CPU 可测，校准需 GPU |
+| 6 | 增益驱动 SFT | no-tool 能力保留，单/多工具调用与真实增益一致 | 是 |
+| 7 | 局部篡改数据与定位 | BBox-IoU 独立达标后再接 SAM2 | 是 |
+
+近期优先级建议为：
+
+1. **先人工审计 SFT 数据**：这是避免把错误 reasoning 和格式捷径写入 LoRA 的最低成本措施；
+2. **再建立单 Expert 增益基线**：没有该基线就无法定义工具效用和停止条件；
+3. **随后升级 Expert 为数值 + 视觉双通道**：先保留现有算法，验证可视化证据是否真正帮助 Qwen；
+4. **最后改停止策略并重建 SFT 轨迹**：停止逻辑依赖校准后的后验、可靠性和工具收益，过早修改只能换一组启发式规则；
+5. **全局检测稳定后再进入局部定位**：复用相同工具协议，但新增 bbox/mask 监督和 SAM2，不混淆两类任务的区域语义。
+
+总体判断：Expert、停止策略和 SFT 数据都需要调整，但它们存在明确依赖关系。**SFT 审计提供可信监督，Expert 校准提供工具真实增益，二者共同决定停止策略；停止策略稳定后，才适合生成新的工具轨迹并开展 SFT/GRPO。**
