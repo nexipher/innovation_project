@@ -423,3 +423,23 @@
 * **执行结果与验证状态**：专项测试 `7 passed`；三个脚本通过 `py_compile`；五个输出 JSON 均可解析；审计脚本连续运行结果稳定为 conflict=143、rejected=38；`git diff --check` 通过。全量测试在收集既有 `test_pipeline.py` 时因本机 transformers 缺少 `Qwen2_5_VLForConditionalGeneration` 被阻断，与本次改动无关
 * **置信度或遗留待办（TODO）**：剩余 143 条只通过结构准入，尚未完成数值校准、区域真实性及人工内容审核；borderline、correct 和 format 也仍需后续审计
 ---
+### 2026-09-20 14:24:10 - 4.6 文档职责统一与后续计划收敛
+
+* **当前操作动作**：汇总 SFT 审计结论，将架构文档中的后续路线迁入计划，并统一审阅根目录 Markdown
+* **对应计划锚点**：实现 `plan.md` 中的 4.6 小节，并建立 §4.7–§4.15 后续执行基线
+* **核心变更说明**：
+  1. 在 `plan.md` 汇总 correct/conflict/borderline/format/rejected 的审计状态，明确原始 577 条、拒绝 38 条、磁盘候选 539 条但未全部通过训练准入
+  2. 新增 G0–G6 与 L1–L3 计划，覆盖旧数据处置、坐标和证据协议、Expert 校准、Evidence Bundle、停止策略 v2、SFT `final_v2`、统一评测、可选 GRPO 和局部篡改扩展
+  3. 从 `CURRENT_PROGRAM_ARCHITECTURE.md` 移除重复的路线图、优先级、评测清单和阶段门槛，仅保留当前实现、确认缺陷、论文事实和目标架构约束
+  4. 在 README 中明确 `plan.md` 是唯一执行计划，修正“直接 LoRA”顺序，增加旧 SFT 尚未准入和停止逻辑并非真实信息增益的限制说明
+  5. 将 `Reasoning_Framework.md` 标为早期概念文档，说明熵/KL 与注意力损失尚未实现，移除独立推进路线并修复损坏的 LaTeX 转义
+  6. 审阅全部 7 份根目录 Markdown；原始任务书和 `agent.md` 保持只读，操作日志保留历史口径而不回写旧记录
+* **涉及/修改的文件清单**：
+  - `plan.md` (Modified — canonical §4.7–§4.15 roadmap)
+  - `CURRENT_PROGRAM_ARCHITECTURE.md` (Modified — removed duplicated future plans)
+  - `README.md` (Modified — current status and document roles)
+  - `Reasoning_Framework.md` (Modified — historical/conceptual status and LaTeX fixes)
+  - `claude_operation_log.md` (Modified)
+* **执行结果与验证状态**：7 份根目录 Markdown 的代码围栏均成对闭合；`plan.md` §4.7–§4.15 各唯一存在；迁移后的旧路线标题不再出现在架构与概念文档；本地论文和计划链接存在；`git diff --check` 通过
+* **置信度或遗留待办（TODO）**：后续从 G0 开始执行；两条已确认严重错误的 correct 样本仍需在 G0 中实际移入拒绝集，剩余旧数据只作为诊断资产
+---

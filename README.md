@@ -160,7 +160,7 @@ python main.py --image path/to/img.png --mode conflict       # 制造证据冲�
 ### 3.8 运行测试
 
 ```bash
-pytest tests/ -v              # 全部 95 个测试
+pytest tests/ -v              # 运行当前测试集
 pytest tests/test_pipeline.py # 仅端到端测试
 ```
 
@@ -201,10 +201,11 @@ innovation_project/
 │   ├── calibrate_experts.py        # 专家 sigmoid 参数 ROC 校准
 │   ├── generate_sft_data.py        # A/B 双线 SFT 数据规模化生成（GPU）
 │   ├── build_sft_data.py           # 四类 SFT 数据构造（合成）
-│   └── finalize_sft_data.py        # A 线筛选 + 数据整合 → final/
+│   ├── finalize_sft_data.py        # A 线筛选 + 数据整合 → final/
+│   └── audit_sft_conflicts.py      # 伪冲突自动隔离与拒绝集维护
 │
-├── tests/                          # 测试套件（95 用例）
-├── sft_data/train/final/           # SFT 候选训练集（539 条）+ 拒绝集（38 条）
+├── tests/                          # CPU 单元测试与端到端测试
+├── sft_data/train/final/           # 旧版 SFT 候选集（539 条）+ 拒绝集（38 条）
 ├── calibration/                    # 专家校准报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）
 └── claude_operation_log.md         # 开发操作审计日志
@@ -230,6 +231,8 @@ innovation_project/
   "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints."
 }
 ```
+
+> 当前 `final/` 是旧版数据的诊断结果，不是已经通过训练准入的最终数据。`correct` 只保证答案与 GT 一致，`borderline` 高度模板化，`format` 只能作为格式专用数据。后续在 Expert 与停止策略更新后生成独立的 `final_v2/`。
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -327,7 +330,7 @@ innovation_project/
 
 | 阶段 | 内容 | 关键产出 |
 |------|------|----------|
-| **一** 1.1–1.6 | 基础设施 / 工具层 / 专家算法 / MLLM 抽象 / 状态机 / 测试 | 完整 CPU 管道 + 95 测试全通过 |
+| **一** 1.1–1.6 | 基础设施 / 工具层 / 专家算法 / MLLM 抽象 / 状态机 / 测试 | 完整 CPU 管道；阶段一基线 95 项测试通过 |
 | **二** 2.1 | 真实 MLLM 接入 | `QwenVLClient`（FP16, 16.6 GB）+ 格式纠错反馈环 |
 | **二** 2.2 | 专家算法校准 | ROC 网格搜索：noise sep=0.83 / jpeg sep=1.02 / freq sep=0.05 |
 | **二** 2.3 | SFT 数据规模化生成 | 865 条真实 Qwen 推理 Trace（A 线 610 + B 线 255） |
@@ -335,19 +338,27 @@ innovation_project/
 | **三** 3.1a | SFT 数据构造 | **539 条候选训练数据**（correct 196 / conflict 143 / borderline 100 / format 100）+ 38 条拒绝记录 |
 | **三** 3.2 | 专家重构 | `frequency_v2.py`（多尺度 FFT）+ 四专家 reasoning 条件化修复 |
 
-### 7.2 待执行（需 GPU）
+### 7.2 后续执行顺序
 
-| 小节 | 内容 | 预估 |
-|------|------|------|
-| **3.1b** | LoRA 微调（rank=64, LLaMA-Factory） | ~3-4 小时 |
-| **3.3** | GRPO 强化对齐（4 项规则奖励） | ~8-12 小时（可选） |
-| **3.4** | 全数据集评估 + 消融实验 | ~2-3 小时 |
+详细步骤、依赖和验收门槛统一见 `plan.md` §4.7–§4.15；README 仅保留当前顺序概览。
+
+| 顺序 | 阶段 | 主要工作 | GPU |
+|------|------|----------|-----|
+| 1 | G0 | 旧 SFT 数据用途隔离与拒绝集收口 | 否 |
+| 2 | G1 | 坐标协议、证据去重、多轮图像历史和语义一致性修复 | 否 |
+| 3 | G2 | Expert 准入、条件校准和 Evidence Bundle | Qwen 对比需要 |
+| 4 | G3 | EvidenceRectifier 与停止策略 v2 | 校准需要 |
+| 5 | G4 | 重新生成并审核 `final_v2`，随后进行 LoRA | 是 |
+| 6 | G5/G6 | 统一评测；达标后可选 GRPO | 是 |
+| 7 | L1–L3 | 全局检测稳定后扩展局部篡改定位 | 是 |
 
 ### 7.3 已知局限
 
 - **基座模型无法证推理**：未微调的 Qwen2.5-VL 端到端准确率仅 25%（Real 53% / Fake 20%）——它收到 Evidence Token 后不知如何解读，1.9 步即结案且轻信单个专家。**这正是 SFT 的核心动机。**
 - **专家检测的是"格式差异"**：数据集 Real 为 JPEG、Fake 为 PNG，导致 noise/jpeg 专家的信号强度受图像格式影响大于受 AI 伪造影响。
 - **频域专家信号弱**：v1 separation=0.05（无效），v2 提升至 0.24 但仍不足以独立判定。
+- **旧 SFT 尚未达到训练准入**：原始 577 条中已拒绝 38 条伪冲突；磁盘保留的 539 条仍包含模板化 borderline 和未经完整内容审计的 correct，不能直接启动 LoRA。
+- **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查；重复证据可能造成虚假收敛。
 - **仅支持静态图像**：无视频帧采样 / 时序一致性分析能力。
 
 ---
@@ -361,9 +372,11 @@ innovation_project/
 | 文件 | 角色 | 修改时机 |
 |------|------|----------|
 | `active_forensic_agent_tasks.md` | 原始需求（**只读**） | 禁止修改 |
-| `plan.md` | 动态开发计划书 | 变更前先追加计划 |
+| `plan.md` | **后续工作的唯一执行计划** | 变更前先追加计划，持续更新阶段状态 |
 | `claude_operation_log.md` | 操作审计日志 | 每完成一个二级小节立即追加 |
 | `README.md` | 项目入口文档 | 每完成一个大节统一更新 |
+| `CURRENT_PROGRAM_ARCHITECTURE.md` | 当前实现、已确认缺陷与论文架构依据 | 源码或架构事实变化时更新，不维护待办 |
+| `Reasoning_Framework.md` | 早期研究动机与概念设计 | 仅作背景参考，不作为当前实现或计划 |
 
 ### 8.2 版本控制规范
 
@@ -380,7 +393,7 @@ git commit -m "feat(plan-X.Y): 描述"
 ### 8.3 测试
 
 ```bash
-pytest tests/ -v                        # 全部 95 个测试
+pytest tests/ -v                        # 当前完整测试集
 pytest tests/test_pipeline.py -v        # 端到端管道
 pytest tests/test_parser.py -v          # 单模块
 ```

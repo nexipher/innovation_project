@@ -1,5 +1,7 @@
 # 阶段一实现计划：主动探索型双分支图像取证系统原型
 
+> **当前执行入口（2026-09-20）**：阶段一、二和三章节保留历史规划与已完成记录；旧的“直接使用 539 条候选数据进行 LoRA”路径已暂停。后续工作统一从 §4.7 开始，严格按 G0 → G1 → G2 → G3 → G4 → G5 的依赖顺序开展。
+
 ## Context
 
 本项目从零构建一个"主动探索型 MLLM 图像取证系统"的原型。代码仓库当前只有设计文档（`.md`），无任何 Python 代码。阶段一目标：**在 CPU 模式下实现完整数据管道（真实专家算法 + Mock MLLM），用真实图像跑通端到端测试，并生成 SFT 训练数据**。
@@ -781,6 +783,8 @@ MLLM 第 2 轮 ─ Verdict:
 
 # 阶段三实现计划：SFT 监督微调、GRPO 对齐与专家重构
 
+> **状态修订**：本章是审计前制定的阶段三方案。3.1b LoRA、3.3 GRPO 和原评测顺序已被 §4.7–§4.15 取代；在生成并审核 `final_v2` 前，不得直接使用当前 `final/` 启动训练。
+
 ## Context
 
 阶段二产出：816 条有效 ShareGPT SFT 数据 + 校准后的专家参数 + 真实 Qwen2.5-VL 推理管道。
@@ -800,14 +804,14 @@ MLLM 第 2 轮 ─ Verdict:
 
 ### 3.1 SFT 监督微调
 
-**目标**：在完成内容审计后，使用当前保留的 **539 条** ShareGPT 候选数据对 Qwen2.5-VL-7B 进行 LoRA 微调；38 条已确认严重错误的 conflict 记录不得进入训练。
+**历史目标（已暂停）**：原计划在内容审计后使用 539 条候选数据进行 LoRA；本轮审计确认这些数据仍含系统性问题，因此改为先完成 §4.7–§4.10，再使用 §4.11 生成并审核的 `final_v2` 训练。38 条已确认严重错误的 conflict 记录永不进入训练。
 
 #### 3.1.1 数据预处理
 
 - ✅ **已完成**：数据筛选、四类构造及首轮结构审计（见 §3.1.1c 和 §4.5），输出至 `sft_data/train/final/`（539 条候选训练数据 + 38 条拒绝记录）
-- ⏳ **待执行**（GPU 前）：按 8:1:1 划分 train/val/test
-- ⏳ **待执行**：确保 Real/Fake/Uncertain 三类 verdict 分布均衡
-- ⏳ **待执行**：将 ShareGPT conversation 格式化为 Qwen 可接收的 messages 格式（含 `<image>` 占位符绑定）
+- ⏸️ **转入 §4.11**：仅对通过准入的 `final_v2` 按来源隔离后划分 train/val/test，不对旧 `final/` 直接随机切分
+- ⏸️ **转入 §4.11**：在 `final_v2` 中检查 Real/Fake/Uncertain 分布及数据用途分层
+- ⏸️ **转入 §4.11**：将审核后的 ShareGPT conversation 转换为 Qwen messages 格式并绑定 `<image>`
 
 #### 3.1.1b SFT 数据构造策略
 
@@ -1238,3 +1242,250 @@ innovation_project/
 - 增加 CPU 单元测试，覆盖真实冲突、同向证据、重复 Expert 和阈值边界。
 
 **验证方式**：确认原 181 条 conflict 中 38 条严重错误进入拒绝集、143 条留在训练集；训练总数由 577 调整为 539；运行冲突审计单元测试、JSON 解析检查和 `git diff --check`。
+
+## 4.6 文档职责统一与后续计划收敛
+
+**目标**：将论文对照产生的后续实施路线从 `CURRENT_PROGRAM_ARCHITECTURE.md` 统一迁入 `plan.md`，使架构文档只描述当前实现、已确认问题和研究依据，并以 `plan.md` 作为后续工作的唯一执行基线。
+
+**实施内容**：
+
+- 汇总本轮 SFT 诊断性审计结果，区分“已拒绝”“候选保留”“格式专用”和“等待重生成”四种状态；
+- 迁移 Expert、Evidence Bundle、视觉证据回灌、停止策略 v2、SFT v2、评测、GRPO 与局部篡改扩展的实施步骤、依赖关系和阶段门槛；
+- 清理架构文档中重复的路线图、优先级和待办，仅保留论文事实、当前系统差距、目标架构约束及指向本计划的链接；
+- 统一审阅根目录 Markdown：任务书与 `agent.md` 保持只读，操作日志保持历史记录，README 反映当前状态，`Reasoning_Framework.md` 标注为研究背景而非执行计划；
+- 统一当前数据口径为“原始 577 条、自动拒绝 38 条、磁盘候选 539 条，但尚未全部通过训练准入”。
+
+**验证方式**：检查根目录 Markdown 的职责声明、阶段状态、数据数量、交叉引用、标题层级和代码围栏；确认详细后续行动只在 `plan.md` 维护；运行 Markdown 链接/围栏检查和 `git diff --check`。
+
+# 阶段四执行计划：可信数据、Expert v2 与自适应停止
+
+本节是后续研发的唯一执行基线。论文事实、当前代码结构和已确认缺陷保留在 `CURRENT_PROGRAM_ARCHITECTURE.md`；若两份文档对“将来做什么”存在差异，以本节为准。
+
+## 4.7 G0：旧 SFT 数据诊断收口与训练隔离
+
+### 当前审计结论
+
+| 数据类别 | 磁盘数量 | 审计状态 | 现阶段用途 |
+|----------|---------:|----------|------------|
+| `correct` | 196 | 只保证 verdict 与 GT 一致；抽查已发现坐标漂移、重复证据、证据语义矛盾和过度置信 | 保留作问题样本池，不直接视为事实金标 |
+| `conflict` | 143 | 从原 181 条中自动拒绝 38 条；当前仅通过“独立 Expert + 对立 support”结构准入 | 等待 Expert 校准后复核或重生成 |
+| `borderline` | 100 | 固定区域、固定四轮模板、verdict 复制 GT、confidence 随机 | 不用于推理、路由或置信度训练；等待重生成 |
+| `format` | 100 | 格式抽查基本正常，但 metadata 明确允许内容错误 | 仅作格式专用数据；必须隔离事实损失 |
+| `rejected` | 38 | 已记录自动拒绝规则；不计入 539 条候选总数 | 永不进入训练，保留用于回归测试 |
+
+已确认应拒绝、但尚未执行迁移的 `correct` 样本至少包括：
+
+- `session_20260721_111418_00eb3be4-a0cb-4682-96ea-0a074cd7efaa`：坐标二次转换、重复证据、虚假信息增益收敛和单专家过度结论；
+- `session_20260721_111810_080862af-5aba-41b0-80ed-dab7b7683807`：Expert 内部语义矛盾、模型反转证据、报告自相矛盾和 `0.99` 未校准置信度。
+
+### 后续动作
+
+1. 将上述两条及后续命中同类规则的 `correct` 记录移入拒绝集；
+2. 为 `correct` 增加自动检查：重复 evidence、phenomenon/reasoning/support 方向冲突、坐标空间漂移、单弱证据高置信和报告内部矛盾；
+3. 将 `format` 独立为格式训练 split；若训练框架不能只对结构 token 计算 loss，则不将其并入事实推理 SFT；
+4. 旧数据只用于定位生成流程缺陷，不投入正式 LoRA；Expert 与停止策略更新后生成 `sft_data/train/final_v2/`；
+5. `final_v2` 必须经过全量自动校验、分层人工首审，以及 conflict/borderline/Uncertain/hard case 双审。
+
+### 完成门槛
+
+- 所有旧样本具有 `accept/revise/reject/format_only/regenerate` 之一的明确处置状态；
+- 拒绝集规则可重复运行且不会重复写入；
+- 训练入口不会默认读取 `sft_rejected.json`、旧 `borderline` 或未隔离的 `format` 内容。
+
+## 4.8 G1：运行协议与证据正确性修复
+
+该阶段先修主管道正确性，再更新 Expert。否则新的 Expert 输出仍会被错误坐标、重复回灌或旧停止规则污染。
+
+### 实施内容
+
+1. **统一坐标协议**：Trace 中同时保存 `region_normalized_1000` 与 `region_pixels`，每次转换带 `coordinate_space`，禁止把像素坐标再次作为归一化坐标解析；
+2. **证据去重**：以 `evidence_id`、Expert、输入区域、参数和结果摘要生成稳定键；相同结果不得重复进入 conversation、evidence chain 或停止统计；
+3. **Qwen 多轮图像历史**：确保原图、诊断区域和后续工具可视化在多轮消息中按协议保留，不能只回灌文字；
+4. **证据语义一致性**：增加确定性检查，保证 `phenomenon`、`reasoning`、`support`、`strength` 和 `interpretation_text` 方向一致；
+5. **任务语义字段**：Trace 增加 `task_type`、`evidence_scope` 和 `region_semantics`。当前默认值为 `fully_generated/global/diagnostic_evidence_region`；
+6. **可观测计数**：分离 `model_turn_count`、`expert_call_count`、`unique_evidence_count` 和加权成本，停止预算不再使用含义混杂的 `step`。
+
+### 完成门槛
+
+- 坐标往返测试覆盖不同图像尺寸，不发生二次缩放；
+- 重复工具响应不会增加 evidence 数或触发信息增益收敛；
+- 自动一致性检查能捕获本轮审计发现的两类 `correct` 反例；
+- CPU Mock 端到端 Trace 包含完整任务语义与计数字段。
+
+## 4.9 G2：Expert 准入、校准与 Evidence Bundle
+
+### 目标接口
+
+在兼容旧 `ExpertResult` 的基础上增加：
+
+```text
+EvidenceBundle
+├── evidence_id
+├── source / algorithm_version
+├── task_applicability
+├── scope / region / region_semantics
+├── raw_metric / condition_metadata
+├── calibrated_likelihood: Real / Fake / Uncertain
+├── reliability / reliability_factors
+├── visual_artifacts
+├── phenomenon / counter_explanation
+└── latency / failure_state
+```
+
+### 实施顺序
+
+1. 建立格式配平、分辨率配平并包含后处理扰动的独立校准集；
+2. 分别评估 Frequency v1/v2、Noise、JPEG/ELA，记录原始指标、可视化图、耗时与失败状态；
+3. 对比 `RGB baseline`、`RGB + 单 Expert 文本`、`RGB + 单 Expert 可视化`、`RGB + 双通道`；
+4. 按生成器、格式、分辨率、JPEG 质量和后处理类型拟合条件可靠性；
+5. 统计 Expert 错误重叠与互补性，只有稳定产生净增益且不高度冗余的工具进入正式工具箱；
+6. Zoom-In 先实现为保留上下文环带与缩放参数的显式工具；NoisePrint++、Bayar 或可学习 projector 在基线证明需要后再引入。
+
+### 评估指标与门槛
+
+- Accuracy、F1、AUROC、NLL/Brier、ECE；
+- 相对 RGB baseline 的分层净增益；
+- 平均耗时、失败率、视觉 token 成本；
+- 不允许继续把不同 Expert 的 `strength` 当作同尺度概率直接比较；
+- 无稳定增益或只学习 JPEG/PNG 格式捷径的 Expert 必须降权、限制适用条件或移除。
+
+## 4.10 G3：EvidenceRectifier 与停止策略 v2
+
+### 决策原则
+
+停止不再采用固定的 `verdict → max_steps → conflict → strength delta` 优先级，而改为：
+
+```text
+可靠性加权证据 + Real/Fake/Uncertain 候选概率
+    → 当前决策风险
+    → 每个剩余工具的预期风险下降
+    → 减去调用、重复、时延和失效成本
+    → continue / Real / Fake / Uncertain
+```
+
+`<verdict>` 只作为候选结论，不能绕过证据冲突、概率一致性和最低证据门槛。达到预算仅表示不能继续取证，不应自动决定标签。
+
+### 目标结构
+
+```text
+HaltingDecision
+├── action: continue / halt
+├── verdict: Real / Fake / Uncertain / null
+├── primary_reason / all_reasons
+├── next_expert
+├── posterior
+├── conflict_score
+├── expected_tool_gain
+└── expected_net_utility
+```
+
+### 实施步骤
+
+1. 在固定结论位置读取 Real/Fake/Uncertain 候选 token logits，并与 JSON verdict、报告措辞交叉检查；
+2. EvidenceRectifier 使用 Expert 条件可靠性更新后验，不允许自由文本覆盖结构化测量；
+3. 短期以历史增益 × 条件适用度 × 当前不确定性 × 非冗余度 × 可靠性估计工具收益；
+4. 中期用离线 Trace 训练轻量路由器预测候选工具的风险下降；
+5. 强冲突且有正收益正交工具时继续取证；没有预算或无正收益时输出 `Uncertain`；
+6. 记录全部停止原因，避免预算耗尽覆盖真实的未解决冲突；
+7. 使用旧 Trace 离线回放比较 v1/v2，确认不会因重复 evidence 触发虚假收敛。
+
+### 完成门槛
+
+- 无效调用率、重复调用率和平均调用数下降；
+- 冲突样本不会被候选 `<verdict>` 提前覆盖；
+- confidence 与经验准确率基本匹配，报告 ECE/Brier；
+- 停止原因可由 Trace 完整复现。
+
+## 4.11 G4：视觉证据回灌与增益驱动 SFT v2
+
+### 数据生成
+
+每张图根据真实运行结果构造候选轨迹：
+
+```text
+[]                               no-tool
+[best_tool]                      single-tool
+[independent_tool]               alternative single-tool
+[best_tool, independent_tool]    multi-tool verification
+```
+
+只有在校准后的分类风险、NLL 或 Brier Score 确实改善时，工具才能进入该样本的训练轨迹。当前全局任务不使用局部 IoU 定义工具收益。
+
+### 输出 Schema
+
+- `<observation>`：只写可直接核验的视觉事实；
+- `<forensic_evidence>`：引用 evidence ID、区域、测量值和可靠性；
+- `<reasoning>`：区分支持、反证、替代解释和剩余不确定性；
+- `<verdict>`：与结构化后验一致，confidence 来自校准而非模型自报；
+- 简单样本保留 no-tool 直接回答，复杂样本学习正交验证，不使用固定工具顺序。
+
+### `final_v2` 准入
+
+1. 自动检查格式、坐标、证据引用、重复项、结论一致性和调用有效性；
+2. 全量人工首审；真实 conflict、borderline、Uncertain、多工具和高置信样本双审；
+3. 数据分为事实金标、工具策略、冲突拒判、格式专用和拒绝集，训练时分别采样或加权；
+4. 旧 `final/` 保持冻结用于回归比较，不覆盖；新数据输出到 `final_v2/` 并记录生成代码版本与 Expert 版本。
+
+## 4.12 G5：统一评测协议
+
+### 检测与校准
+
+- 按 ADM、BigGAN、Glide、Midjourney、SD14、SD15、VQDM、Wukong 分层报告；
+- 执行 train-one-test-many 或 leave-one-generator-out，禁止同一来源随机泄漏；
+- 报告 Accuracy、F1、AUROC、NLL、Brier、ECE、Uncertain 覆盖率与风险—覆盖曲线。
+
+### 鲁棒性与泛化
+
+- JPEG 质量、缩放、模糊、噪声、锐化、亮度/对比度及截图重编码；
+- PNG/JPEG 格式配平；条件允许时增加未见生成器；
+- 中英文、同义改写、只返回 JSON、先/后给结论等提示扰动。
+
+### 工具与解释
+
+- 单 Expert、组合 Expert、文本证据、视觉证据和双通道消融；
+- EvidenceRectifier、停止策略 v1/v2、Frequency v1/v2 对比；
+- 平均调用数、无效/重复调用率、单位图像时延、显存与视觉 token 成本；
+- 人工评估解释的准确性、相关性、可核验性、完整性和证据绑定率；
+- 重复推理的标签翻转率、调用序列变化和证据引用变化。
+
+## 4.13 G6：可选 GRPO
+
+只有同时满足以下条件才进入 GRPO：
+
+- SFT v2 已稳定输出合法调用和结构化 verdict；
+- Expert 已完成条件校准；
+- reward 可从 Trace 离线复算；
+- no-tool、single-tool 与 multi-tool 基线均已建立。
+
+工具奖励应显式包含任务风险下降，并扣除调用次数、重复/同源调用、运行时延和无效调用。若 SFT 尚存在格式捷径、标签泄漏或虚假 Expert 指标，则暂停 GRPO，避免放大错误策略。
+
+## 4.14 L1–L3：局部篡改扩展
+
+该路线在全局检测通过 G0–G5 门槛后启动，不与当前整图生成监督混合解释。
+
+1. **L1 数据与任务协议**：引入带 bbox/mask 的局部篡改数据；设置 `task_type=locally_manipulated` 与 `region_semantics=candidate_manipulation_region`；
+2. **L2 定位工具**：输出局部/背景频谱差异、噪声指纹、压缩历史热图和迭代 Zoom-In；独立报告 BBox-IoU；
+3. **L3 精细分割**：粗定位达到门槛后再接 SAM2 或分割头，报告 Pixel F1/Mask IoU，避免分割器掩盖粗定位不足。
+
+## 4.15 总体依赖与阶段门槛
+
+```mermaid
+flowchart LR
+    G0["G0 旧数据处置"] --> G1["G1 协议正确性"]
+    G1 --> G2["G2 Expert 校准"]
+    G2 --> G3["G3 Rectifier + 停止 v2"]
+    G3 --> G4["G4 SFT final_v2"]
+    G4 --> G5["G5 统一评测"]
+    G5 --> G6["G6 可选 GRPO"]
+    G5 --> L1["L1–L3 局部篡改"]
+```
+
+| 顺序 | 阶段 | 进入下一阶段的最低条件 | GPU |
+|------|------|------------------------|-----|
+| 1 | G0 数据处置 | 旧数据用途隔离，拒绝集可追溯 | 否 |
+| 2 | G1 协议修复 | 坐标、去重、多轮图像和语义一致性测试通过 | 否 |
+| 3 | G2 Expert 校准 | 每个工具有分层增益、可靠性和成本报告 | Qwen 对比需要 |
+| 4 | G3 停止 v2 | 离线回放优于 v1，冲突和预算语义正确 | 校准需 GPU |
+| 5 | G4 SFT v2 | `final_v2` 完成自动校验与人工准入 | 是 |
+| 6 | G5 统一评测 | 泛化、鲁棒性、校准和工具成本均有基线 | 是 |
+| 7 | G6/L1–L3 | 仅在前述门槛满足后启动 | 是 |

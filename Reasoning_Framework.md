@@ -1,5 +1,7 @@
 # 多层法证证据驱动的 MLLM 图像真实性检测框架与主动取证系统设计
 
+> **文档定位（2026-09-20）**：本文保留项目早期研究构想与理论动机，其中熵/KL 停止、注意力对齐损失等内容是概念设计，不代表当前代码已经实现。当前运行逻辑见 `CURRENT_PROGRAM_ARCHITECTURE.md`，后续唯一执行计划见 `plan.md`。
+
 ---
 
 ## 一、 总体结论与学术定位
@@ -40,13 +42,13 @@ MLLM（如 GPT-4o, Gemini）由于其视觉预训练（CLIP-Vision）和网络�
    * **双重 JPEG 压缩痕迹 (Double JPEG)**：二次编辑并重新保存会使 DCT 系数直方图呈现出周期性的“挖空”效应。
    * **重采样与插值痕迹 (Resampling)**：图像拉伸、旋转后在像素差分空间留下的周期性协方差特征。
 4. **图像分辨率的牺牲与降采样**
-   * MLLM 通常将图像降采样至 $224 	imes 224$ 或 $448 	imes 448$ 以节省计算量，这一过程会直接抹杀绝大部分像素级的生成痕迹。
+   * MLLM 通常将图像降采样至 $224 \times 224$ 或 $448 \times 448$ 以节省计算量，这一过程会直接抹杀绝大部分像素级的生成痕迹。
 
 ---
 
-## 三、 主动探索型取证系统设计
+## 三、 主动探索型取证系统概念设计
 
-基于上述痛点，我们设计了**“主动探索型（Active Exploration）双分支取证系统”**。其核心理念是：让 MLLM 扮演“法官”，通过语义分析初步锁定可疑区域后，**主动、按需调用**底层的“法证专家组”（频域、噪声、压缩专家模型），获取 Evidence Token，并在确信后适时终止、生成法证报告。
+基于上述痛点，项目早期提出了**“主动探索型（Active Exploration）双分支取证系统”**概念。其核心理念是：让 MLLM 扮演“法官”，通过语义分析初步锁定可疑区域后，主动、按需调用底层“法证专家组”，获取 Evidence Token，并在确信后适时终止、生成法证报告。当前代码只实现了其中的规则化原型，实际行为以架构文档为准。
 
 ```
                              [ MLLM 主分支 (法官) ]
@@ -65,7 +67,7 @@ MLLM（如 GPT-4o, Gemini）由于其视觉预训练（CLIP-Vision）和网络�
   * *“图像逻辑通顺，但前景猫咪的边缘过渡似乎有些生硬，人眼无法确证。”*
 * **步骤 2：触发动作 Token (Action Tool-Calling)**
   我们在 MLLM 的词表中定义特殊的动作 Token（如 `<call_freq>`, `<call_noise>`, `<call_jpeg>`）。当 MLLM 扫描到特定可疑区域（RoI）且自身视觉特征不确定时，它会输出一个动作指令和空间坐标：
-  $$	ext{Instruction} = \langle 	ext{call\_freq}, 	ext{bbox} = [x_1, y_1, x_2, y_2] angle$$
+  $$\text{Instruction} = \langle \text{call\_freq}, \text{bbox} = [x_1, y_1, x_2, y_2] \rangle$$
 * **步骤 3：局部裁剪与特征抽象**
   系统捕获动作 Token 后，**裁剪**出指定 `bbox` 区域的图像送入对应的专家模型计算，并将输出抽象为结构化的 **Evidence Token ($\Delta_i$)** 喂回给 MLLM 的上下文。
 
@@ -76,17 +78,17 @@ MLLM（如 GPT-4o, Gemini）由于其视觉预训练（CLIP-Vision）和网络�
 
 ---
 
-## 四、 系统的终止与生成机制
+## 四、 理论终止与生成机制（未完全实现）
 
 ### 4.1 什么时候停止调取？（Halting Criteria）
-为了防止模型陷入无限循环调用，我们引入了基于信息熵收敛的动态终止机制。
+为了防止模型陷入无限循环调用，早期方案提出了基于信息熵与 KL 散度的动态终止目标。当前 `halting.py` 尚未实现该概率机制，只使用固定优先级和相邻 strength 差；替换步骤见 `plan.md` §4.10。
 
 我们定义一个概率分布 $P(Y \mid I, \Delta_{1:t})$，表示在结合了前 $t$ 个 Evidence Token 后，模型对图像“真/伪/不确定”三分类的置信度。计算该分布的信息熵（Entropy）：
-$$H(Y \mid I, \Delta_{1:t}) = - \sum_{y \in \{	ext{Real}, 	ext{Fake}, 	ext{Uncertain}\}} P(y \mid I, \Delta_{1:t}) \log P(y \mid I, \Delta_{1:t})$$
+$$H(Y \mid I, \Delta_{1:t}) = - \sum_{y \in \{\text{Real}, \text{Fake}, \text{Uncertain}\}} P(y \mid I, \Delta_{1:t}) \log P(y \mid I, \Delta_{1:t})$$
 
-1. **停止条件 1（置信收敛）**：当 $H(Y \mid I, \Delta_{1:t}) < 	heta_h$（信息熵低于设定阈值，说明模型已经非常确信真伪）时，触发终止 Token 并输出 `<stop>`。
+1. **停止条件 1（置信收敛）**：当 $H(Y \mid I, \Delta_{1:t}) < \theta_h$（信息熵低于设定阈值，说明模型已经非常确信真伪）时，触发终止 Token 并输出 `<stop>`。
 2. **停止条件 2（边际收益递减）**：如果新引入的证据 $\Delta_t$ 没有改变模型的判断（即前后两次概率分布的 KL 散度极小）：
-   $$D_{KL} \left( P(Y \mid I, \Delta_{1:t}) \parallel P(Y \mid I, \Delta_{1:t-1}) ight) < \epsilon$$
+   $$D_{KL} \left( P(Y \mid I, \Delta_{1:t}) \parallel P(Y \mid I, \Delta_{1:t-1}) \right) < \epsilon$$
    说明继续调取其他专家无助于消除疑惑，系统强制终止。
 3. **停止条件 3（硬性上限预算）**：设置最大调用步数 $T_{\max} = 3$，达到上限后强制输出“Uncertain”并生成带有置信度校准的报告。
 
@@ -123,9 +125,6 @@ $$H(Y \mid I, \Delta_{1:t}) = - \sum_{y \in \{	ext{Real}, 	ext{Fake}, 	ext{Uncer
 
 ---
 
-## 五、 项目推进路线与落地建议
+## 五、 执行计划入口
 
-1. **数据与 Pipeline 跑通（第一阶段）**：
-   在现有的 AIGC 数据集（如 X-AIGD 或 FakeXplain）上，手动或通过规则模拟出这个“调取机制”。例如，当输入图为 Diffusion 图像时，系统在 MLLM 输入中自动附加一段结构化的 `[Forensic_Token_Freq]`（模拟调取成功），训练 MLLM 理解、融合该 Token，并顺利生成法证报告。
-2. **专家模型训练与 Action 学习（第二阶段）**：
-   训练底层的频域、噪声取证分类模型，并提取其中间层响应作为 Evidence Token 的基础分值。同时，对 MLLM 进行轻量级的 Tool-calling 训练（或利用开源 Agent 框架），使其学会在遇到模糊不确定的 Patch 时，主动生成 `<call_*>` 动作指令。
+本文原有的早期推进路线已经由代码实践、SFT 数据审计和新增论文对照进一步修正。为避免多份路线并行维护，后续不再在本文更新阶段顺序或待办；可信数据、坐标与证据协议、Expert v2、停止策略 v2、SFT v2、统一评测、GRPO 和局部篡改扩展均以 `plan.md` §4.7–§4.15 为准。
