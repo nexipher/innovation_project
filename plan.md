@@ -1261,36 +1261,43 @@ innovation_project/
 
 本节是后续研发的唯一执行基线。论文事实、当前代码结构和已确认缺陷保留在 `CURRENT_PROGRAM_ARCHITECTURE.md`；若两份文档对“将来做什么”存在差异，以本节为准。
 
-## 4.7 G0：旧 SFT 数据诊断收口与训练隔离
+## 4.7 G0：旧 SFT 数据诊断收口与训练隔离 ✅（已完成 2026-09-20）
 
-### 当前审计结论
+### 最终审计结论（`scripts/audit_sft_correct.py` + `audit_sft_conflicts.py`）
 
-| 数据类别 | 磁盘数量 | 审计状态 | 现阶段用途 |
-|----------|---------:|----------|------------|
-| `correct` | 196 | 只保证 verdict 与 GT 一致；抽查已发现坐标漂移、重复证据、证据语义矛盾和过度置信 | 保留作问题样本池，不直接视为事实金标 |
-| `conflict` | 143 | 从原 181 条中自动拒绝 38 条；当前仅通过“独立 Expert + 对立 support”结构准入 | 等待 Expert 校准后复核或重生成 |
-| `borderline` | 100 | 固定区域、固定四轮模板、verdict 复制 GT、confidence 随机 | 不用于推理、路由或置信度训练；等待重生成 |
-| `format` | 100 | 格式抽查基本正常，但 metadata 明确允许内容错误 | 仅作格式专用数据；必须隔离事实损失 |
-| `rejected` | 38 | 已记录自动拒绝规则；不计入 539 条候选总数 | 永不进入训练，保留用于回归测试 |
+| 数据类别 | 磁盘数量 | 处置状态 | 说明 |
+|----------|---------:|----------|------|
+| `correct` | 166 | `regenerate` | 原 196 条中硬拒绝 30 条（重复证据 23、坐标漂移 5、人工确认 2）；其余 166 条全部命中旧版污染 reasoning（116 条方向矛盾）或单弱证据高置信（85 条），整体需用修复后的专家重新生成 |
+| `conflict` | 143 | `regenerate` | 从原 181 条中已自动拒绝 38 条伪冲突；剩余仅通过结构准入，等待 Expert 校准后复核 |
+| `borderline` | 100 | `regenerate` | 固定模板合成，禁用于推理/路由/置信度训练 |
+| `format` | 100 | `format_only` | 仅作结构训练，事实内容未校验 |
+| `rejected` | 68 | 永不训练 | 38 条 conflict 伪冲突 + 30 条 correct 结构失效；保留用于回归测试 |
 
-已确认应拒绝、但尚未执行迁移的 `correct` 样本至少包括：
+**候选总数 509 条（166+143+100+100），全部带明确处置状态；无一达到事实训练准入。**
 
-- `session_20260721_111418_00eb3be4-a0cb-4682-96ea-0a074cd7efaa`：坐标二次转换、重复证据、虚假信息增益收敛和单专家过度结论；
-- `session_20260721_111810_080862af-5aba-41b0-80ed-dab7b7683807`：Expert 内部语义矛盾、模型反转证据、报告自相矛盾和 `0.99` 未校准置信度。
+### 硬拒绝规则（`correct_trace_integrity_v1`）
 
-### 后续动作
+1. `duplicate_evidence`：同一会话中 (source, strength, region) 完全重复；
+2. `coordinate_drift`：连续 bbox 面积收缩 ≥50% 三次以上（递归缩框死循环）；
+3. `confirmed_invalid_by_review`：人工确认的严重错误会话（含 `00eb3be4…` 坐标二次转换与 `080862af…` 内部矛盾两条）。
 
-1. 将上述两条及后续命中同类规则的 `correct` 记录移入拒绝集；
-2. 为 `correct` 增加自动检查：重复 evidence、phenomenon/reasoning/support 方向冲突、坐标空间漂移、单弱证据高置信和报告内部矛盾；
-3. 将 `format` 独立为格式训练 split；若训练框架不能只对结构 token 计算 loss，则不将其并入事实推理 SFT；
-4. 旧数据只用于定位生成流程缺陷，不投入正式 LoRA；Expert 与停止策略更新后生成 `sft_data/train/final_v2/`；
-5. `final_v2` 必须经过全量自动校验、分层人工首审，以及 conflict/borderline/Uncertain/hard case 双审。
+### 软失败标记（保留 `regenerate`）
 
-### 完成门槛
+- `contaminated_reasoning_direction`（116）：strength < 0.3 但旧版 reasoning 声称生成伪迹——生成于专家 reasoning 修复（2026-09-15）之前的 A 线数据；
+- `single_evidence_high_confidence`（85）：单条证据 + confidence ≥ 0.95；
+- `verdict_fake_without_fake_evidence`（73）/ `verdict_real_without_real_evidence`（6）：verdict 方向与证据方向不符。
 
-- 所有旧样本具有 `accept/revise/reject/format_only/regenerate` 之一的明确处置状态；
-- 拒绝集规则可重复运行且不会重复写入；
-- 训练入口不会默认读取 `sft_rejected.json`、旧 `borderline` 或未隔离的 `format` 内容。
+### 完成门槛核对
+
+- ✅ 所有旧样本具有明确处置状态（regenerate 409 / format_only 100 / rejected 68）；
+- ✅ 拒绝集规则可重复运行（幂等验证：二次运行 md5 一致）；
+- ✅ 训练入口尚未建立；`metadata.json` 的 `rejected.included_in_total=false` 与 dispositions 字段保证后续训练脚本可据此隔离；
+- ✅ `tests/test_audit_sft_correct.py`（9 项）+ `tests/test_audit_sft_conflicts.py`（7 项）全部通过。
+
+### 遗留
+
+- `sft_data/train/sft_correct.json`（139 条合成旁支）已标记 `superseded`，不被 `final/` 引用；
+- 旧数据仅用于定位生成流程缺陷；`final_v2` 在 G4 用修复后的专家与协议重新生成。
 
 ## 4.8 G1：运行协议与证据正确性修复
 

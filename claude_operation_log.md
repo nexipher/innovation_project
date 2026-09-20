@@ -443,3 +443,31 @@
 * **执行结果与验证状态**：7 份根目录 Markdown 的代码围栏均成对闭合；`plan.md` §4.7–§4.15 各唯一存在；迁移后的旧路线标题不再出现在架构与概念文档；本地论文和计划链接存在；`git diff --check` 通过
 * **置信度或遗留待办（TODO）**：后续从 G0 开始执行；两条已确认严重错误的 correct 样本仍需在 G0 中实际移入拒绝集，剩余旧数据只作为诊断资产
 ---
+### 2026-09-20 14:43:04 - 4.7 G0 收尾 — correct 结构审计 + 全量处置状态标记
+
+* **当前操作动作**：4.7 G0 收尾 — correct 结构审计 + 全量处置状态标记
+* **核心变更说明**：
+  1. 新增 scripts/audit_sft_correct.py：correct 硬拒绝规则（重复证据/坐标漂移/人工确认）+ 软失败标记 + 全量处置状态
+  2. correct 审计：196 → 保留 166（regenerate）+ 硬拒绝 30（重复证据 23 / 坐标漂移 5 / 人工确认 2）
+  3. 关键发现：166 条全部含旧版污染 reasoning（生成于 2026-09-15 专家修复之前）——116 条低 strength 却声称 AI 伪迹、85 条单弱证据高置信、73 条 verdict 方向与证据不符
+  4. 全量处置状态：regenerate 409（correct 166 + conflict 143 + borderline 100）+ format_only 100 + rejected 68
+  5. 拒绝集：68 条（38 conflict 伪冲突 + 30 correct 结构失效），永不训练，保留回归测试
+  6. 旁支 sft_data/train/sft_correct.json（139 条合成）标记 superseded
+  7. 新增 tests/test_audit_sft_correct.py（9 项），与既有 conflict 审计测试合计 16 项全部通过
+  8. 幂等验证：二次运行 md5 完全一致
+  9. plan.md §4.7 标记 G0 完成并记录审计结论；README 更新数量（509 候选 + 68 拒绝）
+* **涉及/修改的文件清单**：
+  - `scripts/audit_sft_correct.py (Created)`
+  - `tests/test_audit_sft_correct.py (Created)`
+  - `sft_data/train/final/sft_correct.json (166 kept, all regenerate)`
+  - `sft_data/train/final/sft_conflict.json (143, stamped regenerate)`
+  - `sft_data/train/final/sft_borderline.json (100, stamped regenerate)`
+  - `sft_data/train/final/sft_format.json (100, stamped format_only)`
+  - `sft_data/train/final/sft_rejected.json (68)`
+  - `sft_data/train/final/metadata.json (dispositions added)`
+  - `sft_data/train/sft_correct.json (139, stamped superseded)`
+  - `plan.md (Modified — §4.7 G0 complete)`
+  - `README.md (Modified — counts and status)`
+* **执行结果与验证状态**：pytest 16 passed；幂等验证通过；5 个 JSON 全部可解析；G0 完成门槛全部满足
+* **置信度或遗留待办（TODO）**：correct 集需在 G4 用修复后的专家与 G1 新协议重新生成（final_v2）。下一步：G1 运行协议与证据正确性修复（纯 CPU）
+---

@@ -202,10 +202,11 @@ innovation_project/
 │   ├── generate_sft_data.py        # A/B 双线 SFT 数据规模化生成（GPU）
 │   ├── build_sft_data.py           # 四类 SFT 数据构造（合成）
 │   ├── finalize_sft_data.py        # A 线筛选 + 数据整合 → final/
-│   └── audit_sft_conflicts.py      # 伪冲突自动隔离与拒绝集维护
+│   ├── audit_sft_conflicts.py      # 伪冲突自动隔离与拒绝集维护
+│   └── audit_sft_correct.py        # correct 结构审计 + 全量处置状态标记
 │
 ├── tests/                          # CPU 单元测试与端到端测试
-├── sft_data/train/final/           # 旧版 SFT 候选集（539 条）+ 拒绝集（38 条）
+├── sft_data/train/final/           # 旧版 SFT 候选集（509 条）+ 拒绝集（68 条）
 ├── calibration/                    # 专家校准报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）
 └── claude_operation_log.md         # 开发操作审计日志
@@ -335,7 +336,8 @@ innovation_project/
 | **二** 2.2 | 专家算法校准 | ROC 网格搜索：noise sep=0.83 / jpeg sep=1.02 / freq sep=0.05 |
 | **二** 2.3 | SFT 数据规模化生成 | 865 条真实 Qwen 推理 Trace（A 线 610 + B 线 255） |
 | **二** 2.4 | 验证与评估 | 格式覆盖率 98%+；端到端准确率 25%（确认 SFT 必要性） |
-| **三** 3.1a | SFT 数据构造 | **539 条候选训练数据**（correct 196 / conflict 143 / borderline 100 / format 100）+ 38 条拒绝记录 |
+| **三** 3.1a | SFT 数据构造 | **509 条候选训练数据**（correct 166 / conflict 143 / borderline 100 / format 100）+ 68 条拒绝记录 |
+| **四** G0 | 旧 SFT 数据审计收口 | 全部旧样本获得明确处置状态（regenerate 409 / format_only 100 / rejected 68）；correct 硬拒绝 30 条；幂等审计脚本 + 16 项测试 |
 | **三** 3.2 | 专家重构 | `frequency_v2.py`（多尺度 FFT）+ 四专家 reasoning 条件化修复 |
 
 ### 7.2 后续执行顺序
@@ -344,7 +346,7 @@ innovation_project/
 
 | 顺序 | 阶段 | 主要工作 | GPU |
 |------|------|----------|-----|
-| 1 | G0 | 旧 SFT 数据用途隔离与拒绝集收口 | 否 |
+| 1 | G0 ✅ | 旧 SFT 数据用途隔离与拒绝集收口（已完成） | 否 |
 | 2 | G1 | 坐标协议、证据去重、多轮图像历史和语义一致性修复 | 否 |
 | 3 | G2 | Expert 准入、条件校准和 Evidence Bundle | Qwen 对比需要 |
 | 4 | G3 | EvidenceRectifier 与停止策略 v2 | 校准需要 |
@@ -357,7 +359,7 @@ innovation_project/
 - **基座模型无法证推理**：未微调的 Qwen2.5-VL 端到端准确率仅 25%（Real 53% / Fake 20%）——它收到 Evidence Token 后不知如何解读，1.9 步即结案且轻信单个专家。**这正是 SFT 的核心动机。**
 - **专家检测的是"格式差异"**：数据集 Real 为 JPEG、Fake 为 PNG，导致 noise/jpeg 专家的信号强度受图像格式影响大于受 AI 伪造影响。
 - **频域专家信号弱**：v1 separation=0.05（无效），v2 提升至 0.24 但仍不足以独立判定。
-- **旧 SFT 尚未达到训练准入**：原始 577 条中已拒绝 38 条伪冲突；磁盘保留的 539 条仍包含模板化 borderline 和未经完整内容审计的 correct，不能直接启动 LoRA。
+- **旧 SFT 尚未达到训练准入**：G0 审计后 509 条候选全部获得明确处置状态（regenerate / format_only），68 条结构失效样本进入拒绝集；correct 集 166 条全部生成于专家 reasoning 修复之前，必须用修复后的专家重新生成后才能投入 LoRA。
 - **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查；重复证据可能造成虚假收敛。
 - **仅支持静态图像**：无视频帧采样 / 时序一致性分析能力。
 
