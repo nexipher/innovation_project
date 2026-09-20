@@ -800,11 +800,11 @@ MLLM 第 2 轮 ─ Verdict:
 
 ### 3.1 SFT 监督微调
 
-**目标**：用 **577 条** ShareGPT 数据对 Qwen2.5-VL-7B 进行 LoRA 微调。
+**目标**：在完成内容审计后，使用当前保留的 **539 条** ShareGPT 候选数据对 Qwen2.5-VL-7B 进行 LoRA 微调；38 条已确认严重错误的 conflict 记录不得进入训练。
 
 #### 3.1.1 数据预处理
 
-- ✅ **已完成**：数据筛选与四类构造（见 §3.1.1c），输出至 `sft_data/train/final/`（577 条）
+- ✅ **已完成**：数据筛选、四类构造及首轮结构审计（见 §3.1.1c 和 §4.5），输出至 `sft_data/train/final/`（539 条候选训练数据 + 38 条拒绝记录）
 - ⏳ **待执行**（GPU 前）：按 8:1:1 划分 train/val/test
 - ⏳ **待执行**：确保 Real/Fake/Uncertain 三类 verdict 分布均衡
 - ⏳ **待执行**：将 ShareGPT conversation 格式化为 Qwen 可接收的 messages 格式（含 `<image>` 占位符绑定）
@@ -925,12 +925,13 @@ GT: Real
 | 类型 | 实际数量 | 来源 | 生成脚本 |
 |------|----------|------|----------|
 | 正确答案流 (`sft_correct`) | **196** | A 线筛选（verdict=GT，真实 Qwen 推理） | `finalize_sft_data.py` Step 1 |
-| 冲突反思流 (`sft_conflict`) | **181** | 三专家合成（reasoning 已修复） | `build_sft_data.py` |
+| 冲突反思流 (`sft_conflict`) | **143** | 三专家合成；已移除同向或重复 Expert 的伪冲突 | `build_sft_data.py` + `audit_sft_conflicts.py` |
 | 边界案例流 (`sft_borderline`) | **100** | 灰色地带样本合成 | `finalize_sft_data.py` Step 2 |
 | 格式示范流 (`sft_format`) | **100** | A 线格式完整样本抽取 | `finalize_sft_data.py` Step 3 |
-| **总计** | **577** | 输出至 `sft_data/train/final/` | — |
+| **候选训练总计** | **539** | 输出至 `sft_data/train/final/` | — |
+| 拒绝集 (`sft_rejected`) | **38** | 原 conflict 中不具备独立对立证据的严重错误，不计入训练总数 | `audit_sft_conflicts.py` |
 
-> 注：目标 700 条未达成的部分主要是 correct 类型（目标 300，实际 196，因 A 线中 verdict 恰好正确的样本占比有限）。577 条已达 SFT 最小可用规模。
+> 注：539 条仅为首轮结构规则过滤后的候选训练数据，并不等于全部通过内容审计。尤其 `borderline`、`format` 及剩余 conflict 仍需在正式 LoRA 前核验。
 
 #### 3.1.1d Expert reasoning 修复与数据重生成评估 (2026-07-21)
 
@@ -941,14 +942,14 @@ GT: Real
 | 数据文件 | 来源 | 受旧 reasoning 影响？ | 处置 | 需要 GPU？ |
 |----------|------|----------------------|------|-----------|
 | `sft_correct.json` (196) | A 线筛选，真实 Qwen 输出 | Evidence Token 中包含旧 reasoning，但 Qwen 的最终 verdict=GT | 保持原样 | 否 |
-| `sft_conflict.json` (181) | `build_sft_data.py` 合成 | 合成模板中嵌入了旧 Expert reasoning | ✅ **已重跑**（CPU ~6 min） | 否 |
+| `sft_conflict.json` (143 retained / 38 rejected) | `build_sft_data.py` 合成 | 合成模板中嵌入了旧 Expert reasoning，且部分伪冲突 | ✅ 已重跑；结构审计后隔离 38 条严重错误 | 否 |
 | `sft_borderline.json` (100) | `finalize_sft_data.py` 合成 | 同上 | ✅ **已重跑**（CPU ~3 min） | 否 |
 | `sft_format.json` (100) | A 线抽取 | 格式训练不看内容 | 不需要 | — |
 
 **执行结果**：
 - ✅ conflict 与 borderline **均已用修复后的专家重生成**，reasoning 与 strength 一致（验证：low-strength→正常描述，high-strength→异常描述）
 - ✅ correct **保持原样**——verdict 与 GT 一致，训练目标正确；Evidence Token 中的旧 reasoning 恰好模拟真实场景中 Expert 信号不完美的情形
-- 最终数据集：**577 条**（correct=196, conflict=181, borderline=100, format=100）
+- 当前候选训练集：**539 条**（correct=196, conflict=143, borderline=100, format=100）；另有拒绝集 38 条，不参与训练
 
 #### 3.1.2 训练配置
 
@@ -1220,7 +1221,20 @@ innovation_project/
 - 对照 ForgeryVCR 与当前外部 Expert + Evidence Token 状态机，分析文本证据回灌与视觉证据回灌的差异；
 - 设计兼容全局检测和局部篡改的 `ExpertResult`/Evidence Bundle 演进方向，区分全图证据、诊断区域和篡改区域；
 - 将现有四类停止条件重构为基于证据融合、冲突消歧、工具边际增益和硬预算的决策流程；
-- 制定 577 条现有 SFT 数据的人工审计方案，并规划 no-tool、single-tool、multi-tool 增益轨迹；
+- 制定原始 577 条 SFT 数据的审计方案，并规划 no-tool、single-tool、multi-tool 增益轨迹；当前已自动隔离 38 条严重伪冲突；
 - 给出分阶段实施顺序、准入指标、消融实验和进入局部篡改阶段的门槛。
 
 **验证方式**：核对 ForgeryVCR 主文与补充材料中的工具集合、样本规模、增益筛选公式、奖励函数和消融数据；检查新增 Markdown 链接、表格、Mermaid 图和代码围栏完整性。
+
+## 4.5 SFT 严重错误样本隔离
+
+**目标**：将 `sft_conflict.json` 中不具备真实对立证据的严重错误条目移出训练集，形成可追溯拒绝集，并修复生成逻辑以防止同类错误再次出现。
+
+**实施内容**：
+
+- 以“两个独立 Expert 且 support 方向为 Real 对 AI-generated/Fake”为冲突样本最低准入条件；解析失败、同一 Expert 重复调用或证据方向不相反的样本进入拒绝集；
+- 为拒绝条目追加机器可读的 `audit` 信息，记录拒绝规则、失败类型和说明；训练元数据分别统计可训练样本与拒绝样本；
+- 统一冲突分类与合成阈值，移除缺失高/低证据时回退到固定 Expert 的行为，并在最终数据整理阶段同步拒绝集；
+- 增加 CPU 单元测试，覆盖真实冲突、同向证据、重复 Expert 和阈值边界。
+
+**验证方式**：确认原 181 条 conflict 中 38 条严重错误进入拒绝集、143 条留在训练集；训练总数由 577 调整为 539；运行冲突审计单元测试、JSON 解析检查和 `git diff --check`。

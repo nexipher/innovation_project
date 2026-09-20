@@ -397,3 +397,29 @@
 * **执行结果与验证状态**：ForgeryVCR 全文 36 页已阅读，代表性方法、工具选择、消融和数据构造页面已渲染核验；架构文档现为 1163 行、6 个 Mermaid 图、78 个 Markdown 围栏成对闭合，本地论文链接存在，`git diff --check` 通过
 * **置信度或遗留待办（TODO）**：ForgeryVCR 面向局部篡改，当前项目面向整图生成；其 IoU 增益阈值、SAM2 掩码细化和定位奖励仅应在局部数据就绪后启用。近期应先执行 577 条 SFT 数据审计，再完成 Expert 校准，最后离线回放比较停止策略
 ---
+### 2026-09-20 13:36:33 - 4.5 SFT 严重错误样本隔离
+
+* **当前操作动作**：审计 conflict 数据，将不具备真实对立证据的严重错误条目移入拒绝集，并修复生成逻辑
+* **对应计划锚点**：实现 `plan.md` 中的 4.5 小节
+* **核心变更说明**：
+  1. 对 181 条 conflict 记录执行结构审计，以“两个独立 Expert 且 support 为 Real 对 AI-generated/Fake”为最低准入条件
+  2. 将 38 条同向证据伪冲突移入 `sft_rejected.json`；其中 26 条同时存在重复 Expert 和忽略 region 后证据载荷重复
+  3. 为拒绝记录增加 `audit.review_status`、规则编号、失败类型、审核方式和说明；用户指出的 `04783f51-...` 样本已确认进入拒绝集
+  4. 将候选训练集由 577 条调整为 539 条：correct=196、conflict=143、borderline=100、format=100；拒绝集不计入训练总数
+  5. 统一 `build_sft_data.py` 的冲突分类与合成阈值，校验 support 方向，删除缺失证据时回退到固定 Expert 的逻辑
+  6. 新增可幂等运行的 `audit_sft_conflicts.py`，并让 `finalize_sft_data.py` 在重新整理数据时同步拒绝集
+  7. 同步 README、架构说明、计划及 metadata 的现行数量
+* **涉及/修改的文件清单**：
+  - `scripts/audit_sft_conflicts.py` (Created)
+  - `scripts/build_sft_data.py` (Modified)
+  - `scripts/finalize_sft_data.py` (Modified)
+  - `tests/test_audit_sft_conflicts.py` (Created)
+  - `sft_data/train/sft_conflict.json` (Modified)
+  - `sft_data/train/sft_rejected.json` (Created)
+  - `sft_data/train/final/sft_conflict.json` (Modified)
+  - `sft_data/train/final/sft_rejected.json` (Created)
+  - `sft_data/train/final/metadata.json` (Modified)
+  - `README.md`, `CURRENT_PROGRAM_ARCHITECTURE.md`, `plan.md` (Modified)
+* **执行结果与验证状态**：专项测试 `7 passed`；三个脚本通过 `py_compile`；五个输出 JSON 均可解析；审计脚本连续运行结果稳定为 conflict=143、rejected=38；`git diff --check` 通过。全量测试在收集既有 `test_pipeline.py` 时因本机 transformers 缺少 `Qwen2_5_VLForConditionalGeneration` 被阻断，与本次改动无关
+* **置信度或遗留待办（TODO）**：剩余 143 条只通过结构准入，尚未完成数值校准、区域真实性及人工内容审核；borderline、correct 和 format 也仍需后续审计
+---

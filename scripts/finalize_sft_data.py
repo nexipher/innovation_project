@@ -279,6 +279,12 @@ def main():
         conflict = json.load(open(conflict_file))
     print(f"\n[Existing] conflict: {len(conflict)} (loaded from file)")
 
+    rejected_file = os.path.join(os.path.dirname(SFT_DATA_DIR), "sft_rejected.json")
+    rejected = []
+    if os.path.exists(rejected_file):
+        rejected = json.load(open(rejected_file))
+    print(f"[Existing] rejected: {len(rejected)} (excluded from training)")
+
     # ====== Consolidate ======
     print("\n" + "=" * 60)
     print("Final Dataset Summary")
@@ -299,6 +305,11 @@ def main():
         print(f"  {name}: {len(data)} → {output_file}")
         total += len(data)
 
+    rejected_output = os.path.join(SFT_DATA_DIR, "sft_rejected.json")
+    with open(rejected_output, "w", encoding="utf-8") as f:
+        json.dump(rejected, f, ensure_ascii=False, indent=2)
+    print(f"  rejected: {len(rejected)} → {rejected_output} (not trainable)")
+
     print(f"\n  TOTAL: {total} samples → {SFT_DATA_DIR}/")
 
     # Metadata
@@ -311,6 +322,11 @@ def main():
             "conflict": "synthesized from bench-set",
             "borderline": "synthesized from grey-zone bench-set",
             "format": "A-line format-complete (content may be wrong)",
+        },
+        "rejected": {
+            "total": len(rejected),
+            "file": "sft_rejected.json",
+            "included_in_total": False,
         },
     }
     with open(os.path.join(SFT_DATA_DIR, "metadata.json"), "w") as f:

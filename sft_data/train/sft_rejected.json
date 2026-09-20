@@ -1,0 +1,1612 @@
+[
+  {
+    "id": "sft_conflict_002baac0-bacd-496c-981c-a4a9d66b8472.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0006, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2393, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0006, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2393, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_03a41a1d-55a4-4e2f-bc77-3a0bd818256f.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/03a41a1d-55a4-4e2f-bc77-3a0bd818256f.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0006, half=0.0005)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2393, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0006, half=0.0005)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2393, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_04783f51-817d-430b-86b7-6d54f2e5647e.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/04783f51-817d-430b-86b7-6d54f2e5647e.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0002, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2345, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0002, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2345, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_059e9b2f-2907-42f6-81a9-511a56824ccf.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/059e9b2f-2907-42f6-81a9-511a56824ccf.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0003, half=0.0006)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2373, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0003, half=0.0006)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2373, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_072d34b7-a485-4ebe-aef7-ddc3e1780e25.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/072d34b7-a485-4ebe-aef7-ddc3e1780e25.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0002, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2354, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0002, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2354, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_09ea1860-8274-46b2-a8a8-b1e509a4229c.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/09ea1860-8274-46b2-a8a8-b1e509a4229c.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0012, half=0.0013)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2499, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0012, half=0.0013)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2499, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.25），但 freq 专家强烈指出真实相机（strength=0.25）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_0da856c2-7633-417a-894b-bf708ede5624.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/0da856c2-7633-417a-894b-bf708ede5624.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0001, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2349, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0001, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2349, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_155a4504-cf1b-41a2-9ec0-c2eae6be28e1.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/155a4504-cf1b-41a2-9ec0-c2eae6be28e1.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0002, half=0.0003)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2352, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0002, half=0.0003)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2352, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_19272014-318d-4485-9de3-07fa858735ed.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/19272014-318d-4485-9de3-07fa858735ed.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0003, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2374, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.9883). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.9883), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0619, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 noise 专家强烈指出真实相机（strength=0.06）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_1bc61695-eb7b-45ce-8b0f-e24745d86826.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/1bc61695-eb7b-45ce-8b0f-e24745d86826.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0009, full=0.0008, half=0.0011)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.245, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0009, full=0.0008, half=0.0011)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.245, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.25），但 freq 专家强烈指出真实相机（strength=0.25）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_1de68c21-df18-4579-95e6-b16dbdde7259.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/1de68c21-df18-4579-95e6-b16dbdde7259.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0004, half=0.0001)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2354, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0004, half=0.0001)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2354, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_1f60b370-8f5d-4e16-a23e-96487493bc64.jpg",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real/1f60b370-8f5d-4e16-a23e-96487493bc64.jpg",
+    "gt": "Real",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0007, full=0.0004, half=0.0010)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2409, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0007, full=0.0004, half=0.0010)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2409, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_0_adm_174.PNG",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/ADM/0_adm_174.PNG",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0001, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2327, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 1.2170). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=1.2170), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0851, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 noise 专家强烈指出真实相机（strength=0.09）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_10_adm_7.PNG",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/ADM/10_adm_7.PNG",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0004, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2393, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0004, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2393, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_119_adm_7.PNG",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/ADM/119_adm_7.PNG",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0001, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2333, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.8991). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.8991), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0546, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 noise 专家强烈指出真实相机（strength=0.05）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_122_adm_34.PNG",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/ADM/122_adm_34.PNG",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0009, full=0.0011, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2451, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0009, full=0.0011, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2451, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.25），但 freq 专家强烈指出真实相机（strength=0.25）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_012_biggan_00143.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/BigGAN/012_biggan_00143.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0009, full=0.0006, half=0.0015)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2449, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0009, full=0.0006, half=0.0015)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2449, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_013_biggan_00074.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/BigGAN/013_biggan_00074.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0007, full=0.0007, half=0.0007)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2422, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.6141). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.6141), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0363, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 noise 专家强烈指出真实相机（strength=0.04）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_015_biggan_00020.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/BigGAN/015_biggan_00020.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0007, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2379, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.6894). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.6894), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0405, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 noise 专家强烈指出真实相机（strength=0.04）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_019_biggan_00035.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/BigGAN/019_biggan_00035.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0004, half=0.0015)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2433, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0004, half=0.0015)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2433, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_GLIDE_1000_200_00_003_glide_00020.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Glide/GLIDE_1000_200_00_003_glide_00020.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0028, full=0.0038, half=0.0013)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2741, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.5726). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.5726), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0342, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.27），但 noise 专家强烈指出真实相机（strength=0.03）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_GLIDE_1000_200_00_012_glide_00039.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Glide/GLIDE_1000_200_00_012_glide_00039.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0011, full=0.0006, half=0.0019)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2471, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0011, full=0.0006, half=0.0019)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2471, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.25），但 freq 专家强烈指出真实相机（strength=0.25）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_GLIDE_1000_200_00_014_glide_00127.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Glide/GLIDE_1000_200_00_014_glide_00127.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0005, half=0.0013)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2434, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0005, half=0.0013)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2434, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_0_midjourney_169.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0003, half=0.0009)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2391, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 jpeg 专家验证物理一致性。\n</reasoning>\n<call_jpeg>[300, 200, 700, 800]</call_jpeg>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9630, DCT anomaly: 2.0084)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2248, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 jpeg 专家强烈指出真实相机（strength=0.22）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_121_midjourney_100.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Midjourney/121_midjourney_100.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0000, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2329, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0000, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2329, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_007_sdv4_00009.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/SD14/007_sdv4_00009.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0002, half=0.0003)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2349, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0002, half=0.0003)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2349, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_016_sdv4_00035.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/SD14/016_sdv4_00035.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0003, half=0.0005)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.237, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 jpeg 专家验证物理一致性。\n</reasoning>\n<call_jpeg>[300, 200, 700, 800]</call_jpeg>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0032, DCT anomaly: 1.8293)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2087, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 jpeg 专家强烈指出真实相机（strength=0.21）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_006_sdv5_00003.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/SD15/006_sdv5_00003.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0002, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2328, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.9529). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.9529), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0589, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 noise 专家强烈指出真实相机（strength=0.06）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_014_sdv5_00039.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/SD15/014_sdv5_00039.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0003, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2363, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0003, half=0.0004)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2363, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_019_sdv5_00020.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/SD15/019_sdv5_00020.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0007, half=0.0008)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2425, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0007, half=0.0008)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2425, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_VQDM_1000_200_00_007_vqdm_00035.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/VQDM/VQDM_1000_200_00_007_vqdm_00035.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0001, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2323, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 1.6248). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=1.6248), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.1464, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 noise 专家强烈指出真实相机（strength=0.15）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_VQDM_1000_200_00_019_vqdm_00035.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/VQDM/VQDM_1000_200_00_019_vqdm_00035.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0000, full=0.0000, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2319, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 1.7569). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=1.7569), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.173, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 noise 专家强烈指出真实相机（strength=0.17）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_VQDM_1000_200_00_024_vqdm_00143.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/VQDM/VQDM_1000_200_00_024_vqdm_00143.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0006, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2367, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0006, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2367, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_102_wukong_image198.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/102_wukong_image198.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0002, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2339, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0002, full=0.0002, half=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2339, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_104_wukong_image128.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/104_wukong_image128.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0000, half=0.0001)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2323, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0000, half=0.0001)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2323, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_105_wukong_image188.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/105_wukong_image188.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0001, half=0.0001)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2331, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0001, full=0.0001, half=0.0001)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2331, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.23），但 freq 专家强烈指出真实相机（strength=0.23）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_108_wukong_image188.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/108_wukong_image188.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0004, full=0.0006, half=0.0002)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2376, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 noise 专家验证物理一致性。\n</reasoning>\n<call_noise>[300, 200, 700, 800]</call_noise>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 1.6832). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=1.6832), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.1577, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 noise 专家强烈指出真实相机（strength=0.16）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "non_opposed_evidence"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  },
+  {
+    "id": "sft_conflict_111_wukong_image128.png",
+    "type": "conflict",
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_Test/Wukong/111_wukong_image128.png",
+    "gt": "Fake",
+    "conversations": [
+      {
+        "from": "user",
+        "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+      },
+      {
+        "from": "gpt",
+        "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: 图像存在需要法证验证的不确定特征。\nExpert Target & Hypothesis: 拟调用 freq 专家分析物理痕迹。\n</planning>\n<call_freq>[150, 150, 850, 850]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[150, 150, 850, 850]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0005, half=0.0005)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2389, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【初步判断】freq 专家的发现需要进一步验证。单一证据不足以定论——需要 freq 专家验证物理一致性。\n</reasoning>\n<call_freq>[300, 200, 700, 800]</call_freq>"
+      },
+      {
+        "from": "user",
+        "value": "{\"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[300, 200, 700, 800]\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0005, full=0.0005, half=0.0005)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2389, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\"}"
+      },
+      {
+        "from": "gpt",
+        "value": "<reasoning>\n【证据冲突分析】\nfreq 专家信号不明确（strength=0.24），但 freq 专家强烈指出真实相机（strength=0.24）。两条证据在物理层面出现了根本性冲突。\n\n【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n【疑罪从无】当前证据不足以做出确定性判定，应给出 Uncertain 结论并附置信度校准。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.45, \"primary_evidence\": [], \"report\": \"法证证据在物理层面出现根本性冲突，疑罪从无。建议人工复核或使用更多维度进一步分析。\"}\n</verdict>"
+      }
+    ],
+    "audit": {
+      "review_status": "reject",
+      "review_method": "automated_structural_rule",
+      "rule_id": "conflict_requires_independent_opposed_evidence_v1",
+      "failure_types": [
+        "duplicate_expert_call",
+        "non_opposed_evidence",
+        "duplicate_evidence_payload"
+      ],
+      "reviewer_notes": "Conflict training requires two independent experts with opposed Real and AI-generated/Fake support; this record does not meet that minimum condition."
+    }
+  }
+]

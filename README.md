@@ -204,7 +204,7 @@ innovation_project/
 │   └── finalize_sft_data.py        # A 线筛选 + 数据整合 → final/
 │
 ├── tests/                          # 测试套件（95 用例）
-├── sft_data/train/final/           # SFT 训练数据集（577 条 ShareGPT JSON）
+├── sft_data/train/final/           # SFT 候选训练集（539 条）+ 拒绝集（38 条）
 ├── calibration/                    # 专家校准报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）
 └── claude_operation_log.md         # 开发操作审计日志
@@ -332,7 +332,7 @@ innovation_project/
 | **二** 2.2 | 专家算法校准 | ROC 网格搜索：noise sep=0.83 / jpeg sep=1.02 / freq sep=0.05 |
 | **二** 2.3 | SFT 数据规模化生成 | 865 条真实 Qwen 推理 Trace（A 线 610 + B 线 255） |
 | **二** 2.4 | 验证与评估 | 格式覆盖率 98%+；端到端准确率 25%（确认 SFT 必要性） |
-| **三** 3.1a | SFT 数据构造 | **577 条**四类数据集（correct 196 / conflict 181 / borderline 100 / format 100） |
+| **三** 3.1a | SFT 数据构造 | **539 条候选训练数据**（correct 196 / conflict 143 / borderline 100 / format 100）+ 38 条拒绝记录 |
 | **三** 3.2 | 专家重构 | `frequency_v2.py`（多尺度 FFT）+ 四专家 reasoning 条件化修复 |
 
 ### 7.2 待执行（需 GPU）

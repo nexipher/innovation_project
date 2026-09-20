@@ -41,6 +41,19 @@ SFT_TRAIN_DIR = os.path.join(
     "sft_data", "train",
 )
 
+CONFLICT_FAKE_MIN = 0.6
+CONFLICT_REAL_MAX = 0.25
+
+
+def _support_direction(value: str) -> Optional[str]:
+    """Map Expert support labels to the two directions used by conflict data."""
+    normalized = str(value).strip().lower().replace("_", "-")
+    if normalized == "real":
+        return "real"
+    if normalized in {"fake", "ai-generated", "ai generated"}:
+        return "fake"
+    return None
+
 
 # ---------------------------------------------------------------------------
 # Data collection: run all 3 experts on each image
@@ -110,8 +123,16 @@ def classify_samples(samples: List[dict]) -> Dict[str, List[dict]]:
         best_expert = max(strengths, key=strengths.get)
 
         # Priority 1: Conflict — two experts STRONGLY disagree
-        high_fake = [k for k, v in strengths.items() if v > 0.6]
-        high_real = [k for k, v in strengths.items() if v < 0.25]
+        high_fake = [
+            k for k, v in strengths.items()
+            if v > CONFLICT_FAKE_MIN
+            and _support_direction(exp[k].get("support")) == "fake"
+        ]
+        high_real = [
+            k for k, v in strengths.items()
+            if v < CONFLICT_REAL_MAX
+            and _support_direction(exp[k].get("support")) == "real"
+        ]
         if high_fake and high_real:
             classified["conflict"].append(s)
             continue
@@ -245,13 +266,24 @@ def synthesize_conflict(sample: dict) -> dict:
 
     # Identify which experts are in conflict
     strengths = {k: v["strength"] for k, v in exp.items()}
-    high_fake = sorted([k for k, v in strengths.items() if v > 0.7],
-                       key=lambda k: -strengths[k])
-    high_real = sorted([k for k, v in strengths.items() if v < 0.3],
-                       key=lambda k: strengths[k])
+    high_fake = sorted([
+        k for k, v in strengths.items()
+        if v > CONFLICT_FAKE_MIN
+        and _support_direction(exp[k].get("support")) == "fake"
+    ], key=lambda k: -strengths[k])
+    high_real = sorted([
+        k for k, v in strengths.items()
+        if v < CONFLICT_REAL_MAX
+        and _support_direction(exp[k].get("support")) == "real"
+    ], key=lambda k: strengths[k])
 
-    e1 = high_fake[0] if high_fake else "freq"
-    e2 = high_real[0] if high_real else "noise"
+    if not high_fake or not high_real:
+        raise ValueError("conflict sample lacks opposed high-fake/high-real evidence")
+
+    e1 = high_fake[0]
+    e2 = high_real[0]
+    if e1 == e2:
+        raise ValueError("conflict sample must use two independent experts")
 
     conversations = [
         {"from": "user", "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"},
@@ -275,8 +307,8 @@ def synthesize_conflict(sample: dict) -> dict:
         {"from": "gpt", "value": (
             f"<reasoning>\n"
             f"【证据冲突分析】\n"
-            f"{e1} 专家{'强烈指出 AI 生成' if exp[e1]['strength'] > 0.7 else '信号不明确'}（strength={exp[e1]['strength']:.2f}），"
-            f"但 {e2} 专家{'强烈指出真实相机' if exp[e2]['strength'] < 0.3 else '信号不明确'}（strength={exp[e2]['strength']:.2f}）。"
+            f"{e1} 专家{'强烈指出 AI 生成' if exp[e1]['strength'] > CONFLICT_FAKE_MIN else '信号不明确'}（strength={exp[e1]['strength']:.2f}），"
+            f"但 {e2} 专家{'强烈指出真实相机' if exp[e2]['strength'] < CONFLICT_REAL_MAX else '信号不明确'}（strength={exp[e2]['strength']:.2f}）。"
             f"两条证据在物理层面出现了根本性冲突。\n\n"
             f"【冲突溯源】可能原因：(1) 图像经过 AI 后处理——保留了部分原始特征但引入了 AI 痕迹；"
             f"(2) AI 生成图像叠加了后处理噪声——检测到生成痕迹但部分信号被掩盖。\n\n"

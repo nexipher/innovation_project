@@ -385,7 +385,7 @@ TVSIP 使用 OCR 文本候选校正 MLLM 漂移的 bbox。这对文档篡改十�
 
 TVSIP 的 TextDDLE 将输出拆成 Description、Detection、Localization、Explanation 四项，并采用 GPT-4o 生成后人工筛查；其训练采用大量合成数据预训练，再用较少真实困难样本进行 SFT（第 3-5 页）。解释又进一步拆为低层视觉线索和高层语义线索。
 
-对当前 577 条数据，可借鉴以下结构：
+对当前 539 条候选训练数据及 38 条拒绝记录，可借鉴以下结构：
 
 - 在训练响应中显式分开 `visual_observation`、`forensic_evidence`、`contamination_analysis` 和 `conclusion`；
 - 训练样本同时保留“无语义异常”和“无低层异常”的合法情况，避免模型强行编造两类证据；
@@ -546,7 +546,7 @@ flowchart LR
 | 法证约束 | 专家 strength 通过文本回灌，无联合检测损失 | FAFF 融合 + 分类概率映射损失 | forensic projector + 辅助检测损失 |
 | 结论来源 | 解析模型生成的 verdict JSON | 从固定结论位置的 real/fake token 概率映射 | LLM 输出与辅助 detector 共同训练 |
 | 推理结构 | planning / call / reasoning / verdict | summary / caption / hierarchical reasoning / conclusion | 判定 + 分点证据说明 |
-| 数据质量 | 577 条 SFT 数据，以自动构造为主 | 机器生成后多轮专家审核 | 大规模弱标注预训练 + 2,215 张人工区域解释 |
+| 数据质量 | 原始 577 条 SFT 数据，以自动构造为主；现已自动拒绝 38 条严重伪冲突 | 机器生成后多轮专家审核 | 大规模弱标注预训练 + 2,215 张人工区域解释 |
 | 泛化评估 | 尚未系统执行 | train-one-test-many，覆盖 10 类生成器 | 单源训练，跨 Diffusion/GAN 源测试 |
 | 当前最值得借鉴 | — | 结论概率映射、结构化推理、CLIP+DINO 互补 | forensic prompt、辅助检测约束、两阶段数据训练 |
 
@@ -617,13 +617,13 @@ FakeReasoning 使用冻结的 CLIP 和 DINO ViT-L/14：CLIP 提供全局语义�
 - **短期**：保留外部专家，但在 Evidence Token 中分开 `semantic_cue` 与 `low_level_cue`，并让 MLLM 的场景假设决定专家适用度；
 - **中长期**：增加轻量 DINO/CLIP 特征分支，把局部视觉特征作为可学习的 forensic token 注入 Qwen，而不是只注入三个标量的自然语言描述。
 
-该方向需要 GPU 训练，不应阻塞当前 577 条 SFT 数据的格式和质量修正。
+该方向需要 GPU 训练，不应阻塞当前 539 条候选 SFT 数据及 38 条拒绝记录的格式和质量修正。
 
 #### 10.2.5 数据审核流程比扩大数量更优先
 
 FakeReasoning 的 MMFR 包含约 12 万张图像和 37.8 万条推理标注，覆盖 10 类生成器。其数据不是直接接受模型生成文本，而是先过滤标签不一致、低置信或格式错误样本，再由法证研究人员执行 accept/reject/unsure 审核；不确定样本进入多人复核。论文报告人工审核后平均每图推理数从 3.75 降至 3.15，约 16% 候选推理被拒绝。
 
-这说明当前 577 条数据在进入 LoRA 前应先做质量抽样，而不是默认“格式正确即内容正确”。建议最少建立以下审计字段：
+这说明原始 577 条数据在进入 LoRA 前必须先做质量审核，而不是默认“格式正确即内容正确”；目前已自动隔离 38 条严重伪冲突，其余 539 条仍需内容审核。建议最少建立以下审计字段：
 
 - `observation_visible`：图像中是否确实存在所述现象；
 - `evidence_supported`：专家 raw metric 是否支持文字解释；
@@ -656,7 +656,7 @@ ForenX 先在 GenImage 与 ForenSynths 上利用内容描述和检测标签进�
 
 ```text
 阶段 1：格式与检测能力
-577 条现有 Trace 清洗 + 标签平衡 + 固定输出协议
+539 条候选 Trace 清洗 + 38 条拒绝记录复核 + 标签平衡 + 固定输出协议
               ↓
 阶段 2：解释与证据对齐
 少量人工高质量诊断区域 + 原因 + 反例解释
@@ -722,7 +722,7 @@ flowchart LR
 | 优先级 | 改造项 | 论文依据 | 预计成本 |
 |--------|--------|----------|----------|
 | P0 | 把 bbox 统一定义为诊断证据区域，并更新 Trace 字段命名 | FakeReasoning 的整图任务定义 | 低，CPU |
-| P0 | 对 577 条 SFT 样本进行 accept/reject/unsure 内容审核 | MMFR 专家审核与 ForenX 人工标注 | 人工时间 |
+| P0 | 对 539 条候选 SFT 样本进行 accept/reject/unsure 内容审核，并复核 38 条自动拒绝记录 | MMFR 专家审核与 ForenX 人工标注 | 人工时间 |
 | P0 | 固定结论位置，读取三类 token logits，并与 JSON verdict 核对 | FakeReasoning CPM | 中，Qwen 推理 |
 | P0 | 引入 EvidenceRectifier 与专家可靠性字段 | 两篇论文的检测约束原则 | 中，CPU |
 | P1 | 重构 SFT Schema，分离观察、证据、替代解释和结论 | FakeReasoning 分层推理 | 中 |
@@ -1011,14 +1011,14 @@ Rtool
 
 ### 11.5 SFT 数据是否需要人工审计
 
-结论是：**需要，并且应在任何 LoRA 训练之前完成。** 当前 577 条数据中：
+结论是：**需要，并且应在任何 LoRA 训练之前完成。** 原始 577 条数据已完成第一轮冲突结构审计，当前保留 539 条候选训练数据，并将 38 条严重伪冲突移入拒绝集。其中：
 
 - `correct=196` 只保证最终 verdict 与 GT 一致，不保证观察、专家引用和因果解释正确；
-- `conflict=181` 与 `borderline=100` 为合成数据，需要检查模板是否形成捷径或不符合真实专家行为；
+- 原 `conflict=181` 中已有 38 条因证据同向或重复 Expert 被自动拒绝；保留的 `conflict=143` 与 `borderline=100` 仍为合成数据，需要继续检查模板捷径和真实专家行为；
 - `format=100` 的元数据已明确说明内容可能错误，只能用于格式训练，不能默认用于事实性 reasoning 训练；
 - 旧 Trace 主要依赖文字 Evidence Token，尚未包含 ForgeryVCR 式可视化证据。
 
-577 条规模足以进行全量人工首审。建议采用“单人全量 + hard case 双人复核”，而不是只抽样少量数据。
+当前 539 条候选数据仍适合进行全量人工首审。建议采用“单人全量 + hard case 双人复核”，并保留 38 条拒绝记录用于追踪生成规则缺陷。
 
 #### 11.5.1 审计字段
 
@@ -1084,7 +1084,7 @@ Rtool
 
 ```mermaid
 flowchart LR
-    G0["G0 数据审计<br/>577 条全量首审"] --> G1["G1 Expert 基线<br/>格式配平 + 单工具增益"]
+    G0["G0 数据审计<br/>539 条候选全量首审"] --> G1["G1 Expert 基线<br/>格式配平 + 单工具增益"]
     G1 --> G2["G2 视觉证据<br/>Evidence Bundle + 多图回灌"]
     G2 --> G3["G3 决策停止<br/>Rectifier + 工具净收益"]
     G3 --> G4["G4 增益 SFT<br/>no/single/multi-tool"]
@@ -1096,7 +1096,7 @@ flowchart LR
 
 #### G0：现有数据审计
 
-- 全量审计 577 条 SFT 数据；
+- 全量审计 539 条候选 SFT 数据，并复核 38 条拒绝记录的规则命中情况；
 - 分离事实训练、工具策略、冲突拒判和格式修复数据；
 - 暂停直接使用未经审计的 reasoning 进行 LoRA。
 
@@ -1144,7 +1144,7 @@ flowchart LR
 
 | 顺序 | 工作项 | 完成门槛 | 是否需要 GPU |
 |------|--------|----------|--------------|
-| 1 | 577 条 SFT 人工审计 | 100% 有审核状态；unsure 完成二审 | 否 |
+| 1 | 539 条候选 SFT 人工审计 | 100% 有审核状态；38 条拒绝记录可追溯；unsure 完成二审 | 否 |
 | 2 | 格式配平与单 Expert 基线 | 每个工具有分层增益、可靠性和成本报告 | Qwen 对比需要 |
 | 3 | Evidence Bundle 与可视化图 | 三个 Expert 均能生成可审计 artifact，旧接口兼容 | 否 |
 | 4 | Qwen 多图回灌 | 原图和工具图在多轮中不丢失，消融可复现 | 是 |
