@@ -32,11 +32,16 @@ class TestStateMachineRun:
         assert "sft_data_path" in result
 
     def test_halting_reason_is_valid(self, state_machine):
+        """G3-c: v2 stops for a posterior reason, not a tag-order one."""
+        from state_machine.halting_v2 import HaltingPolicyV2
+
         result = state_machine.run(FAKE_PATH, "Fake")
-        assert result["halting_reason"] in (
-            "verdict_output", "budget_exhausted",
-            "evidence_conflict", "info_gain_converged",
-        )
+        assert result["halting_reason"] in {
+            HaltingPolicyV2.NO_EXPECTED_GAIN,
+            HaltingPolicyV2.BUDGET_EXHAUSTED,
+            HaltingPolicyV2.MODEL_STALLED,
+            HaltingPolicyV2.CANDIDATE_ACCEPTED,
+        }
 
     def test_counters_are_reported(self, state_machine):
         """G1 (§4.8): run() exposes separated observable counters."""
@@ -120,8 +125,9 @@ class TestEvidenceDeduplication:
         assert result["unique_evidence_count"] == 1
         assert result["expert_call_count"] == 2
         assert result["suppressed_duplicate_count"] == 1
-        # Duplicate suppression must prevent false info-gain convergence.
-        assert result["halting_reason"] == "verdict_output"
+        # Duplicate suppression must prevent the false convergence path v1 had
+        # (its info-gain rule compared two adjacent strengths).
+        assert result["halting_reason"] != "info_gain_converged"
 
     def test_duplicate_evidence_injected_once_in_conversation(self):
         mllm = ScriptedMLLM([self.CALL, self.CALL, self.VERDICT])
@@ -334,10 +340,16 @@ class TestEvidenceInjectionModes:
         return fsm.run(FAKE_PATH, "Fake")
 
     def _evidence_turns(self, result):
-        """User turns that are not the initial <image> prompt."""
+        """User turns that are not the initial prompt or a system note.
+
+        Under halting policy v2 the loop also injects system notes (an
+        overridden candidate, the closing instruction); those are not evidence.
+        """
         return [
             turn for turn in result["conversation"]
-            if turn["from"] == "user" and "<image>" not in turn["value"]
+            if turn["from"] == "user"
+            and "<image>" not in turn["value"]
+            and not turn["value"].lstrip().startswith("[System:")
         ]
 
     def test_unknown_mode_rejected(self):

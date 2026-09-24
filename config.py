@@ -40,6 +40,14 @@ ENTROPY_THRESHOLD = 0.3             # halt when classification entropy < this
 KL_THRESHOLD = 1e-3                 # halt when KL divergence between successive
                                     #   confidence distributions < this
 
+# Halting policy v2 (plan.md §4.10 G3-c).  "v2" decides from the posterior;
+# "v1" keeps the legacy tag-order checker, for offline replay comparison.
+HALTING_POLICY = "v2"
+POLICY_STEP_LOG_ODDS = 1.5          # log-odds one perfectly-weighted token contributes
+POLICY_CONFIDENT_POSTERIOR = 0.65   # |P(Fake)| needed to halt on a label
+POLICY_CONFLICT_TOLERANCE = 0.5     # weighted disagreement above which no label is safe
+POLICY_CALL_COST = 0.15             # expected-utility cost of one more expert call
+
 # ---------------------------------------------------------------------------
 # Coordinate system (Qwen2.5-VL convention)
 # ---------------------------------------------------------------------------

@@ -16,6 +16,7 @@ import numpy as np
 
 from config import (
     EVIDENCE_ARTIFACT_DIR,
+    HALTING_POLICY,
     MAX_EXPERT_CALLS,
     MAX_MODEL_TURNS,
     PROJECT_ROOT,
@@ -31,6 +32,7 @@ from utils.logger import SessionLogger, log_operation
 from state_machine.evidence_rectifier import EvidenceRectifier
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
+from state_machine.halting_v2 import HaltingPolicyV2
 
 
 class ForensicStateMachine:
@@ -149,6 +151,9 @@ class ForensicStateMachine:
         evidence_chain: List[dict] = []
         final_verdict: Optional[dict] = None
         halting_reason: str = ""
+        called_experts: set = set()
+        policy_decision = None
+        turns_without_new_evidence = 0
 
         # Outer safety net: the halting budget fires first; the +1 allows the
         # forced-conclusion turn that budget halting triggers.
@@ -160,11 +165,13 @@ class ForensicStateMachine:
             # Log the assistant turn
             self._logger.add_conversation_turn("gpt", raw_output)
             conversation.append({"from": "gpt", "value": raw_output})
+            evidence_before_turn = len(evidence_chain)
 
-            # 4b. Check for verdict FIRST (model may conclude immediately)
-            verdict = Parser.parse_verdict(raw_output)
-            if verdict and "verdict" in verdict:
-                final_verdict = verdict
+            # 4b. A verdict tag is a *candidate*: v2 weighs it against the
+            # posterior, v1 halts on it immediately (kept for replay).
+            candidate_verdict = Parser.parse_verdict(raw_output)
+            if candidate_verdict and "verdict" in candidate_verdict and HALTING_POLICY == "v1":
+                final_verdict = candidate_verdict
                 halting_reason = HaltingChecker.VERDICT_OUTPUT
                 break
 
@@ -240,6 +247,8 @@ class ForensicStateMachine:
                         suppressed_duplicate_count += 1
                         continue
                     seen_evidence_ids.add(evidence_id)
+                    called_experts.add(expert_result.source)
+                    turns_without_new_evidence = -1  # counted at the turn's end
 
                     # Persist the diagnostic region crop (G1) and the expert's
                     # visual artifacts (G2) when the current condition will
@@ -311,7 +320,60 @@ class ForensicStateMachine:
                     self._logger.add_system_message(correction)
                     conversation.append({"from": "user", "value": correction})
 
-            # 4e. Check halting criteria
+            # 4e. Ask the halting policy what to do next
+            if HALTING_POLICY == "v2":
+                turns_without_new_evidence = (
+                    0 if len(evidence_chain) > evidence_before_turn
+                    else max(0, turns_without_new_evidence) + 1
+                )
+                decision = HaltingPolicyV2.decide(
+                    model_turns=model_turn_count,
+                    expert_calls=expert_call_count,
+                    evidence_chain=evidence_chain,
+                    candidate_verdict=candidate_verdict,
+                    available_experts=self._expert_weights(),
+                    called_experts=called_experts,
+                    turns_without_new_evidence=turns_without_new_evidence,
+                )
+                policy_decision = decision
+                if decision.action == "continue":
+                    if candidate_verdict:
+                        # A verdict tag was overridden: say so, or the model
+                        # will simply repeat it until the budget runs out.
+                        override = (
+                            f"[System: 你的结论与当前校准后验不一致"
+                            f"（P(Fake)={decision.posterior:.2f}，"
+                            f"冲突度={decision.conflict_score:.2f}），"
+                            f"暂不能结案。请继续取证：建议调用 "
+                            f"{decision.next_expert or '下一个未使用的专家'}，"
+                            f"或说明为何现有证据足以支持你的结论。]"
+                        )
+                        self._logger.add_system_message(override)
+                        conversation.append({"from": "user", "value": override})
+                    continue
+                halting_reason = decision.primary_reason
+                # The policy owns the label; the model's closing turn supplies
+                # the report text, and its own verdict is kept for audit.
+                note = self._conclusion_note(decision)
+                final_output = self._request_conclusion(image_path, conversation, note)
+                model_turn_count += 1
+                model_candidate = Parser.parse_verdict(final_output) or {}
+                final_verdict = {
+                    "verdict": decision.verdict,
+                    "confidence": decision.confidence,
+                    "report": model_candidate.get("report") or (
+                        "取证后仍未形成可判定方向，按疑罪从无输出 Uncertain。"
+                        if decision.verdict == "Uncertain"
+                        else "基于校准后验与已获取证据的判定。"
+                    ),
+                    "posterior": round(decision.posterior, 4),
+                    "conflict_score": round(decision.conflict_score, 4),
+                    "policy_reason": decision.primary_reason,
+                    "policy_reasons": list(decision.all_reasons),
+                    "model_candidate": model_candidate.get("verdict"),
+                }
+                break
+
             should_halt, reason = HaltingChecker.check(
                 model_turn_count, expert_call_count, evidence_chain, raw_output
             )
@@ -368,6 +430,7 @@ class ForensicStateMachine:
         counters = self._build_counters(
             model_turn_count, expert_call_count,
             suppressed_duplicate_count, evidence_chain,
+            policy_decision=policy_decision,
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -413,6 +476,43 @@ class ForensicStateMachine:
             return rel_path.replace(os.sep, "/")
         return None
 
+    def _expert_weights(self) -> Dict[str, float]:
+        """
+        Measured decision weight per registered expert (G3-c).
+
+        The calibration table's polarity-corrected separation is what the
+        expert can still tell apart after every confound G2-b could remove;
+        experts without a measurement get no weight, so the policy will not
+        pay for calling them.
+        """
+        separations: Dict[str, Optional[float]] = {}
+        for source_name in self._experts:
+            entry = None
+            if self._reliability_table is not None:
+                entry = self._reliability_table.expert_entry(source_name)
+            separations[source_name] = (
+                (entry or {}).get("separation_polarity_corrected")
+            )
+        return HaltingPolicyV2.expert_weights(separations)
+
+    @staticmethod
+    def _conclusion_note(decision) -> str:
+        """Frame the forced-closing turn differently per halting reason."""
+        if decision.primary_reason == HaltingPolicyV2.BUDGET_EXHAUSTED:
+            return (
+                "[System: 取证资源（Budget）已耗尽。请基于已获取的全部证据撰写"
+                "最终报告；结论标签由系统按校准后验给出，你只需如实描述证据与不确定性。]"
+            )
+        if HaltingPolicyV2.CONFLICT_UNRESOLVED in decision.all_reasons:
+            return (
+                "[System: 法证证据出现强冲突且无法继续取证（疑罪从无 — Conflict Halting）。"
+                "请进行双向反思，说明冲突双方的物理依据与不确定性。]"
+            )
+        return (
+            "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据"
+            "撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+        )
+
     def _request_conclusion(
         self, image_path: str, conversation: List[Dict[str, str]], note: str
     ) -> str:
@@ -431,9 +531,10 @@ class ForensicStateMachine:
         expert_call_count: int,
         suppressed_duplicate_count: int,
         evidence_chain: List[dict],
+        policy_decision=None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
-        return {
+        counters = {
             "model_turn_count": model_turn_count,
             "expert_call_count": expert_call_count,
             "unique_evidence_count": len(evidence_chain),
@@ -441,4 +542,17 @@ class ForensicStateMachine:
             "weighted_cost": round(
                 expert_call_count + TURN_COST_WEIGHT * model_turn_count, 4
             ),
+            "policy_version": HALTING_POLICY,
         }
+        if policy_decision is not None:
+            # A replay must be able to explain the stop from the trace alone.
+            counters.update({
+                "policy_reason": policy_decision.primary_reason,
+                "policy_reasons": list(policy_decision.all_reasons),
+                "posterior": round(policy_decision.posterior, 4),
+                "conflict_score": round(policy_decision.conflict_score, 4),
+                "candidate_overridden": (
+                    HaltingPolicyV2.CANDIDATE_OVERRIDDEN in policy_decision.all_reasons
+                ),
+            })
+        return counters

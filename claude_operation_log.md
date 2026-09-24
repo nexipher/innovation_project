@@ -733,3 +733,24 @@
 * **执行结果与验证状态**：G3-b 完成; 290 测试通过; 真机回放零矛盾、零门失败
 * **置信度或遗留待办（TODO）**：G3-c 停止策略 v2(HaltingDecision: 后验+冲突度+剩余工具预期收益−成本) → G3-d 配置指纹 → G3-e n=120 GPU 复核
 ---
+### 2026-09-24 17:05:20 - G3-c 停止策略 v2（HaltingDecision）
+
+* **当前操作动作**：G3-c —— 以校准后验重写停止策略，替换 v1 的"标签顺序 + 跨专家 strength 比较"
+* **核心变更说明**：
+  1. **v1 的病根**: 冲突检测比较**跨专家 strength**(各专家尺度不可比, G2-e 后高 strength 对不同专家含义相反), 信息增益比较相邻 strength 差值 —— 回放显示 342/1191 次会话由这条无意义规则终止
+  2. 新增 `state_machine/halting_v2.py`: 后验(可靠度加权 log-odds, 权重=Youden margin 2·AUROC−1, 未校准 token 权重 0) + 冲突度(加权贡献的抵消比例) + 各工具预期增益(权重×不确定性−成本) → `HaltingDecision(action/verdict/confidence/primary_reason/all_reasons/next_expert/posterior/conflict_score/expected_net_utility)`
+  3. 决策规则(顺序): 无证据→探索; 模型 `<verdict>` **仅候选**(需后验同意+足够自信+无未决冲突); **模型重复被驳回的候选→model_stalled**(策略能建议不能强制: mock 管道实测 7 轮→5 轮); 预算耗尽**不自动定标签**(自信才给标签, 否则 Uncertain); 无正收益→停(冲突未决则 Uncertain); 否则继续并推荐最优工具
+  4. 控制器接线: `HALTING_POLICY` 配置开关(默认 v2, v1 保留供回放); 驳回候选时注入说明(否则模型会重复输出到预算耗尽); trace 记录 `policy_reason/policy_reasons/posterior/conflict_score/candidate_overridden/model_candidate`
+  5. **离线回放(1191 条真实会话, `scripts/replay_halting_g3.py`)**: v1 标注 802 条准确率 0.414 | v2 标注 367 条准确率 **0.534**, 弃权 824 条; v2 后验 ECE 0.176 / Brier 0.277; **冲突样本 74 条: v1 给其中 14 条定了标签, v2 全部弃权**; 模型候选 1161 次, v2 接受 263、驳回 747
+  6. 回放局限(已写入脚本 docstring): 无法测量 v2 会省下多少调用(离线无模型), 调用/轮数为 v1 实测值
+  7. 测试 332 通过(halting_v2 30 项 + replay 12 项)
+* **涉及/修改的文件清单**：
+  - `state_machine/halting_v2.py (Created — 后验/冲突/工具效用/HaltingDecision)`
+  - `state_machine/controller.py (Modified — 策略分派/停滞计数/驳回说明/计数器)`
+  - `config.py (Modified — HALTING_POLICY 与策略常量)`
+  - `scripts/replay_halting_g3.py (Created — v1/v2 离线回放)`
+  - `calibration/g3_halting_replay.json (Created)`
+  - `tests/test_halting_v2.py, tests/test_replay_halting_g3.py (Created), tests/test_controller.py, tests/test_pipeline.py (Modified — 适配 v2 语义)`
+* **执行结果与验证状态**：G3-c 完成; 332 测试通过; 回放显示 v2 以更少标签换取更高准确率, 且冲突样本不再被候选覆盖
+* **置信度或遗留待办（TODO）**：G3-d 实验配置指纹 → G3-e n=120 GPU 复核(需授权)
+---
