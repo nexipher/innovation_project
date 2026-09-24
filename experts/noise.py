@@ -23,19 +23,32 @@ from config import (
     NOISE_WINDOW_SIZE,
     NOISE_SIGMOID_MIDPOINT,
     NOISE_SIGMOID_STEEPNESS,
-    STRENGTH_THRESHOLD_LOW,
-    STRENGTH_THRESHOLD_HIGH,
-    STRENGTH_TEXT_MAP,
-    STRENGTH_SUPPORT_MAP,
 )
 
 
 class NoiseExpert(BaseExpert):
     source_name = "noise_expert"
 
+    # G2-b (§4.9 G2-e): on the format-balanced calibration set a HIGH residual
+    # level means Real (camera sensor micro-noise survives re-encoding), and a
+    # LOW level means Fake (generators produce smooth, low-variance output).
+    # The original "inconsistency ⇒ manipulation" reading is inverted for this
+    # task, so the token must say so.
+    metric_polarity = -1
+
+    inverted_text_map = {
+        "low": ("Low residual micro-noise level — smooth, low-variance output of the "
+                "kind the calibration set associates with generated imagery."),
+        "medium": ("Intermediate residual level; the calibrated likelihood is close to "
+                   "chance for this band."),
+        "high": ("High residual micro-noise level — spatially rich sensor noise of the "
+                 "kind the calibration set associates with camera capture."),
+    }
+
     counter_explanation = (
-        "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。"
-        "G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。"
+        "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，"
+        "方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。"
+        "降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。"
     )
 
     # ------------------------------------------------------------------
@@ -101,7 +114,7 @@ class NoiseExpert(BaseExpert):
         # 5. Sigmoid normalisation
         strength = self._sigmoid_normalise(inconsistency)
 
-        support, interp_text = self._classify(strength)
+        support, interp_text = self.classify_metric(strength)
 
         return self._build_result(
             evidence_name="noise_residual_inconsistency",
@@ -206,34 +219,31 @@ class NoiseExpert(BaseExpert):
     def _get_reasoning(strength: float, inconsistency: float) -> str:
         if strength < 0.3:
             return (
-                f"The micro-noise pattern exhibits uniform variance across the "
-                f"analysed region (inconsistency={inconsistency:.4f}), consistent "
-                "with a single camera sensor capture. No evidence of local editing, "
-                "splicing, or AI-based inpainting that would disrupt noise homogeneity."
+                f"Low residual micro-noise level (metric={inconsistency:.4f}). "
+                "The region is smooth at the sensor-noise scale — the condition "
+                "under which the G2 calibration set identifies generated imagery "
+                "(fake median 2.0 vs real median 3.6). Denoising or heavy "
+                "recompression produces the same signature, so this is a weak "
+                "signal on its own."
             )
         elif strength < 0.7:
             return (
-                f"Mild noise inconsistency detected (ratio={inconsistency:.4f}). "
-                "This could indicate localised post-processing (e.g. light denoising, "
-                "sharpening) or natural texture variation. The signal is below the "
-                "threshold for definitive tampering conclusion."
+                f"Intermediate residual micro-noise level (metric={inconsistency:.4f}). "
+                "This band sits near the calibrated chance level; the measurement "
+                "carries little directional information."
             )
         else:
             return (
-                f"Significant localised noise variance anomaly detected "
-                f"(inconsistency ratio={inconsistency:.4f}). Real camera sensors "
-                "produce spatially homogeneous micro-noise (shot noise + PRNU). "
-                "Splicing, inpainting, or AI-based local editing disrupts this "
-                "homogeneity, causing either variance collapse (over-smoothing) "
-                "or inflation (unnatural texture). This level of inconsistency "
-                "is characteristic of manipulated or AI-generated image regions."
+                f"High residual micro-noise level (metric={inconsistency:.4f}). "
+                "Camera sensors leave spatially rich micro-noise (shot noise + PRNU) "
+                "that survives re-encoding, which is the condition the G2 calibration "
+                "set associates with real capture. Note this is the opposite of the "
+                "original manipulation reading: high residual does NOT indicate "
+                "forgery. Sharpening can also inflate this metric."
             )
 
     @staticmethod
     def _classify(strength: float) -> tuple:
-        if strength < STRENGTH_THRESHOLD_LOW:
-            return "Real", STRENGTH_TEXT_MAP["low"]
-        elif strength < STRENGTH_THRESHOLD_HIGH:
-            return "Uncertain", STRENGTH_TEXT_MAP["medium"]
-        else:
-            return "AI-generated", STRENGTH_TEXT_MAP["high"]
+        """Deprecated alias of BaseExpert.classify_metric (kept for callers
+        that imported it directly); it now honours the measured polarity."""
+        return BaseExpert.classify_metric(strength)

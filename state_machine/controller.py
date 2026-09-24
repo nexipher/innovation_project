@@ -41,16 +41,21 @@ class ForensicStateMachine:
         result = fsm.run("path/to/image.jpg")
     """
 
-    # Expert registry — maps MLLM call tag names to expert instances
+    # Expert registry — maps MLLM call tag names to registry keys.
+    # G2-e (plan.md §4.9): the runtime ships the v2 frequency expert, and
+    # its source name is distinct from v1's, so calibration lookups reach the
+    # v2 entry rather than v1's disabled:no-signal one.  v1 is never
+    # registered; ELA stays out too (its G2-b skill is compression history).
     EXPERT_KEY_MAP = {
-        "freq": "frequency_expert",
+        "freq": "frequency_expert_v2",
         "noise": "noise_expert",
         "jpeg": "jpeg_expert",
     }
 
-    # Expert registry — maps source_name to expert instances
+    # Expert registry — maps source_name to MLLM call tag
     EXPERT_SOURCE_MAP = {
-        "frequency_expert": "freq",
+        "frequency_expert_v2": "freq",
+        "frequency_expert": "freq",      # deprecated v1 (old traces only)
         "noise_expert": "noise",
         "jpeg_expert": "jpeg",
     }

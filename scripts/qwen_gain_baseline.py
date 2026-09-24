@@ -300,7 +300,7 @@ def _build_experts() -> Dict[str, Any]:
     # G2 evidence favours v2; the gain comparison measures the toolkit the
     # pipeline will actually ship, not the disabled v1.
     return {
-        "frequency_expert": FrequencyExpertV2(),
+        "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }

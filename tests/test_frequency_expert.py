@@ -27,7 +27,9 @@ class TestFrequencyExpert:
     def test_result_schema(self, freq_expert, synthetic_smooth_image):
         result = freq_expert.analyze(synthetic_smooth_image)
         assert result.evidence_name
-        assert result.source == "frequency_expert"
+        # G2-e: the shipped expert reports its own source name, which is what
+        # the calibration table is keyed on.
+        assert result.source == "frequency_expert_v2"
         assert result.support in ("Real", "AI-generated", "Uncertain")
         assert result.phenomenon
         assert result.reasoning

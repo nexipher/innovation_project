@@ -24,7 +24,7 @@ from config import (
 import torch
 from mllm.mock_client import MockMLLMClient
 from mllm.qwen_client import QwenVLClient
-from experts.frequency import FrequencyExpert
+from experts.frequency_v2 import FrequencyExpertV2
 from experts.noise import NoiseExpert
 from experts.jpeg import JPEGExpert
 from state_machine.controller import ForensicStateMachine
@@ -44,7 +44,7 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> Foren
         mllm = MockMLLMClient(mode=mode)
 
     experts = {
-        "frequency_expert": FrequencyExpert(),
+        "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }

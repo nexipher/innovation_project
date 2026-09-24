@@ -10,11 +10,11 @@ FAKE_PATH = "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"
 
 @pytest.fixture
 def state_machine(mock_mllm_default):
-    from experts.frequency import FrequencyExpert
+    from experts.frequency_v2 import FrequencyExpertV2
     from experts.noise import NoiseExpert
     from experts.jpeg import JPEGExpert
     experts = {
-        "frequency_expert": FrequencyExpert(),
+        "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }
@@ -94,11 +94,11 @@ class ScriptedMLLM:
 
 
 def _build_experts():
-    from experts.frequency import FrequencyExpert
+    from experts.frequency_v2 import FrequencyExpertV2
     from experts.noise import NoiseExpert
     from experts.jpeg import JPEGExpert
     return {
-        "frequency_expert": FrequencyExpert(),
+        "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }

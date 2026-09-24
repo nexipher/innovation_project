@@ -5,7 +5,7 @@ import os
 import pytest
 
 from mllm.mock_client import MockMLLMClient
-from experts.frequency import FrequencyExpert
+from experts.frequency_v2 import FrequencyExpertV2
 from experts.noise import NoiseExpert
 from experts.jpeg import JPEGExpert
 from state_machine.controller import ForensicStateMachine
@@ -21,7 +21,7 @@ ADM_IMAGE = "dataset/GenImage_Test/ADM/0_adm_174.PNG"
 def _build_fsm(mode="two_calls"):
     mllm = MockMLLMClient(mode=mode, seed=42)
     experts = {
-        "frequency_expert": FrequencyExpert(),
+        "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }

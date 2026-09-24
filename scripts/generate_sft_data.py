@@ -35,7 +35,7 @@ from utils.logger import SessionLogger
 from state_machine.controller import ForensicStateMachine
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
-from experts.frequency import FrequencyExpert
+from experts.frequency_v2 import FrequencyExpertV2
 from experts.noise import NoiseExpert
 from experts.jpeg import JPEGExpert
 
@@ -167,7 +167,7 @@ FAKE_EVIDENCE_FREQ = json.dumps({
                  "upsampling grid artifacts. Natural images do not exhibit "
                  "such structured high-frequency periodicity.",
     "strength": 0.92,
-    "source": "frequency_expert",
+    "source": "frequency_expert_v2",
     "support": "AI-generated",
     "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints.",
 }, ensure_ascii=False)
@@ -193,7 +193,7 @@ NEUTRAL_EVIDENCE = json.dumps({
     "reasoning": "This could indicate either mild AI post-processing or natural image texture. "
                  "The signal is too weak for a definitive conclusion.",
     "strength": 0.48,
-    "source": "frequency_expert",
+    "source": "frequency_expert_v2",
     "support": "Uncertain",
     "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
 }, ensure_ascii=False)
@@ -204,7 +204,7 @@ SIMILAR_EVIDENCE_1 = json.dumps({
     "phenomenon": "Minor frequency anomaly at 0.42σ above baseline.",
     "reasoning": "Weak signal, likely natural variation.",
     "strength": 0.45,
-    "source": "frequency_expert",
+    "source": "frequency_expert_v2",
     "support": "Uncertain",
     "interpretation_text": "Mild mathematical distortions noted.",
 }, ensure_ascii=False)
@@ -215,7 +215,7 @@ SIMILAR_EVIDENCE_2 = json.dumps({
     "phenomenon": "Minor frequency anomaly at 0.44σ above baseline.",
     "reasoning": "Weak signal, likely natural variation.",
     "strength": 0.46,
-    "source": "frequency_expert",
+    "source": "frequency_expert_v2",
     "support": "Uncertain",
     "interpretation_text": "Mild mathematical distortions noted.",
 }, ensure_ascii=False)
@@ -441,7 +441,7 @@ def main():
 
     mllm = QwenVLClient()
     experts = {
-        "frequency_expert": FrequencyExpert(),
+        "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }

@@ -31,6 +31,11 @@ from config import (
 
 
 class FrequencyExpert(BaseExpert):
+    """DEPRECATED (G2-e, plan.md §4.9): G2-b measured no usable signal
+    (format-balanced separation 0.505) and the pipeline ships v2 instead.
+    Kept only so the Phase 2.3/3.1 traces that used it stay reproducible;
+    no runtime entry point constructs it.
+    """
     source_name = "frequency_expert"
 
     counter_explanation = (

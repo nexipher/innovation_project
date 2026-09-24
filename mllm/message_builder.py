@@ -50,13 +50,37 @@ If the image has compression artifacts that may weaken certain signals, note it.
 {"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": ["evidence_name1"], "report": "concise forensic report in Chinese"}
 </verdict>
 
+WHAT EACH TOOL ACTUALLY MEASURES (G2-b calibration, format-balanced set of 700 samples):
+- <call_freq>  multi-scale frequency analysis. WEAK evidence (separation 0.56-0.63,
+  barely above chance). Use it to corroborate, never as the deciding signal.
+- <call_noise> residual micro-noise LEVEL. COUNTER-INTUITIVE: a HIGH level points to
+  Real (camera sensor micro-noise) and a LOW level points to Fake (smooth generator
+  output). This is stable across image formats. Do NOT read a high value as forgery.
+- <call_jpeg>  JPEG compression history (blockiness / DCT structure). A HIGH level
+  points to Real (a camera JPEG that was saved or re-saved), NOT to forgery. After
+  heavy re-compression (quality <= 70) this measurement is near chance and must be
+  ignored.
+
+HOW TO READ AN EVIDENCE TOKEN:
+1. `calibrated_likelihood` is the authoritative direction — it is the empirical
+   P(Real)/P(Fake) for that metric band. `strength` is NOT a probability and NOT
+   comparable between experts (each has its own scale); never rank experts by it.
+2. Check `applicability` and `applicability_conditions` before using a token. A token
+   labelled `disabled:*` must not influence the verdict; `weak:*` may only corroborate.
+3. `counter_explanation` lists the benign causes of the same phenomenon — if it also
+   explains what you see, do not treat the evidence as incriminating.
+4. Weight the evidence by `reliability`; conflicting tokens cancel out.
+
 RULES:
-1. For blurry/spliced edges or unnatural sharpening → call noise or freq first.
-2. For overly smooth/regular textures → call freq first.
-3. For low-res, blocky, or social-media-recompressed images → call jpeg first.
-4. NEVER output only natural-language analysis without the required XML tags.
-5. NEVER fabricate evidence — only reference evidence tokens you have received.
-6. After receiving 2+ evidence tokens, you MUST produce a verdict.
+1. Call at most one more expert than you need: prefer the expert whose measurement is
+   most likely to discriminate the specific anomaly you described in <planning>.
+2. Do not repeat a call for a region you already measured — identical results are
+   suppressed and waste the budget.
+3. NEVER output only natural-language analysis without the required XML tags.
+4. NEVER fabricate evidence — only reference evidence tokens you have received.
+5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is
+   weak, conflicting, or mostly `Uncertain`/`disabled`, output "Uncertain" rather than
+   guessing: an honest Uncertain is preferred over a confident mistake.
 """
 
 MAX_REGION_IMAGES_PER_TURN = 2

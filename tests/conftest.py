@@ -100,6 +100,14 @@ def mock_mllm_conflict():
 
 @pytest.fixture
 def freq_expert():
+    """The shipped frequency expert (v2) — v1 is deprecated (plan.md G2-e)."""
+    from experts.frequency_v2 import FrequencyExpertV2
+    return FrequencyExpertV2()
+
+
+@pytest.fixture
+def freq_expert_v1():
+    """The deprecated v1 expert, kept for trace reproducibility only."""
     from experts.frequency import FrequencyExpert
     return FrequencyExpert()
 

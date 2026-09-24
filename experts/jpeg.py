@@ -22,19 +22,34 @@ from config import (
     JPEG_BLOCK_SIZE,
     JPEG_SIGMOID_MIDPOINT,
     JPEG_SIGMOID_STEEPNESS,
-    STRENGTH_THRESHOLD_LOW,
-    STRENGTH_THRESHOLD_HIGH,
-    STRENGTH_TEXT_MAP,
-    STRENGTH_SUPPORT_MAP,
 )
 
 
 class JPEGExpert(BaseExpert):
     source_name = "jpeg_expert"
 
+    # G2-b (§4.9 G2-e): a HIGH level of blockiness/DCT structure means the
+    # image carries JPEG-photo history — i.e. it leans Real, not forged.  The
+    # signal collapses as the image is recompressed more (png 0.972 → q70
+    # 0.569 separation), so a uniformly re-encoded image tells us almost
+    # nothing.
+    metric_polarity = -1
+
+    inverted_text_map = {
+        "low": ("Low JPEG structural level — the image carries little JPEG history, "
+                "the condition the calibration set associates with natively generated "
+                "(PNG) imagery."),
+        "medium": ("Intermediate JPEG structural level; this band is near the "
+                   "calibrated chance level, and re-compression weakens it further."),
+        "high": ("High JPEG structural level — blockiness and DCT structure of the "
+                 "kind the calibration set associates with a camera JPEG that was "
+                 "saved or re-saved (real capture), not with forgery."),
+    }
+
     counter_explanation = (
-        "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；"
-        "PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。"
+        "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real"
+        "（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），"
+        "即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。"
     )
 
     def __init__(
@@ -83,7 +98,7 @@ class JPEGExpert(BaseExpert):
         # 4. Sigmoid normalisation
         strength = self._sigmoid_normalise(combined)
 
-        support, interp_text = self._classify(strength)
+        support, interp_text = self.classify_metric(strength)
 
         # Choose appropriate evidence name
         if blockiness > dct_anomaly:
@@ -268,34 +283,33 @@ class JPEGExpert(BaseExpert):
     def _get_reasoning(strength: float, blockiness: float, dct_anomaly: float) -> str:
         if strength < 0.3:
             return (
-                "JPEG structural analysis shows blockiness and DCT coefficient "
-                "patterns within the normal range for a single-compressed image. "
-                "No evidence of double JPEG compression or tampering-related "
-                "re-quantisation artifacts. Note: if the image is in PNG format, "
-                "absence of JPEG traces is expected and does not indicate forgery."
+                f"Little JPEG structure found (blockiness={blockiness:.4f}, "
+                f"DCT anomaly={dct_anomaly:.4f}). The image carries almost no "
+                "JPEG compression history — the condition the G2 calibration set "
+                "associates with natively generated (PNG) imagery. Note this is a "
+                "provenance cue, not proof: a screenshot or a heavily processed "
+                "image looks the same."
             )
         elif strength < 0.7:
             return (
-                f"Mild JPEG structural anomalies detected (blockiness={blockiness:.4f}, "
-                f"DCT anomaly={dct_anomaly:.4f}). These could indicate light re-compression "
-                "(e.g. social media re-save) rather than malicious tampering. "
-                "Correlate with other expert findings before drawing conclusions."
+                f"Moderate JPEG structure found (blockiness={blockiness:.4f}, "
+                f"DCT anomaly={dct_anomaly:.4f}). At this level the calibrated "
+                "likelihood is near chance; re-compression weakens the signal "
+                "further, so this band should not drive a verdict."
             )
         else:
             return (
-                f"Significant JPEG compression anomalies detected (blockiness={blockiness:.4f}, "
-                f"DCT anomaly={dct_anomaly:.4f}). Double JPEG compression and re-saving "
-                "leave distinct forensic traces: (1) anomalous gradient energy at 8×8 "
-                "block boundaries, and (2) periodic gaps in the DCT coefficient histogram "
-                "caused by re-quantisation with different quality factors. These are "
-                "classic markers of post-capture editing or forgery."
+                f"Strong JPEG compression structure found (blockiness={blockiness:.4f}, "
+                f"DCT anomaly={dct_anomaly:.4f}). Gradient energy at 8×8 block "
+                "boundaries and DCT histogram structure indicate the image originates "
+                "from a JPEG photograph that was saved or re-saved — the direction the "
+                "G2 calibration set associates with real capture. This is NOT a forgery "
+                "marker: high values do not indicate tampering, and uniform re-compression "
+                "(quality ≤ 70) removes most of this signal's discriminative power."
             )
 
     @staticmethod
     def _classify(strength: float) -> tuple:
-        if strength < STRENGTH_THRESHOLD_LOW:
-            return "Real", STRENGTH_TEXT_MAP["low"]
-        elif strength < STRENGTH_THRESHOLD_HIGH:
-            return "Uncertain", STRENGTH_TEXT_MAP["medium"]
-        else:
-            return "AI-generated", STRENGTH_TEXT_MAP["high"]
+        """Deprecated alias of BaseExpert.classify_metric, which honours the
+        measured metric polarity (G2-e)."""
+        return BaseExpert.classify_metric(strength)

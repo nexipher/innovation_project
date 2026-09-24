@@ -10,9 +10,16 @@ before calling analyze().  The expert receives the pre-cropped patch.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List, Tuple
 
 import numpy as np
+
+from config import (
+    STRENGTH_SUPPORT_MAP,
+    STRENGTH_TEXT_MAP,
+    STRENGTH_THRESHOLD_HIGH,
+    STRENGTH_THRESHOLD_LOW,
+)
 
 
 @dataclass
@@ -68,6 +75,44 @@ class BaseExpert(ABC):
     # G2 §4.9: benign explanations for the phenomenon this expert measures,
     # used to keep the MLLM from over-reading a single physical signal.
     counter_explanation: str = ""
+
+    # ------------------------------------------------------------------
+    # G2-b measured metric direction (plan.md §4.9 G2-e)
+    #
+    #   +1: a higher metric points to Fake — the expert's original theory;
+    #   -1: a higher metric points to Real — a measured inversion.  G2-b
+    #       found this for the noise and JPEG experts on the format-balanced
+    #       calibration set, so their tokens must not reuse the aligned
+    #       sentence map: the model reads the text, not the calibration table.
+    # ------------------------------------------------------------------
+    metric_polarity: int = 1
+
+    # Interpretation sentences for polarised experts (band -> text), used
+    # instead of STRENGTH_TEXT_MAP when metric_polarity is negative.
+    inverted_text_map: Dict[str, str] = {}
+
+    @classmethod
+    def classify_metric(cls, strength: float) -> Tuple[str, str]:
+        """
+        Map a normalised strength to (support, interpretation text).
+
+        Experts whose metric direction is inverted must override
+        inverted_text_map, because the shared map asserts the generative
+        reading the calibration set contradicts.
+        """
+        if strength < STRENGTH_THRESHOLD_LOW:
+            band = "low"
+        elif strength < STRENGTH_THRESHOLD_HIGH:
+            band = "medium"
+        else:
+            band = "high"
+
+        if cls.metric_polarity >= 0:
+            return STRENGTH_SUPPORT_MAP[band], STRENGTH_TEXT_MAP[band]
+
+        inverted_support = {"low": "AI-generated", "medium": "Uncertain",
+                            "high": "Real"}
+        return inverted_support[band], cls.inverted_text_map[band]
 
     @abstractmethod
     def analyze(self, img_patch: np.ndarray) -> ExpertResult:

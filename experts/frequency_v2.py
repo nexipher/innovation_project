@@ -25,7 +25,9 @@ from config import (
 
 
 class FrequencyExpertV2(BaseExpert):
-    source_name = "frequency_expert"
+    # G2-e: distinct from v1's source name — sharing it made every v2
+    # measurement look up v1's "disabled:no-signal" calibration entry.
+    source_name = "frequency_expert_v2"
 
     counter_explanation = (
         "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。"
