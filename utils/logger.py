@@ -28,7 +28,14 @@ class SessionLogger:
     and final verdict, then saves as a ShareGPT-format SFT training sample.
     """
 
-    def __init__(self):
+    def __init__(self, sft_dir: Optional[str] = None):
+        """
+        Args:
+            sft_dir: Directory for the serialised trace.  Defaults to
+                SFT_SESSIONS_DIR; the dry-run harness points it elsewhere so
+                mock sessions never mix with real ones.
+        """
+        self._sft_dir = sft_dir or SFT_SESSIONS_DIR
         self._session_id: str = ""
         self._image_path: str = ""
         self._ground_truth: Optional[str] = None
@@ -145,7 +152,7 @@ class SessionLogger:
         Serialise the full session to a ShareGPT-format JSON file.
         Returns the output file path.
         """
-        os.makedirs(SFT_SESSIONS_DIR, exist_ok=True)
+        os.makedirs(self._sft_dir, exist_ok=True)
 
         # Detect source model from image path
         source_model = "Unknown"
@@ -183,7 +190,7 @@ class SessionLogger:
         }
 
         filename = f"forensic_sft_{self._session_id}.json"
-        filepath = os.path.join(SFT_SESSIONS_DIR, filename)
+        filepath = os.path.join(self._sft_dir, filename)
 
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(sft_record, f, ensure_ascii=False, indent=2)

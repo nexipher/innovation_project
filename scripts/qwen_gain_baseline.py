@@ -46,12 +46,16 @@ from config import PROJECT_ROOT
 from mllm.message_builder import BASELINE_SYSTEM_PROMPT
 from mllm.mock_client import MockMLLMClient
 from state_machine.controller import ForensicStateMachine
+from utils.logger import SessionLogger
 
 MANIFEST_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "manifest.json")
 REPORT_PATH = os.path.join(PROJECT_ROOT, "calibration", "g2_gain_report.json")
 DRY_RUN_REPORT_PATH = os.path.join(
     PROJECT_ROOT, "calibration", "g2_gain_report_dry_run.json"
 )
+# Mock sessions must not land among the real ones that finalize_sft_data.py
+# scans by filename (scripts/finalize_sft_data.py).
+DRY_RUN_SESSIONS_DIR = os.path.join(PROJECT_ROOT, "traces", "dry_run_sessions")
 
 
 def report_path(dry_run: bool) -> str:
@@ -184,6 +188,7 @@ def run_condition(
     samples: List[dict],
     client_factory: Callable[[str], Any],
     progress: bool = True,
+    sft_dir: Optional[str] = None,
 ) -> List[dict]:
     """
     Run every sample under one condition; return per-sample records.
@@ -198,6 +203,7 @@ def run_condition(
         condition: One of CONDITIONS.
         samples: Manifest sample dicts.
         client_factory: Called with "baseline" | "forensic" -> MLLM client.
+        sft_dir: Trace directory override (dry runs keep mock sessions apart).
     """
     spec = CONDITIONS[condition]
     records: List[dict] = []
@@ -209,6 +215,7 @@ def run_condition(
         fsm = ForensicStateMachine(
             client,
             experts,
+            logger=SessionLogger(sft_dir=sft_dir) if sft_dir else None,
             evidence_injection=spec["injection"],
         )
         started = time.perf_counter()
@@ -295,9 +302,10 @@ def main() -> None:
         "conditions": {},
     }
 
+    sft_dir = DRY_RUN_SESSIONS_DIR if args.dry_run else None
     for condition in args.conditions:
         print(f"\n=== Condition: {condition} ===")
-        records = run_condition(condition, samples, client_factory)
+        records = run_condition(condition, samples, client_factory, sft_dir=sft_dir)
         report["conditions"][condition] = {
             "metrics": compute_metrics(records),
             "records": records,

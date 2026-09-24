@@ -4,6 +4,8 @@ The harness itself is GPU-gated; everything asserted here is the CPU-testable
 scaffolding: stratified selection, metric definitions and the runner contract.
 """
 
+import os
+
 import pytest
 
 from mllm.mock_client import MockMLLMClient
@@ -226,6 +228,18 @@ class TestRunCondition:
 
         assert seen == ["forensic"], "client must be built once and reused"
         assert len(records) == 3
+
+    def test_sft_dir_override_keeps_mock_traces_apart(self, tmp_path):
+        """Dry-run traces must not land where the real ones are collected."""
+        samples = [{**_sample("real_0000_png", "real_png", "Real"), "path": REAL_PATH}]
+        run_condition("text", samples, self._factory([]), progress=False,
+                      sft_dir=str(tmp_path))
+
+        traces = list(tmp_path.glob("forensic_sft_*.json"))
+        assert len(traces) == 1
+        # Session ids are derived from the image stem, not the manifest id.
+        image_stem = os.path.splitext(os.path.basename(REAL_PATH))[0]
+        assert image_stem in traces[0].name
 
     def test_reused_client_is_reset_between_samples(self):
         """One client, many samples: each sample must start a fresh session."""

@@ -7,6 +7,27 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
+# Trace isolation
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def isolated_sft_dir(tmp_path_factory, monkeypatch):
+    """
+    Keep test sessions out of traces/sft_sessions/.
+
+    Every test that runs the state machine serialises a trace; without this
+    the suite would deposit mock and scripted sessions among the real ones
+    that scripts/finalize_sft_data.py collects from.  SessionLogger resolves
+    the module-level constant per call, so patching it here is enough.
+    """
+    import utils.logger
+
+    directory = tmp_path_factory.mktemp("sft_sessions")
+    monkeypatch.setattr(utils.logger, "SFT_SESSIONS_DIR", str(directory))
+    return directory
+
+
+# ---------------------------------------------------------------------------
 # Synthetic image fixtures
 # ---------------------------------------------------------------------------
 
