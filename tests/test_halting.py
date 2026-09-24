@@ -13,15 +13,20 @@ class TestVerdictDetection:
         assert HaltingChecker._verdict_detected("no verdict here") is None
 
 
-class TestMaxSteps:
-    def test_not_reached(self):
-        assert not HaltingChecker._max_steps_reached(3)
+class TestBudget:
+    """G1 (§4.8): budget counts expert calls and model turns separately."""
 
-    def test_reached(self):
-        assert HaltingChecker._max_steps_reached(5)
+    def test_expert_budget_not_reached(self):
+        assert not HaltingChecker._budget_exhausted(model_turns=2, expert_calls=3)
 
-    def test_exceeded(self):
-        assert HaltingChecker._max_steps_reached(10)
+    def test_expert_budget_reached(self):
+        assert HaltingChecker._budget_exhausted(model_turns=3, expert_calls=5)
+
+    def test_expert_budget_exceeded(self):
+        assert HaltingChecker._budget_exhausted(model_turns=4, expert_calls=10)
+
+    def test_model_turn_budget_reached(self):
+        assert HaltingChecker._budget_exhausted(model_turns=6, expert_calls=1)
 
 
 class TestConflictDetection:
@@ -68,25 +73,28 @@ class TestCheck:
     def test_verdict_priority(self):
         """Verdict should halt regardless of other conditions."""
         should, reason = HaltingChecker.check(
-            step=0,
+            model_turns=0,
+            expert_calls=0,
             evidence_chain=[],
             last_output='<verdict>{"verdict": "Real", "confidence": 0.9}</verdict>',
         )
         assert should
         assert reason == HaltingChecker.VERDICT_OUTPUT
 
-    def test_max_steps_priority(self):
+    def test_budget_priority(self):
         should, reason = HaltingChecker.check(
-            step=5,
+            model_turns=3,
+            expert_calls=5,
             evidence_chain=[],
             last_output="<call_freq>[1,2,3,4]</call_freq>",
         )
         assert should
-        assert reason == HaltingChecker.MAX_STEPS_EXCEEDED
+        assert reason == HaltingChecker.BUDGET_EXHAUSTED
 
     def test_no_halt_normal(self):
         should, reason = HaltingChecker.check(
-            step=1,
+            model_turns=1,
+            expert_calls=1,
             evidence_chain=[{"strength": 0.5}],
             last_output="<call_noise>[1,2,3,4]</call_noise>",
         )

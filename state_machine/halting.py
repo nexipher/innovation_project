@@ -3,10 +3,11 @@ Halting criteria checker for the forensic state machine.
 
 Implements four independent halting guards, checked in priority order:
   1. Verdict output  — MLLM produced a <verdict> tag.
-  2. Max steps       — hard cap of MAX_STEPS expert-call iterations.
+  2. Budget          — expert-call count or model-turn count hit its cap
+     (G1 §4.8: separate counters replace the mixed-meaning `step`).
   3. Evidence conflict — contradictory expert opinions detected.
-  4. Information gain — KL divergence between successive confidence
-     distributions fell below threshold.
+  4. Information gain — strength delta between the last two *unique*
+     evidence tokens fell below threshold.
 
 All methods are stateless; the check() method takes the current session
 state as arguments.
@@ -15,7 +16,12 @@ state as arguments.
 import numpy as np
 from typing import List, Optional, Tuple
 
-from config import MAX_STEPS, ENTROPY_THRESHOLD, KL_THRESHOLD
+from config import (
+    ENTROPY_THRESHOLD,
+    KL_THRESHOLD,
+    MAX_EXPERT_CALLS,
+    MAX_MODEL_TURNS,
+)
 
 
 class HaltingChecker:
@@ -23,29 +29,37 @@ class HaltingChecker:
 
     # Valid halting reasons
     VERDICT_OUTPUT = "verdict_output"
-    MAX_STEPS_EXCEEDED = "max_steps_exceeded"
+    BUDGET_EXHAUSTED = "budget_exhausted"
+    MAX_STEPS_EXCEEDED = "max_steps_exceeded"   # [DEPRECATED alias — legacy traces]
     EVIDENCE_CONFLICT = "evidence_conflict"
     INFO_GAIN_CONVERGED = "info_gain_converged"
 
     @classmethod
     def check(
         cls,
-        step: int,
+        model_turns: int,
+        expert_calls: int,
         evidence_chain: List[dict],
         last_output: str,
     ) -> Tuple[bool, str]:
         """
         Evaluate all halting criteria in priority order.
         Returns (should_halt: bool, reason: str).
+
+        Args:
+            model_turns: Number of MLLM generate() calls so far.
+            expert_calls: Total expert invocations so far (including duplicates).
+            evidence_chain: Unique evidence tokens recorded so far.
+            last_output: Raw MLLM output of the current turn.
         """
         # 1. Did the model output a verdict?
         verdict = cls._verdict_detected(last_output)
         if verdict:
             return True, cls.VERDICT_OUTPUT
 
-        # 2. Max steps reached?
-        if cls._max_steps_reached(step):
-            return True, cls.MAX_STEPS_EXCEEDED
+        # 2. Budget exhausted?
+        if cls._budget_exhausted(model_turns, expert_calls):
+            return True, cls.BUDGET_EXHAUSTED
 
         # 3. Evidence conflict?
         if cls._conflict_detected(evidence_chain):
@@ -71,9 +85,9 @@ class HaltingChecker:
         return None
 
     @classmethod
-    def _max_steps_reached(cls, step: int) -> bool:
-        """Hard cap: step count >= MAX_STEPS."""
-        return step >= MAX_STEPS
+    def _budget_exhausted(cls, model_turns: int, expert_calls: int) -> bool:
+        """Hard caps: expert-call budget or model-turn budget reached."""
+        return expert_calls >= MAX_EXPERT_CALLS or model_turns >= MAX_MODEL_TURNS
 
     @classmethod
     def _conflict_detected(cls, evidence_chain: List[dict]) -> bool:

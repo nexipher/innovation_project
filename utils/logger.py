@@ -13,7 +13,13 @@ import os
 from datetime import datetime
 from typing import Optional
 
-from config import SFT_SESSIONS_DIR, OPERATION_LOG_PATH
+from config import (
+    EVIDENCE_SCOPE_GLOBAL,
+    OPERATION_LOG_PATH,
+    REGION_SEMANTICS_DIAGNOSTIC,
+    SFT_SESSIONS_DIR,
+    TASK_TYPE_FULLY_GENERATED,
+)
 
 
 class SessionLogger:
@@ -34,6 +40,7 @@ class SessionLogger:
         self._halting_reason: str = ""
         self._mock_mode: str = ""
         self._start_time: Optional[datetime] = None
+        self._counters: dict = {}
 
     # ------------------------------------------------------------------
     # Session lifecycle
@@ -99,19 +106,29 @@ class SessionLogger:
     # Finalisation
     # ------------------------------------------------------------------
 
-    def finalize_sft(self, verdict: dict, total_steps: int, halting_reason: str) -> None:
+    def finalize_sft(
+        self,
+        verdict: dict,
+        total_steps: int,
+        halting_reason: str,
+        counters: Optional[dict] = None,
+    ) -> None:
         """
         Mark the session as complete with the final verdict.
 
         Args:
             verdict: Parsed verdict dict from MLLM output.
-            total_steps: Number of expert-call iterations executed.
-            halting_reason: Why the loop terminated (verdict_output | max_steps |
-                            info_gain_converged | evidence_conflict).
+            total_steps: Legacy turn count (kept as deprecated alias).
+            halting_reason: Why the loop terminated (verdict_output |
+                            budget_exhausted | info_gain_converged | evidence_conflict).
+            counters: Observable counters (model_turn_count, expert_call_count,
+                      unique_evidence_count, suppressed_duplicate_count,
+                      weighted_cost) from G1 §4.8.
         """
         self._final_verdict = verdict
         self._total_steps = total_steps
         self._halting_reason = halting_reason
+        self._counters = counters or {}
 
     def save_sft(self) -> str:
         """
@@ -141,10 +158,17 @@ class SessionLogger:
             "evidence_chain": self._evidence_chain,
             "metadata": {
                 "image_size": list(self._image_size),
-                "total_steps": self._total_steps,
+                "total_steps": self._total_steps,   # deprecated alias of model_turn_count
                 "halting_reason": self._halting_reason,
                 "mock_mode": self._mock_mode,
                 "session_timestamp": self._start_time.isoformat() if self._start_time else "",
+                # Task semantics (G1 §4.8): whole-image generation detection;
+                # regions are diagnostic evidence regions, not manipulation masks.
+                "task_type": TASK_TYPE_FULLY_GENERATED,
+                "evidence_scope": EVIDENCE_SCOPE_GLOBAL,
+                "region_semantics": REGION_SEMANTICS_DIAGNOSTIC,
+                # Observable counters (G1 §4.8)
+                **self._counters,
             },
         }
 

@@ -14,7 +14,12 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from config import SYSTEM_PROMPT, MAX_STEPS
+from config import (
+    SYSTEM_PROMPT,
+    MAX_EXPERT_CALLS,
+    MAX_MODEL_TURNS,
+    TURN_COST_WEIGHT,
+)
 from utils.image_utils import ImageUtils
 from utils.coordinate_transformer import CoordinateTransformer
 from utils.parser import Parser
@@ -109,15 +114,21 @@ class ForensicStateMachine:
         # 3. Build initial conversation (system prompt guides SOP behaviour)
         conversation: List[Dict[str, str]] = []
 
-        # 4. Main loop
-        step = 0
+        # 4. Main loop — observable counters (plan.md §4.8 G1)
+        model_turn_count = 0
+        expert_call_count = 0
+        suppressed_duplicate_count = 0
+        seen_evidence_ids: set = set()
         evidence_chain: List[dict] = []
         final_verdict: Optional[dict] = None
         halting_reason: str = ""
 
-        while step < MAX_STEPS:
+        # Outer safety net: the halting budget fires first; the +1 allows the
+        # forced-conclusion turn that budget halting triggers.
+        while model_turn_count < MAX_MODEL_TURNS + 1:
             # 4a. Get MLLM response
             raw_output = self._mllm.generate(image_path, conversation)
+            model_turn_count += 1
 
             # Log the assistant turn
             self._logger.add_conversation_turn("gpt", raw_output)
@@ -133,7 +144,50 @@ class ForensicStateMachine:
             # 4c. Extract expert calls
             calls = Parser.extract_all_calls(raw_output)
 
-            if not calls:
+            if calls:
+                # 4d. Execute each expert call
+                for expert_name, rel_bbox in calls:
+                    expert_call_count += 1
+
+                    # Convert normalized [0,1000] → absolute pixel coordinates,
+                    # keeping both spaces in the trace (plan.md §4.8 G1).
+                    transform = CoordinateTransformer.transform(rel_bbox, w, h)
+                    abs_bbox = transform["region_pixels"]
+
+                    # Crop and run expert
+                    patch = ImageUtils.crop_bbox(img, abs_bbox)
+                    expert = self._experts.get(
+                        self._expert_by_call.get(expert_name, "")
+                    )
+                    if expert is None:
+                        continue
+
+                    expert_result = expert.analyze(patch)
+
+                    # Build Evidence Token
+                    evidence_token = EvidenceTokenizer.tokenize(
+                        expert_result, abs_bbox, (h, w),
+                        region_normalized=transform["region_normalized_1000"],
+                    )
+
+                    # Duplicate suppression (plan.md §4.8 G1): identical
+                    # results must not enter the chain, the conversation or
+                    # the halting statistics twice.
+                    evidence_id = evidence_token["evidence_id"]
+                    if evidence_id in seen_evidence_ids:
+                        suppressed_duplicate_count += 1
+                        continue
+                    seen_evidence_ids.add(evidence_id)
+
+                    # Record
+                    evidence_chain.append(evidence_token)
+                    self._logger.add_evidence(evidence_token)
+
+                    # Inject into conversation as user message
+                    evidence_json = EvidenceTokenizer.to_json(evidence_token)
+                    self._logger.add_conversation_turn("user", evidence_json)
+                    conversation.append({"from": "user", "value": evidence_json})
+            else:
                 # No calls and no verdict — malformed output, inject correction
                 valid, msg = Parser.validate_tag_structure(raw_output)
                 if not valid:
@@ -143,65 +197,27 @@ class ForensicStateMachine:
                     )
                     self._logger.add_system_message(correction)
                     conversation.append({"from": "user", "value": correction})
-                step += 1
-                continue
-
-            # 4d. Execute each expert call
-            for expert_name, rel_bbox in calls:
-                # Convert normalized [0,1000] → absolute pixel coordinates,
-                # keeping both spaces in the trace (plan.md §4.8 G1).
-                transform = CoordinateTransformer.transform(rel_bbox, w, h)
-                abs_bbox = transform["region_pixels"]
-
-                # Crop and run expert
-                patch = ImageUtils.crop_bbox(img, abs_bbox)
-                expert = self._experts.get(
-                    self._expert_by_call.get(expert_name, "")
-                )
-                if expert is None:
-                    continue
-
-                expert_result = expert.analyze(patch)
-
-                # Build Evidence Token
-                evidence_token = EvidenceTokenizer.tokenize(
-                    expert_result, abs_bbox, (h, w),
-                    region_normalized=transform["region_normalized_1000"],
-                )
-
-                # Record
-                evidence_chain.append(evidence_token)
-                self._logger.add_evidence(evidence_token)
-
-                # Inject into conversation as user message
-                evidence_json = EvidenceTokenizer.to_json(evidence_token)
-                self._logger.add_conversation_turn("user", evidence_json)
-                conversation.append({"from": "user", "value": evidence_json})
-
-            step += 1
 
             # 4e. Check halting criteria
             should_halt, reason = HaltingChecker.check(
-                step, evidence_chain, raw_output
+                model_turn_count, expert_call_count, evidence_chain, raw_output
             )
             if should_halt:
                 halting_reason = reason
 
-                # Max steps / info gain: force model to produce verdict
+                # Budget / info gain: force model to produce verdict
                 if reason in (
-                    HaltingChecker.MAX_STEPS_EXCEEDED,
+                    HaltingChecker.BUDGET_EXHAUSTED,
                     HaltingChecker.INFO_GAIN_CONVERGED,
                 ):
                     budget_msg = (
                         "[System: 取证资源（Budget）已耗尽或信息增益收敛，"
                         "请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
                     )
-                    self._logger.add_system_message(budget_msg)
-                    conversation.append({"from": "user", "value": budget_msg})
-
-                    final_output = self._mllm.generate(image_path, conversation)
-                    self._logger.add_conversation_turn("gpt", final_output)
-                    conversation.append({"from": "gpt", "value": final_output})
+                    final_output = self._request_conclusion(
+                        image_path, conversation, budget_msg
+                    )
+                    model_turn_count += 1
                     final_verdict = Parser.parse_verdict(final_output) or {
                         "verdict": "Uncertain",
                         "confidence": 0.5,
@@ -214,12 +230,10 @@ class ForensicStateMachine:
                         "[System: 法证证据出现强冲突（疑罪从无 — Conflict Halting），"
                         "请进行双向反思并输出 Uncertain 置信度校准结论。]"
                     )
-                    self._logger.add_system_message(conflict_msg)
-                    conversation.append({"from": "user", "value": conflict_msg})
-
-                    final_output = self._mllm.generate(image_path, conversation)
-                    self._logger.add_conversation_turn("gpt", final_output)
-                    conversation.append({"from": "gpt", "value": final_output})
+                    final_output = self._request_conclusion(
+                        image_path, conversation, conflict_msg
+                    )
+                    model_turn_count += 1
                     final_verdict = Parser.parse_verdict(final_output) or {
                         "verdict": "Uncertain",
                         "confidence": 0.45,
@@ -230,15 +244,21 @@ class ForensicStateMachine:
 
         # 5. If loop ended without verdict (emergency fallback)
         if final_verdict is None:
-            halting_reason = halting_reason or "max_steps_exceeded"
+            halting_reason = halting_reason or HaltingChecker.BUDGET_EXHAUSTED
             final_verdict = {
                 "verdict": "Uncertain",
                 "confidence": 0.5,
                 "report": "分析过程异常终止，无法做出确定结论。",
             }
 
-        # 6. Finalise SFT data
-        self._logger.finalize_sft(final_verdict, step, halting_reason)
+        # 6. Finalise SFT data with observable counters
+        counters = self._build_counters(
+            model_turn_count, expert_call_count,
+            suppressed_duplicate_count, evidence_chain,
+        )
+        self._logger.finalize_sft(
+            final_verdict, model_turn_count, halting_reason, counters=counters
+        )
         sft_path = self._logger.save_sft()
 
         return {
@@ -246,9 +266,48 @@ class ForensicStateMachine:
             "image_path": image_path,
             "ground_truth": ground_truth,
             "final_verdict": final_verdict,
-            "total_steps": step,
+            "total_steps": model_turn_count,       # legacy alias (deprecated)
+            "model_turn_count": model_turn_count,
+            "expert_call_count": expert_call_count,
+            "unique_evidence_count": len(evidence_chain),
+            "suppressed_duplicate_count": suppressed_duplicate_count,
+            "weighted_cost": counters["weighted_cost"],
             "halting_reason": halting_reason,
             "evidence_chain": evidence_chain,
             "conversation": conversation,
             "sft_data_path": sft_path,
+        }
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _request_conclusion(
+        self, image_path: str, conversation: List[Dict[str, str]], note: str
+    ) -> str:
+        """Inject a system note and ask the MLLM for its final verdict turn."""
+        self._logger.add_system_message(note)
+        conversation.append({"from": "user", "value": note})
+
+        output = self._mllm.generate(image_path, conversation)
+        self._logger.add_conversation_turn("gpt", output)
+        conversation.append({"from": "gpt", "value": output})
+        return output
+
+    @staticmethod
+    def _build_counters(
+        model_turn_count: int,
+        expert_call_count: int,
+        suppressed_duplicate_count: int,
+        evidence_chain: List[dict],
+    ) -> dict:
+        """Assemble the observable counter block recorded in the trace."""
+        return {
+            "model_turn_count": model_turn_count,
+            "expert_call_count": expert_call_count,
+            "unique_evidence_count": len(evidence_chain),
+            "suppressed_duplicate_count": suppressed_duplicate_count,
+            "weighted_cost": round(
+                expert_call_count + TURN_COST_WEIGHT * model_turn_count, 4
+            ),
         }
