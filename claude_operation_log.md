@@ -754,3 +754,20 @@
 * **执行结果与验证状态**：G3-c 完成; 332 测试通过; 回放显示 v2 以更少标签换取更高准确率, 且冲突样本不再被候选覆盖
 * **置信度或遗留待办（TODO）**：G3-d 实验配置指纹 → G3-e n=120 GPU 复核(需授权)
 ---
+### 2026-09-24 17:25:40 - G3-d 实验配置指纹
+
+* **当前操作动作**：G3-d —— 用配置指纹替代手工 `--fresh`，消除"配置已变却静默复用旧数字"的隐患
+* **核心变更说明**：
+  1. 新增 `utils/config_fingerprint.py`: 指纹覆盖 ①专家集合(源名/类名/`metric_polarity`) ②两份系统提示词的内容哈希 ③可靠性表文件哈希 ④整流器/分词器版本常量 ⑤停止策略版本 ⑥git commit; 另给 16 位 digest 便于比对
+  2. `qwen_gain_baseline.load_completed` 增加指纹校验: 不符即冷启动, 并通过 `config_fingerprint.differences()` **打印差异组件**(便于定位是提示词变了还是专家极性变了)
+  3. 旧报告(无指纹字段, 含已提交的 G2-d 三份报告)一律视为冷启动 —— 这正好保证 G3-e 不会误续任何历史数字
+  4. 实测: 同配置二次调用打印 `Resuming: 8 records already on disk` 并跳过已完成条件; 改配置由测试覆盖(极性/提示词/专家类/表哈希 任一变化 → digest 变化 → 冷启动)
+  5. 测试 345 通过(test_config_fingerprint.py 15 项)
+* **涉及/修改的文件清单**：
+  - `utils/config_fingerprint.py (Created)`
+  - `scripts/qwen_gain_baseline.py (Modified — 指纹计算/校验/报告字段)`
+  - `tests/test_config_fingerprint.py (Created — 15 项)`
+  - `plan.md (Modified — G3 执行状态表)`
+* **执行结果与验证状态**：G3-a/b/c/d 全部完成; 345 测试通过; 干跑闭环(含指纹)验证通过
+* **置信度或遗留待办（TODO）**：**G3-e n=120 GPU 复核暂停 —— 用户明确指示"待会不要开始GPU测试"**, 等指令; 完成后据此判定证据是否带来正增益
+---

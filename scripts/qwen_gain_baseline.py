@@ -46,6 +46,7 @@ from config import PROJECT_ROOT
 from mllm.message_builder import BASELINE_SYSTEM_PROMPT
 from mllm.mock_client import MockMLLMClient
 from state_machine.controller import ForensicStateMachine
+from utils import config_fingerprint
 from utils.logger import SessionLogger
 
 MANIFEST_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "manifest.json")
@@ -263,13 +264,17 @@ def run_condition(
 # Resume support
 # ---------------------------------------------------------------------------
 
-def load_completed(path: str, mode: str, per_cell: int) -> Dict[str, List[dict]]:
+def load_completed(path: str, mode: str, per_cell: int,
+                   fingerprint: Optional[dict] = None) -> Dict[str, List[dict]]:
     """
-    Records per condition from an earlier run of the same configuration.
+    Records per condition from an earlier run of the *same experiment*.
 
-    Returns {} when the file is absent, unreadable, or was produced by a
-    different mode or sample size — resuming off a mismatched report would
-    silently mix incomparable numbers.
+    Returns {} when the file is absent, unreadable, produced by a different
+    mode or sample size, or — since G3-d — recorded under a different
+    configuration fingerprint.  The fingerprint covers the expert registry and
+    their polarities, the prompts, the reliability table and the rectifier
+    version, so a run made after a change can no longer resume the numbers it
+    was supposed to replace (which used to require remembering --fresh).
     """
     try:
         with open(path, encoding="utf-8") as handle:
@@ -278,6 +283,12 @@ def load_completed(path: str, mode: str, per_cell: int) -> Dict[str, List[dict]]
         return {}
     if previous.get("mode") != mode or previous.get("per_cell") != per_cell:
         return {}
+    if fingerprint is not None:
+        stored = previous.get("config_fingerprint")
+        if not stored or stored.get("digest") != fingerprint.get("digest"):
+            changed = config_fingerprint.differences(stored, fingerprint)
+            print(f"  configuration changed ({', '.join(changed)}) — cold start")
+            return {}
     return {
         condition: entry.get("records", [])
         for condition, entry in (previous.get("conditions") or {}).items()
@@ -291,9 +302,12 @@ def pending_samples(samples: List[dict], done: List[dict]) -> List[dict]:
 
 
 def initial_completed(output_path: str, mode: str, per_cell: int,
-                      fresh: bool) -> Dict[str, List[dict]]:
+                      fresh: bool,
+                      fingerprint: Optional[dict] = None) -> Dict[str, List[dict]]:
     """Resume state for this invocation (nothing when --fresh)."""
-    return {} if fresh else load_completed(output_path, mode, per_cell)
+    if fresh:
+        return {}
+    return load_completed(output_path, mode, per_cell, fingerprint)
 
 
 def _write_report(path: str, report: dict) -> None:
@@ -363,12 +377,15 @@ def main() -> None:
         mode = "gpu"
 
     output_path = report_path(args.dry_run, args.output)
-    completed = initial_completed(output_path, mode, args.per_cell, args.fresh)
+    fingerprint = config_fingerprint.compute(_build_experts())
+    completed = initial_completed(output_path, mode, args.per_cell, args.fresh,
+                                  fingerprint)
     report: Dict[str, Any] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "mode": mode,
         "per_cell": args.per_cell,
         "samples": len(samples),
+        "config_fingerprint": fingerprint,
         "conditions": {
             condition: {"metrics": compute_metrics(records), "records": records}
             for condition, records in completed.items()
