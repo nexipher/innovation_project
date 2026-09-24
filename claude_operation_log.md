@@ -500,3 +500,28 @@
 * **执行结果与验证状态**：全量测试 152 passed; 四条完成门槛全部通过; 4 个原子提交
 * **置信度或遗留待办（TODO）**：G2 入口: 格式配平校准集与单 Expert 增益基线（Qwen 对比需 GPU 授权）；停止策略重构留待 G3
 ---
+### 2026-09-24 11:47:18 - 4.9 G2-a/b/c 完成（G2-d 待 GPU）
+
+* **当前操作动作**：4.9 G2-a/b/c 完成（G2-d 待 GPU）
+* **核心变更说明**：
+  1. G2-a 校准集: build_calibration_set.py 生成 2×4 格式配平网格(native/png/jpeg_q95/85/70)+7类扰动, 100 源图→700 样本/24格/0失败
+  2. G2-b 专家评估: evaluate_experts_g2.py 全图评估 5 候选专家; 每格 AUROC/F1/阈值 + 极性校正分离度 + 语义方向 + 容器红利量化 + 扰动稳定性 + 错误重叠矩阵 + 250 张可视化产物
+  3. G2-b 关键结论: freq_v1 无信号(0.505, 停用候选); freq_v2 弱(0.556→q70 0.634); noise/jpeg 语义反向(高strength⇒Real, 分离度 0.845/0.972 但为压缩历史驱动); ELA 最强(0.948)但 q70 归零(0.504)=压缩历史捷径
+  4. G2-c Evidence Bundle: reliability_table.json 蒸馏(分位分箱→经验P(Fake)); utils/reliability.py 运行时查询; token 携带 reliability/calibrated_likelihood/condition_metadata/counter_explanation/visual_artifacts
+  5. G2-c 运行时接管: Controller 逐条查询校准表 + 渲染落盘专家产物(频谱/残差/块效应图)并与区域图一起回灌对话; 验证 Mock 管道 token 含全部 Bundle 字段
+  6. 适用性标签: disabled:no-signal(freq v1) / weak:marginally-above-chance(freq v2) / inverted:high-metric-means-real(noise,jpeg) / shortcut-prone:compression-history(ela)
+  7. 全量测试 164 passed; 3 个原子提交 2937096/2e8cc6c/a471d4b
+* **涉及/修改的文件清单**：
+  - `scripts/build_calibration_set.py (Created)`
+  - `scripts/evaluate_experts_g2.py (Created)`
+  - `scripts/build_reliability_table.py (Created)`
+  - `experts/ela.py (Created)`
+  - `experts/base.py, frequency.py, frequency_v2.py, noise.py, jpeg.py (Modified — render_artifacts + counter_explanation)`
+  - `utils/reliability.py (Created)`
+  - `state_machine/evidence_tokenizer.py, controller.py (Modified — Bundle 字段)`
+  - `calibration/set/manifest.json, raw_values.json, g2_expert_report.json, reliability_table.json (Created)`
+  - `tests/test_reliability.py (Created), test_controller.py (Modified)`
+  - `plan.md (Modified — G2 执行结果)`
+* **执行结果与验证状态**：G2-a/b/c 全部完成; 164 测试通过; 校准集 700 样本; 关键发现: 三个现有专家均受格式/压缩历史混杂支配, ELA 为最强但捷径型分离
+* **置信度或遗留待办（TODO）**：G2-d 需 GPU 授权(~1-1.5h RTX 4090)做四条件增益对比; G2-e 依赖 G2-d 结论
+---

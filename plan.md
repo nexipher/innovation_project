@@ -1332,7 +1332,36 @@ innovation_project/
 - Expert 仍输出单标量，无 `reliable/counter_explanation`/可视化产物（G2）；
 - 旧 Trace 不回溯迁移到新协议，`final_v2` 由 G4 重新生成。
 
-## 4.9 G2：Expert 准入、校准与 Evidence Bundle
+## 4.9 G2：Expert 准入、校准与 Evidence Bundle（G2-a/b/c ✅ 2026-09-24；G2-d 待 GPU）
+
+### 执行结果（G2-a/b/c）
+
+**G2-a 校准集** ✅：`scripts/build_calibration_set.py` 生成 2×4 格式配平网格（native / png / jpeg_q95/85/70）+ 7 类扰动，100 个源图（50 Real + 50 Fake×8 生成器）→ **700 样本 / 24 格 / 0 失败**；manifest 已提交，派生图像 116MB 已 gitignore。
+
+**G2-b 专家指标** ✅：`scripts/evaluate_experts_g2.py` 全图评估 5 个候选专家（freq v1/v2、noise、jpeg、ELA），原始值缓存至 `calibration/set/raw_values.json`，报告 `calibration/g2_expert_report.json`。**关键结论（png 格式配平格，q70 = 压缩历史配平格）**：
+
+| 专家 | png AUROC | q70 AUROC | 极性校正分离度 | 语义方向 | 容器红利消失 | 判定 |
+|------|-----------|-----------|---------------|----------|--------------|------|
+| frequency_v1 | 0.505 | 0.541 | 0.505 | ✅一致 | -0.04 | **不可用（无信号）** |
+| frequency_v2 | 0.556 | 0.634 | 0.556 | ✅一致 | -0.08 | 弱信号，仅辅助 |
+| noise | 0.155 | 0.228 | **0.845** | ❌**反向** | -0.07 | **语义反转**：高 strength ⇒ Real |
+| jpeg | 0.028 | 0.569 | **0.972** | ❌**反向** | **-0.54** | **反向 + 压缩历史捷径** |
+| ela | 0.948 | 0.504 | 0.948 | ✅一致 | **+0.44** | 强分离但**依赖压缩历史**（q70 归零） |
+
+- **noise/jpeg 的语义方向与本任务相反**：真实 JPEG 照片的噪声方差与块效应系统性高于未压缩的 Fake PNG；两专家在高 strength 时输出 "AI-generated" 的结论在统计上是错的（jpeg 高 strength 桶 P(Fake)=0.37）。
+- **ELA 的强分离（0.948）几乎全部来自"是否具有 JPEG 压缩历史"**，在 q70 配平格降到随机（0.504）——是数据集构造捷径而非生成伪迹检测。
+- **freq_v1 完全无信号**（0.505）；freq_v2 是唯一在压缩配平后仍略升的专家（0.634），保留为弱辅助。
+- 扰动稳定性：ELA 在 blur/noise/sharpen/brightness 下保持 0.79-0.97；noise/jpeg 在 resize/sharpen/brightness 下彻底反向（AUROC 0.01-0.16）。
+- 错误重叠：noise 与 jpeg 的 phi=1.000（同一信号的两面）；ela 与二者近独立（0.025）。
+- 专家可视化产物已实现（频谱/残差/块效应/ELA 图），250 张子集渲染完毕。
+
+**G2-c Evidence Bundle** ✅：`calibration/reliability_table.json` 由 `scripts/build_reliability_table.py` 蒸馏（等量分位分箱 → 经验 P(Fake)，开区间端点）；`utils/reliability.py` 在运行时提供 `reliability/calibrated_likelihood/semantics_aligned/applicability`；Controller 逐条测量查询校准表并渲染+落盘专家产物（与区域裁剪图一起回灌对话）。适用性标签：`disabled:no-signal`（freq v1）/ `weak:marginally-above-chance`（freq v2）/ `inverted:high-metric-means-real`（noise、jpeg）/ `shortcut-prone:compression-history`（ela）。
+
+### 待执行：G2-d（GPU）/ G2-e（收口）
+
+**G2-d 四条件增益对比（需 GPU 授权）**：`RGB baseline / +文本证据 / +可视化产物 / +双通道`，分层抽取 ~150 张校准样本，预计 **~1500-1800 次生成 ≈ 1-1.5 小时 RTX 4090**。脚本 `scripts/qwen_gain_baseline.py` 待实现（复用 G1 message_builder 的图像回灌与 G2 的产物路径）。
+
+**G2-e 决策收口（依赖 G2-d）**：逐专家给出保留/限制/降权/停用决定；把可靠区间与失败条件写入 System Prompt 调用指南。当前 G2-b/c 证据已指向：freq v1 停用、freq v2 弱保留、noise/jpeg 需反转语义或限制适用条件、ela 加注"仅限未压缩来源"。
 
 ### 目标接口
 
