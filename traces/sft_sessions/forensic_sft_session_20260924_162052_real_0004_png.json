@@ -1,0 +1,109 @@
+{
+  "id": "session_20260924_162052_real_0004_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0004_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.3102,
+    "report": "硬盘内部电路板上的微小噪音水平较高，这与相机传感器留下的空间丰富的微小噪音一致，属于真实拍摄的特征。降噪、锐化与重压缩同样会改变这一水平，因此只能作为弱证据与校准似然性结合使用。",
+    "posterior": 0.3102,
+    "conflict_score": 0.0,
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "model_candidate": "Real"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 20, 438, 300]\nVisual Anomalies: 硬盘内部的电路板上有一个明显的红色标记，这可能是伪造的痕迹。\nExpert Target & Hypothesis: <call_noise>[100, 20, 438, 300]</call_noise> → 使用噪声残留专家来检测硬盘内部电路板上的微小噪音水平，以确定是否存在伪造痕迹。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-848b641916\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[38, 10, 164, 150]\", \"region_pixels\": [38, 10, 164, 150], \"region_normalized_1000\": [100, 20, 438, 300], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.7741). Residual consistent with a camera sensor.\", \"reasoning\": \"High residual micro-noise level (metric=4.7741). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.\", \"strength\": 0.9508, \"raw_metric\": 4.774095, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.886, \"Fake\": 0.114}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.09408}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据噪声残留专家的测量结果，硬盘内部电路板上的微小噪音水平较高（4.7741），这与相机传感器留下的空间丰富的微小噪音（拍摄时的照相噪声 + PRNU）一致。这种高噪音水平并不表示伪造，而是真实拍摄的特征。此外，降噪和锐化操作也会改变这一水平，因此只能作为弱证据与校准似然性结合使用。\n\n高残差微小噪音水平（4.7741）与 G2 校准集中的实拍统计相关联（P(Real)=0.886，P(Fake)=0.114），这表明这是真实拍摄的特征。降噪、锐化与重压缩同样会改变这一水平，故只应作为弱证据与校准似然配合使用。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.886, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"硬盘内部电路板上的微小噪音水平较高，这与相机传感器留下的空间丰富的微小噪音一致，属于真实拍摄的特征。降噪、锐化与重压缩同样会改变这一水平，因此只能作为弱证据与校准似然性结合使用。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-848b641916",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[38, 10, 164, 150]",
+      "region_pixels": [
+        38,
+        10,
+        164,
+        150
+      ],
+      "region_normalized_1000": [
+        100,
+        20,
+        438,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.7741). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=4.7741). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.9508,
+      "raw_metric": 4.774095,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.09408
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      375,
+      500
+    ],
+    "total_steps": 2,
+    "halting_reason": "candidate_matches_posterior",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T16:20:52.961565",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0,
+    "policy_version": "v2",
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "posterior": 0.3102,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

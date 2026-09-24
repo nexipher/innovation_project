@@ -1,0 +1,124 @@
+{
+  "id": "session_20260924_164606_real_0006_jpeg_q70",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0006_jpeg_q70.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "综合现有证据，图像中存在明显的 JPEG 压缩结构特征，包括块状效应和 DCT 结构异常，这通常与相机拍摄的 JPEG 图像相关联。然而，根据 G2 校准集的分离度（0.544 对应 Real，0.456 对应 Fake），这些证据不足以确定图像的真实性。尽管可靠性较高（0.972），但方向不确定性（0.5）意味着无法做出明确判断。现有工具无法提供更清晰的方向，因此最终结论为不确定。",
+    "posterior": 0.4689,
+    "conflict_score": 0.0,
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 380, 300, 450]\nVisual Anomalies: There appears to be a slight blurriness in the middle section of the image, particularly around the person walking on the beach.\nExpert Target & Hypothesis: <call_jpeg>[200, 380, 300, 450]</call_jpeg> to check for potential JPEG compression artifacts.\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-c7b805d325\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[125, 190, 188, 225]\", \"region_pixels\": [125, 190, 188, 225], \"region_normalized_1000\": [200, 380, 300, 450], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.3307, DCT anomaly: 6.9202)\", \"reasoning\": \"Strong JPEG compression structure found (blockiness=1.3307, DCT anomaly=6.9202). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.\", \"strength\": 0.9582, \"raw_metric\": 3.566454, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.46) and does not determine a direction.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.544, \"Fake\": 0.456}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.007056}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"support_raw\": \"Real\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 380, 300, 450]\nVisual Anomalies: There appears to be a slight blurriness in the middle section of the image, particularly around the person walking on the beach.\nExpert Target & Hypothesis: <call_jpeg>[200, 380, 300, 450]</call_jpeg> to check for potential JPEG compression artifacts.\n</planning>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\nThe evidence provided indicates a high level of JPEG compression artifacts, specifically blockiness and DCT structure, which are indicative of a camera JPEG that was saved or re-saved. This aligns with the calibration set's association of such features with real captures. However, the calibrated likelihood shows a separation of 0.544 for Real and 0.456 for Fake, indicating that the evidence is weak and does not definitively point to either Real or Fake. The reliability of the measurement is high at 0.972, but the calibrated likelihood suggests uncertainty in the direction of the evidence.\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"尽管存在明显的 JPEG 压缩结构特征，但根据 G2 校准集的分离度（0.544 对应 Real，0.456 对应 Fake），这些证据不足以确定图像的真实性。高可靠性（0.972）表明测量结果具有较高的准确性，但方向不确定性（0.5）意味着无法做出明确判断。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合现有的证据，我们观察到图像中存在明显的 JPEG 压缩结构特征，包括块状效应和 DCT 结构异常，这通常与相机拍摄的 JPEG 图像相关联。然而，根据 G2 校准集的分离度（0.544 对应 Real，0.456 对应 Fake），这些证据不足以确定图像的真实性。尽管可靠性较高（0.972），但方向不确定性（0.5）意味着无法做出明确判断。\n\n在已获取的所有证据中，我们没有发现能够进一步降低不确定性的有效信息。所有专家的测量都指向了图像可能来源于实际拍摄的 JPEG 图像，但没有足够的证据来排除伪造的可能性。因此，现有的工具无法提供更清晰的方向。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"综合现有证据，图像中存在明显的 JPEG 压缩结构特征，包括块状效应和 DCT 结构异常，这通常与相机拍摄的 JPEG 图像相关联。然而，根据 G2 校准集的分离度（0.544 对应 Real，0.456 对应 Fake），这些证据不足以确定图像的真实性。尽管可靠性较高（0.972），但方向不确定性（0.5）意味着无法做出明确判断。现有工具无法提供更清晰的方向，因此最终结论为不确定。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-c7b805d325",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[125, 190, 188, 225]",
+      "region_pixels": [
+        125,
+        190,
+        188,
+        225
+      ],
+      "region_normalized_1000": [
+        200,
+        380,
+        300,
+        450
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.3307, DCT anomaly: 6.9202)",
+      "reasoning": "Strong JPEG compression structure found (blockiness=1.3307, DCT anomaly=6.9202). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.",
+      "strength": 0.9582,
+      "raw_metric": 3.566454,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.46) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.544,
+        "Fake": 0.456
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.007056
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "support_raw": "Real",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      625,
+      500
+    ],
+    "total_steps": 4,
+    "halting_reason": "model_stalled",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T16:46:06.621696",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 4.0,
+    "policy_version": "v2",
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "posterior": 0.4689,
+    "conflict_score": 0.0,
+    "candidate_overridden": true
+  }
+}

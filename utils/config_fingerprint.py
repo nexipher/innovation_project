@@ -99,9 +99,19 @@ def compute(experts: Dict[str, object]) -> dict:
     return components
 
 
+# Recorded for provenance, but NOT part of the identity: a documentation
+# commit changes the hash without changing what a session measures, and
+# treating it as a configuration change discarded a completed arm once
+# (G3-e: the RGB arm was overwritten because a log entry had been committed).
+_PROVENANCE_ONLY = ("digest", "git_commit")
+
+
 def digest(fingerprint: dict) -> str:
-    """Stable short digest over every component except the digest itself."""
-    payload = {key: value for key, value in fingerprint.items() if key != "digest"}
+    """Stable short digest over the components that change a measurement."""
+    payload = {
+        key: value for key, value in fingerprint.items()
+        if key not in _PROVENANCE_ONLY
+    }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
     ).hexdigest()[:16]

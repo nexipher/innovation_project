@@ -827,3 +827,21 @@
 * **执行结果与验证状态**：偏移已量化并以提交时间为锚点固化；后续条目时间戳可信
 * **置信度或遗留待办（TODO）**：无（历史条目的时间戳保留原样以便对照）
 ---
+### 2026-09-24 16:40:10 - 事故与修复：配置指纹把文档提交当成配置变更，覆盖了 rgb 臂
+
+* **当前操作动作**：修复 G3-d 指纹的设计缺陷（该缺陷导致 G3-e 的 rgb 臂数据被覆盖），并补跑恢复
+* **核心变更说明**：
+  1. **事故**: 一臂一臂开展 G3-e 时，rgb 臂完成（120/120，指纹 ac5e6cca…）后暂停；随后我提交了一条**仅改日志文档**的提交（55f30cd，19 行，未触碰任何代码）；启动 text 臂时续跑校验打印 `configuration changed (git_commit) — cold start`，**整份报告被覆盖，rgb 臂 120 条记录丢失**
+  2. **根因**: `config_fingerprint.digest()` 把 `git_commit` 计入身份 —— 任何提交（含纯文档）都会改变指纹，从而把"继续同一实验"误判为"换了实验"
+  3. 修复 1: digest 排除 `git_commit`（仍在报告中记录，作 provenance 而非身份）；新增 `_PROVENANCE_ONLY` 常量与说明
+  4. 修复 2（防再次丢数据）: 冷启动（或 --fresh）时若目标报告已存在，先**移存为 `<name>.superseded_<时间戳>.json`** 再写，绝不静默覆盖已完成的臂
+  5. 报告迁移: 当前报告（仅 text 臂）的指纹按新定义重算并写入 `migrated_from`/`migration_note`；迁移前 `differences()` 为**空**，证实除 git_commit 外各组件一致，迁移安全
+  6. 测试 365 通过（新增 5: git_commit 不改 digest / 仍被记录 / 其余组件仍改变 digest / 新提交不再强制冷启动 / 冷启动备份）
+* **涉及/修改的文件清单**：
+  - `utils/config_fingerprint.py (Modified — digest 排除 git_commit)`
+  - `scripts/qwen_gain_baseline.py (Modified — _backup_report 与冷启动备份)`
+  - `tests/test_config_fingerprint.py (Modified — 5 项)`
+  - `calibration/g3_gain_report.json (Modified — 指纹迁移, 保留 text 臂)`
+* **执行结果与验证状态**：指纹缺陷修复且被测试锁定；text 臂数据有效（代码与 rgb 臂仅差一个文档提交）；rgb 臂补跑中
+* **置信度或遗留待办（TODO）**：补跑 rgb 后暂停；image/both 待用户指令
+---

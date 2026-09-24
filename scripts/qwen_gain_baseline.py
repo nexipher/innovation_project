@@ -314,6 +314,15 @@ def initial_completed(output_path: str, mode: str, per_cell: int,
     return load_completed(output_path, mode, per_cell, fingerprint)
 
 
+def _backup_report(path: str) -> str:
+    """Move an existing report aside, keeping its timestamp visible."""
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    root, extension = os.path.splitext(path)
+    backup = f"{root}.superseded_{stamp}{extension}"
+    os.replace(path, backup)
+    return backup
+
+
 def _write_report(path: str, report: dict) -> None:
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)
@@ -384,6 +393,12 @@ def main() -> None:
     fingerprint = config_fingerprint.compute(_build_experts())
     completed = initial_completed(output_path, mode, args.per_cell, args.fresh,
                                   fingerprint)
+    if os.path.exists(output_path) and (not completed or args.fresh):
+        # Never destroy a finished arm silently: a cold start moves the
+        # previous report aside instead of overwriting it.  (Learned the hard
+        # way — G3-e lost its RGB arm to a fingerprint mismatch.)
+        backup = _backup_report(output_path)
+        print(f"  previous report preserved as {os.path.basename(backup)}")
     report: Dict[str, Any] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "mode": mode,

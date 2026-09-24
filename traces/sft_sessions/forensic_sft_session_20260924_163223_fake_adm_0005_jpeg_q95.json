@@ -1,0 +1,168 @@
+{
+  "id": "session_20260924_163223_fake_adm_0005_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0005_jpeg_q95.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "尽管图像中存在疑似伪造的迹象，如火炬手手中的火炬似乎没有明显的火焰，但通过 <call_noise> 和 <call_jpeg> 专家的测量，我们发现图像中的微噪声水平接近随机概率，且存在 JPEG 压缩痕迹。这些指标的测量结果接近随机概率，并且在重压缩后进一步减弱，因此无法确定这些特征是伪造的直接证据。根据疑罪从无的原则，在没有确凿证据的情况下，我们不能认定图像为伪造。",
+    "posterior": 0.497,
+    "conflict_score": 0.9568,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain",
+      "conflict_unresolved"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 100, 300, 200]\nVisual Anomalies: 火炬手手中的火炬似乎没有明显的火焰，这可能是伪造的迹象。\nExpert Target & Hypothesis: <call_noise>[200, 100, 300, 200]</call_noise> → 检查微噪声水平是否异常高，以确认火炬是否为真实拍摄。\n</planning>\n\n<call_noise>[200, 100, 300, 200]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-249aba6c9f\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[51, 26, 77, 51]\", \"region_pixels\": [51, 26, 77, 51], \"region_normalized_1000\": [200, 100, 300, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.5787). Variance collapse detected.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=2.5787). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.4178, \"raw_metric\": 2.578685, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.009918}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 100, 300, 200]\nVisual Anomalies: 火炬手手中的火炬似乎没有明显的火焰，这可能是伪造的迹象。\nExpert Target & Hypothesis: <call_jpeg>[200, 100, 300, 200]</call_jpeg> → 检查图像是否有 JPEG 压缩痕迹，以确认火炬是否为真实拍摄。\n</planning>\n\n<call_jpeg>[200, 100, 300, 200]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-7a55b1f176\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[51, 26, 77, 51]\", \"region_pixels\": [51, 26, 77, 51], \"region_normalized_1000\": [200, 100, 300, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9407, DCT anomaly: 4.0688)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=0.9407, DCT anomaly=4.0688). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.5948, \"raw_metric\": 2.191927, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.551, \"Fake\": 0.449}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.009918}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 法证证据出现强冲突且无法继续取证（疑罪从无 — Conflict Halting）。请进行双向反思，说明冲突双方的物理依据与不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n在分析过程中，我们观察到火炬手手中的火炬似乎没有明显的火焰，这可能是一个伪造的迹象。然而，通过调用 <call_noise> 和 <call_jpeg> 专家，我们发现图像中存在一定的 JPEG 压缩痕迹和微噪声水平。这些指标的测量结果接近随机概率，并且在重压缩后进一步减弱，因此无法确定这些特征是伪造的直接证据。\n\n<call_noise> 专家指出，图像中的微噪声水平接近随机概率，这意味着图像可能是由相机传感器生成的，而不是伪造的。然而，<call_jpeg> 专家则指出图像存在 JPEG 压缩痕迹，这通常表明图像来源于相机，并且在重压缩后仍然保持这种痕迹，但并不足以作为伪造的直接证据。\n\n由于两个专家的测量结果相互冲突，且均接近随机概率，我们无法得出一个明确的方向。根据疑罪从无的原则，在没有确凿证据的情况下，我们不能认定图像为伪造。因此，我们得出以下结论：\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\", \"double_jpeg_quantization\"], \"report\": \"尽管图像中存在疑似伪造的迹象，如火炬手手中的火炬似乎没有明显的火焰，但通过 <call_noise> 和 <call_jpeg> 专家的测量，我们发现图像中的微噪声水平接近随机概率，且存在 JPEG 压缩痕迹。这些指标的测量结果接近随机概率，并且在重压缩后进一步减弱，因此无法确定这些特征是伪造的直接证据。根据疑罪从无的原则，在没有确凿证据的情况下，我们不能认定图像为伪造。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-249aba6c9f",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[51, 26, 77, 51]",
+      "region_pixels": [
+        51,
+        26,
+        77,
+        51
+      ],
+      "region_normalized_1000": [
+        200,
+        100,
+        300,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.5787). Variance collapse detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.5787). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.4178,
+      "raw_metric": 2.578685,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.009918
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band."
+    },
+    {
+      "evidence_id": "E-7a55b1f176",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[51, 26, 77, 51]",
+      "region_pixels": [
+        51,
+        26,
+        77,
+        51
+      ],
+      "region_normalized_1000": [
+        200,
+        100,
+        300,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9407, DCT anomaly: 4.0688)",
+      "reasoning": "Moderate JPEG structure found (blockiness=0.9407, DCT anomaly=4.0688). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.5948,
+      "raw_metric": 2.191927,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.009918
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 3,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T16:32:23.913388",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 4,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 2,
+    "weighted_cost": 5.5,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain",
+      "conflict_unresolved"
+    ],
+    "posterior": 0.497,
+    "conflict_score": 0.9568,
+    "candidate_overridden": false
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "id": "session_20260924_162538_fake_biggan_0009_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_biggan_0009_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.7354,
+    "report": "图像中存在明显的块状结构和颜色不均匀性，可能是由于重JPEG压缩引起的。然而，重压缩到质量等级70之后，这种测量的可靠性会降低到接近随机水平，因此不应单独作为判定依据。",
+    "posterior": 0.7354,
+    "conflict_score": 0.0,
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 图像中存在明显的块状结构和颜色不均匀性，可能是JPEG压缩的特征。\nExpert Target & Hypothesis: <call_jpeg>[100, 100, 200, 200]</call_jpeg>\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-52a066223f\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[13, 13, 29, 29]\", \"region_pixels\": [13, 13, 29, 29], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0282, DCT anomaly: 2.9789)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=1.0282, DCT anomaly=2.9789). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.4054, \"raw_metric\": 1.808483, \"source\": \"jpeg_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.015625}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"support_raw\": \"Uncertain\", \"direction\": \"AI-generated\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 图像中存在明显的块状结构和颜色不均匀性，可能是JPEG压缩的特征。\nExpert Target & Hypothesis: <call_jpeg>[100, 100, 200, 200]</call_jpeg>\n</planning>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_jpeg> 的测量结果，图像中存在明显的块状结构和颜色不均匀性，这与高 JPEG 压缩水平一致。然而，由于重压缩到质量等级 70 之后，这种测量的可靠性会降低到接近随机水平，因此不应单独作为判定依据。综合考虑，图像中的这些特征可能由重压缩引起，而不是伪造。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"图像中存在明显的块状结构和颜色不均匀性，可能是由于重JPEG压缩引起的。然而，重压缩到质量等级70之后，这种测量的可靠性会降低到接近随机水平，因此不应单独作为判定依据。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-52a066223f",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[13, 13, 29, 29]",
+      "region_pixels": [
+        13,
+        13,
+        29,
+        29
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0282, DCT anomaly: 2.9789)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.0282, DCT anomaly=2.9789). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.4054,
+      "raw_metric": 1.808483,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.015625
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      128,
+      128
+    ],
+    "total_steps": 3,
+    "halting_reason": "candidate_matches_posterior",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T16:25:38.694978",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.5,
+    "policy_version": "v2",
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "posterior": 0.7354,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "id": "session_20260924_163052_fake_adm_0000_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0000_jpeg_q95.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中心区域的圆形结构周围存在明显的放射状触手，颜色和纹理与周围环境不同，可能存在伪造的嫌疑。然而，图像整体显示出明显的JPEG结构特征，包括DCT系数直方图空洞化（blockiness: 0.9745, DCT anomaly: 3.9605），这表明图像可能经过了多次重压缩。尽管 <call_jpeg> 专家的测量结果显示图像具有较高的JPEG结构特征，但这种特征并不足以作为伪造的直接证据。此外，图像的JPEG结构特征接近随机水平（P(Fake)=0.449），这意味着图像可能是真实拍摄的，也可能是经过多次重压缩的伪造图像。综合以上分析，图像中的圆形结构周围存在的放射状触手可能是由于JPEG压缩引起的伪影，而不是伪造的直接证据。因此，现有工具无法进一步降低不确定性。",
+    "posterior": 0.464,
+    "conflict_score": 0.0,
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 在图像的中心区域，有一个明显的圆形结构，周围有放射状的触手。这个结构的颜色和纹理与周围的环境不同，可能存在伪造的嫌疑。\nExpert Target & Hypothesis: 首先调用 <call_jpeg> 专家，因为图像中的圆形结构可能是由于JPEG压缩引起的伪影。\n</planning>\n<call_jpeg>[100, 100, 200, 200]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-45216380b0\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9745, DCT anomaly: 3.9605)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=0.9745, DCT anomaly=3.9605). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.5837, \"raw_metric\": 2.168913, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.551, \"Fake\": 0.449}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.009537}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 图像中心的圆形结构周围存在明显的放射状触手，颜色和纹理与周围环境不同，可能存在伪造的嫌疑。\nExpert Target & Hypothesis: 首先调用 <call_jpeg> 专家，因为图像中的圆形结构可能是由于JPEG压缩引起的伪影。\n</planning>\n<call_jpeg>[100, 100, 200, 200]</call_jpeg>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_jpeg> 专家的测量结果，图像中心区域的圆形结构显示出明显的JPEG结构特征，包括DCT系数直方图空洞化（blockiness: 0.9745, DCT anomaly: 3.9605）。虽然这种测量水平接近随机（P(Fake)=0.449），但在这种情况下不应作为决定性信号。图像经过多次重压缩后，这种迹象会进一步减弱，因此不应单独作为判定依据。\n\n综合考虑，图像中的圆形结构周围存在的放射状触手可能不是伪造的直接证据，而是由于JPEG压缩引起的伪影。尽管如此，图像的整体质量仍然需要进一步分析。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"图像中心区域的圆形结构周围存在明显的放射状触手，颜色和纹理与周围环境不同，可能存在伪造的嫌疑。然而，图像整体显示出明显的JPEG结构特征，包括DCT系数直方图空洞化，这表明图像可能经过了多次重压缩。因此，无法确定图像是否为伪造。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，图像中心区域的圆形结构周围存在明显的放射状触手，颜色和纹理与周围环境不同，可能存在伪造的嫌疑。然而，图像整体显示出明显的JPEG结构特征，包括DCT系数直方图空洞化（blockiness: 0.9745, DCT anomaly: 3.9605），这表明图像可能经过了多次重压缩。尽管 <call_jpeg> 专家的测量结果显示图像具有较高的JPEG结构特征，但这种特征并不足以作为伪造的直接证据。此外，图像的JPEG结构特征接近随机水平（P(Fake)=0.449），这意味着图像可能是真实拍摄的，也可能是经过多次重压缩的伪造图像。\n\n综合以上分析，图像中的圆形结构周围存在的放射状触手可能是由于JPEG压缩引起的伪影，而不是伪造的直接证据。因此，现有工具无法进一步降低不确定性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"图像中心区域的圆形结构周围存在明显的放射状触手，颜色和纹理与周围环境不同，可能存在伪造的嫌疑。然而，图像整体显示出明显的JPEG结构特征，包括DCT系数直方图空洞化（blockiness: 0.9745, DCT anomaly: 3.9605），这表明图像可能经过了多次重压缩。尽管 <call_jpeg> 专家的测量结果显示图像具有较高的JPEG结构特征，但这种特征并不足以作为伪造的直接证据。此外，图像的JPEG结构特征接近随机水平（P(Fake)=0.449），这意味着图像可能是真实拍摄的，也可能是经过多次重压缩的伪造图像。综合以上分析，图像中的圆形结构周围存在的放射状触手可能是由于JPEG压缩引起的伪影，而不是伪造的直接证据。因此，现有工具无法进一步降低不确定性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-45216380b0",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9745, DCT anomaly: 3.9605)",
+      "reasoning": "Moderate JPEG structure found (blockiness=0.9745, DCT anomaly=3.9605). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.5837,
+      "raw_metric": 2.168913,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 4,
+    "halting_reason": "model_stalled",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T16:30:52.384010",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 4.0,
+    "policy_version": "v2",
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "posterior": 0.464,
+    "conflict_score": 0.0,
+    "candidate_overridden": true
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "id": "session_20260924_163957_fake_adm_0003_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0003_jpeg_q85.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "综合分析显示，噪声残留专家的测量结果显示高噪声残留水平，支持真实性；然而，JPEG 压缩专家的测量结果显示中等程度的 JPEG 结构，且其测量值接近随机水平，无法提供足够的信息来确定伪造与否。因此，现有证据不足以明确判断该区域的真实性或伪造性。",
+    "posterior": 0.3553,
+    "conflict_score": 0.0,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 石塔的纹理在该区域显得异常光滑，与周围区域的粗糙纹理不一致。\nExpert Target & Hypothesis: <call_noise>[100, 100, 200, 200]</call_noise> → 检查是否存在人为合成的痕迹。\n</planning>\n\n<call_noise>[100, 100, 200, 200]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-24c321e1cd\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.7844). Residual consistent with a camera sensor.\", \"reasoning\": \"High residual micro-noise level (metric=3.7844). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.\", \"strength\": 0.8141, \"raw_metric\": 3.784435, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.718, \"Fake\": 0.282}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.009537}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据噪声残留专家的测量结果，该区域的噪声残留水平为 3.7844，这与相机传感器留下的空间丰富微噪声（拍摄时的随机噪声和PRNU）相符，这是真实拍摄的条件。这个测量值并不表示伪造，而是真实的拍摄特征。然而，图像处理操作如锐化或降噪可能会增加这个值，因此它只能作为弱证据，与校准似然性结合使用。\n\n高噪声残留水平通常与真实图像相关联，而低噪声残留水平则可能表明伪造。由于该区域的噪声残留水平较高，且与真实图像的统计特性一致，可以认为该区域是真实的。\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.718, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"该区域的噪声残留水平为 3.7844，这与相机传感器留下的空间丰富微噪声相符，这是真实拍摄的条件。高噪声残留水平通常与真实图像相关联，而低噪声残留水平则可能表明伪造。由于该区域的噪声残留水平较高，且与真实图像的统计特性一致，可以认为该区域是真实的。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.39，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据噪声残留专家的测量结果，该区域的噪声残留水平为 3.7844，这与相机传感器留下的空间丰富微噪声相符，这是真实拍摄的条件。高噪声残留水平通常与真实图像相关联，而低噪声残留水平则可能表明伪造。由于该区域的噪声残留水平较高，且与真实图像的统计特性一致，可以认为该区域是真实的。\n\n然而，系统反馈指出当前校准后验不一致（P(Fake)=0.39），这意味着现有证据不足以完全排除伪造的可能性。为了进一步确认，建议调用 JPEG 压缩专家进行分析，以检查是否存在重压缩的迹象，因为重压缩可能会改变噪声残留水平。\n\n如果 JPEG 压缩专家的测量结果也支持高噪声残留水平，那么可以更确信该区域是真实的。否则，需要收集更多证据来做出最终判断。\n</reasoning>\n\n<call_jpeg>[100, 100, 200, 200]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-081ec57b48\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9772, DCT anomaly: 4.1839)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=0.9772, DCT anomaly=4.1839). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.6271, \"raw_metric\": 2.259863, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.551, \"Fake\": 0.449}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.009537}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据噪声残留专家的测量结果，该区域的噪声残留水平为 3.7844，这与相机传感器留下的空间丰富微噪声相符，这是真实拍摄的条件。高噪声残留水平通常与真实图像相关联，而低噪声残留水平则可能表明伪造。由于该区域的噪声残留水平较高，且与真实图像的统计特性一致，可以认为该区域是真实的。\n\n然而，系统反馈指出当前校准后验不一致（P(Fake)=0.39），这意味着现有证据不足以完全排除伪造的可能性。噪声残留专家的测量结果显示高噪声残留水平，但 JPEG 压缩专家的测量结果显示中等程度的 JPEG 结构，且该测量值接近随机水平，重压缩会进一步削弱信号，因此无法驱动最终判决。\n\n综合来看，现有工具无法进一步降低不确定性，因为噪声残留专家的测量结果支持真实性，而 JPEG 压缩专家的测量结果虽然显示中等程度的 JPEG 结构，但其测量值接近随机水平，无法提供足够的信息来确定伪造与否。\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\", \"double_jpeg_quantization\"], \"report\": \"综合分析显示，噪声残留专家的测量结果显示高噪声残留水平，支持真实性；然而，JPEG 压缩专家的测量结果显示中等程度的 JPEG 结构，且其测量值接近随机水平，无法提供足够的信息来确定伪造与否。因此，现有证据不足以明确判断该区域的真实性或伪造性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-24c321e1cd",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.7844). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=3.7844). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.8141,
+      "raw_metric": 3.784435,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.718,
+        "Fake": 0.282
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture."
+    },
+    {
+      "evidence_id": "E-081ec57b48",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9772, DCT anomaly: 4.1839)",
+      "reasoning": "Moderate JPEG structure found (blockiness=0.9772, DCT anomaly=4.1839). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.6271,
+      "raw_metric": 2.259863,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 4,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T16:39:57.437938",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 3,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 5.0,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.3553,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

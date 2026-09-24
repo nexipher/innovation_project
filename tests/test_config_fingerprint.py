@@ -110,3 +110,50 @@ class TestResumeGuard:
         path = self._report(tmp_path / "r.json", fingerprint)
         assert load_completed(path, "dry_run", 5, fingerprint) == {}
         assert load_completed(path, "gpu", 15, fingerprint) == {}
+
+
+class TestProvenanceIsNotIdentity:
+    """
+    A documentation commit must not invalidate a finished arm.
+
+    G3-e lost its RGB arm this way: the log entry committed between the two
+    arm runs changed git_commit, the resumed run read that as a configuration
+    change, and the cold start overwrote the completed arm.
+    """
+
+    def test_git_commit_does_not_change_the_digest(self):
+        base = cf.compute(_experts())
+        moved = {**base, "git_commit": "deadbeef"}
+        assert cf.digest(moved) == cf.digest(base)
+
+    def test_git_commit_is_still_recorded(self):
+        assert cf.compute(_experts())["git_commit"]
+
+    def test_measurable_components_still_change_the_digest(self):
+        for component, value in (("rectifier", "other"), ("tokenizer", "other"),
+                                 ("halting_policy", "v1"), ("prompts", "other")):
+            altered = {**cf.compute(_experts()), component: value}
+            assert cf.digest(altered) != cf.digest(cf.compute(_experts())), component
+
+    def test_a_new_commit_no_longer_forces_a_cold_start(self, tmp_path):
+        stored = cf.compute(_experts())
+        payload = {"mode": "gpu", "per_cell": 15, "config_fingerprint": stored,
+                   "conditions": {"rgb": {"records": [{"sample_id": "a"}]}}}
+        path = tmp_path / "r.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+
+        live = {**stored, "git_commit": "deadbeef"}
+        assert load_completed(str(path), "gpu", 15, live)["rgb"]
+
+
+class TestBackupOnColdStart:
+    def test_the_previous_report_is_moved_aside(self, tmp_path):
+        from scripts.qwen_gain_baseline import _backup_report
+
+        path = tmp_path / "g3_gain_report.json"
+        path.write_text('{"mode": "gpu"}', encoding="utf-8")
+
+        backup = _backup_report(str(path))
+        assert not path.exists()
+        assert backup.endswith(".json") and "superseded_" in backup
+        assert json.loads(open(backup, encoding="utf-8").read())["mode"] == "gpu"
