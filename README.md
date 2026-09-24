@@ -216,8 +216,9 @@ innovation_project/
 ├── tests/                          # CPU 单元测试与端到端测试
 ├── sft_data/train/final/           # 旧版 SFT 候选集（509 条）+ 拒绝集（68 条）
 ├── calibration/                    # 专家校准集、可靠性与增益报告
-├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）
+├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）—— 真实会话入库作为 SFT provenance
 ├── traces/evidence/                # 诊断区域裁剪图（运行期生成，未纳入版本控制）
+├── traces/dry_run_sessions/        # Mock 干跑 Trace（与真实会话隔离，未纳入版本控制）
 └── claude_operation_log.md         # 开发操作审计日志
 ```
 

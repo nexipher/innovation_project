@@ -650,3 +650,23 @@
 * **执行结果与验证状态**：机制结论可复现; 256 测试通过; 与已提交的统计脚本职责分离
 * **置信度或遗留待办（TODO）**：G2-e 已完成且端到端核验(64 样本)通过; **仍缺 Qwen 四条件验证重跑**(极性修复后需 --fresh 重跑, 否则会静默复用修复前数字), 需 GPU 授权; 随后进入 G3
 ---
+### 2026-09-24 14:35:20 - Trace 治理收口 + md 记录缺口补齐
+
+* **当前操作动作**：trace 目录治理（按用户授权自主决定）+ 补齐 md 记录中的三处缺口
+* **核心变更说明**：
+  1. 核查发现既有前提有误: 真实 trace **是**入库的(1195 条已跟踪), 此前"原始 trace 未版本化"的判断不成立; 未跟踪的仅 G2-d 本次运行的 488 条
+  2. 清理: 删除 473 个 mock/scripted trace(two_calls/scripted/explore_all/conflict)+ 6 个无 mock_mode 标记的测试残留; 删除前逐个从 HEAD 核实 —— **被删的 193 个已跟踪文件全部是 mock, 无一个真实样本**
+  3. 安全核查: 479 个 mock trace 的日期为 20260717/20260924, **零命中** finalize_sft_data.py 的 `20260721_1[1-2]` 文件名 glob → 从未可能污染 SFT 数据
+  4. 决定: **不将 traces/sft_sessions 加入 gitignore**(曾误加后撤销); 改为真实会话入库(1195 既有 + 488 本次 G2-d = 1683), mock 残留清除; 版本控制判定依据是 trace 元数据的 `mock_mode` 字段
+  5. md 缺口 ①: G2-e 的核验只是**专家文本层面**(64 样本 × 3 专家), "修复后证据对 Qwen 是否产生正增益"尚未测量 —— 已写入 plan.md 遗留段并给出验证命令
+  6. md 缺口 ②: `--fresh` 陷阱(续跑只看 (mode, per_cell), 修复后直接重跑会静默复用修复前数字)已写入 plan.md; 彻底修法(报告加配置指纹)与 G3 一并处理
+  7. md 缺口 ③: 目录版本控制策略写入 CURRENT_PROGRAM_ARCHITECTURE.md §5.5 与 README 目录树
+* **涉及/修改的文件清单**：
+  - `traces/sft_sessions/ (清理 479 个 mock/测试残留; 新增 488 条 G2-d 真实 trace 入库)`
+  - `plan.md (Modified — 验证重跑遗留 + --fresh 陷阱)`
+  - `CURRENT_PROGRAM_ARCHITECTURE.md (Modified — §5.5 版本控制策略)`
+  - `README.md (Modified — 目录树标注)`
+  - `.gitignore (未变更 — 误加的 sft_sessions 条目已撤销)`
+* **执行结果与验证状态**：trace 目录 2162 → 1683(全部真实); git status 不再被 trace 刷屏; md 记录三处缺口已补
+* **置信度或遗留待办（TODO）**：极性修复的 Qwen 层面验证重跑待 GPU 授权(--fresh, ~20 分钟); 随后 G3(EvidenceRectifier)
+---

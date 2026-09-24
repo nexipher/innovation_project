@@ -272,6 +272,8 @@ traces/sft_sessions/forensic_sft_session_时间_图像名.json
 
 正式会话写入 `traces/sft_sessions/`（`finalize_sft_data.py` 按文件名前缀扫描该目录）；**Mock 干跑与测试必须重定向**，否则 mock session 会混入真实 trace——G2-d 干跑写入 `traces/dry_run_sessions/`，测试套件通过 `tests/conftest.py` 的 autouse fixture 写入临时目录。
 
+目录内容的版本控制策略：**真实会话 trace 入库**（作为 SFT 数据的 provenance，截至 G2-e 共 1683 条：qwen_real + b_line_constructed）；**mock / scripted / 干跑 / 测试产物不入库**（`traces/evidence/`、`traces/dry_run_sessions/` 已在 `.gitignore`；2026-09-24 已清理历史 mock 残留）。判定依据是 trace 元数据里的 `mock_mode` 字段，而非目录或文件名。
+
 状态机同时向调用者返回内存中的结果字典，`main.py` 据此打印 verdict、confidence、步数、终止原因、专家证据和 SFT 文件路径。
 
 ## 6. 运行时序示例

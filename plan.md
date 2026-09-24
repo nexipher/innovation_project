@@ -1493,6 +1493,14 @@ EvidenceBundle
 
 **遗留（转 G3 EvidenceRectifier）**：`frequency_expert_v2` 仍有 **15/64 直接矛盾**（例：strength 0.247 → 文本判 Real，校准给出 Fake 0.709）。根因是两套离散化不重合 —— 文本分带用的是 sigmoid 归一后的 `strength` 阈值（0.3/0.7），校准用的是 `raw_metric` 的分位分箱；两者对"高"的定义不一致。这不是文本语义错误，而是需要 EvidenceRectifier 按校准后验统一裁决的接口问题（§4.10）。缓解措施：Prompt 已将 freq 标注为 WEAK 且仅供佐证。
 
+**遗留：极性修复尚未在 Qwen 层面验证（需 GPU）**：G2-e 的核验是**专家文本层面**的（64 样本 × 3 专家，确认方向矛盾清零），但"修复后的证据是否真的对 Qwen 产生正增益"**尚未测量** —— `calibration/g2_gain_report.json` 是**修复前**专家产出的。验证运行：
+
+```
+python3 -u scripts/qwen_gain_baseline.py --per-cell 5 --fresh   # 40 样本 × 4 条件 ≈ 20 分钟
+```
+
+⚠️ `--fresh` 不可省略：续跑逻辑以 `(mode, per_cell)` 判定是否复用既有报告，不包含专家配置指纹。修复后直接重跑会打印 `Resuming: 480 records already on disk` 并把四个条件全部判为 `already complete, skipping`，**静默复用修复前的旧数字**（看起来像"修复无效"）。彻底修法是给报告加专家配置指纹并在读取时校验 —— 属共享文件改动，与 G3 一并处理。完整四条件评估留待 G5（与微调后模型同框比较，验收线才有意义）。
+
 **顺带发现（运行时 bug，纳入 G2-e 修复）**：`FrequencyExpertV2.source_name = "frequency_expert"` 与 v1 同名，导致运行时 `reliability_table.lookup()` 对所有频域 token 命中的是 **v1 条目**（`disabled:no-signal`, reliability 0.505, 校准近似均匀），而 v2 的实测条目（0.556→q70 0.634）挂在 `frequency_expert_v2` 下从未被使用。G2-d 的 text/both 两臂即在此错误标注下运行，且该错误会直接污染 G4 生成的训练数据。
 
 #### G2-e 准入决策与收口（CPU，结论依赖 G2-b + G2-d）
