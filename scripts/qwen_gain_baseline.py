@@ -81,7 +81,13 @@ CONDITIONS = {
 # ---------------------------------------------------------------------------
 
 def select_samples(manifest: dict, per_class_per_cell: int) -> List[dict]:
-    """Stratified selection: equal Real/Fake per format-matched cell."""
+    """
+    Stratified selection: equal Real/Fake per format-matched cell.
+
+    Each cell is single-class (`real_png` vs `fake_png`), so taking N samples
+    per cell yields N Real and N Fake for every format/quality pairing — the
+    comparison cannot be won by class-format correlation.
+    """
     by_cell: Dict[str, Dict[str, List[dict]]] = {}
     for sample in manifest["samples"]:
         if sample["cell"] not in COMPARISON_CELLS:
@@ -324,8 +330,8 @@ def main() -> None:
         manifest = json.load(handle)
     samples = select_samples(manifest, args.per_cell)
     print(f"Samples: {len(samples)} "
-          f"({len(set(s['cell'] for s in samples))} cells, "
-          f"per-cell {args.per_cell} per class)")
+          f"({args.per_cell} Real + {args.per_cell} Fake per format/quality cell, "
+          f"{len(set(s['cell'] for s in samples))} cells)")
 
     if args.dry_run:
         def client_factory(_variant):
