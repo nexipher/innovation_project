@@ -1439,6 +1439,7 @@ EvidenceBundle
   1. 原实现在样本循环内调用 `client_factory` —— GPU 模式下等于**每张图新建 `QwenVLClient` 并重新加载 16.6GB 权重**。现改为每个条件构建一次 client 与 expert 工具集并复用，状态机仍按样本重建以保证会话隔离（`run()` 内部 `mllm.reset()`）。
   2. `mllm/__init__.py` 原急切导入 `qwen_client`，使所有 CPU 路径（干跑、测试）都付出 torch+transformers 的 ~450MB 代价。改为 PEP 562 惰性导出后，导入基线 **586MB → 116MB**。
 - 干跑报告与正式报告分离：`calibration/g2_gain_report_dry_run.json`（mock 数字永不覆盖 GPU 真实报告）。
+- **断点续跑（GPU 运行必需）**：`run_condition` 支持 `on_record` 回调，主流程在**每个样本完成后**即把报告落盘，并按 `(mode, per_cell)` 校验既有报告后跳过已完成样本（`--fresh` 可强制重跑）。理由：G2-d 预计 1-1.5 小时，而本环境已有 SIGKILL 先例；分次调用（如 `--conditions rgb text` 后再补齐其余）累积到同一份报告，单臂失败不再导致全部作废。`mode` 或 `per_cell` 不一致的报告视为冷启动，避免把不可比的数字混在一起。
 - **Trace 目录隔离**：正式 trace 由 `finalize_sft_data.py` 按文件名前缀从 `traces/sft_sessions/` 收集，mock/测试 session 混入即为治理风险。故 `SessionLogger` 增加 `sft_dir` 覆盖参数：G2-d 干跑写入 `traces/dry_run_sessions/`（已 gitignore），测试套件经 `tests/conftest.py` autouse fixture 写入临时目录（验证：全量测试前后 `traces/sft_sessions/` 文件数不变）。
 - **运行环境前置条件（重要）**：执行 shell 处于 **2GB cgroup**（`memory.max=2147MB`，只读不可调），与 VS Code server、claude 本体、jupyter、tensorboard 等共享；当前常驻 anon ~1.08GB、可回收页缓存 ~0.47GB，**单进程实际可用约 0.93GB**。实测 GPU 栈 `torch + transformers + processor` ≈ 0.65GB RSS（未计权重加载）。故 G2-d 执行前需确认无其他重进程，运行期间监控 `/sys/fs/cgroup/memory.current`。
 - 干跑语义说明：Mock 从对话中的 Evidence Token JSON 取判定依据，故 `rgb`（无注入）与 `image`（中性标记、无数值）两臂必然返回 Uncertain 并落在随机水平 —— 这是 mock 对注入模式的忠实反映，**不构成科学结论**，干跑只证明管线通。

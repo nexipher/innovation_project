@@ -189,6 +189,7 @@ def run_condition(
     client_factory: Callable[[str], Any],
     progress: bool = True,
     sft_dir: Optional[str] = None,
+    on_record: Optional[Callable[[dict], None]] = None,
 ) -> List[dict]:
     """
     Run every sample under one condition; return per-sample records.
@@ -204,6 +205,8 @@ def run_condition(
         samples: Manifest sample dicts.
         client_factory: Called with "baseline" | "forensic" -> MLLM client.
         sft_dir: Trace directory override (dry runs keep mock sessions apart).
+        on_record: Called with each record as it is produced, so a caller can
+            persist progress — an hours-long GPU run must survive a kill.
     """
     spec = CONDITIONS[condition]
     records: List[dict] = []
@@ -223,7 +226,7 @@ def run_condition(
         elapsed = time.perf_counter() - started
 
         verdict = result["final_verdict"]
-        records.append({
+        record = {
             "sample_id": sample["sample_id"],
             "cell": sample["cell"],
             "gt": sample["label"],
@@ -232,11 +235,56 @@ def run_condition(
             "model_turns": result.get("model_turn_count", 0),
             "expert_calls": result.get("expert_call_count", 0),
             "elapsed_s": round(elapsed, 2),
-        })
+        }
+        records.append(record)
+        if on_record is not None:
+            on_record(record)
         if progress and index % 20 == 0:
             print(f"    [{index}/{len(samples)}] {condition}")
 
     return records
+
+
+# ---------------------------------------------------------------------------
+# Resume support
+# ---------------------------------------------------------------------------
+
+def load_completed(path: str, mode: str, per_cell: int) -> Dict[str, List[dict]]:
+    """
+    Records per condition from an earlier run of the same configuration.
+
+    Returns {} when the file is absent, unreadable, or was produced by a
+    different mode or sample size — resuming off a mismatched report would
+    silently mix incomparable numbers.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            previous = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    if previous.get("mode") != mode or previous.get("per_cell") != per_cell:
+        return {}
+    return {
+        condition: entry.get("records", [])
+        for condition, entry in (previous.get("conditions") or {}).items()
+    }
+
+
+def pending_samples(samples: List[dict], done: List[dict]) -> List[dict]:
+    """Samples not yet recorded for this condition."""
+    finished = {record["sample_id"] for record in done}
+    return [sample for sample in samples if sample["sample_id"] not in finished]
+
+
+def initial_completed(output_path: str, mode: str, per_cell: int,
+                      fresh: bool) -> Dict[str, List[dict]]:
+    """Resume state for this invocation (nothing when --fresh)."""
+    return {} if fresh else load_completed(output_path, mode, per_cell)
+
+
+def _write_report(path: str, report: dict) -> None:
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(report, handle, ensure_ascii=False, indent=2)
 
 
 def _build_experts() -> Dict[str, Any]:
@@ -263,6 +311,9 @@ def main() -> None:
     parser.add_argument("--conditions", nargs="*", default=list(CONDITIONS))
     parser.add_argument("--dry-run", action="store_true",
                         help="Use MockMLLMClient (CPU plumbing validation only)")
+    parser.add_argument("--fresh", action="store_true",
+                        help="Ignore an existing report and start over "
+                             "(default: resume the samples already recorded)")
     args = parser.parse_args()
 
     unknown = [c for c in args.conditions if c not in CONDITIONS]
@@ -294,26 +345,45 @@ def main() -> None:
             return QwenVLClient(system_prompt=prompt)
         mode = "gpu"
 
+    output_path = report_path(args.dry_run)
+    completed = initial_completed(output_path, mode, args.per_cell, args.fresh)
     report: Dict[str, Any] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "mode": mode,
         "per_cell": args.per_cell,
         "samples": len(samples),
-        "conditions": {},
+        "conditions": {
+            condition: {"metrics": compute_metrics(records), "records": records}
+            for condition, records in completed.items()
+        },
     }
+    if completed:
+        done = sum(len(records) for records in completed.values())
+        print(f"Resuming: {done} records already on disk")
 
     sft_dir = DRY_RUN_SESSIONS_DIR if args.dry_run else None
     for condition in args.conditions:
-        print(f"\n=== Condition: {condition} ===")
-        records = run_condition(condition, samples, client_factory, sft_dir=sft_dir)
-        report["conditions"][condition] = {
-            "metrics": compute_metrics(records),
-            "records": records,
-        }
+        entry = report["conditions"].setdefault(
+            condition, {"metrics": {}, "records": []}
+        )
+        todo = pending_samples(samples, entry["records"])
+        if not todo:
+            print(f"\n=== Condition: {condition} — already complete, skipping ===")
+            continue
+        print(f"\n=== Condition: {condition} ({len(todo)} samples) ===")
 
-    output_path = report_path(args.dry_run)
-    with open(output_path, "w", encoding="utf-8") as handle:
-        json.dump(report, handle, ensure_ascii=False, indent=2)
+        def on_record(record, entry=entry):
+            # Persist after every sample: an interrupted GPU run resumes
+            # instead of starting over.
+            entry["records"].append(record)
+            entry["metrics"] = compute_metrics(entry["records"])
+            report["generated_at"] = datetime.now().isoformat(timespec="seconds")
+            _write_report(output_path, report)
+
+        run_condition(condition, todo, client_factory,
+                      sft_dir=sft_dir, on_record=on_record)
+
+    _write_report(output_path, report)
     print(f"\nReport: {output_path}")
 
     # ---- console summary ---------------------------------------------

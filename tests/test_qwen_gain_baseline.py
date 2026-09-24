@@ -4,6 +4,7 @@ The harness itself is GPU-gated; everything asserted here is the CPU-testable
 scaffolding: stratified selection, metric definitions and the runner contract.
 """
 
+import json
 import os
 
 import pytest
@@ -156,6 +157,60 @@ class TestComputeMetrics:
         assert compute_metrics([]) == {"n": 0}
 
 
+class TestResume:
+    """A GPU run lasts hours in a memory-tight cgroup: it must resume."""
+
+    REPORT = {"mode": "gpu", "per_cell": 15, "conditions": {
+        "rgb": {"records": [{"sample_id": "a"}, {"sample_id": "b"}]},
+        "text": {"records": [{"sample_id": "a"}]},
+    }}
+
+    def _write(self, tmp_path, payload):
+        path = tmp_path / "report.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return str(path)
+
+    def test_loads_records_per_condition(self, tmp_path):
+        from scripts.qwen_gain_baseline import load_completed
+
+        completed = load_completed(self._write(tmp_path, self.REPORT), "gpu", 15)
+        assert set(completed) == {"rgb", "text"}
+        assert len(completed["rgb"]) == 2
+
+    def test_missing_file_is_a_cold_start(self, tmp_path):
+        from scripts.qwen_gain_baseline import load_completed
+
+        assert load_completed(str(tmp_path / "nope.json"), "gpu", 15) == {}
+
+    def test_unreadable_file_is_a_cold_start(self, tmp_path):
+        from scripts.qwen_gain_baseline import load_completed
+
+        path = tmp_path / "bad.json"
+        path.write_text("{not json", encoding="utf-8")
+        assert load_completed(str(path), "gpu", 15) == {}
+
+    def test_mismatched_mode_or_sample_size_is_a_cold_start(self, tmp_path):
+        from scripts.qwen_gain_baseline import load_completed
+
+        path = self._write(tmp_path, self.REPORT)
+        assert load_completed(path, "dry_run", 15) == {}
+        assert load_completed(path, "gpu", 5) == {}
+
+    def test_pending_samples_excludes_recorded_ones(self):
+        from scripts.qwen_gain_baseline import pending_samples
+
+        samples = [{"sample_id": name} for name in ("a", "b", "c")]
+        pending = pending_samples(samples, [{"sample_id": "a"}])
+        assert [s["sample_id"] for s in pending] == ["b", "c"]
+
+    def test_fresh_ignores_the_existing_report(self, tmp_path):
+        from scripts.qwen_gain_baseline import initial_completed
+
+        path = self._write(tmp_path, self.REPORT)
+        assert initial_completed(path, "gpu", 15, fresh=False)["rgb"]
+        assert initial_completed(path, "gpu", 15, fresh=True) == {}
+
+
 class TestConditionSpec:
     def test_four_conditions_with_expected_injection(self):
         assert set(CONDITIONS) == {"rgb", "text", "image", "both"}
@@ -228,6 +283,17 @@ class TestRunCondition:
 
         assert seen == ["forensic"], "client must be built once and reused"
         assert len(records) == 3
+
+    def test_on_record_fires_per_sample(self):
+        seen = []
+        samples = [
+            {**_sample("real_0000_png", "real_png", "Real"), "path": REAL_PATH},
+            {**_sample("fake_0000_png", "fake_png", "Fake"), "path": REAL_PATH},
+        ]
+        run_condition("text", samples, self._factory([]), progress=False,
+                      on_record=seen.append)
+
+        assert [r["sample_id"] for r in seen] == ["real_0000_png", "fake_0000_png"]
 
     def test_sft_dir_override_keeps_mock_traces_apart(self, tmp_path):
         """Dry-run traces must not land where the real ones are collected."""

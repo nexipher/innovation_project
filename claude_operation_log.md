@@ -569,3 +569,20 @@
 * **执行结果与验证状态**：198 测试通过; 干跑闭环完成(报告 + trace 均与正式产物分离)
 * **置信度或遗留待办（TODO）**：G2-d 四条件对比等待 GPU 授权; 历史 mock trace 清理待用户决定
 ---
+### 2026-09-24 12:47:20 - G2-d 补充：断点续跑（长时 GPU 作业保障）
+
+* **当前操作动作**：为 G2-d GPU 运行加入增量落盘与断点续跑
+* **核心变更说明**：
+  1. 动机: G2-d 预计 1-1.5h, 而本环境已有 SIGKILL 先例(exit 137, 2GB cgroup); 原实现仅在全部条件跑完后写一次报告, 中断即全丢
+  2. `run_condition(on_record=...)` 回调: 主流程每完成一个样本即更新该条件的 records/metrics 并落盘
+  3. `load_completed(path, mode, per_cell)`: 读取既有报告作为续跑基线; **mode 或 per_cell 不一致时视为冷启动**(避免混入不可比数字); 新增 `--fresh` 强制重跑
+  4. `pending_samples()`: 跳过已记录样本; 已完成条件直接打印 skipping
+  5. 实测: `--conditions rgb text` → 再调一次(Resuming 16, 两条件 skipping) → 再调全条件补齐 image/both, 三次调用累积为同一份四条件报告
+  6. 全量测试 205 passed(新增 7: 续跑 6 + on_record 1)
+* **涉及/修改的文件清单**：
+  - `scripts/qwen_gain_baseline.py (Modified — on_record/load_completed/pending_samples/initial_completed/--fresh)`
+  - `tests/test_qwen_gain_baseline.py (Modified — TestResume 6 项 + on_record 1 项)`
+  - `plan.md (Modified — 续跑说明)`
+* **执行结果与验证状态**：205 测试通过; 续跑语义实测通过(分次调用累积); 干跑报告含完整四条件
+* **置信度或遗留待办（TODO）**：G2-d 四条件对比等待 GPU 授权
+---
