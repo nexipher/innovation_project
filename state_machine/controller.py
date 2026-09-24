@@ -22,6 +22,7 @@ from config import (
 )
 from utils.image_utils import ImageUtils
 from utils.coordinate_transformer import CoordinateTransformer
+from utils.evidence_consistency import EvidenceConsistencyChecker
 from utils.parser import Parser
 from utils.logger import SessionLogger, log_operation
 from state_machine.evidence_tokenizer import EvidenceTokenizer
@@ -169,6 +170,10 @@ class ForensicStateMachine:
                         expert_result, abs_bbox, (h, w),
                         region_normalized=transform["region_normalized_1000"],
                     )
+
+                    # Deterministic semantic-consistency gate (plan.md §4.8 G1):
+                    # direction words must agree with the measured strength.
+                    EvidenceConsistencyChecker.enforce(evidence_token)
 
                     # Duplicate suppression (plan.md §4.8 G1): identical
                     # results must not enter the chain, the conversation or
