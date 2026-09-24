@@ -224,34 +224,45 @@ raw_output = mllm.generate(image_path, conversation)
 
 1. `Parser.extract_all_calls()` 提取专家名称和相对 bbox；
 2. `CoordinateTransformer.transform()` 将 `[0,1000]` 坐标转换为图像像素，同时保留请求的归一化坐标与 `clipped` 标记；
-3. 裁剪图像 patch；
-4. 根据调用名称查找对应专家并执行 `expert.analyze(patch)`；
-5. 将 `ExpertResult` 转换为 Evidence Token（带稳定 `evidence_id`）；
-6. `EvidenceConsistencyChecker.enforce()` 执行确定性方向检查，失败证据降级 `support`；
-7. **去重**：`evidence_id` 已存在的相同结果不再进入证据链、对话或停止统计，只增加 `suppressed_duplicate_count`；
-8. 唯一证据保存诊断区域裁剪图到 `traces/evidence/<session>/`，并把项目相对路径写入证据 token 与对话轮（`image_paths`）；
-9. 把 Evidence Token 写入证据链，并作为新的 user 消息注入对话历史。
+3. 裁剪图像 patch —— **仅用于诊断区域图与产物渲染**；
+4. 根据调用名称查找对应专家并执行 `expert.analyze(img)`：**度量在整图上计算**（G3-a）。可靠性表在全图标定，而裁剪的度量分布不同（noise 裁剪中位数 1.262 vs 全图 2.529），用裁剪度量查询全图表等于按错误总体解读证据；
+5. 将 `ExpertResult` 转换为 Evidence Token（带稳定 `evidence_id`、`measurement_scope="global"` 与诊断区域的 `region_area_ratio`）；
+6. `EvidenceRectifier.rectify()` 统一方向权威（G3-b）：`calibrated_likelihood` 决定方向，`support` 被重写（原文存 `support_raw`），矛盾的自由文本框级改写为校准派生规范句，测量数值保留；无校准条目的 token 标注 `expert_claim_uncalibrated`；
+7. `EvidenceConsistencyChecker.enforce()` 执行确定性方向检查：对已整流 token 是**校验**（应恒通过，期望方向由校准而非 strength 分带决定），对未校准 token 仍是原守卫；
+8. **去重**：`evidence_id` 已存在的相同结果不再进入证据链、对话或停止统计，只增加 `suppressed_duplicate_count`；
+9. 唯一证据保存诊断区域裁剪图到 `traces/evidence/<session>/`，并把项目相对路径写入证据 token 与对话轮（`image_paths`）；
+10. 把 Evidence Token 写入证据链，并作为新的 user 消息注入对话历史。
 
 一轮 MLLM 输出可以包含多个专家调用。计数分开记录：`model_turn_count`（generate 调用次数）、`expert_call_count`（专家调用总次数，含重复）、`unique_evidence_count`（去重后证据数）。
 
-### 5.4 终止判断
+### 5.4 终止判断（G3-c：策略 v2，`HALTING_POLICY="v2"` 为默认）
 
-每轮专家调用完成后，`HaltingChecker.check()` 按优先级检查：
+每轮专家调用后由 `HaltingPolicyV2.decide()` 给出 `HaltingDecision`：
 
-1. **模型主动结案**：输出了有效 `<verdict>`；
-2. **预算耗尽**：`expert_call_count >= MAX_EXPERT_CALLS (5)` 或 `model_turn_count >= MAX_MODEL_TURNS (6)`（终止原因 `budget_exhausted`）；
-3. **证据冲突**：证据链中同时存在 `strength > 0.7` 和 `strength < 0.3`；
-4. **信息增益收敛**：最后两条**唯一**证据的 strength 差值小于当前阈值（重复证据已在上游去重，不会触发虚假收敛）。
+```text
+后验 P(Fake)  = 可靠度加权 log-odds（权重 = Youden margin 2·AUROC−1；未校准 token 权重 0）
+冲突度        = 1 − |Σ 加权贡献| / Σ|加权贡献|
+工具效用      = 专家权重 × 0.5 × 不确定性(1−|2p−1|) − 调用成本
+```
 
-预算耗尽或信息增益收敛时，状态机会追加预算耗尽提示，再调用一次 MLLM 生成最终 verdict。证据冲突时，则追加“疑罪从无”提示，要求模型进行双向反思并输出 `Uncertain`。
+决策顺序：
 
-如果最终输出仍无法解析，状态机会生成兜底判定：
+1. **尚无证据** → 继续探索并推荐效用最高的专家；
+2. **模型的 `<verdict>` 仅作候选**：需后验同意 + 后验足够自信（|P(Fake)| ≥ 0.65）+ 无未决冲突（冲突度 ≤ 0.5）才被接受，否则记为 `candidate_overridden_by_posterior` 并注入说明要求继续取证；
+3. **模型重复被驳回的候选**（连续两轮无新证据）→ `model_stalled` 停：策略能建议工具但不能强制调用，空转只会更慢地烧掉预算；
+4. **预算耗尽** → 停；**耗尽本身不决定标签**（后验自信才给标签，冲突未决或后验居中则 `Uncertain`），并把未解决的冲突一并记入 `all_reasons`；
+5. **无工具具正预期收益** → 停（`no_expected_gain`）；
+6. 否则继续。
+
+标签由**策略**给出，模型最终的结案轮只提供报告文本；其自身判定作为 `model_candidate` 记录在 trace 中备查。终止时追加的提示按原因区分（预算 / 冲突 / 无收益）。`HaltingChecker`（v1：`<verdict>` 优先 + 跨专家 strength 比较 + 相邻 strength 差值）保留在 `state_machine/halting.py`，仅供离线回放对比。
+
+若模型输出无法解析且策略未终止，状态机给出兜底判定：
 
 ```json
 {
   "verdict": "Uncertain",
   "confidence": 0.5,
-  "report": "取证资源耗尽或分析过程异常终止。"
+  "report": "分析过程异常终止，无法做出确定结论。"
 }
 ```
 
