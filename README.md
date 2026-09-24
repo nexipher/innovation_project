@@ -6,7 +6,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-152%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-197%20passed-brightgreen)](./tests/)
 
 ---
 
@@ -203,6 +203,10 @@ innovation_project/
 │
 ├── scripts/                        # 批处理脚本
 │   ├── calibrate_experts.py        # 专家 sigmoid 参数 ROC 校准
+│   ├── build_calibration_set.py    # G2 格式配平校准集（2×4 网格 + 扰动）
+│   ├── evaluate_experts_g2.py      # G2 专家区分度/稳定性/适用条件评估
+│   ├── build_reliability_table.py  # G2 分箱校准表与适用性标签生成
+│   ├── qwen_gain_baseline.py       # G2-d 四条件增益对比（Mock 干跑 / GPU）
 │   ├── generate_sft_data.py        # A/B 双线 SFT 数据规模化生成（GPU）
 │   ├── build_sft_data.py           # 四类 SFT 数据构造（合成）
 │   ├── finalize_sft_data.py        # A 线筛选 + 数据整合 → final/
@@ -211,7 +215,7 @@ innovation_project/
 │
 ├── tests/                          # CPU 单元测试与端到端测试
 ├── sft_data/train/final/           # 旧版 SFT 候选集（509 条）+ 拒绝集（68 条）
-├── calibration/                    # 专家校准报告
+├── calibration/                    # 专家校准集、可靠性与增益报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）
 ├── traces/evidence/                # 诊断区域裁剪图（运行期生成，未纳入版本控制）
 └── claude_operation_log.md         # 开发操作审计日志
@@ -359,7 +363,8 @@ innovation_project/
 |------|------|----------|-----|
 | 1 | G0 ✅ | 旧 SFT 数据用途隔离与拒绝集收口（已完成） | 否 |
 | 2 | G1 ✅ | 坐标协议、证据去重、多轮图像历史和语义一致性修复（已完成） | 否 |
-| 3 | G2 | Expert 准入、条件校准和 Evidence Bundle | Qwen 对比需要 |
+| 3 | G2-a/b/c ✅ | 格式配平校准集、专家区分度/适用条件评估、Evidence Bundle 与可靠性表（已完成） | 否 |
+| 3 | G2-d/e | 四条件增益对比（脚本与 Mock 干跑已就绪）→ 准入决策与收口 | 对比需要 |
 | 4 | G3 | EvidenceRectifier 与停止策略 v2 | 校准需要 |
 | 5 | G4 | 重新生成并审核 `final_v2`，随后进行 LoRA | 是 |
 | 6 | G5/G6 | 统一评测；达标后可选 GRPO | 是 |
@@ -368,8 +373,9 @@ innovation_project/
 ### 7.3 已知局限
 
 - **基座模型无法证推理**：未微调的 Qwen2.5-VL 端到端准确率仅 25%（Real 53% / Fake 20%）——它收到 Evidence Token 后不知如何解读，1.9 步即结案且轻信单个专家。**这正是 SFT 的核心动机。**
-- **专家检测的是"格式差异"**：数据集 Real 为 JPEG、Fake 为 PNG，导致 noise/jpeg 专家的信号强度受图像格式影响大于受 AI 伪造影响。
-- **频域专家信号弱**：v1 separation=0.05（无效），v2 提升至 0.24 但仍不足以独立判定。
+- **专家检测的是"格式差异"**：数据集 Real 为 JPEG、Fake 为 PNG。G2-b 在格式配平校准集上量化了这一混杂：noise/jpeg 的度量方向在任务语义下**反向**（高 strength 统计上对应 Real，极性校正分离度 0.845 / 0.972），ELA 分离度 0.948 但统一重压缩到 q70 后归零（0.504）——即它是**压缩历史捷径**而非伪造信号。
+- **频域专家信号弱**：v1 separation=0.505（无信号，已停用）；v2 提升至 0.556、q70 配平后 0.634，仍不足以独立判定，仅作弱证据保留。
+- **单进程内存受限**：执行 shell 处于 2 GB cgroup（与编辑器等进程共享，不可调），实测单进程可用约 0.93 GB，而 GPU 栈 `torch+transformers+processor` 约 0.65 GB。为此 `mllm/__init__.py` 改为惰性导出 `QwenVLClient`（CPU 路径导入基线 586 MB → 116 MB），GPU 作业执行前需确认无其他重进程。
 - **旧 SFT 尚未达到训练准入**：G0 审计后 509 条候选全部获得明确处置状态（regenerate / format_only），68 条结构失效样本进入拒绝集；correct 集 166 条全部生成于专家 reasoning 修复之前，必须用修复后的专家重新生成后才能投入 LoRA。
 - **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查。G1 已通过证据去重消除虚假收敛路径，但后验校准与工具增益驱动的停止策略仍待 G3（依赖 G2 Expert 校准）。
 - **仅支持静态图像**：无视频帧采样 / 时序一致性分析能力。
