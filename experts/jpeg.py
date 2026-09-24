@@ -13,6 +13,7 @@ Algorithm (per the specification):
   3. Combine both metrics → sigmoid-normalised strength.
 """
 
+import cv2
 import numpy as np
 from scipy.fft import dct
 
@@ -30,6 +31,11 @@ from config import (
 
 class JPEGExpert(BaseExpert):
     source_name = "jpeg_expert"
+
+    counter_explanation = (
+        "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；"
+        "PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。"
+    )
 
     def __init__(
         self,
@@ -101,6 +107,37 @@ class JPEGExpert(BaseExpert):
             blockiness=blockiness,
             dct_anomaly=dct_anomaly,
         )
+
+
+    # ------------------------------------------------------------------
+    # Visual artifacts (G2 §4.9)
+    # ------------------------------------------------------------------
+
+    def render_artifacts(self, img_patch: np.ndarray) -> dict:
+        """Render a block-boundary gradient map: energy concentrated on the
+        8x8 grid is the visual signature of JPEG blockiness."""
+        if img_patch.ndim == 3:
+            gray = (
+                0.114 * img_patch[:, :, 0].astype(np.float64)
+                + 0.587 * img_patch[:, :, 1].astype(np.float64)
+                + 0.299 * img_patch[:, :, 2].astype(np.float64)
+            )
+        else:
+            gray = img_patch.astype(np.float64)
+
+        h, w = gray.shape
+        block = self.block_size
+        boundary_map = np.zeros((h, w), dtype=np.float64)
+
+        horizontal = np.abs(np.diff(gray, axis=1))  # (h, w-1)
+        for column in range(block - 1, w - 1, block):
+            boundary_map[:, column + 1] = horizontal[:, column]
+        vertical = np.abs(np.diff(gray, axis=0))    # (h-1, w)
+        for row in range(block - 1, h - 1, block):
+            boundary_map[row + 1, :] = vertical[row, :]
+
+        normalized = cv2.normalize(boundary_map, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        return {"jpeg_blockiness_map": cv2.applyColorMap(normalized, cv2.COLORMAP_HOT)}
 
     # ------------------------------------------------------------------
     # Internal methods

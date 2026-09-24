@@ -13,6 +13,7 @@ Algorithm (per the specification):
   6. Sigmoid-normalise the peak ratio to [0, 1].
 """
 
+import cv2
 import numpy as np
 from scipy.ndimage import map_coordinates
 
@@ -31,6 +32,11 @@ from config import (
 
 class FrequencyExpert(BaseExpert):
     source_name = "frequency_expert"
+
+    counter_explanation = (
+        "自然纹理（织物、规则图案、建筑结构）也能产生类似的频域周期峰；"
+        "重度 JPEG 压缩或模糊会衰减上采样伪迹，低分不代表排除嫌疑（G2 校准：v1 分离度≈随机）。"
+    )
 
     def __init__(
         self,
@@ -135,6 +141,29 @@ class FrequencyExpert(BaseExpert):
                 "GAN and Diffusion-based image synthesis. Real camera-captured images "
                 "rarely exhibit such structured high-frequency periodicity."
             )
+
+
+    # ------------------------------------------------------------------
+    # Visual artifacts (G2 §4.9)
+    # ------------------------------------------------------------------
+
+    def render_artifacts(self, img_patch: np.ndarray) -> dict:
+        """Render the log-power spectrum (fftshifted) as a colour map."""
+        if img_patch.ndim == 3:
+            gray = (
+                0.114 * img_patch[:, :, 0].astype(np.float64)
+                + 0.587 * img_patch[:, :, 1].astype(np.float64)
+                + 0.299 * img_patch[:, :, 2].astype(np.float64)
+            )
+        else:
+            gray = img_patch.astype(np.float64)
+
+        h, w = gray.shape
+        window = np.outer(np.hanning(h), np.hanning(w))
+        spectrum = np.fft.fftshift(np.fft.fft2(gray * window))
+        power = np.log(np.abs(spectrum) + 1.0)
+        normalized = cv2.normalize(power, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        return {"frequency_spectrum": cv2.applyColorMap(normalized, cv2.COLORMAP_INFERNO)}
 
     # ------------------------------------------------------------------
     # Internal methods

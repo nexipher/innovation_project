@@ -33,6 +33,11 @@ from config import (
 class NoiseExpert(BaseExpert):
     source_name = "noise_expert"
 
+    counter_explanation = (
+        "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。"
+        "G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。"
+    )
+
     # ------------------------------------------------------------------
     # SRM filter kernels (Spatial Rich Model for steganalysis)
     # Kernel #1: 5×5 high-pass — the classic "noise residual" kernel
@@ -112,6 +117,18 @@ class NoiseExpert(BaseExpert):
             interpretation_text=interp_text,
             raw_metric=inconsistency,
         )
+
+
+    # ------------------------------------------------------------------
+    # Visual artifacts (G2 §4.9)
+    # ------------------------------------------------------------------
+
+    def render_artifacts(self, img_patch: np.ndarray) -> dict:
+        """Render the SRM residual magnitude map (amplified 4x)."""
+        residuals = self._apply_srm(img_patch)
+        magnitude = np.abs(residuals).mean(axis=2) * 4.0
+        normalized = np.clip(magnitude, 0, 255).astype(np.uint8)
+        return {"noise_residual_map": cv2.applyColorMap(normalized, cv2.COLORMAP_JET)}
 
     # ------------------------------------------------------------------
     # Internal methods

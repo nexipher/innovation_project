@@ -47,6 +47,12 @@ class ExpertResult:
     raw_metric: float = 0.0
     metadata: dict = field(default_factory=dict)
 
+    # G2 §4.9 Evidence Bundle fields
+    counter_explanation: str = ""   # alternative, benign explanation of the phenomenon
+    condition_metadata: dict = field(default_factory=dict)
+    reliability: float = 0.0        # empirical reliability for the current condition (filled by controller)
+    reliability_note: str = ""
+
 
 class BaseExpert(ABC):
     """
@@ -58,6 +64,10 @@ class BaseExpert(ABC):
 
     # Each subclass overrides this
     source_name: str = "base_expert"
+
+    # G2 §4.9: benign explanations for the phenomenon this expert measures,
+    # used to keep the MLLM from over-reading a single physical signal.
+    counter_explanation: str = ""
 
     @abstractmethod
     def analyze(self, img_patch: np.ndarray) -> ExpertResult:
@@ -71,6 +81,16 @@ class BaseExpert(ABC):
             ExpertResult with strength ∈ [0, 1] and support label.
         """
         ...
+
+    def render_artifacts(self, img_patch: np.ndarray) -> dict:
+        """
+        Render named visual artifacts (BGR uint8 images) for this analysis.
+
+        G2 §4.9: artifacts are attached to the MLLM conversation alongside
+        the textual evidence so the model can inspect the machine's view.
+        The default implementation renders nothing.
+        """
+        return {}
 
     def _build_result(
         self,
@@ -99,4 +119,5 @@ class BaseExpert(ABC):
             interpretation_text=interpretation_text,
             raw_metric=raw_metric,
             metadata=metadata,
+            counter_explanation=self.counter_explanation,
         )
