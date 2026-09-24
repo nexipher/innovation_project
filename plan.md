@@ -1479,6 +1479,18 @@ EvidenceBundle
 3. **Prompt 重写**（`FORENSIC_SYSTEM_PROMPT`）：三条凭直觉的调用规则替换为逐工具实测指南（freq WEAK、noise/jpeg 高值指向 Real 的反直觉方向、jpeg 在 q≤70 后失效），并新增读取契约：`calibrated_likelihood` 为方向权威、`strength` 不可跨专家比较、读 `applicability` 与 `counter_explanation`、弱或冲突证据应输出 Uncertain。
 4. **端到端核验（64 张格式配平样本 × 3 专家）**：noise/jpeg 的文本方向与校准方向**零直接矛盾**（此前的系统性反转已消除）；文本判 Uncertain 而校准仍有方向的样本 noise 22/64、jpeg 30/64。
 
+**G2-d 机制证据（定量，`scripts/analyze_gain_mechanism.py` → `calibration/g2_gain_mechanism.json`）**：
+
+| 检验 | 结果 |
+|------|------|
+| token 声明方向 vs 真值 | `support="AI-generated"` 的 token 仅 **23.8%** 真为 Fake（105 条；基准率 47.9%，p=1e-6 **显著低于随机**）；`support="Real"` 为 53.6%（384 条，p=0.025 显著高于基准率）——前者为**反向**，后者同样不承载可用信息 |
+| Bundle 内部一致性 | `support="AI-generated"` 时平均校准 P(Fake)=**0.236**；`support="Real"` 时 **0.772**：同一 token 内两个方向字段系统性相反（text 臂 n=24/103，both 臂 n=50/167） |
+| 模型跟随哪个字段 | P(verdict=Fake｜support=AI-generated)=0.087(text)/0.265(both)，support=Real 时 0.000/0.027；而模型判 Fake 时校准 P(Fake) 均值（0.295/0.385）**低于**判 Real 时（0.662/0.625）→ 模型读的是 `support`，**未使用校准概率** |
+| 臂间配对检验 | text（0.408/0.505）显著优于 image（p=0.030）与 both（p=0.006）；三条臂均显著劣于 RGB 基线 |
+| 视觉通道 | image 臂的 Fake 判定与专家原始度量方向不一致且不显著（noise p=0.79、jpeg p=0.33）→ 产物图只提供无区分度的"可疑"偏置；分格上 Real 识别被摧毁（15/15 → 1–3/15） |
+
+结论：G2-e 的极性修复（让专家自身文本与实测方向一致）针对的正是前两行；第三行说明**仅在 Bundle 内附加校准字段不足以纠正模型**，必须改专家自身的 `support`/文本语义 —— 这是 G2-e 选择"改专家"而非"改展示"的实证依据。
+
 **遗留（转 G3 EvidenceRectifier）**：`frequency_expert_v2` 仍有 **15/64 直接矛盾**（例：strength 0.247 → 文本判 Real，校准给出 Fake 0.709）。根因是两套离散化不重合 —— 文本分带用的是 sigmoid 归一后的 `strength` 阈值（0.3/0.7），校准用的是 `raw_metric` 的分位分箱；两者对"高"的定义不一致。这不是文本语义错误，而是需要 EvidenceRectifier 按校准后验统一裁决的接口问题（§4.10）。缓解措施：Prompt 已将 freq 标注为 WEAK 且仅供佐证。
 
 **顺带发现（运行时 bug，纳入 G2-e 修复）**：`FrequencyExpertV2.source_name = "frequency_expert"` 与 v1 同名，导致运行时 `reliability_table.lookup()` 对所有频域 token 命中的是 **v1 条目**（`disabled:no-signal`, reliability 0.505, 校准近似均匀），而 v2 的实测条目（0.556→q70 0.634）挂在 `frequency_expert_v2` 下从未被使用。G2-d 的 text/both 两臂即在此错误标注下运行，且该错误会直接污染 G4 生成的训练数据。

@@ -631,3 +631,22 @@
 * **执行结果与验证状态**：G2-e 完成; 256 测试通过; 反转语义消除; 残留分歧已量化并移交 G3
 * **置信度或遗留待办（TODO）**：B 线构造场景模板仍编码 G2 之前的语义, 待 G4 重设计; G3 开始(EvidenceRectifier + 停止策略 v2)
 ---
+### 2026-09-24 14:22:10 - G2-e 补录：G2-d 机制证据定量收口
+
+* **当前操作动作**：把 G2-d 的机制结论从定性表述补为可复现的定量证据（CPU）
+* **核心变更说明**：
+  1. 背景: plan.md 的 G2-e 决策已引用"G2-d 证明自相矛盾的 token 会误导模型", 但支撑数字未落盘
+  2. 与既有统计脚本 `scripts/analyze_g2_gain.py`(Bootstrap AUROC CI / ΔAUROC / 各类召回)分职: 本脚本只回答机制问题, 避免两份分析同名混淆
+  3. 三个定量结果: ①`support="AI-generated"` 的 token 仅 23.8% 真为 Fake(基准率 47.9%, p=1e-6 显著低于随机), 即该字段**反向**; ②同一 token 内 `support=AI-generated` 的平均校准 P(Fake)=0.236 而 `support=Real` 为 0.772, 两方向字段系统性相反; ③模型判 Fake 时校准 P(Fake) 均值(0.295/0.385)低于判 Real 时(0.662/0.625) → 模型读 `support` 而**未使用**校准概率
+  4. 臂间配对: text 显著优于 image(p=0.030)与 both(p=0.006); 视觉臂 Real 识别从 15/15 被摧毁至 1–3/15; 视觉通道与原始度量方向不一致且不显著(noise p=0.79, jpeg p=0.33)
+  5. 这些证据是 G2-e 选择"改专家自身语义(metric_polarity)"而非"仅在 Bundle 附加校准字段"的实证依据
+  6. 重命名以避免同名混淆: analyze_gain_g2d.py → analyze_gain_mechanism.py, 输出 g2d_analysis.json → g2_gain_mechanism.json; 测试同步
+  7. 全量测试 256 passed(机制分析测试 24 项)
+* **涉及/修改的文件清单**：
+  - `scripts/analyze_gain_mechanism.py (Created — 臂重建/分格/臂间 McNemar/证据跟随率/Bundle 自洽性/视觉泄漏)`
+  - `calibration/g2_gain_mechanism.json (Created)`
+  - `tests/test_analyze_gain_mechanism.py (Created — 24 项)`
+  - `plan.md (Modified — G2-e 段补定量机制证据表)`
+* **执行结果与验证状态**：机制结论可复现; 256 测试通过; 与已提交的统计脚本职责分离
+* **置信度或遗留待办（TODO）**：G2-e 已完成且端到端核验(64 样本)通过; **仍缺 Qwen 四条件验证重跑**(极性修复后需 --fresh 重跑, 否则会静默复用修复前数字), 需 GPU 授权; 随后进入 G3
+---

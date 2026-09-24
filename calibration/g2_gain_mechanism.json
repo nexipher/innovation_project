@@ -1,0 +1,273 @@
+{
+  "metrics": {
+    "rgb": {
+      "n": 120,
+      "accuracy": 0.5333333333333333,
+      "f1_fake": 0.125,
+      "auroc": 0.6580555555555555,
+      "ece": 0.40441666666666665,
+      "uncertain_rate": 0.0,
+      "avg_model_turns": 1.05,
+      "avg_expert_calls": 0.0,
+      "per_cell_accuracy": {
+        "fake_jpeg_q70": 0.06666666666666667,
+        "fake_jpeg_q85": 0.06666666666666667,
+        "fake_jpeg_q95": 0.06666666666666667,
+        "fake_png": 0.06666666666666667,
+        "real_jpeg_q70": 1.0,
+        "real_jpeg_q85": 1.0,
+        "real_jpeg_q95": 1.0,
+        "real_png": 1.0
+      }
+    },
+    "text": {
+      "n": 120,
+      "accuracy": 0.4083333333333333,
+      "f1_fake": 0.03225806451612903,
+      "auroc": 0.5051388888888889,
+      "ece": 0.3147991666666667,
+      "uncertain_rate": 0.175,
+      "avg_model_turns": 2.533333333333333,
+      "avg_expert_calls": 1.925,
+      "per_cell_accuracy": {
+        "fake_jpeg_q70": 0.0,
+        "fake_jpeg_q85": 0.06666666666666667,
+        "fake_jpeg_q95": 0.0,
+        "fake_png": 0.0,
+        "real_jpeg_q70": 0.7333333333333333,
+        "real_jpeg_q85": 0.7333333333333333,
+        "real_jpeg_q95": 0.8666666666666667,
+        "real_png": 0.8666666666666667
+      }
+    },
+    "image": {
+      "n": 120,
+      "accuracy": 0.24166666666666667,
+      "f1_fake": 0.38383838383838376,
+      "auroc": 0.43180555555555555,
+      "ece": 0.27291666666666664,
+      "uncertain_rate": 0.44166666666666665,
+      "avg_model_turns": 2.4166666666666665,
+      "avg_expert_calls": 1.7416666666666667,
+      "per_cell_accuracy": {
+        "fake_jpeg_q70": 0.26666666666666666,
+        "fake_jpeg_q85": 0.3333333333333333,
+        "fake_jpeg_q95": 0.4,
+        "fake_png": 0.26666666666666666,
+        "real_jpeg_q70": 0.2,
+        "real_jpeg_q85": 0.2,
+        "real_jpeg_q95": 0.06666666666666667,
+        "real_png": 0.2
+      }
+    },
+    "both": {
+      "n": 120,
+      "accuracy": 0.25833333333333336,
+      "f1_fake": 0.08450704225352113,
+      "auroc": 0.3908333333333333,
+      "ece": 0.359125,
+      "uncertain_rate": 0.3416666666666667,
+      "avg_model_turns": 3.316666666666667,
+      "avg_expert_calls": 2.7666666666666666,
+      "per_cell_accuracy": {
+        "fake_jpeg_q70": 0.0,
+        "fake_jpeg_q85": 0.13333333333333333,
+        "fake_jpeg_q95": 0.0,
+        "fake_png": 0.06666666666666667,
+        "real_jpeg_q70": 0.6,
+        "real_jpeg_q85": 0.6,
+        "real_jpeg_q95": 0.3333333333333333,
+        "real_png": 0.3333333333333333
+      }
+    }
+  },
+  "verdict_distribution": {
+    "rgb": {
+      "Real": 116,
+      "Fake": 4
+    },
+    "text": {
+      "Real": 97,
+      "Uncertain": 21,
+      "Fake": 2
+    },
+    "image": {
+      "Fake": 39,
+      "Real": 28,
+      "Uncertain": 53
+    },
+    "both": {
+      "Uncertain": 41,
+      "Real": 68,
+      "Fake": 11
+    }
+  },
+  "per_cell": {
+    "fake_jpeg_q70": {
+      "rgb": "1/15",
+      "text": "0/15",
+      "image": "4/15",
+      "both": "0/15"
+    },
+    "fake_jpeg_q85": {
+      "rgb": "1/15",
+      "text": "1/15",
+      "image": "5/15",
+      "both": "2/15"
+    },
+    "fake_jpeg_q95": {
+      "rgb": "1/15",
+      "text": "0/15",
+      "image": "6/15",
+      "both": "0/15"
+    },
+    "fake_png": {
+      "rgb": "1/15",
+      "text": "0/15",
+      "image": "4/15",
+      "both": "1/15"
+    },
+    "real_jpeg_q70": {
+      "rgb": "15/15",
+      "text": "11/15",
+      "image": "3/15",
+      "both": "9/15"
+    },
+    "real_jpeg_q85": {
+      "rgb": "15/15",
+      "text": "11/15",
+      "image": "3/15",
+      "both": "9/15"
+    },
+    "real_jpeg_q95": {
+      "rgb": "15/15",
+      "text": "13/15",
+      "image": "1/15",
+      "both": "5/15"
+    },
+    "real_png": {
+      "rgb": "15/15",
+      "text": "13/15",
+      "image": "3/15",
+      "both": "5/15"
+    }
+  },
+  "mcnemar_vs_rgb": {
+    "text": {
+      "baseline_only_correct": 16,
+      "arm_only_correct": 1,
+      "p_value": 0.00055,
+      "significant": true
+    },
+    "image": {
+      "baseline_only_correct": 52,
+      "arm_only_correct": 17,
+      "p_value": 6e-05,
+      "significant": true
+    },
+    "both": {
+      "baseline_only_correct": 36,
+      "arm_only_correct": 3,
+      "p_value": 0.0,
+      "significant": true
+    }
+  },
+  "evidence_following": {
+    "text": {
+      "by_support": {
+        "AI-generated": {
+          "n": 23,
+          "fake_rate": 0.087
+        },
+        "Real": {
+          "n": 85,
+          "fake_rate": 0.0
+        },
+        "Uncertain": {
+          "n": 10,
+          "fake_rate": 0.0
+        }
+      },
+      "support_vs_calibration": {
+        "AI-generated": {
+          "n": 24,
+          "mean_calibrated_p_fake": 0.236
+        },
+        "Real": {
+          "n": 103,
+          "mean_calibrated_p_fake": 0.772
+        },
+        "Uncertain": {
+          "n": 29,
+          "mean_calibrated_p_fake": 0.591
+        }
+      },
+      "likelihood_correlation": {
+        "n": 118,
+        "mean_p_fake_when_verdict_fake": 0.295,
+        "mean_p_fake_when_verdict_real": 0.6617413793103449
+      }
+    },
+    "both": {
+      "by_support": {
+        "Real": {
+          "n": 75,
+          "fake_rate": 0.027
+        },
+        "AI-generated": {
+          "n": 34,
+          "fake_rate": 0.265
+        },
+        "Uncertain": {
+          "n": 11,
+          "fake_rate": 0.0
+        }
+      },
+      "support_vs_calibration": {
+        "AI-generated": {
+          "n": 50,
+          "mean_calibrated_p_fake": 0.278
+        },
+        "Real": {
+          "n": 167,
+          "mean_calibrated_p_fake": 0.775
+        },
+        "Uncertain": {
+          "n": 60,
+          "mean_calibrated_p_fake": 0.651
+        }
+      },
+      "likelihood_correlation": {
+        "n": 120,
+        "mean_p_fake_when_verdict_fake": 0.3854545454545455,
+        "mean_p_fake_when_verdict_real": 0.6252660550458716
+      }
+    }
+  },
+  "visual_channel_leakage": {
+    "frequency_expert": {
+      "n_fake": 10,
+      "n_not_fake": 3,
+      "mean_metric_fake": 0.005,
+      "mean_metric_not_fake": 0.0085,
+      "delta": -0.0035,
+      "direction": "fake_calls_have_lower_metric"
+    },
+    "jpeg_expert": {
+      "n_fake": 17,
+      "n_not_fake": 10,
+      "mean_metric_fake": 2.0422,
+      "mean_metric_not_fake": 2.3752,
+      "delta": -0.333,
+      "direction": "fake_calls_have_lower_metric"
+    },
+    "noise_expert": {
+      "n_fake": 28,
+      "n_not_fake": 19,
+      "mean_metric_fake": 1.139,
+      "mean_metric_not_fake": 1.0844,
+      "delta": 0.0546,
+      "direction": "fake_calls_have_higher_metric"
+    }
+  }
+}
