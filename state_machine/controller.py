@@ -148,11 +148,10 @@ class ForensicStateMachine:
 
             # 4d. Execute each expert call
             for expert_name, rel_bbox in calls:
-                # Convert relative → absolute pixel coordinates
-                abs_bbox = CoordinateTransformer.relative_to_absolute(
-                    rel_bbox, w, h
-                )
-                abs_bbox = CoordinateTransformer.clip_bbox(abs_bbox, w, h)
+                # Convert normalized [0,1000] → absolute pixel coordinates,
+                # keeping both spaces in the trace (plan.md §4.8 G1).
+                transform = CoordinateTransformer.transform(rel_bbox, w, h)
+                abs_bbox = transform["region_pixels"]
 
                 # Crop and run expert
                 patch = ImageUtils.crop_bbox(img, abs_bbox)
@@ -166,7 +165,8 @@ class ForensicStateMachine:
 
                 # Build Evidence Token
                 evidence_token = EvidenceTokenizer.tokenize(
-                    expert_result, abs_bbox, (h, w)
+                    expert_result, abs_bbox, (h, w),
+                    region_normalized=transform["region_normalized_1000"],
                 )
 
                 # Record

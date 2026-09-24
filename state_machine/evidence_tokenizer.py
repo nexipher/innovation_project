@@ -6,13 +6,22 @@ Per the specification (§4.1-4.2):
   - Maps scalar strength to semantic "soft description" text.
   - Assembles the full Evidence Token Schema dict.
   - Determines support label (Real / AI-generated / Uncertain).
+
+G1 additions (plan.md §4.8):
+  - Explicit coordinate spaces: `region_pixels` + `region_normalized_1000`
+    + `coordinate_space`, so pixel coordinates can never be re-read as
+    normalized coordinates (and vice versa);
+  - Stable `evidence_id` for deduplication and evidence-bound reporting;
+  - `region_semantics` labels bboxes as diagnostic evidence regions.
 """
 
+import hashlib
 import json
-from typing import List
+from typing import List, Optional
 
 from config import (
     NORMALIZATION_SCALE,
+    REGION_SEMANTICS_DIAGNOSTIC,
     STRENGTH_THRESHOLD_LOW,
     STRENGTH_THRESHOLD_HIGH,
     STRENGTH_TEXT_MAP,
@@ -24,11 +33,35 @@ class EvidenceTokenizer:
     """Stateless converter: ExpertResult → Evidence Token dict."""
 
     @classmethod
+    def evidence_id(
+        cls,
+        source: str,
+        region_pixels: List[int],
+        strength: float,
+        evidence_name: str,
+    ) -> str:
+        """
+        Deterministic evidence identifier.
+
+        Same expert + same region + same result digest → same id, which makes
+        duplicate suppression idempotent across runs.
+        """
+        payload = "|".join([
+            str(source),
+            ",".join(str(int(v)) for v in region_pixels),
+            f"{round(float(strength), 4):.4f}",
+            str(evidence_name),
+        ])
+        digest = hashlib.sha1(payload.encode("utf-8")).hexdigest()[:10]
+        return f"E-{digest}"
+
+    @classmethod
     def tokenize(
         cls,
         expert_result,  # ExpertResult
         bbox: List[int],
         image_shape: tuple,
+        region_normalized: Optional[List[int]] = None,
     ) -> dict:
         """
         Build a complete Evidence Token dict from an ExpertResult.
@@ -37,15 +70,30 @@ class EvidenceTokenizer:
             expert_result: ExpertResult dataclass from an expert's analyze().
             bbox: Absolute pixel bbox [ymin, xmin, ymax, xmax] that was analysed.
             image_shape: (height, width) of the full image.
+            region_normalized: The model's requested bbox in [0, 1000] space,
+                recorded for audit; None when the call did not originate from
+                a normalized-space request.
 
         Returns:
             Evidence Token dict matching the project schema.
         """
         region_str = f"patch_coordinates_{bbox}"
+        region_pixels = [int(v) for v in bbox]
 
         return {
+            "evidence_id": cls.evidence_id(
+                expert_result.source, region_pixels,
+                expert_result.strength, expert_result.evidence_name,
+            ),
             "evidence_name": expert_result.evidence_name,
             "region": region_str,
+            "region_pixels": region_pixels,
+            "region_normalized_1000": (
+                [int(v) for v in region_normalized]
+                if region_normalized is not None else None
+            ),
+            "coordinate_space": "pixels",
+            "region_semantics": REGION_SEMANTICS_DIAGNOSTIC,
             "phenomenon": expert_result.phenomenon,
             "reasoning": expert_result.reasoning,
             "strength": round(expert_result.strength, 4),

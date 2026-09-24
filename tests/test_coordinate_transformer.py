@@ -55,3 +55,42 @@ class TestClipBbox:
         """ymin > ymax should be corrected."""
         clipped = CT.clip_bbox([300, 100, 200, 300], 500, 500)
         assert clipped[0] < clipped[2]
+
+
+class TestTransform:
+    """G1 (§4.8): dual-space transform with explicit bookkeeping."""
+
+    def test_returns_both_spaces(self):
+        result = CT.transform([200, 150, 800, 750], 500, 750)
+        assert result["region_normalized_1000"] == [200, 150, 800, 750]
+        assert result["region_pixels"] == [150, 75, 600, 375]
+        assert result["coordinate_space"] == "pixels"
+        assert result["clipped"] is False
+
+    def test_roundtrip_no_second_scaling(self):
+        """pixels -> normalized -> pixels must be stable across sizes."""
+        for width, height in [(500, 750), (1024, 1024), (256, 256), (128, 128), (300, 800)]:
+            rel = [120, 80, 880, 620]
+            first = CT.transform(rel, width, height)
+            back = CT.absolute_to_relative(first["region_pixels"], width, height)
+            second = CT.transform(back, width, height)
+            # A second conversion of the recovered normalized bbox must land on
+            # the same pixel box (no cumulative rescaling).
+            assert second["region_pixels"] == first["region_pixels"], (width, height)
+
+    def test_clip_flag_when_out_of_bounds(self):
+        result = CT.transform([0, 0, 1200, 1200], 500, 500)
+        assert result["clipped"] is True
+        assert result["region_pixels"][2] <= 500
+        assert result["region_pixels"][3] <= 500
+
+    def test_normalized_request_preserved_when_clipped(self):
+        """The model's requested bbox stays recorded even if pixels are clipped."""
+        result = CT.transform([0, 0, 1500, 1500], 400, 400)
+        assert result["region_normalized_1000"] == [0, 0, 1500, 1500]
+        assert result["region_pixels"] == [0, 0, 400, 400]
+
+    def test_full_image_request(self):
+        result = CT.transform([0, 0, 1000, 1000], 512, 256)
+        assert result["region_pixels"] == [0, 0, 256, 512]
+        assert result["clipped"] is False

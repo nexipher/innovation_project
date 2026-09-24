@@ -14,6 +14,41 @@ from config import NORMALIZATION_SCALE, BBOX_MIN_SIZE
 class CoordinateTransformer:
     """Stateless coordinate conversion utilities."""
 
+    # Coordinate space labels used in traces (plan.md §4.8 G1).
+    SPACE_NORMALIZED = "normalized_1000"
+    SPACE_PIXELS = "pixels"
+
+    @staticmethod
+    def transform(rel_bbox: List[int], width: int, height: int) -> dict:
+        """
+        Full-pipeline conversion with explicit coordinate-space bookkeeping.
+
+        Converts a normalized [0, 1000] bbox into clipped absolute pixel
+        coordinates and returns both spaces plus conversion metadata, so that
+        downstream code and traces can never mistake one space for the other.
+
+        Args:
+            rel_bbox: [ymin, xmin, ymax, xmax] each in [0, NORMALIZATION_SCALE].
+            width: Image width in pixels.
+            height: Image height in pixels.
+
+        Returns:
+            dict with keys:
+              - region_normalized_1000: the model's requested bbox in [0, 1000];
+              - region_pixels: effective absolute pixel bbox after clipping;
+              - coordinate_space: "pixels" — the space of region_pixels;
+              - clipped: True if clipping/rounding changed the requested box.
+        """
+        pixels = CoordinateTransformer.relative_to_absolute(rel_bbox, width, height)
+        clipped_pixels = CoordinateTransformer.clip_bbox(pixels, width, height)
+
+        return {
+            "region_normalized_1000": [int(v) for v in rel_bbox],
+            "region_pixels": clipped_pixels,
+            "coordinate_space": CoordinateTransformer.SPACE_PIXELS,
+            "clipped": clipped_pixels != pixels,
+        }
+
     @staticmethod
     def relative_to_absolute(rel_bbox: List[int], width: int, height: int) -> List[int]:
         """

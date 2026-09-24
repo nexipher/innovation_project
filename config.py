@@ -31,7 +31,11 @@ OPERATION_LOG_PATH = os.path.join(PROJECT_ROOT, "claude_operation_log.md")
 # ---------------------------------------------------------------------------
 # State machine settings
 # ---------------------------------------------------------------------------
-MAX_STEPS = 5                       # hard cap on expert calls per session
+MAX_STEPS = 5                       # [DEPRECATED alias of MAX_EXPERT_CALLS — kept for
+                                    #  compatibility; budget now counts expert calls, not turns]
+MAX_EXPERT_CALLS = 5                # budget: hard cap on total expert invocations per session
+MAX_MODEL_TURNS = 6                 # budget: hard cap on MLLM generate() calls per session
+TURN_COST_WEIGHT = 0.5              # weighted cost of one extra model turn (expert call = 1.0)
 ENTROPY_THRESHOLD = 0.3             # halt when classification entropy < this
 KL_THRESHOLD = 1e-3                 # halt when KL divergence between successive
                                     #   confidence distributions < this
@@ -41,6 +45,23 @@ KL_THRESHOLD = 1e-3                 # halt when KL divergence between successive
 # ---------------------------------------------------------------------------
 NORMALIZATION_SCALE = 1000          # MLLM outputs bbox coords in [0, 1000]
 BBOX_MIN_SIZE = 16                  # minimum crop size in pixels (for tiny images)
+
+# ---------------------------------------------------------------------------
+# Task semantics (plan.md §4.8 G1)
+#   Current task: whole-image AI generation detection. Region bboxes are
+#   diagnostic evidence regions, NOT manipulation masks.
+# ---------------------------------------------------------------------------
+TASK_TYPE_FULLY_GENERATED = "fully_generated"
+TASK_TYPE_LOCALLY_MANIPULATED = "locally_manipulated"   # reserved for L1-L3
+EVIDENCE_SCOPE_GLOBAL = "global"
+EVIDENCE_SCOPE_LOCAL = "local"                          # reserved for L1-L3
+REGION_SEMANTICS_DIAGNOSTIC = "diagnostic_evidence_region"
+REGION_SEMANTICS_MANIPULATION = "candidate_manipulation_region"  # reserved for L1-L3
+
+# ---------------------------------------------------------------------------
+# Diagnostic region artifacts (G1: multi-turn image history)
+# ---------------------------------------------------------------------------
+EVIDENCE_ARTIFACT_DIR = os.path.join(TRACES_DIR, "evidence")
 
 # ---------------------------------------------------------------------------
 # Evidence Token strength → semantic text mapping
