@@ -62,9 +62,13 @@ class EvidenceTokenizer:
         bbox: List[int],
         image_shape: tuple,
         region_normalized: Optional[List[int]] = None,
+        reliability: Optional[float] = None,
+        calibrated_likelihood: Optional[dict] = None,
+        condition_metadata: Optional[dict] = None,
+        visual_artifacts: Optional[List[str]] = None,
     ) -> dict:
         """
-        Build a complete Evidence Token dict from an ExpertResult.
+        Build a complete Evidence Token / Evidence Bundle dict.
 
         Args:
             expert_result: ExpertResult dataclass from an expert's analyze().
@@ -73,14 +77,22 @@ class EvidenceTokenizer:
             region_normalized: The model's requested bbox in [0, 1000] space,
                 recorded for audit; None when the call did not originate from
                 a normalized-space request.
+            reliability: Empirical reliability (0-1) for the current condition,
+                from the G2 calibration table (None when unavailable).
+            calibrated_likelihood: Empirical {"Real": p, "Fake": q} for the
+                measured raw metric (G2).
+            condition_metadata: Format / resolution / quality condition the
+                reliability was conditioned on.
+            visual_artifacts: Project-relative paths of rendered artifacts.
 
         Returns:
-            Evidence Token dict matching the project schema.
+            Evidence Token dict matching the project schema (G2 bundle fields
+            are included only when available, keeping legacy tokens lean).
         """
         region_str = f"patch_coordinates_{bbox}"
         region_pixels = [int(v) for v in bbox]
 
-        return {
+        token = {
             "evidence_id": cls.evidence_id(
                 expert_result.source, region_pixels,
                 expert_result.strength, expert_result.evidence_name,
@@ -97,10 +109,27 @@ class EvidenceTokenizer:
             "phenomenon": expert_result.phenomenon,
             "reasoning": expert_result.reasoning,
             "strength": round(expert_result.strength, 4),
+            "raw_metric": round(float(getattr(expert_result, "raw_metric", 0.0) or 0.0), 6),
             "source": expert_result.source,
             "support": expert_result.support,
             "interpretation_text": expert_result.interpretation_text,
         }
+
+        counter_explanation = getattr(expert_result, "counter_explanation", "")
+        if counter_explanation:
+            token["counter_explanation"] = counter_explanation
+        if reliability is not None:
+            token["reliability"] = round(float(reliability), 3)
+        if calibrated_likelihood:
+            token["calibrated_likelihood"] = {
+                key: round(float(value), 3) for key, value in calibrated_likelihood.items()
+            }
+        if condition_metadata:
+            token["condition_metadata"] = dict(condition_metadata)
+        if visual_artifacts:
+            token["visual_artifacts"] = list(visual_artifacts)
+
+        return token
 
     @classmethod
     def strength_to_text(cls, strength: float) -> str:

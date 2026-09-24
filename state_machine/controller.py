@@ -26,6 +26,7 @@ from utils.image_utils import ImageUtils
 from utils.coordinate_transformer import CoordinateTransformer
 from utils.evidence_consistency import EvidenceConsistencyChecker
 from utils.parser import Parser
+from utils.reliability import ReliabilityTable
 from utils.logger import SessionLogger, log_operation
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
@@ -69,6 +70,9 @@ class ForensicStateMachine:
         self._mllm = mllm_client
         self._experts = experts  # {"frequency_expert": ..., "noise_expert": ..., "jpeg_expert": ...}
         self._logger = logger or SessionLogger()
+
+        # G2 §4.9: empirical reliability table (None before calibration exists)
+        self._reliability_table = ReliabilityTable.load()
 
         # Build reverse lookup for expert dispatch
         self._expert_by_call: Dict[str, str] = {}
@@ -167,10 +171,21 @@ class ForensicStateMachine:
 
                     expert_result = expert.analyze(patch)
 
+                    # G2 §4.9: attach empirical reliability / calibrated
+                    # likelihood from the calibration table when available.
+                    calibration = None
+                    if self._reliability_table is not None:
+                        calibration = self._reliability_table.lookup(
+                            expert_result.source, expert_result.raw_metric
+                        )
+
                     # Build Evidence Token
                     evidence_token = EvidenceTokenizer.tokenize(
                         expert_result, abs_bbox, (h, w),
                         region_normalized=transform["region_normalized_1000"],
+                        reliability=calibration["reliability"] if calibration else None,
+                        calibrated_likelihood=calibration["calibrated_likelihood"] if calibration else None,
+                        condition_metadata=calibration["condition_metadata"] if calibration else None,
                     )
 
                     # Deterministic semantic-consistency gate (plan.md §4.8 G1):
@@ -186,24 +201,35 @@ class ForensicStateMachine:
                         continue
                     seen_evidence_ids.add(evidence_id)
 
-                    # Save the diagnostic region crop so multi-turn image
-                    # history can re-attach it (plan.md §4.8 G1).
-                    artifact_rel = self._save_region_artifact(
-                        patch, evidence_id
-                    )
-                    if artifact_rel:
-                        evidence_token["diagnostic_region_image"] = artifact_rel
+                    # Persist the diagnostic region crop (G1) and the expert's
+                    # visual artifacts (G2) so multi-turn image history can
+                    # re-attach them.
+                    artifact_rels = []
+                    region_rel = self._save_artifact(patch, evidence_id, "region")
+                    if region_rel:
+                        evidence_token["diagnostic_region_image"] = region_rel
+                        artifact_rels.append(region_rel)
+                    try:
+                        rendered = expert.render_artifacts(patch)
+                    except Exception:
+                        rendered = {}
+                    for artifact_name, artifact_image in rendered.items():
+                        rel = self._save_artifact(artifact_image, evidence_id, artifact_name)
+                        if rel:
+                            artifact_rels.append(rel)
+                    if len(artifact_rels) > 1:
+                        evidence_token["visual_artifacts"] = artifact_rels[1:]
 
                     # Record
                     evidence_chain.append(evidence_token)
                     self._logger.add_evidence(evidence_token)
 
                     # Inject into conversation as user message, attaching the
-                    # region crop for the real MLLM backend. Paths are stored
-                    # project-relative so traces stay portable; the message
-                    # builder resolves them at load time.
+                    # region crop and artifacts for the real MLLM backend.
+                    # Paths are stored project-relative so traces stay
+                    # portable; the message builder resolves them at load time.
                     evidence_json = EvidenceTokenizer.to_json(evidence_token)
-                    artifact_paths = [artifact_rel] if artifact_rel else None
+                    artifact_paths = artifact_rels or None
                     self._logger.add_conversation_turn(
                         "user", evidence_json, image_paths=artifact_paths
                     )
@@ -307,21 +333,21 @@ class ForensicStateMachine:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _save_region_artifact(self, patch, evidence_id: str) -> Optional[str]:
+    def _save_artifact(self, image, evidence_id: str, name: str) -> Optional[str]:
         """
-        Persist the diagnostic region crop for multi-turn image history.
+        Persist an evidence artifact (region crop or expert visualization).
 
         Returns the project-relative artifact path, or None when saving fails
         (artifact persistence must never break the analysis loop).
         """
         session_id = self._logger.session_id
-        if not session_id or patch is None or getattr(patch, "size", 0) == 0:
+        if not session_id or image is None or getattr(image, "size", 0) == 0:
             return None
         rel_path = os.path.join(
-            "traces", "evidence", session_id, f"region_{evidence_id}.png"
+            "traces", "evidence", session_id, f"{name}_{evidence_id}.png"
         )
         abs_path = os.path.join(PROJECT_ROOT, rel_path)
-        if ImageUtils.save_image(abs_path, patch):
+        if ImageUtils.save_image(abs_path, image):
             return rel_path.replace(os.sep, "/")
         return None
 

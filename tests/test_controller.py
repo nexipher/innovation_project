@@ -192,3 +192,45 @@ class TestDiagnosticRegionArtifacts:
 
         assert result["suppressed_duplicate_count"] == 1
         assert len(result["evidence_chain"]) == 1
+
+
+class TestEvidenceBundleWiring:
+    """G2 (§4.9): expert artifacts, counter-explanations and calibration
+    fields flow into the evidence token and the conversation."""
+
+    CALL = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"
+    VERDICT = ('<reasoning>ok</reasoning>\n<verdict>'
+               '{"verdict": "Real", "confidence": 0.7, "primary_evidence": [], "report": "ok"}</verdict>')
+
+    def test_expert_visual_artifact_attached_and_persisted(self):
+        import os as _os
+        from config import PROJECT_ROOT
+
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        token = result["evidence_chain"][0]
+        artifacts = token.get("visual_artifacts")
+        assert artifacts, "noise expert must render its residual map"
+        assert artifacts[0].startswith("traces/evidence/")
+        assert _os.path.exists(_os.path.join(PROJECT_ROOT, artifacts[0]))
+
+        # region crop + artifact are both attached to the evidence turn
+        evidence_turn = [
+            turn for turn in result["conversation"] if turn.get("image_paths")
+        ][0]
+        assert len(evidence_turn["image_paths"]) == 2
+
+    def test_counter_explanation_present_in_token(self):
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+        token = result["evidence_chain"][0]
+        assert token["counter_explanation"], token.get("source")
+
+    def test_raw_metric_recorded(self):
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+        assert "raw_metric" in result["evidence_chain"][0]
