@@ -66,6 +66,9 @@ class EvidenceTokenizer:
         calibrated_likelihood: Optional[dict] = None,
         condition_metadata: Optional[dict] = None,
         visual_artifacts: Optional[List[str]] = None,
+        semantics_aligned: Optional[bool] = None,
+        applicability: Optional[str] = None,
+        applicability_conditions: Optional[str] = None,
     ) -> dict:
         """
         Build a complete Evidence Token / Evidence Bundle dict.
@@ -84,6 +87,13 @@ class EvidenceTokenizer:
             condition_metadata: Format / resolution / quality condition the
                 reliability was conditioned on.
             visual_artifacts: Project-relative paths of rendered artifacts.
+            semantics_aligned: Whether high raw metric empirically means Fake
+                (G2 calibration). False = the expert's support labels are
+                inverted for this task.
+            applicability: Calibration label, e.g.
+                "inverted:high-metric-means-real".
+            applicability_conditions: Human-readable usage conditions for this
+                measurement (when it may be trusted).
 
         Returns:
             Evidence Token dict matching the project schema (G2 bundle fields
@@ -128,6 +138,14 @@ class EvidenceTokenizer:
             token["condition_metadata"] = dict(condition_metadata)
         if visual_artifacts:
             token["visual_artifacts"] = list(visual_artifacts)
+        # G2-c semantic transmission: direction truth and usage conditions must
+        # travel with the measurement, not only the number.
+        if semantics_aligned is not None:
+            token["semantics_aligned"] = bool(semantics_aligned)
+        if applicability:
+            token["applicability"] = applicability
+        if applicability_conditions:
+            token["applicability_conditions"] = applicability_conditions
 
         return token
 

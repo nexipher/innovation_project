@@ -71,6 +71,53 @@ def applicability_label(aligned: bool, separation: float, drop: Optional[float])
     return "weak:marginally-above-chance"
 
 
+# Human-readable usage conditions keyed by applicability label (G2-c: these
+# travel into every Evidence Bundle so the MLLM and auditors see *when* the
+# measurement may be trusted, not just the number).
+APPLICABILITY_CONDITIONS = {
+    "disabled:no-signal": (
+        "分离度≈随机，不得作为证据使用；仅保留用于回归对照。"
+    ),
+    "weak:marginally-above-chance": (
+        "仅可作为辅助线索，不可单独支撑判定；必须与其他证据交叉验证。"
+    ),
+    "inverted:high-metric-means-real": (
+        "方向与本任务语义相反：高 strength 统计上对应 Real。"
+        "不得按原 support 标签解读；如需使用必须反转极性并重新校准。"
+    ),
+    "shortcut-prone:compression-history": (
+        "分离度主要来自压缩历史差异。仅适用于未压缩或高质量来源（PNG、JPEG q≥85）；"
+        "图像经过统一重压缩（q≤70 或社交传播）后失效。"
+    ),
+    "strong": (
+        "可直接使用；仍需记录条件元数据并在结论中说明适用条件。"
+    ),
+}
+
+# Per-expert condition overrides with the measured numbers.
+EXPERT_CONDITION_OVERRIDES = {
+    "frequency_expert": (
+        "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。"
+    ),
+    "frequency_expert_v2": (
+        "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；"
+        "仅作辅助线索，不得单独支撑判定。"
+    ),
+    "noise_expert": (
+        "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；"
+        "低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。"
+    ),
+    "jpeg_expert": (
+        "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。"
+        "仅当来源无压缩历史时可反向参考。"
+    ),
+    "ela_expert": (
+        "仅适用于未压缩或高质量来源（PNG / JPEG q≥85）；统一重压缩后（q70 校准）"
+        "分离度降至随机（0.504）。"
+    ),
+}
+
+
 def quantile_bins(values: List[float], labels: List[str], bins: int) -> List[dict]:
     """Equal-count bins with empirical P(Fake); outer bins are open-ended."""
     values_arr = np.asarray(values, dtype=np.float64)
@@ -146,13 +193,17 @@ def main() -> None:
         aligned = bool(report_entry.get("semantics_aligned", True))
         drop = report_entry.get("confound_drop_png_to_q70", {}).get("drop")
 
+        label = applicability_label(
+            aligned, separation if separation is not None else 0.5, drop
+        )
         table["experts"][source] = {
             "g2_name": g2_name,
             "semantics_aligned": aligned,
             "separation_polarity_corrected": separation,
             "confound_drop_png_to_q70": drop,
-            "applicability": applicability_label(
-                aligned, separation if separation is not None else 0.5, drop
+            "applicability": label,
+            "applicability_conditions": EXPERT_CONDITION_OVERRIDES.get(
+                source, APPLICABILITY_CONDITIONS.get(label, "")
             ),
             "n_samples": len(values),
             "bins": quantile_bins(values, labels, args.bins),

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T11:44:34",
+  "generated_at": "2026-09-24T12:15:58",
   "source_raw_values": "calibration/set/raw_values.json",
   "cells_used": [
     "real_png",
@@ -19,6 +19,7 @@
       "separation_polarity_corrected": 0.5047916666666666,
       "confound_drop_png_to_q70": -0.03645833333333337,
       "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
       "n_samples": 392,
       "bins": [
         {
@@ -47,6 +48,7 @@
       "separation_polarity_corrected": 0.5558333333333333,
       "confound_drop_png_to_q70": -0.07833333333333337,
       "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
       "n_samples": 392,
       "bins": [
         {
@@ -87,6 +89,7 @@
       "separation_polarity_corrected": 0.8454166666666667,
       "confound_drop_png_to_q70": -0.07333333333333333,
       "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
       "n_samples": 392,
       "bins": [
         {
@@ -127,6 +130,7 @@
       "separation_polarity_corrected": 0.9720833333333333,
       "confound_drop_png_to_q70": -0.5408333333333333,
       "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
       "n_samples": 392,
       "bins": [
         {
@@ -167,6 +171,7 @@
       "separation_polarity_corrected": 0.9483333333333334,
       "confound_drop_png_to_q70": 0.4443750000000001,
       "applicability": "shortcut-prone:compression-history",
+      "applicability_conditions": "仅适用于未压缩或高质量来源（PNG / JPEG q≥85）；统一重压缩后（q70 校准）分离度降至随机（0.504）。",
       "n_samples": 392,
       "bins": [
         {

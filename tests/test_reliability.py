@@ -64,6 +64,22 @@ class TestReliabilityLookup:
         assert result["condition_metadata"]["bin_samples"] == 120
         assert result["condition_metadata"]["separation_polarity_corrected"] == pytest.approx(0.845)
 
+    def test_lookup_passes_applicability_conditions(self, tmp_path):
+        """G2-c: usage conditions must travel with the measurement."""
+        path = _write_table(tmp_path, {
+            "noise_expert": {
+                "semantics_aligned": False,
+                "applicability": "inverted:high-metric-means-real",
+                "applicability_conditions": "高 strength 统计上对应 Real；不得按 AI-generated 解读。",
+                "bins": [{"lo": None, "hi": None, "n": 10, "p_fake": 0.5}],
+            },
+        })
+        table = ReliabilityTable.load(path)
+        result = table.lookup("noise_expert", 1.0)
+        assert result["applicability"] == "inverted:high-metric-means-real"
+        assert "对应 Real" in result["applicability_conditions"]
+        assert result["semantics_aligned"] is False
+
 
 class TestBundleFields:
     class FakeResult:
@@ -84,6 +100,9 @@ class TestBundleFields:
             calibrated_likelihood={"Real": 0.2, "Fake": 0.8},
             condition_metadata={"bin_samples": 120},
             visual_artifacts=["traces/evidence/s1/noise_residual_map_E-abc.png"],
+            semantics_aligned=False,
+            applicability="inverted:high-metric-means-real",
+            applicability_conditions="高 strength 统计上对应 Real。",
         )
         assert token["raw_metric"] == pytest.approx(3.21)
         assert token["counter_explanation"].startswith("降噪")
@@ -91,6 +110,10 @@ class TestBundleFields:
         assert token["calibrated_likelihood"]["Fake"] == pytest.approx(0.8)
         assert token["condition_metadata"]["bin_samples"] == 120
         assert token["visual_artifacts"][0].endswith(".png")
+        # G2-c semantic transmission
+        assert token["semantics_aligned"] is False
+        assert token["applicability"] == "inverted:high-metric-means-real"
+        assert "对应 Real" in token["applicability_conditions"]
 
     def test_bundle_fields_absent_when_unavailable(self):
         class BareResult:
@@ -106,4 +129,6 @@ class TestBundleFields:
         assert "reliability" not in token
         assert "calibrated_likelihood" not in token
         assert "visual_artifacts" not in token
+        assert "semantics_aligned" not in token
+        assert "applicability" not in token
         assert token["raw_metric"] == 0.0

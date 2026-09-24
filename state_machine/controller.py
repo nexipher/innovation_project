@@ -186,6 +186,9 @@ class ForensicStateMachine:
                         reliability=calibration["reliability"] if calibration else None,
                         calibrated_likelihood=calibration["calibrated_likelihood"] if calibration else None,
                         condition_metadata=calibration["condition_metadata"] if calibration else None,
+                        semantics_aligned=calibration["semantics_aligned"] if calibration else None,
+                        applicability=calibration["applicability"] if calibration else None,
+                        applicability_conditions=calibration["applicability_conditions"] if calibration else None,
                     )
 
                     # Deterministic semantic-consistency gate (plan.md §4.8 G1):

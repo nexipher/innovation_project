@@ -96,6 +96,7 @@ class ReliabilityTable:
             "calibrated_likelihood": likelihood,
             "semantics_aligned": bool(entry.get("semantics_aligned", True)),
             "applicability": entry.get("applicability", "unknown"),
+            "applicability_conditions": entry.get("applicability_conditions", ""),
             "condition_metadata": {
                 "bin_samples": bin_note,
                 "confound_drop_png_to_q70": entry.get("confound_drop_png_to_q70"),
