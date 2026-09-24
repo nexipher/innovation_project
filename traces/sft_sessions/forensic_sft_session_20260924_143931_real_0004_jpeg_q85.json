@@ -1,0 +1,230 @@
+{
+  "id": "session_20260924_143931_real_0004_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0004_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.8,
+    "primary_evidence": [
+      "jpeg_expert"
+    ],
+    "report": "图像显示了JPEG压缩的特征，但未发现伪造图像通常伴随的高噪声水平。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [180, 190, 430, 295]\nVisual Anomalies: 硬盘电路板上有一个明显的红色标签，这可能是一个伪造的标记。\nExpert Target & Hypothesis: <call_noise>[180, 190, 430, 295]</call_noise> → 检查是否存在人为添加的痕迹。\n</planning>\n\n<call_noise>[180, 190, 430, 295]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [68, 95, 161, 148] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/region_E-7ae3d507a1.png",
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/noise_residual_map_E-7ae3d507a1.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [68, 95, 161, 148]\nVisual Anomalies: 图像中存在明显的像素块状变化，可能是由于JPEG压缩引起的。\nExpert Target & Hypothesis: <call_jpeg>[68, 95, 161, 148]</call_jpeg> → 检查是否存在JPEG压缩痕迹。\n</planning>\n\n<call_jpeg>[68, 95, 161, 148]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：jpeg_expert 对区域 [26, 48, 60, 74] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/region_E-8afec2077e.png",
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/jpeg_blockiness_map_E-8afec2077e.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 48, 60, 74]\nVisual Anomalies: 图像中存在明显的像素块状变化，可能是由于JPEG压缩引起的。\nExpert Target & Hypothesis: <call_jpeg>[26, 48, 60, 74]</call_jpeg> → 检查是否存在JPEG压缩痕迹。\n</planning>\n\n<call_jpeg>[26, 48, 60, 74]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：jpeg_expert 对区域 [10, 24, 26, 40] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/region_E-e2c97a7808.png",
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/jpeg_blockiness_map_E-e2c97a7808.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_jpeg>[10, 24, 26, 40]</call_jpeg> 的分析结果，该区域存在明显的JPEG压缩痕迹，表明图像经过了JPEG压缩处理。然而，<call_noise>[68, 95, 161, 148]</call_noise> 的结果并未显示出异常的噪声水平，这与伪造图像通常伴随的高噪声水平不符。综合来看，虽然有JPEG压缩的迹象，但没有足够的证据支持图像被伪造。\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.8, \"primary_evidence\": [\"jpeg_expert\"], \"report\": \"图像显示了JPEG压缩的特征，但未发现伪造图像通常伴随的高噪声水平。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-7ae3d507a1",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[68, 95, 161, 148]",
+      "region_pixels": [
+        68,
+        95,
+        161,
+        148
+      ],
+      "region_normalized_1000": [
+        180,
+        190,
+        430,
+        295
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 2.3518). No significant local variance anomaly.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.3518). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.338,
+      "raw_metric": 2.351839,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/region_E-7ae3d507a1.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/noise_residual_map_E-7ae3d507a1.png"
+      ]
+    },
+    {
+      "evidence_id": "E-8afec2077e",
+      "evidence_name": "abnormal_jpeg_blockiness",
+      "region": "patch_coordinates_[26, 48, 60, 74]",
+      "region_pixels": [
+        26,
+        48,
+        60,
+        74
+      ],
+      "region_normalized_1000": [
+        68,
+        95,
+        161,
+        148
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals abnormal 8×8 block-boundary gradient ratios. (blockiness: 6.9875, DCT anomaly: 2.7964)",
+      "reasoning": "Strong JPEG compression structure found (blockiness=6.9875, DCT anomaly=2.7964). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.",
+      "strength": 0.9987,
+      "raw_metric": 5.311046,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.544,
+        "Fake": 0.456
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch",
+          "support_reasoning_conflict"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/region_E-8afec2077e.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/jpeg_blockiness_map_E-8afec2077e.png"
+      ]
+    },
+    {
+      "evidence_id": "E-e2c97a7808",
+      "evidence_name": "abnormal_jpeg_blockiness",
+      "region": "patch_coordinates_[10, 24, 26, 40]",
+      "region_pixels": [
+        10,
+        24,
+        26,
+        40
+      ],
+      "region_normalized_1000": [
+        26,
+        48,
+        60,
+        74
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals abnormal 8×8 block-boundary gradient ratios. (blockiness: 4.9157, DCT anomaly: 2.6771)",
+      "reasoning": "Strong JPEG compression structure found (blockiness=4.9157, DCT anomaly=2.6771). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.",
+      "strength": 0.9827,
+      "raw_metric": 4.020267,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.544,
+        "Fake": 0.456
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch",
+          "support_reasoning_conflict"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/region_E-e2c97a7808.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143931_real_0004_jpeg_q85/jpeg_blockiness_map_E-e2c97a7808.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      375,
+      500
+    ],
+    "total_steps": 4,
+    "halting_reason": "budget_exhausted",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:39:31.115136",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 6,
+    "unique_evidence_count": 3,
+    "suppressed_duplicate_count": 3,
+    "weighted_cost": 8.0
+  }
+}

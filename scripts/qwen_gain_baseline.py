@@ -58,9 +58,17 @@ DRY_RUN_REPORT_PATH = os.path.join(
 DRY_RUN_SESSIONS_DIR = os.path.join(PROJECT_ROOT, "traces", "dry_run_sessions")
 
 
-def report_path(dry_run: bool) -> str:
-    """Dry-run output is kept apart so mock numbers can never overwrite the
-    report of an authorized GPU run."""
+def report_path(dry_run: bool, override: Optional[str] = None) -> str:
+    """
+    Where this invocation writes its report.
+
+    Dry-run output is kept apart so mock numbers can never overwrite the
+    report of an authorized GPU run; `override` keeps later comparisons (for
+    example a rerun after a change to the experts) from overwriting the run
+    they are being compared against.
+    """
+    if override:
+        return override if os.path.isabs(override) else os.path.join(PROJECT_ROOT, override)
     return DRY_RUN_REPORT_PATH if dry_run else REPORT_PATH
 
 # Cells used for the comparison: format-matched PNG plus the compression-matched
@@ -320,6 +328,9 @@ def main() -> None:
     parser.add_argument("--fresh", action="store_true",
                         help="Ignore an existing report and start over "
                              "(default: resume the samples already recorded)")
+    parser.add_argument("--output", default=None,
+                        help="Report path, relative to the project root "
+                             "(default: the fixed GPU or dry-run report)")
     args = parser.parse_args()
 
     unknown = [c for c in args.conditions if c not in CONDITIONS]
@@ -351,7 +362,7 @@ def main() -> None:
             return QwenVLClient(system_prompt=prompt)
         mode = "gpu"
 
-    output_path = report_path(args.dry_run)
+    output_path = report_path(args.dry_run, args.output)
     completed = initial_completed(output_path, mode, args.per_cell, args.fresh)
     report: Dict[str, Any] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),

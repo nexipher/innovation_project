@@ -1,0 +1,216 @@
+{
+  "id": "session_20260924_151525_real_0002_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0002_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "尽管存在微噪声水平较低的现象，但不足以作为决定性证据来判断图像的真实性。微噪声水平的变化不足以明确区分真实和伪造图像。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [250, 298, 305, 482]\nVisual Anomalies: 在建筑物的中间部分，有一根明显的梯子，这在现实生活中不太常见，因为建筑物通常不会允许在公共区域放置梯子。\nExpert Target & Hypothesis: 首先调用 <call_noise> 专家，因为梯子的存在可能与微噪声水平有关。\n</planning>\n<call_noise>[250, 298, 305, 482]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-196b0e6129\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[187, 149, 228, 241]\", \"region_pixels\": [187, 149, 228, 241], \"region_normalized_1000\": [250, 298, 305, 482], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.2744). Residual consistent with a camera sensor.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=3.2744). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.6708, \"raw_metric\": 3.274406, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.718, \"Fake\": 0.282}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-196b0e6129.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-196b0e6129.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-196b0e6129.png",
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-196b0e6129.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [187, 149, 228, 241]\nVisual Anomalies: 在图像的右上角，有一个明显的梯子，这在现实生活中不太常见，因为建筑物通常不会允许在公共区域放置梯子。\nExpert Target & Hypothesis: 首先调用 <call_noise> 专家，因为梯子的存在可能与微噪声水平有关。\n</planning>\n<call_noise>[187, 149, 228, 241]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-cbff6b5eac\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[140, 74, 171, 120]\", \"region_pixels\": [140, 74, 171, 120], \"region_normalized_1000\": [187, 149, 228, 241], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 0.5879). Variance collapse detected.\", \"reasoning\": \"Low residual micro-noise level (metric=0.5879). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.\", \"strength\": 0.035, \"raw_metric\": 0.587867, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.152, \"Fake\": 0.848}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-cbff6b5eac.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-cbff6b5eac.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-cbff6b5eac.png",
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-cbff6b5eac.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [140, 74, 171, 120]\nVisual Anomalies: 在图像的右上角，有一个明显的梯子，这在现实生活中不太常见，因为建筑物通常不会允许在公共区域放置梯子。\nExpert Target & Hypothesis: 首先调用 <call_noise> 专家，因为梯子的存在可能与微噪声水平有关。\n</planning>\n<call_noise>[140, 74, 171, 120]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-bb636c1961\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[105, 37, 128, 60]\", \"region_pixels\": [105, 37, 128, 60], \"region_normalized_1000\": [140, 74, 171, 120], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 0.4582). Variance collapse detected.\", \"reasoning\": \"Low residual micro-noise level (metric=0.4582). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.\", \"strength\": 0.029, \"raw_metric\": 0.458182, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.152, \"Fake\": 0.848}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-bb636c1961.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-bb636c1961.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-bb636c1961.png",
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-bb636c1961.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的证据，我们调用了 <call_noise> 专家两次，分别针对两个不同的区域。第一个区域的微噪声水平较低，这与生成图像的特征一致，但强度较低，不足以作为决定性证据。第二个区域的微噪声水平也较低，同样支持生成图像的假设。\n\n综合来看，虽然有迹象表明图像可能是生成的，但没有足够的证据来断定其为伪造。微噪声水平的轻微变化并不能明确区分真实和伪造图像。因此，我们无法得出一个明确的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"尽管存在微噪声水平较低的现象，但不足以作为决定性证据来判断图像的真实性。微噪声水平的变化不足以明确区分真实和伪造图像。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-196b0e6129",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[187, 149, 228, 241]",
+      "region_pixels": [
+        187,
+        149,
+        228,
+        241
+      ],
+      "region_normalized_1000": [
+        250,
+        298,
+        305,
+        482
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.2744). Residual consistent with a camera sensor.",
+      "reasoning": "Intermediate residual micro-noise level (metric=3.2744). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.6708,
+      "raw_metric": 3.274406,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.718,
+        "Fake": 0.282
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-196b0e6129.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-196b0e6129.png"
+      ]
+    },
+    {
+      "evidence_id": "E-cbff6b5eac",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[140, 74, 171, 120]",
+      "region_pixels": [
+        140,
+        74,
+        171,
+        120
+      ],
+      "region_normalized_1000": [
+        187,
+        149,
+        228,
+        241
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 0.5879). Variance collapse detected.",
+      "reasoning": "Low residual micro-noise level (metric=0.5879). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.035,
+      "raw_metric": 0.587867,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-cbff6b5eac.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-cbff6b5eac.png"
+      ]
+    },
+    {
+      "evidence_id": "E-bb636c1961",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[105, 37, 128, 60]",
+      "region_pixels": [
+        105,
+        37,
+        128,
+        60
+      ],
+      "region_normalized_1000": [
+        140,
+        74,
+        171,
+        120
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 0.4582). Variance collapse detected.",
+      "reasoning": "Low residual micro-noise level (metric=0.4582). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.029,
+      "raw_metric": 0.458182,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/region_E-bb636c1961.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_151525_real_0002_jpeg_q85/noise_residual_map_E-bb636c1961.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      749,
+      500
+    ],
+    "total_steps": 4,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T15:15:25.215019",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 3,
+    "unique_evidence_count": 3,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 5.0
+  }
+}

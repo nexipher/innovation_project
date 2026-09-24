@@ -229,6 +229,16 @@ class TestConditionSpec:
         assert report_path(dry_run=True) != report_path(dry_run=False)
         assert report_path(dry_run=False).endswith("g2_gain_report.json")
 
+    def test_output_override_keeps_a_rerun_from_overwriting_its_baseline(self, tmp_path):
+        from config import PROJECT_ROOT
+        from scripts.qwen_gain_baseline import report_path
+
+        relative = report_path(False, "calibration/other.json")
+        assert relative == os.path.join(PROJECT_ROOT, "calibration/other.json")
+
+        absolute = report_path(False, str(tmp_path / "abs.json"))
+        assert absolute == str(tmp_path / "abs.json")
+
     def test_injection_modes_are_valid_controller_modes(self):
         for spec in CONDITIONS.values():
             ForensicStateMachine(MockMLLMClient(mode="fast_verdict"),

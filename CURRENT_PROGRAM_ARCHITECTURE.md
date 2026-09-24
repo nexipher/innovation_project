@@ -165,6 +165,8 @@ Expert Target & Hypothesis: 说明专家选择及假设
 
 进入证据链前会经过 `EvidenceConsistencyChecker`：方向词与 strength 不一致的证据会标记 `consistency.fail` 并把 `support` 降级为 `Uncertain`。
 
+**该门是极性感知的（G2-e 修复，提交 5582156）**：强度规则原本写死"高 strength ⇒ 生成伪迹"，而 noise/jpeg 经 G2-b 实测为反向（高 metric ⇒ 相机来源）。对于声明 `semantics_aligned=False` 的 token，现在取镜像规则（每带禁止的方向词互换），短语匹配也改为否定感知 —— 否则 jpeg 的 "This is NOT a forgery marker" 会被当成伪造断言，专家每一次正确声明都会被降级，模型只能收到弃权。**任何改动专家语义的工作，都必须端到端核验到 token 落地为止，而不只是核验专家自身输出。**
+
 默认强度映射为：
 
 | strength | support | 含义 |

@@ -1,0 +1,141 @@
+{
+  "id": "session_20260924_145722_real_0001_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0001_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "取证资源耗尽，无法做出确定结论。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 500, 700]\nVisual Anomalies: The image appears to have a high level of JPEG compression artifacts, particularly noticeable in the background graffiti. The colors seem overly saturated, which could indicate post-processing.\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 500, 700]</call_jpeg> to determine if the image has been heavily compressed.\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-b13d060687\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[0, 0, 375, 350]\", \"region_pixels\": [0, 0, 375, 350], \"region_normalized_1000\": [0, 0, 500, 700], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2169, DCT anomaly: 5.3950)\", \"reasoning\": \"Strong JPEG compression structure found (blockiness=1.2169, DCT anomaly=5.3950). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.\", \"strength\": 0.8552, \"raw_metric\": 2.888157, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.705, \"Fake\": 0.295}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 375, 350]\nVisual Anomalies: The image exhibits strong JPEG compression artifacts, particularly noticeable in the background graffiti. The colors appear overly saturated, suggesting post-processing.\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 375, 350]</call_jpeg> to confirm the presence of heavy JPEG compression.\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-cd7ffb4453\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[0, 0, 281, 175]\", \"region_pixels\": [0, 0, 281, 175], \"region_normalized_1000\": [0, 0, 375, 350], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1911, DCT anomaly: 5.9341)\", \"reasoning\": \"Strong JPEG compression structure found (blockiness=1.1911, DCT anomaly=5.9341). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.\", \"strength\": 0.8981, \"raw_metric\": 3.088298, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.705, \"Fake\": 0.295}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 375, 350]\nVisual Anomalies: The image exhibits strong JPEG compression artifacts, particularly noticeable in the background graffiti. The colors appear overly saturated, suggesting post-processing.\nExpert Target & Hypothesis: <call_jpeg>[0, 0, 375, 350]</call_jpeg> to confirm the presence of heavy JPEG compression.\n</planning>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-b13d060687",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 375, 350]",
+      "region_pixels": [
+        0,
+        0,
+        375,
+        350
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        500,
+        700
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2169, DCT anomaly: 5.3950)",
+      "reasoning": "Strong JPEG compression structure found (blockiness=1.2169, DCT anomaly=5.3950). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.",
+      "strength": 0.8552,
+      "raw_metric": 2.888157,
+      "source": "jpeg_expert",
+      "support": "Real",
+      "interpretation_text": "High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.705,
+        "Fake": 0.295
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。"
+    },
+    {
+      "evidence_id": "E-cd7ffb4453",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 281, 175]",
+      "region_pixels": [
+        0,
+        0,
+        281,
+        175
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        375,
+        350
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1911, DCT anomaly: 5.9341)",
+      "reasoning": "Strong JPEG compression structure found (blockiness=1.1911, DCT anomaly=5.9341). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.",
+      "strength": 0.8981,
+      "raw_metric": 3.088298,
+      "source": "jpeg_expert",
+      "support": "Real",
+      "interpretation_text": "High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.705,
+        "Fake": 0.295
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。"
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:57:22.104376",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5
+  }
+}

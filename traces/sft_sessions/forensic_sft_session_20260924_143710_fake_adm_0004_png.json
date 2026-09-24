@@ -1,0 +1,106 @@
+{
+  "id": "session_20260924_143710_fake_adm_0004_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0004_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_expert"
+    ],
+    "report": "图像右侧存在较高的微噪声水平，但可能是由于图像传感器在拍摄蓝天时产生的自然噪声。左侧树干部分被截断，可能是伪造的迹象，但缺乏其他证据支持这一结论。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 100, 300, 200]\nVisual Anomalies: 看到图像右侧有一棵树的树干部分似乎被截断了，这可能是一个伪造的迹象。\nExpert Target & Hypothesis: <call_noise>[200, 100, 300, 200]</call_noise> → 检查是否存在微噪声残留，因为伪造图像通常会表现出较低的微噪声水平。\n</planning>\n\n<call_noise>[200, 100, 300, 200]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [51, 26, 77, 51] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143710_fake_adm_0004_png/region_E-bec5f41739.png",
+        "traces/evidence/session_20260924_143710_fake_adm_0004_png/noise_residual_map_E-bec5f41739.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析，区域 [51, 26, 77, 51] 的微噪声水平较高，这与伪造图像通常表现出的较低微噪声水平不符。然而，由于图像整体背景为蓝色天空，这种高微噪声水平可能是由于图像传感器在拍摄蓝天时产生的自然噪声。因此，我们不能仅凭这一发现就断定图像为伪造。\n\n此外，图像左侧的树干部分被截断，这可能是伪造的迹象。然而，由于缺乏其他证据支持这一结论，我们无法确定图像是否为伪造。\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_expert\"], \"report\": \"图像右侧存在较高的微噪声水平，但可能是由于图像传感器在拍摄蓝天时产生的自然噪声。左侧树干部分被截断，可能是伪造的迹象，但缺乏其他证据支持这一结论。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-bec5f41739",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[51, 26, 77, 51]",
+      "region_pixels": [
+        51,
+        26,
+        77,
+        51
+      ],
+      "region_normalized_1000": [
+        200,
+        100,
+        300,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.9905). No significant local variance anomaly.",
+      "reasoning": "Low residual micro-noise level (metric=0.9905). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.0621,
+      "raw_metric": 0.990514,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_143710_fake_adm_0004_png/region_E-bec5f41739.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143710_fake_adm_0004_png/noise_residual_map_E-bec5f41739.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:37:10.079065",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.0
+  }
+}

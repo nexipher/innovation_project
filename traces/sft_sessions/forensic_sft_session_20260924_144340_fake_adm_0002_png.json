@@ -1,0 +1,110 @@
+{
+  "id": "session_20260924_144340_fake_adm_0002_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0002_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "眼睛区域的模糊和失焦现象可能是图像质量问题，而残差微噪声水平较低可能表明图像是生成的。然而，由于 <call_noise> 的可靠性较低，无法确定图像的真实性。需要更多证据来做出最终判断。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [50, 50, 150, 150]\nVisual Anomalies: 眼睛区域有明显的模糊和失焦现象。\nExpert Target & Hypothesis: <call_noise>[50, 50, 150, 150]</call_noise> → 检查眼睛区域是否存在人为添加的痕迹或噪声。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-a25adb358f\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[13, 13, 38, 38]\", \"region_pixels\": [13, 13, 38, 38], \"region_normalized_1000\": [50, 50, 150, 150], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.2317). No significant local variance anomaly.\", \"reasoning\": \"Low residual micro-noise level (metric=0.2317). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.\", \"strength\": 0.0208, \"raw_metric\": 0.231673, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.152, \"Fake\": 0.848}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"consistency\": {\"status\": \"fail\", \"failures\": [\"support_strength_mismatch\"]}, \"diagnostic_region_image\": \"traces/evidence/session_20260924_144340_fake_adm_0002_png/region_E-a25adb358f.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_144340_fake_adm_0002_png/noise_residual_map_E-a25adb358f.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_144340_fake_adm_0002_png/region_E-a25adb358f.png",
+        "traces/evidence/session_20260924_144340_fake_adm_0002_png/noise_residual_map_E-a25adb358f.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [50, 50, 150, 150]\nVisual Anomalies: 眼睛区域有明显的模糊和失焦现象。\nExpert Target & Hypothesis: <call_noise>[50, 50, 150, 150]</call_noise> → 检查眼睛区域是否存在人为添加的痕迹或噪声。\n</planning>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise> 的结果，眼睛区域的残差微噪声水平较低，这表明图像可能是生成的（伪造的）。然而，由于 <call_noise> 的可靠性较低（0.845），我们不能完全依赖这个单一的证据来得出结论。此外，图像中眼睛区域的模糊和失焦现象可能与图像质量有关，而不是伪造的迹象。\n\n综合考虑，虽然 <call_noise> 提供了一个弱证据，但不足以确定图像的真实性。因此，我们需要更多的证据来做出最终判断。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"眼睛区域的模糊和失焦现象可能是图像质量问题，而残差微噪声水平较低可能表明图像是生成的。然而，由于 <call_noise> 的可靠性较低，无法确定图像的真实性。需要更多证据来做出最终判断。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-a25adb358f",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[13, 13, 38, 38]",
+      "region_pixels": [
+        13,
+        13,
+        38,
+        38
+      ],
+      "region_normalized_1000": [
+        50,
+        50,
+        150,
+        150
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.2317). No significant local variance anomaly.",
+      "reasoning": "Low residual micro-noise level (metric=0.2317). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.0208,
+      "raw_metric": 0.231673,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_144340_fake_adm_0002_png/region_E-a25adb358f.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_144340_fake_adm_0002_png/noise_residual_map_E-a25adb358f.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 3,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:43:40.464500",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.5
+  }
+}

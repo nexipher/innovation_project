@@ -1,0 +1,106 @@
+{
+  "id": "session_20260924_143829_fake_adm_0003_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0003_jpeg_q95.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.95,
+    "primary_evidence": [
+      "noise_expert"
+    ],
+    "report": "图像区域 [26, 26, 42, 42] 的噪声水平低且图像整体光滑，这些特征与伪造图像不符，因此认定为真实图像。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 150, 150]\nVisual Anomalies: 在图像的右上角区域，有一个明显的黑色斑点，这可能是一个伪造的迹象。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为这个区域的噪声水平可能揭示伪造的信号。\n</planning>\n<call_noise>[100, 100, 150, 150]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [26, 26, 42, 42] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143829_fake_adm_0003_jpeg_q95/region_E-498efbf26c.png",
+        "traces/evidence/session_20260924_143829_fake_adm_0003_jpeg_q95/noise_residual_map_E-498efbf26c.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据<call_noise>专家的分析，区域 [26, 26, 42, 42] 的噪声水平较低，这与伪造图像通常具有较高的噪声水平不符。此外，图像整体看起来非常光滑，没有明显的噪点或瑕疵，进一步支持了图像的真实性。\n\n综合以上信息，可以得出结论：\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.95, \"primary_evidence\": [\"noise_expert\"], \"report\": \"图像区域 [26, 26, 42, 42] 的噪声水平低且图像整体光滑，这些特征与伪造图像不符，因此认定为真实图像。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-498efbf26c",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 42, 42]",
+      "region_pixels": [
+        26,
+        26,
+        42,
+        42
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        150,
+        150
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 5.0000). Variance collapse or inflation detected.",
+      "reasoning": "High residual micro-noise level (metric=5.0000). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.9644,
+      "raw_metric": 5.0,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_143829_fake_adm_0003_jpeg_q95/region_E-498efbf26c.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143829_fake_adm_0003_jpeg_q95/noise_residual_map_E-498efbf26c.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:38:29.233185",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0
+  }
+}

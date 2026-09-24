@@ -1,0 +1,216 @@
+{
+  "id": "session_20260924_151605_fake_adm_0000_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0000_jpeg_q85.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "double_jpeg_quantization"
+    ],
+    "report": "尽管图像中存在疑似 JPEG 压缩的迹象，但由于证据强度较低且可靠性较高，无法确定图像的真实性。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 300, 300]\nVisual Anomalies: 看起来像是一个生物体的特写，具有复杂的纹理和结构。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[100, 100, 300, 300] 来检查是否存在JPEG压缩痕迹。\n</planning>\n<call_jpeg>[100, 100, 300, 300]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-01ac2a91e9\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[26, 26, 77, 77]\", \"region_pixels\": [26, 26, 77, 77], \"region_normalized_1000\": [100, 100, 300, 300], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9514, DCT anomaly: 3.4673)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=0.9514, DCT anomaly=3.4673). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.4789, \"raw_metric\": 1.957748, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-01ac2a91e9.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-01ac2a91e9.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-01ac2a91e9.png",
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-01ac2a91e9.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 77, 77]\nVisual Anomalies: 图像中存在明显的块状结构，可能是由于JPEG压缩造成的。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[26, 26, 77, 77] 来检查是否存在JPEG压缩痕迹。\n</planning>\n<call_jpeg>[26, 26, 77, 77]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-65a4522e54\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[7, 7, 23, 23]\", \"region_pixels\": [7, 7, 23, 23], \"region_normalized_1000\": [26, 26, 77, 77], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.5100, DCT anomaly: 3.1189)\", \"reasoning\": \"Little JPEG structure found (blockiness=0.5100, DCT anomaly=3.1189). The image carries almost no JPEG compression history — the condition the G2 calibration set associates with natively generated (PNG) imagery. Note this is a provenance cue, not proof: a screenshot or a heavily processed image looks the same.\", \"strength\": 0.2905, \"raw_metric\": 1.553556, \"source\": \"jpeg_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Low JPEG structural level — the image carries little JPEG history, the condition the calibration set associates with natively generated (PNG) imagery.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-65a4522e54.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-65a4522e54.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-65a4522e54.png",
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-65a4522e54.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [7, 7, 23, 23]\nVisual Anomalies: 图像中存在明显的块状结构，可能是由于JPEG压缩造成的。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[7, 7, 23, 23] 来检查是否存在JPEG压缩痕迹。\n</planning>\n<call_jpeg>[7, 7, 23, 23]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-1606104b7c\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[2, 2, 18, 18]\", \"region_pixels\": [2, 2, 18, 18], \"region_normalized_1000\": [7, 7, 23, 23], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.7543, DCT anomaly: 3.2778)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=0.7543, DCT anomaly=3.2778). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.384, \"raw_metric\": 1.763681, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-1606104b7c.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-1606104b7c.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-1606104b7c.png",
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-1606104b7c.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已获得的证据，我们观察到以下情况：\n1. 在区域 [7, 7, 23, 23] 中，JPEG 结构分析揭示了 DCT 系数直方图的空洞化现象（块状性：0.7543，DCT 异常：3.2778）。这表明图像存在一定程度的 JPEG 压缩痕迹。\n2. 在区域 [26, 26, 77, 77] 中，JPEG 结构分析同样揭示了 DCT 系数直方图的空洞化现象（块状性：0.5100，DCT 异常：3.1189）。这进一步支持图像存在 JPEG 压缩痕迹。\n\n然而，这些证据的强度较低（分别为 0.384 和 0.2905），并且在经过重压缩后，这种迹象会减弱。此外，这些证据的可靠性为 0.972，但它们的校准概率表明 Real 的可能性仅为 0.139，而 Fake 的可能性为 0.861。这意味着尽管有迹象表明图像可能经过了 JPEG 压缩，但现有证据不足以确定其真实性。\n\n综合考虑以上因素，我们无法得出明确的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"尽管图像中存在疑似 JPEG 压缩的迹象，但由于证据强度较低且可靠性较高，无法确定图像的真实性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-01ac2a91e9",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[26, 26, 77, 77]",
+      "region_pixels": [
+        26,
+        26,
+        77,
+        77
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        300,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9514, DCT anomaly: 3.4673)",
+      "reasoning": "Moderate JPEG structure found (blockiness=0.9514, DCT anomaly=3.4673). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.4789,
+      "raw_metric": 1.957748,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-01ac2a91e9.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-01ac2a91e9.png"
+      ]
+    },
+    {
+      "evidence_id": "E-65a4522e54",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[7, 7, 23, 23]",
+      "region_pixels": [
+        7,
+        7,
+        23,
+        23
+      ],
+      "region_normalized_1000": [
+        26,
+        26,
+        77,
+        77
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.5100, DCT anomaly: 3.1189)",
+      "reasoning": "Little JPEG structure found (blockiness=0.5100, DCT anomaly=3.1189). The image carries almost no JPEG compression history — the condition the G2 calibration set associates with natively generated (PNG) imagery. Note this is a provenance cue, not proof: a screenshot or a heavily processed image looks the same.",
+      "strength": 0.2905,
+      "raw_metric": 1.553556,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Low JPEG structural level — the image carries little JPEG history, the condition the calibration set associates with natively generated (PNG) imagery.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-65a4522e54.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-65a4522e54.png"
+      ]
+    },
+    {
+      "evidence_id": "E-1606104b7c",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[2, 2, 18, 18]",
+      "region_pixels": [
+        2,
+        2,
+        18,
+        18
+      ],
+      "region_normalized_1000": [
+        7,
+        7,
+        23,
+        23
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.7543, DCT anomaly: 3.2778)",
+      "reasoning": "Moderate JPEG structure found (blockiness=0.7543, DCT anomaly=3.2778). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.384,
+      "raw_metric": 1.763681,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/region_E-1606104b7c.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_151605_fake_adm_0000_jpeg_q85/jpeg_blockiness_map_E-1606104b7c.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 4,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T15:16:05.434830",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 3,
+    "unique_evidence_count": 3,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 5.0
+  }
+}

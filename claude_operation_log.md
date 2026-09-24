@@ -670,3 +670,27 @@
 * **执行结果与验证状态**：trace 目录 2162 → 1683(全部真实); git status 不再被 trace 刷屏; md 记录三处缺口已补
 * **置信度或遗留待办（TODO）**：极性修复的 Qwen 层面验证重跑待 GPU 授权(--fresh, ~20 分钟); 随后 G3(EvidenceRectifier)
 ---
+### 2026-09-24 15:40:10 - G2-e 验证重跑（两次）：发现并修复一致性门的极性盲区
+
+* **当前操作动作**：极性修复的 Qwen 层面验证重跑（第一次结果无效 → 定位根因 → 修复 → 第二次有效）
+* **核心变更说明**：
+  1. 第一次重跑(14:26-14:50, 40 样本×4 条件): 三个工具臂几乎全弃权(text Uncertain 92.5%, image 82.5%, both 80%), 无一超过基线
+  2. **根因**: G1 的 `EvidenceConsistencyChecker` 在 5 处硬编码"高 strength ⇒ 生成伪迹"的对齐世界观; G2-e 反转 noise/jpeg 后, 它们**每一次正确的方向声明都被判矛盾并降级为 Uncertain**(实测 postfix 批次 noise 57/57、jpeg 173/173 全为 Uncertain) → 该次运行检验的是门的抹除效应
+  3. 修复(提交 5582156)三层: ①`semantics_aligned=False` 的 token 取镜像强度规则(每带禁止的方向词互换) ②短语匹配改为**否定感知**(jpeg 文本写的 "This is NOT a forgery marker" 被裸子串匹配当成伪造断言) ③noise 的 `phenomenon` 低 metric 措辞改写(反转语义下那是生成端)
+  4. 验证: 32 张真实校准图上方向声明保留 32/0(此前约 100% 降级); 测试 267 通过
+  5. 第二次重跑(15:00-15:35, 门已修): **token 声明从"反向"变"随机"**(jpeg AI-gen 命中率 23.8%→42.1%, 基准 47.5%, p=0.66; noise →46.9%); **image 臂 AUROC 0.432→0.425→0.614**(与基线 0.605 持平, 从低于随机回到持平); 弃权率 80-92%→55-65%
+  6. **未达成**: 无任何臂超过基线; text 臂决策级 AUROC 0.290(n=40 且 57.5% 并列于 0.5, 统计量脆弱, 需 n=120 复核)
+  7. **新发现阻塞点(转 G3 首要任务)**: 可靠性表在全图标定(n=700), 推理却在模型自选裁剪图上 → 分布失配(noise 裁剪中位 1.262 vs 全图 2.529), 分箱按错误总体解读。这是"证据为何仍无增益"的首要解释
+  8. 方法论教训: G2-e 的两次核验都只查了**专家自身输出**, 未查**管线对输出的二次加工**; 今后语义层改动必须端到端核验到 token 落地
+* **涉及/修改的文件清单**：
+  - `utils/evidence_consistency.py (Modified — INVERTED_SUPPORT/否定感知 _asserts/极性感知强度规则)`
+  - `experts/noise.py (Modified — phenomenon 随反转语义改写)`
+  - `tests/test_evidence_consistency.py (Modified — TestInvertedExperts 9 项)`
+  - `calibration/g2_gain_report_postfix.json (Created — 门未修批次, 结果无效)`
+  - `calibration/g2_gain_report_postfix2.json (Created — 门已修批次, 有效)`
+  - `scripts/qwen_gain_baseline.py (Modified — --output 覆写报告路径)`
+  - `tests/test_qwen_gain_baseline.py (Modified — --output 测试)`
+  - `plan.md, CURRENT_PROGRAM_ARCHITECTURE.md (Modified — 两次重跑与门的极性契约)`
+* **执行结果与验证状态**：门修复验证通过(32/0); 第二次重跑有效; 267 测试通过; token 不再反向但亦无正增益
+* **置信度或遗留待办（TODO）**：G3 EvidenceRectifier 首要任务 = 解决校准总体失配(裁剪尺度 vs 全图); n=120 复核留待 G3 后一并做; B 线构造场景模板仍编码 G2 之前语义, 待 G4 重设计
+---

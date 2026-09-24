@@ -1,0 +1,96 @@
+{
+  "id": "session_20260924_142854_real_0003_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0003_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "残差微噪声水平接近随机水平，不足以作为决定性证据；JPEG压缩历史显示真实相机JPEG压缩过程。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [300, 0, 504, 336]\nVisual Anomalies: 猫的毛发细节清晰，背景模糊，这可能是相机传感器微噪声的特征。\nExpert Target & Hypothesis: <call_noise>[300, 0, 504, 336]</call_noise>，因为背景模糊可能表明存在微噪声。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-950c1b9ce0\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[100, 0, 168, 168]\", \"region_pixels\": [100, 0, 168, 168], \"region_normalized_1000\": [300, 0, 504, 336], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 2.9487). Variance collapse or inflation detected.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=2.9487). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.5555, \"raw_metric\": 2.948697, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [300, 0, 504, 336]\nVisual Anomalies: 猫的毛发细节清晰，背景模糊，这可能是相机传感器微噪声的特征。\nExpert Target & Hypothesis: <call_noise>[300, 0, 504, 336]</call_noise>，因为背景模糊可能表明存在微噪声。\n</planning>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据<call_noise>[300, 0, 504, 336]的分析结果，残差微噪声水平为2.9487，接近校准的随机水平，这意味着该区域的微噪声水平没有显著的方向性信息。结合<call_jpeg>[300, 0, 504, 336]的分析，JPEG压缩历史显示该区域的压缩历史较高，但并不指向伪造，而是指示了真实的相机JPEG压缩过程。\n\n综合来看，尽管<call_noise>提供了微噪声水平的测量，但其结果接近随机水平，不足以作为决定性证据。而<call_jpeg>的结果则支持图像的真实性。因此，这些证据不足以得出明确的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"残差微噪声水平接近随机水平，不足以作为决定性证据；JPEG压缩历史显示真实相机JPEG压缩过程。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-950c1b9ce0",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[100, 0, 168, 168]",
+      "region_pixels": [
+        100,
+        0,
+        168,
+        168
+      ],
+      "region_normalized_1000": [
+        300,
+        0,
+        504,
+        336
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 2.9487). Variance collapse or inflation detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.9487). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.5555,
+      "raw_metric": 2.948697,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。"
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      333,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:28:54.920469",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.5
+  }
+}

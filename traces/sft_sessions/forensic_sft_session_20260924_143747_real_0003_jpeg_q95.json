@@ -1,0 +1,172 @@
+{
+  "id": "session_20260924_143747_real_0003_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0003_jpeg_q95.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_expert"
+    ],
+    "report": "图像的微噪声水平较低，表明可能是由相机传感器生成的，但无法对整个图像进行进一步分析。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [300, 0, 504, 336]\nVisual Anomalies: 猫的毛发细节清晰，背景模糊，可能暗示了高分辨率和高质量的拍摄。\nExpert Target & Hypothesis: <call_noise>[300, 0, 504, 336]</call_noise> → 检查是否存在微噪声，以判断图像的真实性和生成方式。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [100, 0, 168, 168] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/region_E-739222bb3c.png",
+        "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/noise_residual_map_E-739222bb3c.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 0, 168, 168]\nVisual Anomalies: 图像呈现为纯蓝色，没有明显的细节或纹理，这可能是由单一颜色填充或数字生成造成的。\nExpert Target & Hypothesis: <call_noise>[100, 0, 168, 168]</call_noise> → 检查是否存在微噪声，以判断图像的真实性和生成方式。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [33, 0, 56, 84] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/region_E-f06cb873ae.png",
+        "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/noise_residual_map_E-f06cb873ae.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析结果，区域 [33, 0, 56, 84] 的微噪声水平较低，表明图像可能是由相机传感器生成的，而不是通过数字生成器创建的。然而，由于取证资源已耗尽且信息增益收敛，无法对整个图像进行进一步分析。因此，基于现有证据，图像的真实性无法确定。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_expert\"], \"report\": \"图像的微噪声水平较低，表明可能是由相机传感器生成的，但无法对整个图像进行进一步分析。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-739222bb3c",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[100, 0, 168, 168]",
+      "region_pixels": [
+        100,
+        0,
+        168,
+        168
+      ],
+      "region_normalized_1000": [
+        300,
+        0,
+        504,
+        336
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 2.1773). No significant local variance anomaly.",
+      "reasoning": "Low residual micro-noise level (metric=2.1773). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.2821,
+      "raw_metric": 2.177279,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/region_E-739222bb3c.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/noise_residual_map_E-739222bb3c.png"
+      ]
+    },
+    {
+      "evidence_id": "E-f06cb873ae",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[33, 0, 56, 84]",
+      "region_pixels": [
+        33,
+        0,
+        56,
+        84
+      ],
+      "region_normalized_1000": [
+        100,
+        0,
+        168,
+        168
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 1.9136). No significant local variance anomaly.",
+      "reasoning": "Low residual micro-noise level (metric=1.9136). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.2092,
+      "raw_metric": 1.913586,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "consistency": {
+        "status": "fail",
+        "failures": [
+          "support_strength_mismatch"
+        ]
+      },
+      "diagnostic_region_image": "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/region_E-f06cb873ae.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_143747_real_0003_jpeg_q95/noise_residual_map_E-f06cb873ae.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      333,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:37:47.969882",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5
+  }
+}
