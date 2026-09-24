@@ -1,0 +1,143 @@
+"""
+Qwen2.5-VL chat-message construction (plan.md §4.8 G1).
+
+Kept import-light (PIL + stdlib only) so the conversation protocol can be
+unit-tested on CPU without loading transformers/torch.
+
+Multi-turn image protocol:
+  - the original image stays attached to the first user turn;
+  - every evidence turn may carry `image_paths` (diagnostic region crops),
+    which are attached as image blocks before the evidence text;
+  - later turns never drop earlier images — the full history is rebuilt on
+    every generate() call.
+"""
+
+import os
+from typing import Dict, List, Optional
+
+from PIL import Image
+
+from config import PROJECT_ROOT
+
+FORENSIC_SYSTEM_PROMPT = """You are an AI forensic image analyst. You MUST follow this EXACT format in EVERY response. Do NOT write free-form analysis.
+
+AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):
+- <call_freq>[ymin, xmin, ymax, xmax]</call_freq>  → call frequency-domain expert
+- <call_noise>[ymin, xmin, ymax, xmax]</call_noise> → call noise residual expert
+- <call_jpeg>[ymin, xmin, ymax, xmax]</call_jpeg>   → call JPEG compression expert
+
+FORBIDDEN: Do NOT use <call_call_freq>, <call_call_noise>, <call_frequency>, or any other variation.
+
+COORDINATES: bbox values are integers in range [0, 1000], format [ymin, xmin, ymax, xmax].
+
+RESPONSE FORMAT (MANDATORY — every response must contain one of these two structures):
+
+Structure A — When you need forensic evidence:
+<planning>
+Suspected Region: [ymin, xmin, ymax, xmax]
+Visual Anomalies: [describe what looks suspicious in this specific image]
+Expert Target & Hypothesis: [which expert to call and why]
+</planning>
+<call_EXPERT_NAME>[ymin, xmin, ymax, xmax]</call_EXPERT_NAME>
+
+Structure B — When you have enough evidence to conclude:
+<reasoning>
+[Cross-reference the expert's physical findings with your visual observations.
+If different experts conflict, explain why and apply "presumption of innocence".
+If the image has compression artifacts that may weaken certain signals, note it.]
+</reasoning>
+<verdict>
+{"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": ["evidence_name1"], "report": "concise forensic report in Chinese"}
+</verdict>
+
+RULES:
+1. For blurry/spliced edges or unnatural sharpening → call noise or freq first.
+2. For overly smooth/regular textures → call freq first.
+3. For low-res, blocky, or social-media-recompressed images → call jpeg first.
+4. NEVER output only natural-language analysis without the required XML tags.
+5. NEVER fabricate evidence — only reference evidence tokens you have received.
+6. After receiving 2+ evidence tokens, you MUST produce a verdict.
+"""
+
+MAX_REGION_IMAGES_PER_TURN = 2
+
+
+def _load_image(path: str) -> Optional[Image.Image]:
+    """Load an image; relative paths resolve against the project root."""
+    try:
+        resolved = path if os.path.isabs(path) else os.path.join(PROJECT_ROOT, path)
+        return Image.open(resolved).convert("RGB")
+    except Exception:
+        return None
+
+
+def build_messages(image_path: str, history: List[Dict[str, str]]) -> List[dict]:
+    """
+    Convert internal conversation history into Qwen2.5-VL chat messages.
+
+    Args:
+        image_path: Path of the original image under analysis.
+        history: List of {"from": "user"|"gpt", "value": str, ...} turns.
+                 User turns may carry optional "image_paths" (region crops).
+
+    Returns:
+        List of Qwen-style message dicts (role/content blocks).
+    """
+    messages: List[dict] = [
+        {"role": "system", "content": FORENSIC_SYSTEM_PROMPT},
+    ]
+
+    for turn in history:
+        role = turn.get("from", "user")
+        value = turn.get("value", "")
+
+        if role != "user":
+            messages.append({"role": "assistant", "content": value})
+            continue
+
+        content_blocks: List[dict] = []
+
+        if "<image>" in value:
+            # Initial prompt: attach the original image.
+            image = _load_image(image_path)
+            if image is not None:
+                content_blocks.append({"type": "image", "image": image})
+            text = value.replace("<image>\n", "").replace("<image>", "")
+        else:
+            text = value
+            # Diagnostic region crops attached to this turn (G1).
+            for region_path in list(turn.get("image_paths") or [])[:MAX_REGION_IMAGES_PER_TURN]:
+                image = _load_image(region_path)
+                if image is not None:
+                    content_blocks.append({"type": "image", "image": image})
+
+        content_blocks.append({"type": "text", "text": text})
+        messages.append({"role": "user", "content": content_blocks})
+
+    if not history:
+        # First turn: original image + task instruction.
+        content_blocks: List[dict] = []
+        image = _load_image(image_path)
+        if image is not None:
+            content_blocks.append({"type": "image", "image": image})
+        content_blocks.append({"type": "text", "text": (
+            "请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+            "首先输出 <planning> 标签，然后根据需要调用法证专家。"
+        )})
+        messages.append({"role": "user", "content": content_blocks})
+
+    return messages
+
+
+def collect_images(messages: List[dict]) -> List[Image.Image]:
+    """Extract PIL images from message content blocks, in placeholder order."""
+    images: List[Image.Image] = []
+    for message in messages:
+        content = message.get("content", "")
+        if isinstance(content, list):
+            for block in content:
+                if isinstance(block, dict) and block.get("type") == "image":
+                    image = block.get("image")
+                    if isinstance(image, Image.Image):
+                        images.append(image)
+    return images

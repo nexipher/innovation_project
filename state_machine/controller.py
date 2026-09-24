@@ -15,9 +15,11 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from config import (
-    SYSTEM_PROMPT,
+    EVIDENCE_ARTIFACT_DIR,
     MAX_EXPERT_CALLS,
     MAX_MODEL_TURNS,
+    PROJECT_ROOT,
+    SYSTEM_PROMPT,
     TURN_COST_WEIGHT,
 )
 from utils.image_utils import ImageUtils
@@ -184,14 +186,32 @@ class ForensicStateMachine:
                         continue
                     seen_evidence_ids.add(evidence_id)
 
+                    # Save the diagnostic region crop so multi-turn image
+                    # history can re-attach it (plan.md §4.8 G1).
+                    artifact_rel = self._save_region_artifact(
+                        patch, evidence_id
+                    )
+                    if artifact_rel:
+                        evidence_token["diagnostic_region_image"] = artifact_rel
+
                     # Record
                     evidence_chain.append(evidence_token)
                     self._logger.add_evidence(evidence_token)
 
-                    # Inject into conversation as user message
+                    # Inject into conversation as user message, attaching the
+                    # region crop for the real MLLM backend. Paths are stored
+                    # project-relative so traces stay portable; the message
+                    # builder resolves them at load time.
                     evidence_json = EvidenceTokenizer.to_json(evidence_token)
-                    self._logger.add_conversation_turn("user", evidence_json)
-                    conversation.append({"from": "user", "value": evidence_json})
+                    artifact_paths = [artifact_rel] if artifact_rel else None
+                    self._logger.add_conversation_turn(
+                        "user", evidence_json, image_paths=artifact_paths
+                    )
+                    conversation.append({
+                        "from": "user",
+                        "value": evidence_json,
+                        **({"image_paths": artifact_paths} if artifact_paths else {}),
+                    })
             else:
                 # No calls and no verdict — malformed output, inject correction
                 valid, msg = Parser.validate_tag_structure(raw_output)
@@ -286,6 +306,24 @@ class ForensicStateMachine:
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _save_region_artifact(self, patch, evidence_id: str) -> Optional[str]:
+        """
+        Persist the diagnostic region crop for multi-turn image history.
+
+        Returns the project-relative artifact path, or None when saving fails
+        (artifact persistence must never break the analysis loop).
+        """
+        session_id = self._logger.session_id
+        if not session_id or patch is None or getattr(patch, "size", 0) == 0:
+            return None
+        rel_path = os.path.join(
+            "traces", "evidence", session_id, f"region_{evidence_id}.png"
+        )
+        abs_path = os.path.join(PROJECT_ROOT, rel_path)
+        if ImageUtils.save_image(abs_path, patch):
+            return rel_path.replace(os.sep, "/")
+        return None
 
     def _request_conclusion(
         self, image_path: str, conversation: List[Dict[str, str]], note: str

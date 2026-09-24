@@ -17,52 +17,13 @@ from PIL import Image
 from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
 
 from .base import BaseMLLMClient
-from config import QWEN_MODEL_PATH, SYSTEM_PROMPT, MAX_STEPS
+from .message_builder import (
+    FORENSIC_SYSTEM_PROMPT,
+    build_messages,
+    collect_images,
+)
+from config import QWEN_MODEL_PATH
 from utils.parser import Parser
-
-
-# ---------------------------------------------------------------------------
-# Strengthened system prompt — forces XML-structured forensic output
-# ---------------------------------------------------------------------------
-FORENSIC_SYSTEM_PROMPT = """You are an AI forensic image analyst. You MUST follow this EXACT format in EVERY response. Do NOT write free-form analysis.
-
-AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):
-- <call_freq>[ymin, xmin, ymax, xmax]</call_freq>  → call frequency-domain expert
-- <call_noise>[ymin, xmin, ymax, xmax]</call_noise> → call noise residual expert
-- <call_jpeg>[ymin, xmin, ymax, xmax]</call_jpeg>   → call JPEG compression expert
-
-FORBIDDEN: Do NOT use <call_call_freq>, <call_call_noise>, <call_frequency>, or any other variation.
-
-COORDINATES: bbox values are integers in range [0, 1000], format [ymin, xmin, ymax, xmax].
-
-RESPONSE FORMAT (MANDATORY — every response must contain one of these two structures):
-
-Structure A — When you need forensic evidence:
-<planning>
-Suspected Region: [ymin, xmin, ymax, xmax]
-Visual Anomalies: [describe what looks suspicious in this specific image]
-Expert Target & Hypothesis: [which expert to call and why]
-</planning>
-<call_EXPERT_NAME>[ymin, xmin, ymax, xmax]</call_EXPERT_NAME>
-
-Structure B — When you have enough evidence to conclude:
-<reasoning>
-[Cross-reference the expert's physical findings with your visual observations.
-If different experts conflict, explain why and apply "presumption of innocence".
-If the image has compression artifacts that may weaken certain signals, note it.]
-</reasoning>
-<verdict>
-{"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": ["evidence_name1"], "report": "concise forensic report in Chinese"}
-</verdict>
-
-RULES:
-1. For blurry/spliced edges or unnatural sharpening → call noise or freq first.
-2. For overly smooth/regular textures → call freq first.
-3. For low-res, blocky, or social-media-recompressed images → call jpeg first.
-4. NEVER output only natural-language analysis without the required XML tags.
-5. NEVER fabricate evidence — only reference evidence tokens you have received.
-6. After receiving 2+ evidence tokens, you MUST produce a verdict.
-"""
 
 
 class QwenVLClient(BaseMLLMClient):
@@ -187,65 +148,8 @@ class QwenVLClient(BaseMLLMClient):
         image_path: str,
         history: List[Dict[str, str]],
     ) -> List[dict]:
-        """
-        Convert our internal conversation history into Qwen2.5-VL
-        chat-template-compatible messages.
-        """
-        messages = [
-            {"role": "system", "content": FORENSIC_SYSTEM_PROMPT},
-        ]
-
-        # Load image once for the first user turn
-        img = Image.open(image_path).convert("RGB")
-
-        for turn in history:
-            role = turn.get("from", "user")
-            value = turn.get("value", "")
-
-            if role == "user":
-                # Check if this is the first user message (contains <image> marker)
-                # or an evidence injection (JSON)
-                if "<image>" in value:
-                    # Initial prompt with image
-                    text_content = value.replace("<image>\n", "").replace("<image>", "")
-                    messages.append({
-                        "role": "user",
-                        "content": [
-                            {"type": "image", "image": img},
-                            {"type": "text", "text": text_content},
-                        ],
-                    })
-                else:
-                    # Evidence Token injection or system message — text only
-                    messages.append({
-                        "role": "user",
-                        "content": [{"type": "text", "text": value}],
-                    })
-            else:
-                # Assistant turn
-                messages.append({
-                    "role": "assistant",
-                    "content": value,
-                })
-
-        # If history is empty, this is the first turn — add initial prompt
-        if not history:
-            messages.append({
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": img},
-                    {"type": "text", "text": (
-                        "请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
-                        "首先输出 <planning> 标签，然后根据需要调用法证专家。"
-                    )},
-                ],
-            })
-
-        return messages
-
-    # ------------------------------------------------------------------
-    # Internal: inference
-    # ------------------------------------------------------------------
+        """Delegate to the shared, CPU-testable message builder (G1)."""
+        return build_messages(image_path, history)
 
     def _inference(self, messages: List[dict]) -> str:
         """Run a single forward pass and decode the output."""
@@ -280,14 +184,5 @@ class QwenVLClient(BaseMLLMClient):
         return output.strip()
 
     def _collect_images(self, messages: List[dict]) -> List[Image.Image]:
-        """Extract PIL Image objects from message content blocks."""
-        images = []
-        for msg in messages:
-            content = msg.get("content", "")
-            if isinstance(content, list):
-                for block in content:
-                    if isinstance(block, dict) and block.get("type") == "image":
-                        img = block.get("image")
-                        if isinstance(img, Image.Image):
-                            images.append(img)
-        return images
+        """Delegate to the shared image collector (G1)."""
+        return collect_images(messages)

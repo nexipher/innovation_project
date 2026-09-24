@@ -80,3 +80,18 @@ class ImageUtils:
                 return (img * 255).astype(np.uint8)
             return img.astype(np.uint8)
         return img.astype(np.uint8)
+
+    @staticmethod
+    def save_image(path: str, img: np.ndarray) -> bool:
+        """
+        Save a BGR numpy image to disk (creating parent directories).
+
+        Used for diagnostic-region artifacts (G1 §4.8). Returns True on
+        success; failures are non-fatal for the pipeline.
+        """
+        try:
+            import os
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            return bool(cv2.imwrite(path, img))
+        except Exception:
+            return False

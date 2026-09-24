@@ -142,3 +142,53 @@ class TestEvidenceDeduplication:
 
         assert result["unique_evidence_count"] == 2
         assert result["suppressed_duplicate_count"] == 0
+
+
+class TestDiagnosticRegionArtifacts:
+    """G1 (§4.8): expert calls persist region crops for multi-turn images."""
+
+    CALL = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"
+    VERDICT = ('<reasoning>ok</reasoning>\n<verdict>'
+               '{"verdict": "Real", "confidence": 0.7, "primary_evidence": [], "report": "ok"}</verdict>')
+
+    def test_region_artifact_saved_and_linked(self):
+        import json as _json
+        import os as _os
+        from config import PROJECT_ROOT
+
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        # The conversation turn carries the artifact path.
+        evidence_turns = [
+            turn for turn in result["conversation"]
+            if turn["from"] == "user" and turn.get("image_paths")
+        ]
+        assert len(evidence_turns) == 1
+        artifact_rel = evidence_turns[0]["image_paths"][0]
+        assert artifact_rel.endswith(".png")
+        assert _os.path.exists(_os.path.join(PROJECT_ROOT, artifact_rel))
+
+        # The evidence chain entry records the same artifact.
+        assert result["evidence_chain"][0]["diagnostic_region_image"] == artifact_rel
+
+        # The persisted trace keeps image_paths for downstream SFT use.
+        with open(result["sft_data_path"], encoding="utf-8") as handle:
+            trace = _json.load(handle)
+        persisted = [
+            turn for turn in trace["conversations"]
+            if turn["from"] == "user" and turn.get("image_paths")
+        ]
+        assert len(persisted) == 1
+
+    def test_no_artifact_for_duplicate_evidence(self):
+        import os as _os
+        from config import PROJECT_ROOT
+
+        mllm = ScriptedMLLM([self.CALL, self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        assert result["suppressed_duplicate_count"] == 1
+        assert len(result["evidence_chain"]) == 1

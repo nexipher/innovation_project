@@ -90,9 +90,19 @@ class SessionLogger:
     # Turn recording
     # ------------------------------------------------------------------
 
-    def add_conversation_turn(self, from_: str, value: str) -> None:
-        """Append a conversation turn (from='user' or 'gpt')."""
-        self._conversations.append({"from": from_, "value": value})
+    def add_conversation_turn(self, from_: str, value: str,
+                              image_paths: Optional[list] = None) -> None:
+        """
+        Append a conversation turn (from='user' or 'gpt').
+
+        Args:
+            image_paths: Optional list of evidence-artifact paths (diagnostic
+                         region crops) attached to this turn (G1 §4.8).
+        """
+        turn = {"from": from_, "value": value}
+        if image_paths:
+            turn["image_paths"] = list(image_paths)
+        self._conversations.append(turn)
 
     def add_evidence(self, evidence: dict) -> None:
         """Record an Evidence Token returned by an expert."""
