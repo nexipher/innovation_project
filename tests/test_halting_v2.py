@@ -215,3 +215,44 @@ class TestExpertWeights:
     def test_chance_expert_gets_no_weight(self):
         weights = HaltingPolicyV2.expert_weights({"weak": 0.4})
         assert weights["weak"] == 0.0
+
+
+class TestNoToolSessions:
+    """The no-tool baseline arm: no evidence can ever arrive."""
+
+    def _no_tools(self, chain=(), candidate=None, turns=1, calls=0):
+        return HaltingPolicyV2.decide(
+            model_turns=turns, expert_calls=calls, evidence_chain=list(chain),
+            candidate_verdict=candidate, available_experts=EXPERTS,
+            called_experts=set(), tools_available=False)
+
+    def test_the_model_verdict_is_the_measurement(self):
+        decision = self._no_tools(candidate={"verdict": "Real", "confidence": 0.95})
+        assert decision.action == "halt"
+        assert decision.verdict == "Real"
+        assert decision.confidence == pytest.approx(0.95)
+        assert decision.primary_reason == HaltingPolicyV2.CANDIDATE_WITHOUT_TOOLS
+
+    def test_a_fake_verdict_is_accepted_too(self):
+        decision = self._no_tools(candidate={"verdict": "Fake", "confidence": 0.6})
+        assert decision.verdict == "Fake"
+
+    def test_it_never_recommends_a_tool(self):
+        decision = self._no_tools()
+        assert decision.next_expert is None
+        assert decision.primary_reason == HaltingPolicyV2.AWAITING_VERDICT
+
+    def test_a_missing_verdict_waits_then_abstains(self):
+        assert self._no_tools(turns=1).action == "continue"
+        spent = self._no_tools(turns=MAX_MODEL_TURNS)
+        assert spent.action == "halt"
+        assert spent.verdict == "Uncertain"
+
+    def test_with_tools_the_same_state_explores(self):
+        """The guard is the protocol, not a global change of behaviour."""
+        with_tools = HaltingPolicyV2.decide(
+            model_turns=1, expert_calls=0, evidence_chain=[],
+            candidate_verdict=None, available_experts=EXPERTS,
+            called_experts=set(), tools_available=True)
+        assert with_tools.primary_reason == HaltingPolicyV2.EXPLORING
+        assert with_tools.next_expert

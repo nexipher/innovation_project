@@ -75,6 +75,8 @@ class HaltingPolicyV2:
     CANDIDATE_OVERRIDDEN = "candidate_overridden_by_posterior"
     CONFLICT_UNRESOLVED = "conflict_unresolved"
     MODEL_STALLED = "model_stalled"
+    CANDIDATE_WITHOUT_TOOLS = "candidate_without_tools"
+    AWAITING_VERDICT = "awaiting_verdict"
     BUDGET_EXHAUSTED = "budget_exhausted"
     NO_EXPECTED_GAIN = "no_expected_gain"
     EXPLORING = "exploring"
@@ -184,6 +186,7 @@ class HaltingPolicyV2:
         available_experts: Dict[str, float],
         called_experts: set,
         turns_without_new_evidence: int = 0,
+        tools_available: bool = True,
     ) -> HaltingDecision:
         """
         Evaluate the current state and return the next action.
@@ -197,6 +200,11 @@ class HaltingPolicyV2:
             turns_without_new_evidence: model turns since the last new token;
                 two in a row with an overridden candidate means the model is
                 not going to take the recommendation.
+            tools_available: False for a session whose protocol forbids tool
+                calls (the no-tool RGB baseline).  Nothing will ever reduce
+                the posterior there, so the policy must judge the session on
+                the model's own verdict instead of asking for evidence that
+                cannot arrive.
         """
         posterior = cls.posterior(evidence_chain)
         conflict = cls.conflict_score(evidence_chain)
@@ -216,6 +224,31 @@ class HaltingPolicyV2:
         confident = abs(2.0 * posterior - 1.0) >= abs(2.0 * POLICY_CONFIDENT_POSTERIOR - 1.0)
         label = "Fake" if posterior >= 0.5 else "Real"
         conflict_open = conflict > POLICY_CONFLICT_TOLERANCE
+
+        # 0. a protocol that forbids tool calls: there is no evidence to wait
+        #    for, so the model's own conclusion is the measurement
+        if not tools_available:
+            # A tool recommendation would be noise here, not advice.
+            decision.next_expert = None
+            decision.expected_tool_gain = 0.0
+            decision.expected_net_utility = 0.0
+            if candidate_verdict and candidate_verdict.get("verdict") in (
+                "Real", "Fake", "Uncertain",
+            ):
+                decision.action = "halt"
+                decision.verdict = candidate_verdict["verdict"]
+                decision.confidence = round(
+                    float(candidate_verdict.get("confidence") or 0.5), 4
+                )
+                decision.primary_reason = cls.CANDIDATE_WITHOUT_TOOLS
+                decision.all_reasons = [cls.CANDIDATE_WITHOUT_TOOLS]
+                return decision
+            if cls._budget_exhausted(model_turns, expert_calls):
+                return cls._halt(decision, "Uncertain", 0.5, cls.BUDGET_EXHAUSTED,
+                                 [cls.BUDGET_EXHAUSTED])
+            decision.primary_reason = cls.AWAITING_VERDICT
+            decision.all_reasons = [cls.AWAITING_VERDICT]
+            return decision
 
         # 1. nothing measured yet — with budget left, measure something
         if not evidence_chain and not cls._budget_exhausted(model_turns, expert_calls):

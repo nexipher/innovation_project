@@ -78,10 +78,13 @@ COMPARISON_CELLS = ("real_png", "fake_png", "real_jpeg_q95", "fake_jpeg_q95",
                     "real_jpeg_q85", "fake_jpeg_q85", "real_jpeg_q70", "fake_jpeg_q70")
 
 CONDITIONS = {
-    "rgb": {"injection": "none", "client": "baseline"},
-    "text": {"injection": "text", "client": "forensic"},
-    "image": {"injection": "image", "client": "forensic"},
-    "both": {"injection": "text+image", "client": "forensic"},
+    # `allow_exploration` mirrors whether the arm's protocol can call tools at
+    # all: the baseline prompt forbids them, so its sessions must be judged on
+    # the model's own verdict rather than asked for evidence that cannot come.
+    "rgb": {"injection": "none", "client": "baseline", "allow_exploration": False},
+    "text": {"injection": "text", "client": "forensic", "allow_exploration": True},
+    "image": {"injection": "image", "client": "forensic", "allow_exploration": True},
+    "both": {"injection": "text+image", "client": "forensic", "allow_exploration": True},
 }
 
 
@@ -235,6 +238,7 @@ def run_condition(
             experts,
             logger=SessionLogger(sft_dir=sft_dir) if sft_dir else None,
             evidence_injection=spec["injection"],
+            allow_exploration=spec.get("allow_exploration", True),
         )
         started = time.perf_counter()
         result = fsm.run(image_path, ground_truth=sample["label"])

@@ -69,6 +69,7 @@ class ForensicStateMachine:
         experts: dict,
         logger: Optional[SessionLogger] = None,
         evidence_injection: str = "text+image",
+        allow_exploration: bool = True,
     ):
         """
         Args:
@@ -84,6 +85,12 @@ class ForensicStateMachine:
                     by a neutral marker (no numbers are shown to the model);
                   - "none": nothing is surfaced (RGB baseline); calls are still
                     executed and recorded for audit.
+            allow_exploration: False when the session's protocol forbids tool
+                calls (the no-tool baseline).  The halting policy then judges
+                the model's own verdict instead of demanding evidence that
+                cannot arrive — otherwise the arm spins to the turn budget and
+                abstains on everything, which measures the policy rather than
+                the model.
         """
         if evidence_injection not in ("text+image", "text", "image", "none"):
             raise ValueError(f"unknown evidence_injection: {evidence_injection}")
@@ -92,6 +99,7 @@ class ForensicStateMachine:
         self._experts = experts  # {"frequency_expert": ..., "noise_expert": ..., "jpeg_expert": ...}
         self._logger = logger or SessionLogger()
         self._evidence_injection = evidence_injection
+        self._allow_exploration = allow_exploration
 
         # G2 §4.9: empirical reliability table (None before calibration exists)
         self._reliability_table = ReliabilityTable.load()
@@ -341,6 +349,7 @@ class ForensicStateMachine:
                     available_experts=self._expert_weights(),
                     called_experts=called_experts,
                     turns_without_new_evidence=turns_without_new_evidence,
+                    tools_available=self._allow_exploration,
                 )
                 policy_decision = decision
                 if decision.action == "continue":
@@ -359,12 +368,23 @@ class ForensicStateMachine:
                         conversation.append({"from": "user", "value": override})
                     continue
                 halting_reason = decision.primary_reason
-                # The policy owns the label; the model's closing turn supplies
-                # the report text, and its own verdict is kept for audit.
-                note = self._conclusion_note(decision)
-                final_output = self._request_conclusion(image_path, conversation, note)
-                model_turn_count += 1
-                model_candidate = Parser.parse_verdict(final_output) or {}
+                # The policy owns the label.  When it accepted the model's own
+                # verdict the report is already written, so asking for another
+                # turn would only add cost the baseline must not carry (the
+                # no-tool arm is meant to be a single-turn measurement).
+                accepted = decision.primary_reason in (
+                    HaltingPolicyV2.CANDIDATE_ACCEPTED,
+                    HaltingPolicyV2.CANDIDATE_WITHOUT_TOOLS,
+                )
+                if accepted and (candidate_verdict or {}).get("report"):
+                    model_candidate = candidate_verdict
+                else:
+                    note = self._conclusion_note(decision)
+                    final_output = self._request_conclusion(
+                        image_path, conversation, note
+                    )
+                    model_turn_count += 1
+                    model_candidate = Parser.parse_verdict(final_output) or {}
                 final_verdict = {
                     "verdict": decision.verdict,
                     "confidence": decision.confidence,

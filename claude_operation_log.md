@@ -790,3 +790,21 @@
 * **执行结果与验证状态**：两处缺陷修复且被测试锁定; 353 测试通过
 * **置信度或遗留待办（TODO）**：**G3-e n=120 GPU 四条件复核（用户已授权）** —— 携带新指纹冷启动
 ---
+### 2026-09-24 18:15:30 - G3-e 前置修复：无工具会话的停止语义与多余结案轮
+
+* **当前操作动作**：G3-e 首次启动即被自身问题中断（运行 2 分钟后停跑），修复后重启
+* **核心变更说明**：
+  1. **问题 1（严重）**: G3-e 首次运行中 rgb 臂出现 turns=7.0 / calls=0.0 / 全 Uncertain。根因是 v2 策略按"有可用工具且预期收益为正"持续要求取证，而基线臂的 BASELINE_SYSTEM_PROMPT **禁止调用工具** → 空转到回合预算耗尽并全部弃权，基线臂失去意义（原本是"1 轮结案、全判 Real 的领域先验基线"）
+  2. 修复: 策略新增 `tools_available` 参数与**规则 0** —— 协议禁止调用工具时，**模型自身结论即为测量**（理由 `candidate_without_tools`），不做工具推荐（`next_expert=None`）也不等待不可能的证" 
+  3. 控制器与 harness: `ForensicStateMachine(allow_exploration=...)`；四条件显式声明 `allow_exploration`（rgb=False，其余 True）
+  4. **问题 2**: 策略接受模型自身结论后，控制器仍多调用一次"结案轮"取报告文本（模型已写过），基线臂轮数 2 而非 1，成本口径与 G2-d 不可比。修复: 接受自身结论时直接复用其报告，不再多花一次生成
+  5. 真机冒烟确认: rgb 臂恢复 turns=1.0 / calls=0.0 / 全判 Real(0.95)，与 G2-d 基线协议一致
+  6. 测试 360 通过（新增 7: 无工具会话 5、结案轮复用 2）
+* **涉及/修改的文件清单**：
+  - `state_machine/halting_v2.py (Modified — tools_available 与规则 0)`
+  - `state_machine/controller.py (Modified — allow_exploration 接线 + 接受结论时复用报告)`
+  - `scripts/qwen_gain_baseline.py (Modified — 四条件声明 allow_exploration)`
+  - `tests/test_halting_v2.py, tests/test_controller.py (Modified — 回归测试)`
+* **执行结果与验证状态**：两处修复生效并被测试锁定；真机冒烟确认基线臂恢复；360 测试通过
+* **置信度或遗留待办（TODO）**：重启 G3-e（n=120 四条件）
+---

@@ -440,3 +440,37 @@ class TestEvidenceInjectionModes:
             assert len(turns) == 1
             assert json.loads(turns[0]["value"])["evidence_name"]
             assert turns[0]["image_paths"]
+
+
+class TestAcceptedCandidateDoesNotCostAnExtraTurn:
+    """A no-tool session is a single-turn measurement (G3-e cost parity)."""
+
+    VERDICT = ('<reasoning>ok</reasoning>\n<verdict>'
+               '{"verdict": "Real", "confidence": 0.95, "primary_evidence": [], '
+               '"report": "报告"}</verdict>')
+
+    def test_the_model_report_is_reused(self):
+        fsm = ForensicStateMachine(
+            ScriptedMLLM([self.VERDICT]), _build_experts(),
+            allow_exploration=False,
+        )
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        assert result["model_turn_count"] == 1
+        assert result["final_verdict"]["verdict"] == "Real"
+        assert result["final_verdict"]["report"] == "报告"
+        assert result["halting_reason"] == "candidate_without_tools"
+
+    def test_an_override_still_asks_for_the_closing_turn(self):
+        """When the policy decides, the model has not yet written that report."""
+        call = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"
+        verdict = ('<reasoning>ok</reasoning>\n<verdict>'
+                   '{"verdict": "Fake", "confidence": 0.99, "primary_evidence": [], '
+                   '"report": "模型报告"}</verdict>')
+        fsm = ForensicStateMachine(ScriptedMLLM([call, verdict, verdict]),
+                                   _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        # The candidate was overridden, so a closing turn was requested.
+        assert result["final_verdict"]["model_candidate"] == "Fake"
+        assert result["model_turn_count"] >= 3
