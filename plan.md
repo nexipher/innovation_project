@@ -1352,14 +1352,65 @@ EvidenceBundle
 └── latency / failure_state
 ```
 
-### 实施顺序
+### 工作包划分（CPU/GPU 标注）
 
-1. 建立格式配平、分辨率配平并包含后处理扰动的独立校准集；
-2. 分别评估 Frequency v1/v2、Noise、JPEG/ELA，记录原始指标、可视化图、耗时与失败状态；
-3. 对比 `RGB baseline`、`RGB + 单 Expert 文本`、`RGB + 单 Expert 可视化`、`RGB + 双通道`；
-4. 按生成器、格式、分辨率、JPEG 质量和后处理类型拟合条件可靠性；
-5. 统计 Expert 错误重叠与互补性，只有稳定产生净增益且不高度冗余的工具进入正式工具箱；
-6. Zoom-In 先实现为保留上下文环带与缩放参数的显式工具；NoisePrint++、Bayar 或可学习 projector 在基线证明需要后再引入。
+#### G2-a 校准集构建（纯 CPU）
+
+**目标**：消除阶段二发现的 "Real=JPEG / Fake=PNG" 格式混杂，让 Expert 判别力可归因。
+
+- 构建 2×2 格式配平网格：`Real-JPEG`（原生）、`Real-PNG`（无损转存，保留像素级 JPEG 痕迹）、`Fake-PNG`（原生）、`Fake-JPEG`（按质量 95/85/70 重编码）；
+- 分辨率按原生桶分层（≤256 / 512 / 1024），不强制缩放（缩放本身作为扰动项单独测试）；
+- 后处理扰动子集：高斯模糊、高斯噪声、0.5×/2× 缩放、锐化、亮度对比度、截图重编码（JPEG q70→PNG）；
+- 每格 ≥40 张、真实/伪造各半、覆盖 8 个生成器；
+- 产出 `calibration/set/manifest.json`（格标签 + 来源 + GT + 格式 + 分辨率 + 质量 + 扰动类型）与派生图像目录（加入 .gitignore）。
+
+**交付物**：`scripts/build_calibration_set.py` + manifest + 派生图像。
+
+#### G2-b Expert 指标评估与可视化产物（纯 CPU）
+
+**目标**：回答"每个 Expert 在什么条件下有效、什么时候失效"。
+
+- 在全部格上运行 Frequency v1/v2、Noise、JPEG（外加 ELA 可视化实现作为候选新工具）；
+- 每 Expert × 每格输出：AUROC、F1@最优阈值、raw_metric 中位数/分位、在库每秒耗时、失败率（异常/极小 crop）；
+- **稳定性**：扰动前后 raw_metric 漂移分布（同图扰动 ⊆ 配对比较）；跨分辨率方向一致性；
+- **可靠区间**：strength 分箱 → 精确率曲线，导出"该 Expert strength≥x 时精确率≥y%"条件；
+- **失败条件**：逐格找失效组合（如 JPEG Expert 在 PNG 格、Noise Expert 在重压缩格的表现）；
+- **错误重叠**：三 Expert 的错误相关矩阵，标识互补/冗余；
+- **可视化产物**：为每类 Expert 实现产物渲染（频域径向谱图、噪声残差热图、块效应热图），先对分层子集（~100 张）生成，供 G2-c/G2-d 复用；
+- 产出 `calibration/g2_expert_report.json`（含每格指标 + 可靠区间表 + 失败条件 + 错误重叠矩阵）。
+
+**交付物**：`scripts/evaluate_experts_g2.py` + `experts/*` 新增 `render_artifacts()` + 报告 JSON。
+
+#### G2-c Evidence Bundle 接口升级（纯 CPU）
+
+- `ExpertResult`/Evidence Token 增加：`raw_metric`、`reliability`、`reliability_factors`（格式/分辨率/质量条件）、`calibrated_likelihood`、`counter_explanation`（反向解释）、`visual_artifacts`（产物路径）、`latency_ms`、`failure_state`；
+- 可靠性与似然从 G2-b 报告加载为查找表（不训练模型，先规则化）；
+- `counter_explanation` 由 Expert 提供模板（如噪声异常也可能是降噪后处理），写入 token 与对话；
+- Controller 复用 G1 的 `image_paths` 机制，把可视化产物与诊断区域图一起回灌；
+- 旧字段保留兼容；单测覆盖 Bundle 组装、查找表边界与降级路径。
+
+**交付物**：`experts/base.py`、`experts/*`、`state_machine/evidence_tokenizer.py`、`state_machine/controller.py`、`utils/*` 更新 + 测试。
+
+#### G2-d Qwen 四条件增益对比（**需要 GPU**）
+
+**目标**：回答"Expert 相对纯 RGB 是否有净增益""文字 vs 文字+诊断图像哪个有效"。
+
+- 四条件：① `RGB baseline`（无工具，单轮判定）② `+文本证据`（当前协议）③ `+可视化产物`（仅附产物图，无文字数值）④ `+双通道`（文字+图像）；
+- 样本：从校准集分层抽取 ~150 张（每格 ≥15、覆盖生成器与扰动）；
+- 指标：每条件 Accuracy / F1 / AUROC、分层净增益（相对条件①）、置信度 ECE、平均调用数与 token 成本；
+- 预计 GPU 时长：~150 张 × 4 条件 × 2-3 轮 ≈ 1500-1800 次生成 ≈ **1-1.5 小时（RTX 4090）**；
+- 实现：复用 `mllm/message_builder.py`（已支持图像回灌）；新增 no-tool 提示变体与"仅图无文"变体。
+
+**交付物**：`scripts/qwen_gain_baseline.py` + `calibration/g2_gain_report.json`。
+
+#### G2-e 准入决策与收口（CPU，结论依赖 G2-b + G2-d）
+
+- 依据"稳定净增益且非高度冗余"标准，逐 Expert 给出 **保留 / 限制适用条件 / 降权 / 停用** 决定；
+- 把可靠区间、失败条件与建议调用场景写入 System Prompt 调用指南（替换当前笼统的 3 条规则）；
+- 更新 `config.py` 专家参数与适用条件开关；
+- 文档收口：plan/architecture/README + 操作日志。
+
+**交付物**：决策表 + System Prompt 更新 + 文档。
 
 ### 评估指标与门槛
 
@@ -1368,6 +1419,30 @@ EvidenceBundle
 - 平均耗时、失败率、视觉 token 成本；
 - 不允许继续把不同 Expert 的 `strength` 当作同尺度概率直接比较；
 - 无稳定增益或只学习 JPEG/PNG 格式捷径的 Expert 必须降权、限制适用条件或移除。
+
+### GPU 需求汇总
+
+| 工作包 | GPU | 说明 |
+|--------|-----|------|
+| G2-a 校准集构建 | 否 | OpenCV/PIL 图像处理 |
+| G2-b Expert 指标 + 可视化产物 | 否 | 专家均为 numpy/cv2 算法 |
+| G2-c Evidence Bundle 升级 | 否 | 接口与查找表 |
+| **G2-d Qwen 四条件对比** | **是** | **~1-1.5 小时 RTX 4090，执行前需用户授权** |
+| G2-e 决策收口 | 否 | 文档与配置（结论依赖 G2-d） |
+
+### 实施顺序与依赖
+
+```text
+G2-a（CPU，可立即开始）
+   ↓
+G2-b（CPU，依赖 a 的校准集）
+   ↓
+G2-c（CPU，依赖 b 的可靠区间表；与 b 可部分并行）
+   ↓
+G2-d（GPU 授权后执行，依赖 c 的产物与双通道回灌）
+   ↓
+G2-e（收口，依赖 b + d 的结论）
+```
 
 ## 4.10 G3：EvidenceRectifier 与停止策略 v2
 
