@@ -608,3 +608,26 @@
 * **执行结果与验证状态**：G2-d 完成; 四条件全部 120/120; 配对检验显示三个工具臂均显著差于基线
 * **置信度或遗留待办（TODO）**：G2-e 开始: 修复 v1/v2 校准身份 bug、停用 v1、决定 v2/noise/jpeg/ELA 准入、更新 Prompt 与运行时注册
 ---
+### 2026-09-24 14:14:15 - 4.9 G2-e 准入决策与收口
+
+* **当前操作动作**：G2-e：停用 v1、决定 v2/noise/jpeg/ELA 准入、更新 Prompt 与运行时注册
+* **核心变更说明**：
+  1. 决策表: freq v1 **停用**(sep 0.505 无信号, 不注册, 类标 DEPRECATED 仅供旧 trace 复现); freq v2 **保留但弱**(注册为 frequency_expert_v2, Prompt 标注 WEAK 仅佐证); noise **保留+反转语义**(sep 0.845, 五格 0.772-0.847 跨格式稳定); jpeg **保留+反转语义+限制**(png 0.972 → q70 0.569); ELA **不注册**(png 0.948 → q70 0.504, 能力等同压缩历史捷径, 运行期无法得知来源压缩史)
+  2. **修复校准身份 bug**: FrequencyExpertV2.source_name 改名为 frequency_expert_v2, 控制器 EXPERT_KEY_MAP["freq"] 同步; 此前 v2 每次查询都命中 v1 的 disabled:no-signal 条目, 且会污染 G4 训练数据
+  3. **专家声明实测极性**: BaseExpert.metric_polarity(+1/-1) + inverted_text_map + classify_metric(); noise/jpeg 的 support/interpretation/reasoning 全部改写为实测语义(高值→Real)并保留限制说明; 修正前其文本断言"高异常⇒AI生成"与校准方向相反 —— G2-d 证明这种自相矛盾 token 会误导模型
+  4. **Prompt 重写**: 三条直觉规则替换为逐工具实测指南 + 读取契约(calibrated_likelihood 为方向权威; strength 不可跨专家比较; 读 applicability/counter_explanation; 弱或冲突证据输出 Uncertain)
+  5. 端到端核验(64 张格式配平 × 3 专家): noise/jpeg 文本方向与校准方向**零直接矛盾**(系统性反转消除), 文本 Uncertain 而校准有方向者 noise 22/64、jpeg 30/64
+  6. 遗留转 G3: frequency_expert_v2 仍有 15/64 直接矛盾(strength 分带 0.3/0.7 与 raw_metric 分位分箱两套离散化不重合), 需 EvidenceRectifier 以校准后验统一裁决
+  7. 全量测试 256 passed
+* **涉及/修改的文件清单**：
+  - `experts/base.py (Modified — metric_polarity/classify_metric)`
+  - `experts/noise.py, jpeg.py (Modified — 极性反转 + 文本改写)`
+  - `experts/frequency_v2.py (Modified — source_name 独立), frequency.py (Modified — DEPRECATED)`
+  - `state_machine/controller.py (Modified — 注册表指向 v2)`
+  - `mllm/message_builder.py (Modified — FORENSIC_SYSTEM_PROMPT 实测指南)`
+  - `main.py, scripts/generate_sft_data.py, scripts/qwen_gain_baseline.py (Modified — 切换到 v2; B线构造数据的 source 对齐)`
+  - `tests/test_expert_admission.py (Created — 24 项), conftest.py, test_controller.py, test_pipeline.py, test_frequency_expert.py (Modified)`
+  - `plan.md, CURRENT_PROGRAM_ARCHITECTURE.md, README.md (Modified — G2-e 决策与边界)`
+* **执行结果与验证状态**：G2-e 完成; 256 测试通过; 反转语义消除; 残留分歧已量化并移交 G3
+* **置信度或遗留待办（TODO）**：B 线构造场景模板仍编码 G2 之前的语义, 待 G4 重设计; G3 开始(EvidenceRectifier + 停止策略 v2)
+---

@@ -6,7 +6,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-197%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-256%20passed-brightgreen)](./tests/)
 
 ---
 
@@ -364,7 +364,8 @@ innovation_project/
 | 1 | G0 ✅ | 旧 SFT 数据用途隔离与拒绝集收口（已完成） | 否 |
 | 2 | G1 ✅ | 坐标协议、证据去重、多轮图像历史和语义一致性修复（已完成） | 否 |
 | 3 | G2-a/b/c ✅ | 格式配平校准集、专家区分度/适用条件评估、Evidence Bundle 与可靠性表（已完成） | 否 |
-| 3 | G2-d/e | 四条件增益对比（脚本与 Mock 干跑已就绪）→ 准入决策与收口 | 对比需要 |
+| 3 | G2-d ✅ | 四条件增益对比：三个含工具臂均显著差于 RGB 基线（已完成） | 是（约 57 分钟） |
+| 3 | G2-e ✅ | 准入收口：停用 v1 与 ELA、noise/jpeg 反转语义、Prompt 重写、修复 v2 校准身份（已完成） | 否 |
 | 4 | G3 | EvidenceRectifier 与停止策略 v2 | 校准需要 |
 | 5 | G4 | 重新生成并审核 `final_v2`，随后进行 LoRA | 是 |
 | 6 | G5/G6 | 统一评测；达标后可选 GRPO | 是 |
@@ -373,8 +374,9 @@ innovation_project/
 ### 7.3 已知局限
 
 - **基座模型无法证推理**：未微调的 Qwen2.5-VL 端到端准确率仅 25%（Real 53% / Fake 20%）——它收到 Evidence Token 后不知如何解读，1.9 步即结案且轻信单个专家。**这正是 SFT 的核心动机。**
+- **工具证据对未微调模型是净损害（G2-d 实测）**：120 样本四条件配对对比，三个含工具臂全部显著差于纯 RGB 基线（McNemar p ≤ 0.0007，ΔAUROC 95% CI 全部为负）；`both`（双通道，原默认协议）AUROC 仅 0.391 且低于随机 —— 其置信度与真相反相关。基线的"能力"其实是全判 Real 的领域先验（Real 召回 1.000 / Fake 0.067）。**这是 SFT 的量化动机，也是 G5 的验收线：微调后 ΔAUROC 必须显著为正。**
 - **专家检测的是"格式差异"**：数据集 Real 为 JPEG、Fake 为 PNG。G2-b 在格式配平校准集上量化了这一混杂：noise/jpeg 的度量方向在任务语义下**反向**（高 strength 统计上对应 Real，极性校正分离度 0.845 / 0.972），ELA 分离度 0.948 但统一重压缩到 q70 后归零（0.504）——即它是**压缩历史捷径**而非伪造信号。
-- **频域专家信号弱**：v1 separation=0.505（无信号，已停用）；v2 提升至 0.556、q70 配平后 0.634，仍不足以独立判定，仅作弱证据保留。
+- **频域专家信号弱**：v1 separation=0.505（无信号，已停用且不再注册）；v2 提升至 0.556、q70 配平后 0.634，仍不足以独立判定，仅作弱证据保留（G2-e 已将其独立命名 `frequency_expert_v2`，修复了此前校准查询命中 v1 条目的 bug）。
 - **单进程内存受限**：执行 shell 处于 2 GB cgroup（与编辑器等进程共享，不可调），实测单进程可用约 0.93 GB，而 GPU 栈 `torch+transformers+processor` 约 0.65 GB。为此 `mllm/__init__.py` 改为惰性导出 `QwenVLClient`（CPU 路径导入基线 586 MB → 116 MB），GPU 作业执行前需确认无其他重进程。
 - **旧 SFT 尚未达到训练准入**：G0 审计后 509 条候选全部获得明确处置状态（regenerate / format_only），68 条结构失效样本进入拒绝集；correct 集 166 条全部生成于专家 reasoning 修复之前，必须用修复后的专家重新生成后才能投入 LoRA。
 - **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查。G1 已通过证据去重消除虚假收敛路径，但后验校准与工具增益驱动的停止策略仍待 G3（依赖 G2 Expert 校准）。

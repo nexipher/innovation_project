@@ -1463,6 +1463,24 @@ EvidenceBundle
 3. **文本与图像两条通道的作用机制不同**：文本证据几乎不改变决策（判 Real 率 0.967→0.808）却降低准确率；图像证据把决策猛推向 Fake（→0.233），在提升 Fake 召回（0.317）的同时摧毁 Real 召回（1.000→0.167）。`both` 的 AUROC 0.391 **低于随机**，即其置信度与真相反相关。
 4. **这正是 SFT 的动机，同时给出了可量化的验收线**：G5 用同一四条件框架评估微调后模型，要求相对 RGB 基线的 ΔAUROC 显著为正——否则工具调用只是昂贵噪声。
 
+**G2-e 准入决策收口（2026-09-24 完成，CPU）**：
+
+| 专家 | G2-b 实测 | G2-e 决定 | 运行时后果 |
+|------|-----------|-----------|------------|
+| frequency v1 | sep 0.505（无信号） | **停用** | 不注册；类标记 DEPRECATED 仅供旧 Trace 复现；可靠性表保留其条目作为对照文档 |
+| frequency v2 | sep 0.556→q70 0.634，方向对齐但弱 | **保留（弱证据）** | 注册为 `frequency_expert_v2`；Prompt 标注 WEAK，仅可佐证 |
+| noise | 反转；sep 0.845，五格稳定 0.772–0.847 | **保留 + 反转语义** | `metric_polarity = -1`：高残差判 Real（传感器微噪声），低残差判 Fake |
+| jpeg | 反转；png 0.972 → q70 0.569 | **保留 + 反转语义 + 限制** | `metric_polarity = -1`：高值判 Real（JPEG 来源史）；Prompt 注明重压缩后接近随机 |
+| ELA | png 0.948 → q70 0.504（归零） | **不注册** | 其能力仅在"未经统一重压缩"时有意义，运行期无法得知来源压缩史；实现与校准条目保留，供未来 provenance 感知的调用条件使用 |
+
+**实现要点**：
+1. **修复校准身份 bug**：`FrequencyExpertV2.source_name` 改为 `frequency_expert_v2`，控制器注册表同步（`EXPERT_KEY_MAP["freq"] → frequency_expert_v2`），主入口（`main.py`、`scripts/generate_sft_data.py`）与测试全部改用 v2。此前 v2 的每次查询都命中 v1 的 `disabled:no-signal` 条目。
+2. **专家声明实测极性**：`BaseExpert.metric_polarity`（+1 对齐 / −1 反转）+ `inverted_text_map` + `classify_metric()`；noise/jpeg 的 `support`、`interpretation_text`、`reasoning` 全部改写为实测语义（高值→Real），并保留"不等于伪造/重压缩后失效"的限制说明。修正前它们的文本断言"高异常 ⇒ AI 生成"，与校准表方向相反 —— G2-d 证明这种自相矛盾的 token 会误导模型。
+3. **Prompt 重写**（`FORENSIC_SYSTEM_PROMPT`）：三条凭直觉的调用规则替换为逐工具实测指南（freq WEAK、noise/jpeg 高值指向 Real 的反直觉方向、jpeg 在 q≤70 后失效），并新增读取契约：`calibrated_likelihood` 为方向权威、`strength` 不可跨专家比较、读 `applicability` 与 `counter_explanation`、弱或冲突证据应输出 Uncertain。
+4. **端到端核验（64 张格式配平样本 × 3 专家）**：noise/jpeg 的文本方向与校准方向**零直接矛盾**（此前的系统性反转已消除）；文本判 Uncertain 而校准仍有方向的样本 noise 22/64、jpeg 30/64。
+
+**遗留（转 G3 EvidenceRectifier）**：`frequency_expert_v2` 仍有 **15/64 直接矛盾**（例：strength 0.247 → 文本判 Real，校准给出 Fake 0.709）。根因是两套离散化不重合 —— 文本分带用的是 sigmoid 归一后的 `strength` 阈值（0.3/0.7），校准用的是 `raw_metric` 的分位分箱；两者对"高"的定义不一致。这不是文本语义错误，而是需要 EvidenceRectifier 按校准后验统一裁决的接口问题（§4.10）。缓解措施：Prompt 已将 freq 标注为 WEAK 且仅供佐证。
+
 **顺带发现（运行时 bug，纳入 G2-e 修复）**：`FrequencyExpertV2.source_name = "frequency_expert"` 与 v1 同名，导致运行时 `reliability_table.lookup()` 对所有频域 token 命中的是 **v1 条目**（`disabled:no-signal`, reliability 0.505, 校准近似均匀），而 v2 的实测条目（0.556→q70 0.634）挂在 `frequency_expert_v2` 下从未被使用。G2-d 的 text/both 两臂即在此错误标注下运行，且该错误会直接污染 G4 生成的训练数据。
 
 #### G2-e 准入决策与收口（CPU，结论依赖 G2-b + G2-d）
@@ -1535,6 +1553,10 @@ HaltingDecision
 ├── expected_tool_gain
 └── expected_net_utility
 ```
+
+### 入口条件（G2-e 移交）
+
+G2-e 端到端核验留下的量化缺口（64 张格式配平样本 × 3 专家）：`frequency_expert_v2` 存在 15/64 的"文本方向 vs 校准方向"直接矛盾（strength 分带与 raw_metric 分箱两套离散化不重合），noise/jpeg 为 0/64 直接矛盾但分别有 22/64、30/64 落在"文本 Uncertain、校准仍有方向"的区间。EvidenceRectifier 应以**校准后验为准统一裁决方向**，消除同一 token 内部的方向不一致，并把这些样本作为回放验证集。
 
 ### 实施步骤
 

@@ -69,13 +69,13 @@ flowchart TD
 
 ```python
 {
-    "frequency_expert": FrequencyExpert(),
+    "frequency_expert_v2": FrequencyExpertV2(),
     "noise_expert": NoiseExpert(),
     "jpeg_expert": JPEGExpert(),
 }
 ```
 
-当前 CLI 主管道使用 `FrequencyExpert` v1。`experts/frequency_v2.py` 已存在，但主要用于阶段三的数据构造和实验，尚未接入 `main.py` 的默认分析管道。
+G2-e（plan.md §4.9）后的运行时注册：频域专家为 v2，且其 `source_name` 与 v1 区分（`frequency_expert_v2`），校准查询才能命中 v2 条目；v1 标记 DEPRECATED 且不再注册，ELA 亦不注册（其 G2-b 能力为压缩历史捷径）。调用标签仍是 `<call_freq>`：`controller.EXPERT_KEY_MAP` 把 `freq → frequency_expert_v2`。
 
 ### 4.2 MLLM 抽象层
 
@@ -305,11 +305,11 @@ sequenceDiagram
 
 - Mock MLLM 用于验证控制流，不能代表真实检测准确率；
 - 真实 Qwen2.5-VL 需要 CUDA 和约 16 GB FP16 显存；
-- 当前默认主管道仍使用 Frequency Expert v1；
-- Noise/JPEG 信号会受到 Real JPEG、Fake PNG 数据格式差异影响；
+- 频域专家已切换为 v2 并独立命名；v1 与 ELA 均不注册（G2-e 准入决策见 plan.md §4.9）；
+- Noise/JPEG 的实测语义与直觉相反（G2-b 格式配平校准：高值指向 Real），专家文本已按实测极性改写，方向权威为 Evidence Bundle 的 `calibrated_likelihood`；
 - LoRA 微调、GRPO、全数据集评估和消融实验尚未进入当前运行管道；
 - 停止策略仍是固定优先级（`<verdict>` 可立即退出、info_gain 仍比较相邻 strength），重构依赖 G2 校准后的后验与工具增益（G3）；
-- Expert 仍只输出标量与文本，无可靠性字段；诊断区域裁剪图已回灌，但专家自身的可视化产物（频谱/残差图）尚未生成（G2）；
+- Expert 输出已带可靠性、校准似然、反向解释与可视化产物（G2-c）；残留问题是 strength 分带与校准分箱两套离散化不重合，需 EvidenceRectifier 统一（G3）；
 - 每次运行都会生成一份 Trace（含 G1 任务语义与分离计数），可用于调试和后续 SFT 数据加工。
 
 ## 8. 主要代码阅读入口
