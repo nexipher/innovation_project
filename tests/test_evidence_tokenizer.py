@@ -72,6 +72,34 @@ class TestEvidenceId:
         assert eid.startswith("E-")
         assert len(eid) == 12
 
+    def test_global_measurement_ignores_the_diagnostic_region(self):
+        """
+        G3-a: the expert measures the whole image, so the model's bbox is a
+        diagnostic annotation, not part of the measurement identity.  If it
+        keyed the id, one measurement could enter the posterior twice — and
+        the halting policy weights every token.
+        """
+        a = EvidenceTokenizer.evidence_id(
+            "noise_expert", [10, 20, 30, 40], 0.5, "x", measurement_scope="global")
+        b = EvidenceTokenizer.evidence_id(
+            "noise_expert", [400, 300, 700, 600], 0.5, "x", measurement_scope="global")
+        assert a == b
+
+    def test_region_measurement_still_keys_on_the_region(self):
+        a = EvidenceTokenizer.evidence_id(
+            "noise_expert", [10, 20, 30, 40], 0.5, "x", measurement_scope="region")
+        b = EvidenceTokenizer.evidence_id(
+            "noise_expert", [400, 300, 700, 600], 0.5, "x", measurement_scope="region")
+        assert a != b
+
+    def test_scope_is_part_of_the_identity(self):
+        """A crop measurement and a whole-image one are different evidence."""
+        global_id = EvidenceTokenizer.evidence_id(
+            "noise_expert", [10, 20, 30, 40], 0.5, "x", measurement_scope="global")
+        region_id = EvidenceTokenizer.evidence_id(
+            "noise_expert", [10, 20, 30, 40], 0.5, "x", measurement_scope="region")
+        assert global_id != region_id
+
 
 class TestTokenizeG1Fields:
     """G1 (§4.8): dual-space coordinates and region semantics in the token."""

@@ -77,8 +77,10 @@ HOW TO READ AN EVIDENCE TOKEN:
 RULES:
 1. Call at most one more expert than you need: prefer the expert whose measurement is
    most likely to discriminate the specific anomaly you described in <planning>.
-2. Do not repeat a call for a region you already measured — identical results are
-   suppressed and waste the budget.
+2. Never call an expert you have already called in this session: each one measures
+   the WHOLE image, so a second call — whatever region you name — returns the same
+   measurement, which is suppressed and wastes the budget. Prefer an expert you have
+   not used yet.
 3. NEVER output only natural-language analysis without the required XML tags.
 4. NEVER fabricate evidence — only reference evidence tokens you have received.
 5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is

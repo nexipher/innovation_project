@@ -288,9 +288,16 @@ class ForensicStateMachine:
                         self._logger.add_conversation_turn("user", evidence_json)
                         conversation.append({"from": "user", "value": evidence_json})
                     elif self._evidence_injection == "image":
+                        # G3-a: the metric is measured on the whole image, so
+                        # the artifacts are whole-image products.  Calling them
+                        # "the analysis of region [bbox]" would have the model
+                        # read a global spectrum as a local finding — the very
+                        # confusion this condition exists to test without.
                         marker = (
-                            f"[诊断证据图已附：{expert_result.source} 对区域 "
-                            f"{abs_bbox} 的分析产物，请结合图像自行判断。]"
+                            f"[诊断证据图已附：{expert_result.source} 在**整幅图像**上"
+                            f"计算法证指标；所附产物图均为整图产物，其中区域图对应你提出的"
+                            f"关注区域 {abs_bbox}（仅为诊断关注点，不限定测量范围）。"
+                            f"请结合图像自行判断。]"
                         )
                         self._logger.add_conversation_turn(
                             "user", marker, image_paths=artifact_rels

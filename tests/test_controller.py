@@ -140,10 +140,31 @@ class TestEvidenceDeduplication:
         ]
         assert len(injections) == 1
 
-    def test_different_regions_produce_two_unique_evidence(self):
+    def test_same_expert_on_a_new_region_is_one_global_measurement(self):
+        """
+        G3-a semantics: the expert measures the whole image, so a second call
+        with a different bbox is the *same* measurement.  Counting it twice
+        would double its weight in the halting posterior.
+        """
         second_call = "<planning>\nSuspected Region: [400, 300, 700, 600]\n</planning>\n<call_noise>[400, 300, 700, 600]</call_noise>"
         mllm = ScriptedMLLM([self.CALL, second_call, self.VERDICT])
         fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        assert result["expert_call_count"] == 2
+        assert result["unique_evidence_count"] == 1
+        assert result["suppressed_duplicate_count"] == 1
+
+    def test_different_experts_still_produce_two_unique_evidence(self):
+        """Distinct instruments are distinct measurements, regions aside."""
+        noise_call = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"
+        jpeg_call = "<planning>\nSuspected Region: [400, 300, 700, 600]\n</planning>\n<call_jpeg>[400, 300, 700, 600]</call_jpeg>"
+        mllm = ScriptedMLLM([noise_call, jpeg_call, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        assert result["unique_evidence_count"] == 2
+        assert result["suppressed_duplicate_count"] == 0
         result = fsm.run(FAKE_PATH, "Fake")
 
         assert result["unique_evidence_count"] == 2
@@ -392,6 +413,20 @@ class TestEvidenceInjectionModes:
 
         # The audit chain keeps the numbers the model does not get to see.
         assert result["evidence_chain"][0]["strength"] > 0
+
+    def test_image_mode_says_the_measurement_is_global(self):
+        """
+        G3-a: the artifacts are rendered from the whole image.  Describing
+        them as "the analysis of region [bbox]" would have the model read a
+        global spectrum as a local finding — exactly the confusion this arm
+        exists to test in isolation.
+        """
+        result = self._run("image")
+        text = self._evidence_turns(result)[0]["value"]
+
+        assert "整幅图像" in text
+        assert "不限定测量范围" in text
+        assert "的分析产物" not in text  # the pre-G3-a phrasing
 
     def test_both_mode_is_the_default(self):
         default = self._run("text+image")

@@ -110,3 +110,19 @@ class TestBuildMessages:
         messages = build_messages(original, history)
         assistant = [m for m in messages if m["role"] == "assistant"]
         assert assistant[0]["content"] == "<verdict>{}</verdict>"
+
+
+class TestPromptMeasurementContract:
+    """G3-a: the prompt must describe whole-image measurement truthfully."""
+
+    def test_experts_are_described_as_measuring_the_whole_image(self):
+        assert "the expert measured the WHOLE image" in FORENSIC_SYSTEM_PROMPT
+        assert "Judge the whole image, not the crop" in FORENSIC_SYSTEM_PROMPT
+
+    def test_repeat_calls_are_forbidden_by_expert_not_by_region(self):
+        """A repeat call is a repeat measurement, wherever the bbox points."""
+        assert "Never call an expert you have already called" in FORENSIC_SYSTEM_PROMPT
+        assert "Do not repeat a call for a region you already measured" not in FORENSIC_SYSTEM_PROMPT
+
+    def test_the_read_contract_explains_the_global_scope_field(self):
+        assert "measurement_scope" in FORENSIC_SYSTEM_PROMPT

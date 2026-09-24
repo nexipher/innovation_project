@@ -771,3 +771,22 @@
 * **执行结果与验证状态**：G3-a/b/c/d 全部完成; 345 测试通过; 干跑闭环(含指纹)验证通过
 * **置信度或遗留待办（TODO）**：**G3-e n=120 GPU 复核暂停 —— 用户明确指示"待会不要开始GPU测试"**, 等指令; 完成后据此判定证据是否带来正增益
 ---
+### 2026-09-24 17:55:10 - G3-a 补漏：全局测量的去重语义与 image-only 描述
+
+* **当前操作动作**：修复整图度量引入的两处语义缺陷 + 提示词同源措辞 + 回归测试 + README 状态（用户指出的 G3-e 前置项）
+* **核心变更说明**：
+  1. **全局证据重复计权（真缺陷）**: `evidence_id` 键仍含 bbox, 而专家现在测整图 —— 模型用不同 bbox 重复调用同一专家会产生两个不同 id, **同一测量进入后验两次**; 停止策略对每个 token 加权, 即重复计权
+  2. 修复: `evidence_id(..., measurement_scope)`: scope=global 时键**不含诊断区域**(source|strength|name), 重复调用因此与普通重复结果一样被去重; region 语义下的键不变; scope 本身参与身份(裁剪测量与整图测量是不同证据)
+  3. 既有测试 `test_different_regions_produce_two_unique_evidence` 是 G1 局部测量时期的旧语义, 已改为**同专家不同区域 → 1 条唯一证据 + 1 次抑制**, 并新增"不同专家仍是 2 条唯一证据"
+  4. **image-only 描述不准确**: 产物已改为整图渲染, 但文字仍写"对区域 [bbox] 的分析产物" → 会让模型把全图频谱/残差图误读为局部发现。改为明确"在**整幅图像**上计算法证指标; 所附产物图均为整图产物, 区域图对应你提出的关注区域(仅为诊断关注点, **不限定测量范围**)"
+  5. **同源第三处(用户未列, 一并修)**: 提示词规则 2 "不要对已测量过的**区域**重复调用" 在整图测量下已不成立, 改为"**不要调用已调用过的专家**: 每个专家测量整图, 换区域再调用仍是同一测量, 会被抑制且浪费预算"
+  6. 测试 353 通过(新增 7: 全局/区域 id 语义 3、image-only 描述 1、提示词契约 3); 端到端确认同一专家两次不同 bbox → 1 条唯一证据
+* **涉及/修改的文件清单**：
+  - `state_machine/evidence_tokenizer.py (Modified — evidence_id scope 感知)`
+  - `state_machine/controller.py (Modified — image-only 标记措辞)`
+  - `mllm/message_builder.py (Modified — 规则 2 改为按专家去重)`
+  - `tests/test_evidence_tokenizer.py, tests/test_controller.py, tests/test_message_builder.py (Modified — 回归测试)`
+  - `README.md (Modified — 测试数 353, G3 状态与进度表)`
+* **执行结果与验证状态**：两处缺陷修复且被测试锁定; 353 测试通过
+* **置信度或遗留待办（TODO）**：**G3-e n=120 GPU 四条件复核（用户已授权）** —— 携带新指纹冷启动
+---

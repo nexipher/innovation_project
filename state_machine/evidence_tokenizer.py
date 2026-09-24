@@ -39,20 +39,27 @@ class EvidenceTokenizer:
         region_pixels: List[int],
         strength: float,
         evidence_name: str,
+        measurement_scope: str = "region",
     ) -> str:
         """
         Deterministic evidence identifier.
 
-        Same expert + same region + same result digest → same id, which makes
-        duplicate suppression idempotent across runs.
+        G3-a: a global measurement is the same measurement whatever bbox the
+        model attached to it.  Keying the id on the bbox therefore let one
+        whole-image measurement enter the posterior twice under two ids — and
+        the halting policy weights every token, so that is a double count.
+        For `measurement_scope="global"` the diagnostic region is left out of
+        the key, which makes a repeat call dedup exactly like any other
+        identical result; the region-scoped key is unchanged.
+
+        Same key → same id, which makes duplicate suppression idempotent
+        across runs.
         """
-        payload = "|".join([
-            str(source),
-            ",".join(str(int(v)) for v in region_pixels),
-            f"{round(float(strength), 4):.4f}",
-            str(evidence_name),
-        ])
-        digest = hashlib.sha1(payload.encode("utf-8")).hexdigest()[:10]
+        parts = [str(source)]
+        if measurement_scope != "global":
+            parts.append(",".join(str(int(v)) for v in region_pixels))
+        parts += [f"{round(float(strength), 4):.4f}", str(evidence_name)]
+        digest = hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()[:10]
         return f"E-{digest}"
 
     @classmethod
@@ -115,6 +122,7 @@ class EvidenceTokenizer:
             "evidence_id": cls.evidence_id(
                 expert_result.source, region_pixels,
                 expert_result.strength, expert_result.evidence_name,
+                measurement_scope=measurement_scope or "region",
             ),
             "evidence_name": expert_result.evidence_name,
             "region": region_str,
