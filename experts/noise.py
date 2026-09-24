@@ -119,10 +119,13 @@ class NoiseExpert(BaseExpert):
         return self._build_result(
             evidence_name="noise_residual_inconsistency",
             phenomenon=(
-                f"Localised noise variance measures "
-                f"{'abnormally' if strength > 0.5 else 'within normal range'} "
+                # G2-e inversion: a high residual is the camera end of this
+                # metric, a low one the generative end, so the description
+                # follows the measured direction rather than the old reading.
+                f"Localised noise variance at the level the calibration set associates with "
+                f"{'camera capture (spatially rich sensor noise)' if strength > 0.5 else 'generated imagery (variance collapse)'} "
                 f"(inconsistency ratio: {inconsistency:.4f}). "
-                f"{'Variance collapse or inflation detected' if strength > 0.5 else 'No significant local variance anomaly'}."
+                f"{'Residual consistent with a camera sensor' if strength > 0.5 else 'Variance collapse detected'}."
             ),
             reasoning=self._get_reasoning(strength, inconsistency),
             strength=strength,

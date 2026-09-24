@@ -33,8 +33,9 @@ OLD_NOISE_REASONING = (
 
 
 def _token(strength, support, reasoning, phenomenon="phenomenon",
-           interpretation_text="Statistical patterns align with normal hardware camera capture."):
-    return {
+           interpretation_text="Statistical patterns align with normal hardware camera capture.",
+           semantics_aligned=None):
+    token = {
         "evidence_name": "test_evidence",
         "strength": strength,
         "support": support,
@@ -42,6 +43,97 @@ def _token(strength, support, reasoning, phenomenon="phenomenon",
         "phenomenon": phenomenon,
         "interpretation_text": interpretation_text,
     }
+    if semantics_aligned is not None:
+        token["semantics_aligned"] = semantics_aligned
+    return token
+
+
+class TestInvertedExperts:
+    """
+    G2-e: noise and JPEG were measured to be inverted (a high metric means a
+    camera/compression-history signature), so their correct claims mirror the
+    aligned rules.  Judging them by the aligned rules demoted every token they
+    produced — the post-fix four-condition run received 100% Uncertain noise
+    and JPEG evidence and abstained 80-92% of the time.
+    """
+
+    CAMERA_TEXT = ("High JPEG structural level — blockiness and DCT structure of the kind "
+                   "the calibration set associates with a camera JPEG that was saved or "
+                   "re-saved (real capture), not with forgery.")
+
+    def test_high_metric_claiming_real_is_consistent(self):
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "Real", "Strong JPEG compression structure found; this is a camera JPEG.",
+            interpretation_text=self.CAMERA_TEXT, semantics_aligned=False))
+        assert result["ok"], result["failures"]
+
+    def test_high_metric_is_not_demoted_by_enforce(self):
+        token = _token(0.95, "Real", "Strong JPEG compression structure found.",
+                       interpretation_text=self.CAMERA_TEXT, semantics_aligned=False)
+        EvidenceConsistencyChecker.enforce(token)
+        assert token["support"] == "Real"
+        assert "consistency" not in token
+
+    def test_low_metric_claiming_generated_is_consistent(self):
+        result = EvidenceConsistencyChecker.check(_token(
+            0.05, "AI-generated", "Smooth, low-variance output of the kind associated "
+            "with generated imagery; variance anomalies detected.",
+            semantics_aligned=False))
+        assert result["ok"], result["failures"]
+
+    def test_low_metric_claiming_real_is_mismatched(self):
+        result = EvidenceConsistencyChecker.check(_token(
+            0.05, "Real", "within normal range", semantics_aligned=False))
+        assert "support_strength_mismatch" in result["failures"]
+
+    def test_high_metric_claiming_generated_is_a_conflict(self):
+        """The mirror of the aligned rule: at the camera end, not a forgery."""
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "AI-generated", "deconvolution grid artifacts common in GAN synthesis",
+            semantics_aligned=False))
+        assert "high_strength_generative_claim" in result["failures"]
+
+    def test_aligned_experts_keep_the_original_rules(self):
+        high_text = "Severe statistical anomaly matching artificial generative fingerprints."
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "AI-generated", "forgery marker",
+            interpretation_text=high_text, semantics_aligned=True))
+        assert result["ok"], result["failures"]
+
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "Real", "within normal range", semantics_aligned=True))
+        assert "high_strength_normal_claim" in result["failures"]
+
+    def test_uncalibrated_tokens_default_to_the_aligned_reading(self):
+        """No reliability entry means no polarity claim — keep G1 behaviour."""
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "Real", "within normal range"))
+        assert "support_strength_mismatch" in result["failures"]
+
+    def test_negated_generative_marker_is_not_a_claim(self):
+        """The shipped JPEG text denies forgery: 'This is NOT a forgery marker'."""
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "Real",
+            "Strong JPEG compression structure found. This is NOT a forgery marker: "
+            "high values do not indicate tampering.",
+            interpretation_text=self.CAMERA_TEXT, semantics_aligned=False))
+        assert result["ok"], result["failures"]
+
+    def test_asserted_generative_marker_still_counts(self):
+        """Negation handling must not blind the check to real assertions."""
+        result = EvidenceConsistencyChecker.check(_token(
+            0.95, "Real", "The blockiness is a forgery marker.",
+            interpretation_text=self.CAMERA_TEXT, semantics_aligned=False))
+        assert "high_strength_generative_claim" in result["failures"]
+
+    def test_low_metric_with_normal_phenomenon_is_a_conflict(self):
+        """Why the noise expert's phenomenon text had to follow the inversion."""
+        result = EvidenceConsistencyChecker.check(_token(
+            0.256, "AI-generated", "Low residual micro-noise level; generated imagery.",
+            phenomenon=("Localised noise variance measures within normal range. "
+                        "No significant local variance anomaly."),
+            semantics_aligned=False))
+        assert "low_strength_normal_phenomenon" in result["failures"]
 
 
 class TestDirectionDetection:
