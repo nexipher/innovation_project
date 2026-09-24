@@ -550,3 +550,22 @@
 * **执行结果与验证状态**：CPU 侧全部就绪; 197 测试通过; 干跑四条件完成(报告 calibration/g2_gain_report_dry_run.json); 干跑中 rgb/image 两臂必然 Uncertain 属 mock 语义(mock 依据对话内 Token JSON 判定), 不构成结论
 * **置信度或遗留待办（TODO）**：G2-d 四条件对比等待用户 GPU 授权(~1500-1800 次生成 ≈ 1-1.5h RTX 4090); 执行前需确认 cgroup 余量充足; G2-e 依赖 G2-d 结论
 ---
+### 2026-09-24 12:45:10 - G2-d 补充：Trace 目录隔离（数据治理）
+
+* **当前操作动作**：隔离 mock/测试 session 与真实 trace（干跑闭环的收尾治理）
+* **核心变更说明**：
+  1. 问题: `utils/logger.py` 硬编码 `SFT_SESSIONS_DIR`, 任何 mock/测试 session 都写入 `traces/sft_sessions/`; 实测该目录 1674 个文件中 426 个为 mock/scripted 模式
+  2. 风险评估: `scripts/finalize_sft_data.py` 以文件名前缀 `forensic_sft_session_20260721_1[1-2]*` 锁定阶段 2.3 产物, 故现存的 mock trace **不会**被摄入 → 无实际污染, 但目录语义已混乱
+  3. 修复: `SessionLogger.__init__(sft_dir=None)` 支持输出目录覆盖(向后兼容); G2-d 干跑写入 `traces/dry_run_sessions/`(已 gitignore); `tests/conftest.py` 增加 autouse fixture 将测试写入临时目录
+  4. 验证: 全量测试 198 passed; 运行前后 `traces/sft_sessions/` 文件数 1674 → 1674 保持不变; 干跑 29 条 trace 全部落在 `traces/dry_run_sessions/`
+  5. 现存的历史 mock trace 未做批量删除(非本次产物且可能被审计引用), 保留待用户裁决
+* **涉及/修改的文件清单**：
+  - `utils/logger.py (Modified — sft_dir 覆盖参数)`
+  - `scripts/qwen_gain_baseline.py (Modified — 干跑 trace 重定向)`
+  - `tests/conftest.py (Modified — autouse trace 隔离 fixture)`
+  - `tests/test_qwen_gain_baseline.py (Modified — 重定向测试)`
+  - `.gitignore (Modified — traces/dry_run_sessions/)`
+  - `CURRENT_PROGRAM_ARCHITECTURE.md, plan.md (Modified — 隔离说明)`
+* **执行结果与验证状态**：198 测试通过; 干跑闭环完成(报告 + trace 均与正式产物分离)
+* **置信度或遗留待办（TODO）**：G2-d 四条件对比等待 GPU 授权; 历史 mock trace 清理待用户决定
+---

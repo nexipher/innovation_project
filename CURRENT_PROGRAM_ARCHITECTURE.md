@@ -264,11 +264,13 @@ raw_output = mllm.generate(image_path, conversation)
 - 最终 verdict；
 - 元数据：图像尺寸、`halting_reason`、模型模式、G1 任务语义字段（`task_type` / `evidence_scope` / `region_semantics`）与分离计数（`model_turn_count` / `expert_call_count` / `unique_evidence_count` / `suppressed_duplicate_count` / `weighted_cost`）。
 
-文件写入：
+文件写入（`SessionLogger(sft_dir=...)` 可覆盖输出目录）：
 
 ```text
 traces/sft_sessions/forensic_sft_session_时间_图像名.json
 ```
+
+正式会话写入 `traces/sft_sessions/`（`finalize_sft_data.py` 按文件名前缀扫描该目录）；**Mock 干跑与测试必须重定向**，否则 mock session 会混入真实 trace——G2-d 干跑写入 `traces/dry_run_sessions/`，测试套件通过 `tests/conftest.py` 的 autouse fixture 写入临时目录。
 
 状态机同时向调用者返回内存中的结果字典，`main.py` 据此打印 verdict、confidence、步数、终止原因、专家证据和 SFT 文件路径。
 
