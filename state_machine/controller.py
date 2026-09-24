@@ -179,16 +179,22 @@ class ForensicStateMachine:
                     # keeping both spaces in the trace (plan.md §4.8 G1).
                     transform = CoordinateTransformer.transform(rel_bbox, w, h)
                     abs_bbox = transform["region_pixels"]
-
-                    # Crop and run expert
                     patch = ImageUtils.crop_bbox(img, abs_bbox)
+
                     expert = self._experts.get(
                         self._expert_by_call.get(expert_name, "")
                     )
                     if expert is None:
                         continue
 
-                    expert_result = expert.analyze(patch)
+                    # G3-a: the measurement is taken on the whole image.  The
+                    # reliability table is calibrated on full images (n=700),
+                    # while a crop has a different metric distribution —
+                    # measuring the crop and then reading the full-image table
+                    # binned the evidence against the wrong population (noise
+                    # crop median 1.262 vs 2.529 full).  The model's bbox keeps
+                    # its role as the diagnostic and visualisation region.
+                    expert_result = expert.analyze(img)
 
                     # G2 §4.9: attach empirical reliability / calibrated
                     # likelihood from the calibration table when available.
@@ -202,6 +208,11 @@ class ForensicStateMachine:
                     evidence_token = EvidenceTokenizer.tokenize(
                         expert_result, abs_bbox, (h, w),
                         region_normalized=transform["region_normalized_1000"],
+                        measurement_scope="global",
+                        region_area_ratio=(
+                            (abs_bbox[2] - abs_bbox[0]) * (abs_bbox[3] - abs_bbox[1])
+                            / float(h * w)
+                        ) if h and w else None,
                         reliability=calibration["reliability"] if calibration else None,
                         calibrated_likelihood=calibration["calibrated_likelihood"] if calibration else None,
                         condition_metadata=calibration["condition_metadata"] if calibration else None,
@@ -235,7 +246,10 @@ class ForensicStateMachine:
                             evidence_token["diagnostic_region_image"] = region_rel
                             artifact_rels.append(region_rel)
                         try:
-                            rendered = expert.render_artifacts(patch)
+                            # Rendered from the same input the metric was
+                            # measured on, so the picture and the number
+                            # describe one thing (G3-a).
+                            rendered = expert.render_artifacts(img)
                         except Exception:
                             rendered = {}
                         for artifact_name, artifact_image in rendered.items():

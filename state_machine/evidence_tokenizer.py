@@ -69,6 +69,8 @@ class EvidenceTokenizer:
         semantics_aligned: Optional[bool] = None,
         applicability: Optional[str] = None,
         applicability_conditions: Optional[str] = None,
+        measurement_scope: Optional[str] = None,
+        region_area_ratio: Optional[float] = None,
     ) -> dict:
         """
         Build a complete Evidence Token / Evidence Bundle dict.
@@ -94,6 +96,13 @@ class EvidenceTokenizer:
                 "inverted:high-metric-means-real".
             applicability_conditions: Human-readable usage conditions for this
                 measurement (when it may be trusted).
+            measurement_scope: "global" when the metric was measured on the
+                whole image, "region" when it came from a crop.  The reliability
+                table is calibrated on full images, so only global measurements
+                may be read against it (G3-a).
+            region_area_ratio: Diagnostic region area as a fraction of the
+                image, recorded so a future crop-scale calibration can be
+                conditioned on it (G3-a2).
 
         Returns:
             Evidence Token dict matching the project schema (G2 bundle fields
@@ -116,6 +125,7 @@ class EvidenceTokenizer:
             ),
             "coordinate_space": "pixels",
             "region_semantics": REGION_SEMANTICS_DIAGNOSTIC,
+            "measurement_scope": measurement_scope or "region",
             "phenomenon": expert_result.phenomenon,
             "reasoning": expert_result.reasoning,
             "strength": round(expert_result.strength, 4),
@@ -134,8 +144,14 @@ class EvidenceTokenizer:
             token["calibrated_likelihood"] = {
                 key: round(float(value), 3) for key, value in calibrated_likelihood.items()
             }
-        if condition_metadata:
-            token["condition_metadata"] = dict(condition_metadata)
+        if condition_metadata or region_area_ratio is not None:
+            token["condition_metadata"] = dict(condition_metadata or {})
+            if region_area_ratio is not None:
+                # Recorded so a future crop-scale calibration (G3-a2) can be
+                # conditioned on how much of the image the region covers.
+                token["condition_metadata"]["region_area_ratio"] = round(
+                    float(region_area_ratio), 6
+                )
         if visual_artifacts:
             token["visual_artifacts"] = list(visual_artifacts)
         # G2-c semantic transmission: direction truth and usage conditions must

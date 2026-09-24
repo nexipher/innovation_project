@@ -236,6 +236,90 @@ class TestEvidenceBundleWiring:
         assert "raw_metric" in result["evidence_chain"][0]
 
 
+class TestGlobalMeasurementScope:
+    """
+    G3-a: expert metrics are measured on the whole image.
+
+    The reliability table is calibrated on full images; measuring the model's
+    crop and reading the full-image table binned evidence against the wrong
+    population (noise crop median 1.262 vs 2.529 full).  The bbox keeps its
+    role as the diagnostic and visualisation region.
+    """
+
+    CALL = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"
+    VERDICT = ('<reasoning>ok</reasoning>\n<verdict>'
+               '{"verdict": "Real", "confidence": 0.7, "primary_evidence": [], "report": "ok"}</verdict>')
+
+    class _SpyExpert:
+        """Records the array it was asked to measure and to render."""
+
+        def __init__(self):
+            from experts.noise import NoiseExpert
+            self._inner = NoiseExpert()
+            self.measured_shape = None
+            self.rendered_shape = None
+
+        @property
+        def source(self):
+            return self._inner.source_name
+
+        def analyze(self, image):
+            self.measured_shape = image.shape[:2]
+            return self._inner.analyze(image)
+
+        def render_artifacts(self, image):
+            self.rendered_shape = image.shape[:2]
+            return self._inner.render_artifacts(image)
+
+    def _run(self):
+        import os as _os
+        from config import PROJECT_ROOT
+        from utils.image_utils import ImageUtils
+
+        spy = self._SpyExpert()
+        fsm = ForensicStateMachine(ScriptedMLLM([self.CALL, self.VERDICT]),
+                                   {"noise_expert": spy})
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        image = ImageUtils.load_image(_os.path.join(PROJECT_ROOT, FAKE_PATH))
+        return spy, result, ImageUtils.get_dimensions(image)
+
+    def test_expert_measures_the_whole_image(self):
+        spy, _, image_shape = self._run()
+        assert spy.measured_shape == image_shape
+
+    def test_artifacts_are_rendered_from_the_measured_input(self):
+        spy, _, image_shape = self._run()
+        assert spy.rendered_shape == image_shape
+
+    def test_token_declares_the_measurement_scope(self):
+        _, result, _ = self._run()
+        token = result["evidence_chain"][0]
+        assert token["measurement_scope"] == "global"
+
+    def test_diagnostic_region_is_still_recorded(self):
+        _, result, image_shape = self._run()
+        token = result["evidence_chain"][0]
+        # The model's bbox survives as the diagnostic region (normalized space
+        # as requested, pixel space as the conversion), with its extent
+        # recorded for a future crop-scale calibration.
+        assert token["region_normalized_1000"] == [200, 100, 300, 280]
+        ymin, xmin, ymax, xmax = token["region_pixels"]
+        assert 0 < ymin < ymax <= image_shape[0]
+        assert 0 < xmin < xmax <= image_shape[1]
+        ratio = token["condition_metadata"]["region_area_ratio"]
+        assert 0 < ratio < 1
+        assert token["region_semantics"] == "diagnostic_evidence_region"
+
+    def test_region_crop_is_still_persisted(self):
+        import os as _os
+        from config import PROJECT_ROOT
+
+        _, result, _ = self._run()
+        token = result["evidence_chain"][0]
+        assert _os.path.exists(_os.path.join(PROJECT_ROOT, token["diagnostic_region_image"]))
+
+
 class TestEvidenceInjectionModes:
     """G2-d (§4.9): the four-condition axis controls what the model sees —
     text channel, visual channel, both, or nothing (RGB baseline)."""

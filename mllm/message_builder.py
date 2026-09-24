@@ -70,6 +70,9 @@ HOW TO READ AN EVIDENCE TOKEN:
 3. `counter_explanation` lists the benign causes of the same phenomenon — if it also
    explains what you see, do not treat the evidence as incriminating.
 4. Weight the evidence by `reliability`; conflicting tokens cancel out.
+5. `measurement_scope: "global"` means the expert measured the WHOLE image. The bbox
+   you provide locates the diagnostic region — the crop and the artifacts you receive
+   — it does not restrict the measurement. Judge the whole image, not the crop.
 
 RULES:
 1. Call at most one more expert than you need: prefer the expert whose measurement is

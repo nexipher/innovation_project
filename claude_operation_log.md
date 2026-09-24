@@ -694,3 +694,23 @@
 * **执行结果与验证状态**：门修复验证通过(32/0); 第二次重跑有效; 267 测试通过; token 不再反向但亦无正增益
 * **置信度或遗留待办（TODO）**：G3 EvidenceRectifier 首要任务 = 解决校准总体失配(裁剪尺度 vs 全图); n=120 复核留待 G3 后一并做; B 线构造场景模板仍编码 G2 之前语义, 待 G4 重设计
 ---
+### 2026-09-24 16:05:30 - G3-a 全局尺度一致性（解决校准总体失配）
+
+* **当前操作动作**：G3-a —— 专家度量改为整图计算，消除缩放外推
+* **核心变更说明**：
+  1. 问题(承接 G2-e 复测): 可靠性表在全图标定(n=700), 推理却测模型自选裁剪, 二者分布不同(noise 裁剪中位 1.262 vs 全图 2.529), 分箱按错误总体解读
+  2. 方案(最稳妥第一版): `expert.analyze(img)` 改为传整图; bbox 保留为诊断/可视化区域(区域裁剪图与产物渲染语义不变); 产物改为在**度量输入**上渲染以保证"图与数描述同一对象"
+  3. token 新增 `measurement_scope`(global/region) 与 `condition_metadata.region_area_ratio`, 为将来按尺度建条件表(G3-a2)留接口
+  4. Prompt 新增读取契约第 5 条: `measurement_scope: global` 表示专家度量整图, bbox 仅定位诊断区域, 应判断整图而非裁剪
+  5. 优点: 校准表无需重算(其标定总体本就是全图)
+  6. 真机验证: 校准集样本上 noise raw 回到 4.834/2.362/2.850(落在表分布内), png 与 q70 值近乎相同(4.834 vs 4.870, 印证度量对压缩稳定), 校准概率随之有意义(高噪声→P(Fake)=0.114 指向 Real)
+  7. 测试 272 通过(新增 TestGlobalMeasurementScope 5 项: 专家收到整图断言/产物渲染输入/token scope 字段/诊断区域仍记录/区域裁剪仍落盘)
+* **涉及/修改的文件清单**：
+  - `state_machine/controller.py (Modified — 整图度量 + scope/area_ratio 传参 + 产物渲染输入)`
+  - `state_machine/evidence_tokenizer.py (Modified — measurement_scope/region_area_ratio)`
+  - `mllm/message_builder.py (Modified — Prompt 第 5 条读取契约)`
+  - `tests/test_controller.py (Modified — TestGlobalMeasurementScope)`
+  - `plan.md (Modified — G3 执行计划 a–e + G3-a 记录)`
+* **执行结果与验证状态**：G3-a 完成; 272 测试通过; 真机端到端确认 scope 与分箱正确
+* **置信度或遗留待办（TODO）**：G3-b EvidenceRectifier(方向权威单一化) → G3-c 停止策略 v2 → G3-d 配置指纹 → G3-e n=120 GPU 复核(需授权)
+---
