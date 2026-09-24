@@ -28,6 +28,7 @@ from utils.evidence_consistency import EvidenceConsistencyChecker
 from utils.parser import Parser
 from utils.reliability import ReliabilityTable
 from utils.logger import SessionLogger, log_operation
+from state_machine.evidence_rectifier import EvidenceRectifier
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 
@@ -221,8 +222,14 @@ class ForensicStateMachine:
                         applicability_conditions=calibration["applicability_conditions"] if calibration else None,
                     )
 
+                    # G3-b: settle the token's direction before anything reads
+                    # it — the calibrated likelihood is the authority, the
+                    # expert's claim and its prose are brought into line.
+                    EvidenceRectifier.rectify(evidence_token)
+
                     # Deterministic semantic-consistency gate (plan.md §4.8 G1):
-                    # direction words must agree with the measured strength.
+                    # for a rectified token this is now a verification that
+                    # should pass; uncalibrated tokens still get the old guard.
                     EvidenceConsistencyChecker.enforce(evidence_token)
 
                     # Duplicate suppression (plan.md §4.8 G1): identical

@@ -122,30 +122,61 @@ class EvidenceConsistencyChecker:
         weak = strength < STRENGTH_THRESHOLD_LOW
         strong = strength >= STRENGTH_THRESHOLD_HIGH
 
-        expected_support = "Real" if weak else ("AI-generated" if strong else "Uncertain")
-        if inverted:
-            expected_support = INVERTED_SUPPORT[expected_support]
-        if support and support != expected_support:
-            failures.append("support_strength_mismatch")
+        # G3-b: a rectified token carries its direction from the calibration
+        # table, which outranks the strength bands — that is the whole point of
+        # having measured the mapping.  Judging such a token by strength would
+        # re-create the contradiction the rectifier just removed (for
+        # frequency_v2 the two discretisations disagree on 15 of 64 samples).
+        calibrated_direction = (
+            token.get("direction")
+            if token.get("direction_source") == "calibrated_likelihood"
+            else None
+        )
 
-        # The one direction word each band cannot claim: a low aligned metric
-        # cannot assert a generative finding, a high one cannot assert a
-        # normal capture — mirrored for an inverted metric, where a low value
-        # is the generative end and a high value the camera end.
-        forbidden_weak = "normal" if inverted else "generative"
-        forbidden_strong = "generative" if inverted else "normal"
+        if calibrated_direction:
+            if support and support != calibrated_direction:
+                failures.append("support_calibration_mismatch")
+            forbidden_weak = forbidden_strong = None
+            if calibrated_direction == "Real":
+                forbidden = {"generative"}
+            elif calibrated_direction == "AI-generated":
+                forbidden = {"normal"}
+            else:
+                forbidden = {"generative", "normal"}
+        else:
+            expected_support = "Real" if weak else ("AI-generated" if strong else "Uncertain")
+            if inverted:
+                expected_support = INVERTED_SUPPORT[expected_support]
+            if support and support != expected_support:
+                failures.append("support_strength_mismatch")
+
+            # The one direction word each band cannot claim: a low aligned
+            # metric cannot assert a generative finding, a high one cannot
+            # assert a normal capture — mirrored for an inverted metric, where
+            # a low value is the generative end and a high value the camera end.
+            forbidden_weak = "normal" if inverted else "generative"
+            forbidden_strong = "generative" if inverted else "normal"
+            forbidden = None
 
         reasoning_claim = cls._claim_direction(token.get("reasoning", ""))
-        if weak and reasoning_claim == forbidden_weak:
-            failures.append(f"low_strength_{forbidden_weak}_claim")
-        if strong and reasoning_claim == forbidden_strong:
-            failures.append(f"high_strength_{forbidden_strong}_claim")
-
         phenomenon_claim = cls._claim_direction(token.get("phenomenon", ""))
-        if weak and phenomenon_claim == forbidden_weak:
-            failures.append(f"low_strength_{forbidden_weak}_phenomenon")
-        if strong and phenomenon_claim == forbidden_strong:
-            failures.append(f"high_strength_{forbidden_strong}_phenomenon")
+
+        if forbidden is not None:
+            # Calibrated authority: no direction word may argue with it,
+            # whatever band the raw strength happens to sit in.
+            if reasoning_claim in forbidden:
+                failures.append(f"reasoning_contradicts_calibration_{reasoning_claim}")
+            if phenomenon_claim in forbidden:
+                failures.append(f"phenomenon_contradicts_calibration_{phenomenon_claim}")
+        else:
+            if weak and reasoning_claim == forbidden_weak:
+                failures.append(f"low_strength_{forbidden_weak}_claim")
+            if strong and reasoning_claim == forbidden_strong:
+                failures.append(f"high_strength_{forbidden_strong}_claim")
+            if weak and phenomenon_claim == forbidden_weak:
+                failures.append(f"low_strength_{forbidden_weak}_phenomenon")
+            if strong and phenomenon_claim == forbidden_strong:
+                failures.append(f"high_strength_{forbidden_strong}_phenomenon")
 
         # Only the aligned experts draw their interpretation text from the
         # canonical map; inverted ones use their own mirrored wording, which

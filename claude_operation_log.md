@@ -714,3 +714,22 @@
 * **执行结果与验证状态**：G3-a 完成; 272 测试通过; 真机端到端确认 scope 与分箱正确
 * **置信度或遗留待办（TODO）**：G3-b EvidenceRectifier(方向权威单一化) → G3-c 停止策略 v2 → G3-d 配置指纹 → G3-e n=120 GPU 复核(需授权)
 ---
+### 2026-09-24 16:30:45 - G3-b EvidenceRectifier（方向权威单一化）
+
+* **当前操作动作**：G3-b —— 新增 EvidenceRectifier，使每个 token 只有一个方向权威；G1 门退化为校验器
+* **核心变更说明**：
+  1. 新增 `state_machine/evidence_rectifier.py`: 优先级 `calibrated_likelihood`(权威) > `support`(被重写, 原文存 `support_raw`) > 自由文本(矛盾句改写为校准派生规范句, 测量数值与其余描述保留) > `applicability_conditions`(原样随行)
+  2. 中性带 (0.4, 0.6) 判 Uncertain(边界取方向); 无校准条目的 token 保留专家声明并标注 `direction_source="expert_claim_uncalibrated"`
+  3. 长文本采用**句级手术**: 按句判定方向(复用门的否定感知 `_claim_direction`), 仅替换矛盾句; 单句文本不替换(否则等于丢弃测量)
+  4. **G1 门权威转移**: token 带 `direction="calibrated_likelihood"` 时, 期望方向改由校准决定(strength 分带让位), 否则维持原 polar 感知强度规则; 新增失败名 `support_calibration_mismatch` / `reasoning_contradicts_calibration_*`
+  5. 结构性消除 freq_v2 的 15/64 两套离散化矛盾: 方向只由 `raw_metric → 分箱` 一条路径决定
+  6. **真机回放(247 个 token, postfix2 批次)**: 全部命中校准条目; 整流器改写 80 个方向(jpeg Uncertain→AI-generated 46、Real→Uncertain 24、Uncertain→Real 6, noise 2, freq_v2 2); **整流后门零失败** → 门成为校验器
+  7. 测试 290 通过(新增 test_evidence_rectifier.py 18 项, 含"门接受每个分带""校准压过 strength 分带""手工篡改仍被抓")
+* **涉及/修改的文件清单**：
+  - `state_machine/evidence_rectifier.py (Created)`
+  - `utils/evidence_consistency.py (Modified — 权威转移分支)`
+  - `state_machine/controller.py (Modified — tokenize 后立即整流)`
+  - `tests/test_evidence_rectifier.py (Created — 18 项)`
+* **执行结果与验证状态**：G3-b 完成; 290 测试通过; 真机回放零矛盾、零门失败
+* **置信度或遗留待办（TODO）**：G3-c 停止策略 v2(HaltingDecision: 后验+冲突度+剩余工具预期收益−成本) → G3-d 配置指纹 → G3-e n=120 GPU 复核
+---
