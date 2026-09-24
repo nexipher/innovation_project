@@ -586,3 +586,25 @@
 * **执行结果与验证状态**：205 测试通过; 续跑语义实测通过(分次调用累积); 干跑报告含完整四条件
 * **置信度或遗留待办（TODO）**：G2-d 四条件对比等待 GPU 授权
 ---
+### 2026-09-24 14:15:30 - 4.9 G2-d 完成：四条件增益对比（结果：显著负增益）
+
+* **当前操作动作**：G2-d 四条件对比执行与配对统计分析
+* **核心变更说明**：
+  1. 执行: RTX 4090, 13:10-14:07(约 57 分钟), 120 样本(8 格式配平格 ×15 Real+15 Fake) × 4 条件 = 480 次会话; 模型加载 8.8s/16.6GB; cgroup 上限在开 GPU 后由 2GB 变为 128GB(内存不再是约束)
+  2. 冒烟验证(8 样本): baseline 臂 1 轮结案/0 调用/无证据注入, 全判 Real
+  3. 结果: rgb acc 0.533 AUROC 0.658 | text 0.408/0.505 | image 0.242/0.432 | both 0.258/0.391
+  4. 配对统计(新增 scripts/analyze_g2_gain.py): McNemar p≤0.0007, ΔAUROC 95%CI 全部为负 → **专家证据对未微调模型是统计显著的净损害**; both 臂(当前默认协议)代价最高表现最差, 其 AUROC 0.391 低于随机(置信度与真相反相关)
+  5. 机制: 基线是全判 Real 的先验(Real 召回 1.000/Fake 0.067/判Real率 0.967); 文本几乎不动摇决策(0.967→0.808)而图像猛推 Fake(→0.233)并摧毁 Real 召回(→0.167)
+  6. 价值: 给出 G5 可量化验收线(微调后 ΔAUROC 需显著为正), 并证实 SFT 必要性
+  7. **发现运行时 bug**: FrequencyExpertV2.source_name 与 v1 同名, 运行时校准查询命中 v1 条目(disabled:no-signal), v2 实测条目从未被使用 → 纳入 G2-e 修复(否则污染 G4 训练数据)
+  8. 全量测试 216 passed(新增 11 项分析脚本测试)
+* **涉及/修改的文件清单**：
+  - `scripts/analyze_g2_gain.py (Created — McNemar + 配对 bootstrap)`
+  - `tests/test_analyze_g2_gain.py (Created — 11 项)`
+  - `calibration/g2_gain_report.json (Created — 480 条样本记录)`
+  - `calibration/g2_gain_analysis.json (Created — 配对统计)`
+  - `logs/g2d_smoke.log, logs/g2d_full.log (Created — 运行日志, 已 gitignore)`
+  - `plan.md (Modified — G2-d 结果)`
+* **执行结果与验证状态**：G2-d 完成; 四条件全部 120/120; 配对检验显示三个工具臂均显著差于基线
+* **置信度或遗留待办（TODO）**：G2-e 开始: 修复 v1/v2 校准身份 bug、停用 v1、决定 v2/noise/jpeg/ELA 准入、更新 Prompt 与运行时注册
+---
