@@ -1,0 +1,121 @@
+{
+  "id": "session_20260924_175856_real_0014_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0014_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.3102,
+    "report": "图像中的高残差微噪声水平（强度为 4.7418）与相机传感器的微小噪音相关联，且在 Real 情况下具有较高的概率（0.886）。尽管存在高残差，但综合考虑其他因素，可以认为图像更有可能是真实的。",
+    "posterior": 0.3102,
+    "conflict_score": 0.0,
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "model_candidate": "Real"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 400, 400]\nVisual Anomalies: 眼睛周围的区域有明显的微小颗粒感。\nExpert Target & Hypothesis: <call_noise>[100, 100, 400, 400] 调用噪声残留专家，以确定这些颗粒是否为相机传感器的微小噪音。\n</planning>\n<call_noise>[100, 100, 400, 400]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-ffa8f2abc9\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[60, 50, 240, 200]\", \"region_pixels\": [60, 50, 240, 200], \"region_normalized_1000\": [100, 100, 400, 400], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.7418). Residual consistent with a camera sensor.\", \"reasoning\": \"High residual micro-noise level (metric=4.7418). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.\", \"strength\": 0.9485, \"raw_metric\": 4.741819, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.886, \"Fake\": 0.114}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.09015}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_175856_real_0014_jpeg_q85/region_E-ffa8f2abc9.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_175856_real_0014_jpeg_q85/noise_residual_map_E-ffa8f2abc9.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_175856_real_0014_jpeg_q85/region_E-ffa8f2abc9.png",
+        "traces/evidence/session_20260924_175856_real_0014_jpeg_q85/noise_residual_map_E-ffa8f2abc9.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [60, 50, 240, 200]\nVisual Anomalies: 眼睛周围的区域有明显的微小颗粒感。\nExpert Target & Hypothesis: <call_noise>[60, 50, 240, 200] 调用噪声残留专家，以确定这些颗粒是否为相机传感器的微小噪音。\n</planning>\n<call_noise>[60, 50, 240, 200]</call_noise>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据噪声残留专家的分析，眼睛周围的区域存在高微小颗粒感，这在图像中表现为高残差微噪声水平（强度为 4.7418）。这种现象通常与相机传感器的微小噪音相关联，尤其是在经过重编码后仍然存在的情况下。然而，需要注意的是，高残差并不意味着伪造，因为降噪和锐化操作也会增加这个指标。此外，G2 校准集表明，在 Real 情况下，高残差水平对应于高概率（0.886），而在 Fake 情况下则较低（0.114）。因此，尽管存在高残差，但综合考虑其他因素，可以认为图像更有可能是真实的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.886, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中的高残差微噪声水平（强度为 4.7418）与相机传感器的微小噪音相关联，且在 Real 情况下具有较高的概率（0.886）。尽管存在高残差，但综合考虑其他因素，可以认为图像更有可能是真实的。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-ffa8f2abc9",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[60, 50, 240, 200]",
+      "region_pixels": [
+        60,
+        50,
+        240,
+        200
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        400,
+        400
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.7418). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=4.7418). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.9485,
+      "raw_metric": 4.741819,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.09015
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.",
+      "diagnostic_region_image": "traces/evidence/session_20260924_175856_real_0014_jpeg_q85/region_E-ffa8f2abc9.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_175856_real_0014_jpeg_q85/noise_residual_map_E-ffa8f2abc9.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      599,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "candidate_matches_posterior",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T17:58:56.237531",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.5,
+    "policy_version": "v2",
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "posterior": 0.3102,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

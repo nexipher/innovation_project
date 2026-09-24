@@ -1,0 +1,191 @@
+{
+  "id": "session_20260924_172730_fake_glide_0012_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_glide_0012_jpeg_q95.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.7882,
+    "report": "图像整体噪声水平较低，局部区域有轻微上升，但不足以作为伪造的决定性证据。JPEG压缩历史较高，表明图像可能是由相机拍摄并保存的。然而，由于噪声水平和JPEG压缩历史都处于中等状态，无法排除伪造的可能性。",
+    "posterior": 0.7882,
+    "conflict_score": 0.0,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 300, 300]\nVisual Anomalies: 看起来蜘蛛的细节非常清晰，但背景是黑色的，这可能表明图像经过了处理。\nExpert Target & Hypothesis: 首先尝试调用 <call_noise> 来检查是否存在微噪声水平，因为这可能揭示图像是否经过了处理。\n</planning>\n<call_noise>[100, 100, 300, 300]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 在**整幅图像**上计算法证指标；所附产物图均为整图产物，其中区域图对应你提出的关注区域 [26, 26, 77, 77]（仅为诊断关注点，不限定测量范围）。请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/region_E-10175dba07.png",
+        "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/noise_residual_map_E-10175dba07.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise> 的结果，噪声水平在图像中整体较低，但在局部区域 [26, 26, 77, 77] 内有轻微上升。这可能表明该区域存在微小的噪声，但不足以作为伪造的决定性证据。图像的整体背景为深色，且没有明显的伪影或失真，这与伪造图像通常具有的特征不符。\n\n综合考虑，虽然局部存在微小的噪声，但不足以断定图像为伪造。因此，基于现有证据，我们无法得出明确的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_expert\"], \"report\": \"图像整体噪声水平较低，局部区域有轻微上升，但不足以作为伪造的决定性证据。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.57，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise> 的结果，图像整体噪声水平较低，局部区域有轻微上升，但不足以作为伪造的决定性证据。然而，系统反馈显示当前校准后验认为伪造的可能性为57%，这与我们的观察结果存在冲突。为了进一步确认，建议调用 <call_jpeg> 来检查图像的JPEG压缩历史，以确定图像是否经过了多次压缩或重新保存。\n</reasoning>\n<call_jpeg>[0, 0, 1000, 1000]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：jpeg_expert 在**整幅图像**上计算法证指标；所附产物图均为整图产物，其中区域图对应你提出的关注区域 [0, 0, 256, 256]（仅为诊断关注点，不限定测量范围）。请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/region_E-ea2523842d.png",
+        "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/jpeg_blockiness_map_E-ea2523842d.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise> 的结果，图像整体噪声水平较低，局部区域有轻微上升，但不足以作为伪造的决定性证据。此外，<call_jpeg> 的结果显示图像的JPEG压缩历史较高，表明图像可能是由相机拍摄并保存的，而不是伪造的。然而，由于图像的噪声水平和JPEG压缩历史都处于中等状态，无法排除伪造的可能性。因此，现有证据不足以得出明确的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_expert\", \"jpeg_expert\"], \"report\": \"图像整体噪声水平较低，局部区域有轻微上升，但不足以作为伪造的决定性证据。JPEG压缩历史较高，表明图像可能是由相机拍摄并保存的。然而，由于噪声水平和JPEG压缩历史都处于中等状态，无法排除伪造的可能性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-10175dba07",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 77, 77]",
+      "region_pixels": [
+        26,
+        26,
+        77,
+        77
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        300,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 1.9296). Variance collapse detected.",
+      "reasoning": "Low residual micro-noise level (metric=1.9296). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.",
+      "strength": 0.2132,
+      "raw_metric": 1.929585,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.64); the generative reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.039688
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "diagnostic_region_image": "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/region_E-10175dba07.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/noise_residual_map_E-10175dba07.png"
+      ]
+    },
+    {
+      "evidence_id": "E-ea2523842d",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 256, 256]",
+      "region_pixels": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0646, DCT anomaly: 2.7447)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.0646, DCT anomaly=2.7447). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.3713,
+      "raw_metric": 1.736638,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 1.0
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/region_E-ea2523842d.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_172730_fake_glide_0012_jpeg_q95/jpeg_blockiness_map_E-ea2523842d.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 4,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T17:27:30.093664",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 4.0,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.7882,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

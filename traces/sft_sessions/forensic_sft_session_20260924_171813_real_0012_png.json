@@ -1,0 +1,184 @@
+{
+  "id": "session_20260924_171813_real_0012_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0012_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中存在大量微小噪声，可能来自相机传感器，但同时存在块状结构和DCT模式，这可能是高JPEG压缩历史的特征。由于证据冲突，无法确定图像的真实性和伪造性。",
+    "posterior": 0.497,
+    "conflict_score": 0.9568,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain",
+      "conflict_unresolved"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 280, 499, 520]\nVisual Anomalies: 猫的舌头和爪子之间的区域有一些不自然的光影效果。\nExpert Target & Hypothesis: <call_noise>[200, 280, 499, 520]</call_noise> → 检查是否存在人为添加的痕迹或伪造的光影效果。\n</planning>\n\n<call_noise>[200, 280, 499, 520]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 在**整幅图像**上计算法证指标；所附产物图均为整图产物，其中区域图对应你提出的关注区域 [150, 140, 374, 260]（仅为诊断关注点，不限定测量范围）。请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_171813_real_0012_png/region_E-c1ee6da2d3.png",
+        "traces/evidence/session_20260924_171813_real_0012_png/noise_residual_map_E-c1ee6da2d3.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [150, 140, 374, 260]\nVisual Anomalies: 在这个区域，图像中存在明显的像素化和噪点，这可能表明图像经过了重新压缩或处理。\nExpert Target & Hypothesis: <call_jpeg>[150, 140, 374, 260]</call_jpeg> → 检查图像是否经过了重新压缩或处理。\n</planning>\n\n<call_jpeg>[150, 140, 374, 260]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：jpeg_expert 在**整幅图像**上计算法证指标；所附产物图均为整图产物，其中区域图对应你提出的关注区域 [112, 70, 280, 130]（仅为诊断关注点，不限定测量范围）。请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_171813_real_0012_png/region_E-bbfc583233.png",
+        "traces/evidence/session_20260924_171813_real_0012_png/jpeg_blockiness_map_E-bbfc583233.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 法证证据出现强冲突且无法继续取证（疑罪从无 — Conflict Halting）。请进行双向反思，说明冲突双方的物理依据与不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n噪声专家指出，在图像的特定区域存在大量的微小噪声，这通常与相机传感器的微小噪音有关，因此倾向于图像的真实性。然而，JPEG压缩专家则指出，图像中的块状结构和DCT模式是高JPEG压缩历史的特征，这通常意味着图像经过了多次压缩，而不是伪造。\n\n由于这些证据之间存在冲突，我们不能确定图像的真实性和伪造性。在没有更多证据的情况下，我们应遵循“疑罪从无”的原则，认为图像可能是真实的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_expert\", \"jpeg_expert\"], \"report\": \"图像中存在大量微小噪声，可能来自相机传感器，但同时存在块状结构和DCT模式，这可能是高JPEG压缩历史的特征。由于证据冲突，无法确定图像的真实性和伪造性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-c1ee6da2d3",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[150, 140, 374, 260]",
+      "region_pixels": [
+        150,
+        140,
+        374,
+        260
+      ],
+      "region_normalized_1000": [
+        200,
+        280,
+        499,
+        520
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 2.8963). Residual consistent with a camera sensor.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.8963). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.536,
+      "raw_metric": 2.896281,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.07168
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260924_171813_real_0012_png/region_E-c1ee6da2d3.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_171813_real_0012_png/noise_residual_map_E-c1ee6da2d3.png"
+      ]
+    },
+    {
+      "evidence_id": "E-bbfc583233",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[112, 70, 280, 130]",
+      "region_pixels": [
+        112,
+        70,
+        280,
+        130
+      ],
+      "region_normalized_1000": [
+        150,
+        140,
+        374,
+        260
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.4022, DCT anomaly: 3.5935)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.4022, DCT anomaly=3.5935). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.6359,
+      "raw_metric": 2.278751,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.02688
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20260924_171813_real_0012_png/region_E-bbfc583233.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_171813_real_0012_png/jpeg_blockiness_map_E-bbfc583233.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T17:18:13.598201",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 4,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 2,
+    "weighted_cost": 5.5,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain",
+      "conflict_unresolved"
+    ],
+    "posterior": 0.497,
+    "conflict_score": 0.9568,
+    "candidate_overridden": false
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "id": "session_20260924_175455_fake_glide_0013_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_glide_0013_jpeg_q95.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中心区域存在局部噪声变异，这可能表明伪造，但由于证据强度较低且存在轻微的噪声变异，无法得出明确的结论。",
+    "posterior": 0.5331,
+    "conflict_score": 0.0,
+    "policy_reason": "budget_exhausted",
+    "policy_reasons": [
+      "budget_exhausted"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 在图像的中心区域有一个明显的红色标记，这可能是一个伪造的特征。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为微噪声水平可以揭示图像的真实性和伪造性。\n</planning>\n<call_noise>[100, 100, 200, 200]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-8c34cd796c\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.7810). Variance collapse detected.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=2.7810). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.4929, \"raw_metric\": 2.78105, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.009537}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_175455_fake_glide_0013_jpeg_q95/region_E-8c34cd796c.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_175455_fake_glide_0013_jpeg_q95/noise_residual_map_E-8c34cd796c.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_175455_fake_glide_0013_jpeg_q95/region_E-8c34cd796c.png",
+        "traces/evidence/session_20260924_175455_fake_glide_0013_jpeg_q95/noise_residual_map_E-8c34cd796c.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 51, 51]\nVisual Anomalies: 图像中心区域存在局部噪声变异，这可能表明伪造。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为微噪声水平可以揭示图像的真实性和伪造性。\n</planning>\n<call_noise>[26, 26, 51, 51]</call_noise>"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 51, 51]\nVisual Anomalies: 图像中心区域存在局部噪声变异，这可能表明伪造。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为微噪声水平可以揭示图像的真实性和伪造性。\n</planning>\n<call_noise>[26, 26, 51, 51]</call_noise>"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 51, 51]\nVisual Anomalies: 图像中心区域存在局部噪声变异，这可能表明伪造。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为微噪声水平可以揭示图像的真实性和伪造性。\n</planning>\n<call_noise>[26, 26, 51, 51]</call_noise>"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 51, 51]\nVisual Anomalies: 图像中心区域存在局部噪声变异，这可能表明伪造。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为微噪声水平可以揭示图像的真实性和伪造性。\n</planning>\n<call_noise>[26, 26, 51, 51]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽。请基于已获取的全部证据撰写最终报告；结论标签由系统按校准后验给出，你只需如实描述证据与不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据<call_noise>专家的测量结果，图像中心区域的局部噪声变异水平接近随机值，这表明图像可能是伪造的。然而，由于证据强度较低（0.4929），且存在轻微的噪声变异，我们无法得出明确的结论。这种现象在生成图像中也常见，并且在不同格式间保持稳定。因此，尽管有迹象表明图像可能是伪造的，但不足以确定其真实性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中心区域存在局部噪声变异，这可能表明伪造，但由于证据强度较低且存在轻微的噪声变异，无法得出明确的结论。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-8c34cd796c",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.7810). Variance collapse detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.7810). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.4929,
+      "raw_metric": 2.78105,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260924_175455_fake_glide_0013_jpeg_q95/region_E-8c34cd796c.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_175455_fake_glide_0013_jpeg_q95/noise_residual_map_E-8c34cd796c.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 6,
+    "halting_reason": "budget_exhausted",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T17:54:55.434132",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 6,
+    "expert_call_count": 5,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 4,
+    "weighted_cost": 8.0,
+    "policy_version": "v2",
+    "policy_reason": "budget_exhausted",
+    "policy_reasons": [
+      "budget_exhausted"
+    ],
+    "posterior": 0.5331,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}
