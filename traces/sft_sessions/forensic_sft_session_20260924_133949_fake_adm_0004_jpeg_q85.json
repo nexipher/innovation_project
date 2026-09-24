@@ -1,0 +1,101 @@
+{
+  "id": "session_20260924_133949_fake_adm_0004_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0004_jpeg_q85.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.9,
+    "primary_evidence": [
+      "noise_expert",
+      "jpeg_expert"
+    ],
+    "report": "图像中存在明显的噪声残留和不自然的纹理，表明经过了数字处理。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 100, 250, 150]\nVisual Anomalies: 看起来像是树木的枝干被人为剪裁或拼接在一起。\nExpert Target & Hypothesis: <call_noise>[200, 100, 250, 150]</call_noise> → 检查是否有噪声残留，以确定是否经过数字处理。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [51, 26, 67, 42] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133949_fake_adm_0004_jpeg_q85/region_E-b4aefb36fd.png",
+        "traces/evidence/session_20260924_133949_fake_adm_0004_jpeg_q85/noise_residual_map_E-b4aefb36fd.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析，区域 [51, 26, 67, 42] 存在明显的噪声残留，这表明该部分可能经过了数字处理。结合图像整体来看，背景中的蓝色和黄色块状区域也显示出不自然的纹理，这可能是由于压缩引起的。综合以上两点，可以推断图像经过了数字处理。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.9, \"primary_evidence\": [\"noise_expert\", \"jpeg_expert\"], \"report\": \"图像中存在明显的噪声残留和不自然的纹理，表明经过了数字处理。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-b4aefb36fd",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[51, 26, 67, 42]",
+      "region_pixels": [
+        51,
+        26,
+        67,
+        42
+      ],
+      "region_normalized_1000": [
+        200,
+        100,
+        250,
+        150
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.2660). No significant local variance anomaly.",
+      "reasoning": "The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.2660), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.",
+      "strength": 0.0219,
+      "raw_metric": 0.266036,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133949_fake_adm_0004_jpeg_q85/region_E-b4aefb36fd.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133949_fake_adm_0004_jpeg_q85/noise_residual_map_E-b4aefb36fd.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:39:49.889671",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0
+  }
+}

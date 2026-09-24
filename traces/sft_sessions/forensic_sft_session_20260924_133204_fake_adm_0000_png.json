@@ -1,0 +1,100 @@
+{
+  "id": "session_20260924_133204_fake_adm_0000_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0000_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.7,
+    "primary_evidence": [
+      "frequency_expert"
+    ],
+    "report": "图像中存在异常的高频信号，但整体上缺乏细节，这可能意味着图像经过了过度平滑处理。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 100, 100]\nVisual Anomalies: 图像中的水母看起来非常光滑，没有明显的纹理细节。\nExpert Target & Hypothesis: 首先调用频率域专家，因为图像可能经过了过度平滑处理。\n</planning>\n<call_call_freq>[0, 0, 100, 100]</call_call_freq>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：frequency_expert 对区域 [0, 0, 26, 26] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133204_fake_adm_0000_png/region_E-c5e82719d4.png",
+        "traces/evidence/session_20260924_133204_fake_adm_0000_png/frequency_spectrum_v2_E-c5e82719d4.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据频率域专家的分析，该区域显示了明显的高频信号，这表明图像可能经过了过度锐化或存在噪声。然而，由于图像整体上显得过于光滑且缺乏细节，这与过度锐化的特征不符。因此，我们倾向于认为图像可能是经过了过度平滑处理。\n\n综合考虑，图像中存在一些异常的高频信号，但整体上缺乏细节，这可能意味着图像经过了过度平滑处理。因此，我们无法确定图像的真实性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.7, \"primary_evidence\": [\"frequency_expert\"], \"report\": \"图像中存在异常的高频信号，但整体上缺乏细节，这可能意味着图像经过了过度平滑处理。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-c5e82719d4",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[0, 0, 26, 26]",
+      "region_pixels": [
+        0,
+        0,
+        26,
+        26
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        100,
+        100
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0000, full=0.0000)",
+      "reasoning": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "strength": 0.2315,
+      "raw_metric": 0.0,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.532,
+        "Fake": 0.468
+      },
+      "condition_metadata": {
+        "bin_samples": 231,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133204_fake_adm_0000_png/region_E-c5e82719d4.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133204_fake_adm_0000_png/frequency_spectrum_v2_E-c5e82719d4.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:32:04.598274",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0
+  }
+}

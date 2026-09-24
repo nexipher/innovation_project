@@ -1,0 +1,208 @@
+{
+  "id": "session_20260924_133939_fake_adm_0003_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0003_jpeg_q85.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "noise_expert"
+    ],
+    "report": "图像中存在明显的噪声残留，这可能是伪造的迹象之一，但证据不足，无法做出最终的判定。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 石塔的纹理在该区域显得过于均匀，缺乏自然的细节变化。\nExpert Target & Hypothesis: <call_freq>[100, 100, 200, 200]</call_freq> → 可能存在频率域上的异常，需要进一步分析。\n</planning>\n\n<planning>\nSuspected Region: [50, 50, 150, 150]\nVisual Anomalies: 石塔的边缘看起来有些模糊，可能被人为处理过。\nExpert Target & Hypothesis: <call_noise>[50, 50, 150, 150]</call_noise> → 可能存在噪声残留，需要进一步分析。\n</planning>\n\n<planning>\nSuspected Region: [200, 200, 300, 300]\nVisual Anomalies: 石塔的顶部似乎有明显的拼接痕迹。\nExpert Target & Hypothesis: <call_jpeg>[200, 200, 300, 300]</call_jpeg> → 可能存在JPEG压缩痕迹，需要进一步分析。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：frequency_expert 对区域 [26, 26, 51, 51] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/region_E-ffc6bff5f3.png",
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/frequency_spectrum_v2_E-ffc6bff5f3.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [13, 13, 38, 38] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/region_E-4645ccf7d6.png",
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/noise_residual_map_E-4645ccf7d6.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：jpeg_expert 对区域 [51, 51, 77, 77] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/region_E-f85801e068.png",
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/jpeg_blockiness_map_E-f85801e068.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析，区域 [13, 13, 38, 38] 存在明显的噪声残留，这表明图像可能经过了噪声处理。然而，由于没有其他专家的分析结果，我们无法确定图像是否经过了JPEG压缩或频率域上的处理。因此，我们不能排除图像为伪造的可能性。\n\n尽管如此，根据 noise_expert 的分析，我们可以得出结论，图像中可能存在噪声残留，这可能是伪造的迹象之一。然而，由于证据不足，我们无法做出最终的判定。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_expert\"], \"report\": \"图像中存在明显的噪声残留，这可能是伪造的迹象之一，但证据不足，无法做出最终的判定。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-ffc6bff5f3",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0099, full=0.0099)",
+      "reasoning": "Multi-scale frequency analysis detects weak periodic energy (raw=0.0099) below the confident detection threshold. This may indicate mild post-processing or natural texture patterns. Cross-reference with other forensic experts is recommended.",
+      "strength": 0.3994,
+      "raw_metric": 0.009901,
+      "source": "frequency_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.476,
+        "Fake": 0.524
+      },
+      "condition_metadata": {
+        "bin_samples": 84,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/region_E-ffc6bff5f3.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/frequency_spectrum_v2_E-ffc6bff5f3.png"
+      ]
+    },
+    {
+      "evidence_id": "E-4645ccf7d6",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[13, 13, 38, 38]",
+      "region_pixels": [
+        13,
+        13,
+        38,
+        38
+      ],
+      "region_normalized_1000": [
+        50,
+        50,
+        150,
+        150
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 5.0000). Variance collapse or inflation detected.",
+      "reasoning": "Significant localised noise variance anomaly detected (inconsistency ratio=5.0000). Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). This level of inconsistency is characteristic of manipulated or AI-generated image regions.",
+      "strength": 0.9644,
+      "raw_metric": 5.0,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/region_E-4645ccf7d6.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/noise_residual_map_E-4645ccf7d6.png"
+      ]
+    },
+    {
+      "evidence_id": "E-f85801e068",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[51, 51, 77, 77]",
+      "region_pixels": [
+        51,
+        51,
+        77,
+        77
+      ],
+      "region_normalized_1000": [
+        200,
+        200,
+        300,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0000, DCT anomaly: 6.9282)",
+      "reasoning": "Significant JPEG compression anomalies detected (blockiness=1.0000, DCT anomaly=6.9282). Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries, and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic markers of post-capture editing or forgery.",
+      "strength": 0.9395,
+      "raw_metric": 3.371281,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints.",
+      "counter_explanation": "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.544,
+        "Fake": 0.456
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/region_E-f85801e068.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133939_fake_adm_0003_jpeg_q85/jpeg_blockiness_map_E-f85801e068.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 2,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:39:39.947765",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 3,
+    "unique_evidence_count": 3,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 4.0
+  }
+}

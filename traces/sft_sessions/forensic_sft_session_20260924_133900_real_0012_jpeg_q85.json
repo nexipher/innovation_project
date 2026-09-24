@@ -1,0 +1,100 @@
+{
+  "id": "session_20260924_133900_real_0012_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0012_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.7,
+    "primary_evidence": [
+      "noise_expert_analysis"
+    ],
+    "report": "图像背景部分存在噪声残留，表明可能存在拼接或编辑，但背景部分的均匀性暗示前景部分可能是通过其他方式添加的。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 280, 470, 500]\nVisual Anomalies: 猫的舌头和爪子之间的区域看起来有些模糊，可能表明存在拼接或编辑。\nExpert Target & Hypothesis: 首先调用 <call_noise>[200, 280, 470, 500]，以确定是否存在噪声残留。\n</planning>\n<call_noise>[200, 280, 470, 500]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [150, 140, 352, 250] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133900_real_0012_jpeg_q85/region_E-83d9b5ecbb.png",
+        "traces/evidence/session_20260924_133900_real_0012_jpeg_q85/noise_residual_map_E-83d9b5ecbb.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析，区域 [150, 140, 352, 250] 存在明显的噪声残留，这表明该区域可能经过了拼接或编辑。然而，在整个图像中，背景部分呈现出一种均匀的蓝色，没有明显的噪声残留。这可能意味着背景部分是原始图像的一部分，而前景部分可能是通过其他方式添加的。\n\n综合考虑，虽然存在噪声残留，但背景部分的均匀性表明图像可能经过了拼接或编辑。因此，我们不能完全排除图像被修改的可能性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.7, \"primary_evidence\": [\"noise_expert_analysis\"], \"report\": \"图像背景部分存在噪声残留，表明可能存在拼接或编辑，但背景部分的均匀性暗示前景部分可能是通过其他方式添加的。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-83d9b5ecbb",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[150, 140, 352, 250]",
+      "region_pixels": [
+        150,
+        140,
+        352,
+        250
+      ],
+      "region_normalized_1000": [
+        200,
+        280,
+        470,
+        500
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 2.2462). No significant local variance anomaly.",
+      "reasoning": "Mild noise inconsistency detected (ratio=2.2462). This could indicate localised post-processing (e.g. light denoising, sharpening) or natural texture variation. The signal is below the threshold for definitive tampering conclusion.",
+      "strength": 0.3035,
+      "raw_metric": 2.246189,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133900_real_0012_jpeg_q85/region_E-83d9b5ecbb.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133900_real_0012_jpeg_q85/noise_residual_map_E-83d9b5ecbb.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:39:00.936793",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0
+  }
+}

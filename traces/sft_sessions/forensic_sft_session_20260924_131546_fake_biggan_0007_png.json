@@ -1,0 +1,96 @@
+{
+  "id": "session_20260924_131546_fake_biggan_0007_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_biggan_0007_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.976,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像右侧的阴影区域显示出局部噪声的一致性，且没有显著的局部噪声异常。这表明图像右侧的阴影可能是正常的相机传感器噪声，而不是人为编辑或篡改的结果。此外，图像整体没有明显的锐化、降噪或重压缩痕迹，进一步支持图像的真实性。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 100, 100]\nVisual Anomalies: 图像右侧有一个不自然的黑色阴影，可能暗示了拼接或篡改。\nExpert Target & Hypothesis: 首先调用 <call_noise> 专家，因为图像右侧的阴影可能是噪声或篡改的迹象。\n</planning>\n<call_noise>[100, 100, 100, 100]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-a4c437fe0c\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[13, 13, 29, 29]\", \"region_pixels\": [13, 13, 29, 29], \"region_normalized_1000\": [100, 100, 100, 100], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.3415). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.3415), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0244, \"raw_metric\": 0.341461, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\", \"counter_explanation\": \"降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.152, \"Fake\": 0.848}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 100, 100]\nVisual Anomalies: 图像右侧有一个不自然的黑色阴影，可能暗示了拼接或篡改。\nExpert Target & Hypothesis: 首先调用 <call_noise> 专家，因为图像右侧的阴影可能是噪声或篡改的迹象。\n</planning>\n<call_noise>[100, 100, 100, 100]</call_noise>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise> 专家的反馈，图像右侧的阴影区域显示出局部噪声的一致性，且没有显著的局部噪声异常。这表明图像右侧的阴影可能是正常的相机传感器噪声，而不是人为编辑或篡改的结果。此外，图像整体没有明显的锐化、降噪或重压缩痕迹，进一步支持图像的真实性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.976, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像右侧的阴影区域显示出局部噪声的一致性，且没有显著的局部噪声异常。这表明图像右侧的阴影可能是正常的相机传感器噪声，而不是人为编辑或篡改的结果。此外，图像整体没有明显的锐化、降噪或重压缩痕迹，进一步支持图像的真实性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-a4c437fe0c",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[13, 13, 29, 29]",
+      "region_pixels": [
+        13,
+        13,
+        29,
+        29
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.3415). No significant local variance anomaly.",
+      "reasoning": "The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.3415), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.",
+      "strength": 0.0244,
+      "raw_metric": 0.341461,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。"
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      128,
+      128
+    ],
+    "total_steps": 3,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:15:46.892117",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.5
+  }
+}

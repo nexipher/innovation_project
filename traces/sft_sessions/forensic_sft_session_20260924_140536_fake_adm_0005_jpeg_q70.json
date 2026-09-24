@@ -1,0 +1,160 @@
+{
+  "id": "session_20260924_140536_fake_adm_0005_jpeg_q70",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0005_jpeg_q70.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.95,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像中未发现明显的篡改迹象，噪声残差在正常范围内，且没有显著的局部变异异常。因此，可以认为图像的真实性较高。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 150, 150]\nVisual Anomalies: 火炬手手中的火炬似乎没有明显的火焰，这在现实生活中不太常见。\nExpert Target & Hypothesis: 首先调用 <call_noise>[100, 100, 150, 150]，检查是否有噪声残留，以确定火焰是否被修改过。\n</planning>\n<call_noise>[100, 100, 150, 150]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-ecaa232f08\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[26, 26, 42, 42]\", \"region_pixels\": [26, 26, 42, 42], \"region_normalized_1000\": [100, 100, 150, 150], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.3500). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.3500), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0247, \"raw_metric\": 0.35, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\", \"counter_explanation\": \"降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.152, \"Fake\": 0.848}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/region_E-ecaa232f08.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/noise_residual_map_E-ecaa232f08.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/region_E-ecaa232f08.png",
+        "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/noise_residual_map_E-ecaa232f08.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 42, 42]\nVisual Anomalies: 该区域的噪声残差不一致，可能表明图像经过了编辑或合成。\nExpert Target & Hypothesis: 首先调用 <call_noise>[26, 26, 42, 42]，检查是否有噪声残留，以确定图像是否被修改过。\n</planning>\n<call_noise>[26, 26, 42, 42]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-6f25fe79e6\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[7, 7, 23, 23]\", \"region_pixels\": [7, 7, 23, 23], \"region_normalized_1000\": [26, 26, 42, 42], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures within normal range (inconsistency ratio: 0.2871). No significant local variance anomaly.\", \"reasoning\": \"The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.2871), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.\", \"strength\": 0.0225, \"raw_metric\": 0.287073, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\", \"counter_explanation\": \"降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.152, \"Fake\": 0.848}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/region_E-6f25fe79e6.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/noise_residual_map_E-6f25fe79e6.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/region_E-6f25fe79e6.png",
+        "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/noise_residual_map_E-6f25fe79e6.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的证据，我们已经调用了噪声残留专家来分析图像中的局部噪声一致性。从证据 E-6f25fe79e6 中，我们得知该区域的噪声残差不一致度为 0.2871，这在正常范围内，且没有显著的局部变异异常。这表明图像可能是由单一相机传感器捕获的，并且没有证据表明图像经过了编辑、拼接或基于AI的修复。\n\n此外，证据 E-ecaa232f08 表明该区域的噪声残差不一致度为 0.3500，同样在正常范围内，且没有显著的局部变异异常。这进一步支持图像的真实性。\n\n综合以上分析，图像中没有发现任何明显的篡改迹象。因此，我们可以得出结论，图像的真实性较高。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.95, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中未发现明显的篡改迹象，噪声残差在正常范围内，且没有显著的局部变异异常。因此，可以认为图像的真实性较高。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-ecaa232f08",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 42, 42]",
+      "region_pixels": [
+        26,
+        26,
+        42,
+        42
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        150,
+        150
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.3500). No significant local variance anomaly.",
+      "reasoning": "The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.3500), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.",
+      "strength": 0.0247,
+      "raw_metric": 0.35,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/region_E-ecaa232f08.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/noise_residual_map_E-ecaa232f08.png"
+      ]
+    },
+    {
+      "evidence_id": "E-6f25fe79e6",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[7, 7, 23, 23]",
+      "region_pixels": [
+        7,
+        7,
+        23,
+        23
+      ],
+      "region_normalized_1000": [
+        26,
+        26,
+        42,
+        42
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 0.2871). No significant local variance anomaly.",
+      "reasoning": "The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=0.2871), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.",
+      "strength": 0.0225,
+      "raw_metric": 0.287073,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.152,
+        "Fake": 0.848
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/region_E-6f25fe79e6.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_140536_fake_adm_0005_jpeg_q70/noise_residual_map_E-6f25fe79e6.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 3,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:05:36.086980",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5
+  }
+}

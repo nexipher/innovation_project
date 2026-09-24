@@ -1,0 +1,100 @@
+{
+  "id": "session_20260924_133059_real_0005_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0005_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.6,
+    "primary_evidence": [
+      "frequency_expert_analysis"
+    ],
+    "report": "图像中存在频率域异常，毛发区域显得过于光滑，但无法确定是否为伪造。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [80, 100, 270, 330]\nVisual Anomalies: 狗的毛发在该区域显得过于光滑，缺乏自然的纹理。\nExpert Target & Hypothesis: <call_freq>[80, 100, 270, 330]</call_freq> → 检查是否存在频率域异常。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：frequency_expert 对区域 [27, 50, 90, 165] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133059_real_0005_png/region_E-537cfb64a8.png",
+        "traces/evidence/session_20260924_133059_real_0005_png/frequency_spectrum_v2_E-537cfb64a8.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 frequency_expert 的分析，该区域存在明显的频率域异常，这表明图像可能经过了某种处理或合成。结合图像中狗的毛发区域的异常光滑纹理，可以推断图像可能存在伪造或编辑痕迹。\n\n由于存在频率域异常，我们不能排除图像被修改的可能性。然而，仅凭这些信息不足以确定图像的真实性。需要进一步的专家意见来确认。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.6, \"primary_evidence\": [\"frequency_expert_analysis\"], \"report\": \"图像中存在频率域异常，毛发区域显得过于光滑，但无法确定是否为伪造。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-537cfb64a8",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[27, 50, 90, 165]",
+      "region_pixels": [
+        27,
+        50,
+        90,
+        165
+      ],
+      "region_normalized_1000": [
+        80,
+        100,
+        270,
+        330
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0015, full=0.0015)",
+      "reasoning": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "strength": 0.2541,
+      "raw_metric": 0.001541,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.476,
+        "Fake": 0.524
+      },
+      "condition_metadata": {
+        "bin_samples": 84,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133059_real_0005_png/region_E-537cfb64a8.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133059_real_0005_png/frequency_spectrum_v2_E-537cfb64a8.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      332,
+      500
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:30:59.190682",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0
+  }
+}

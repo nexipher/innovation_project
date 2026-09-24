@@ -1,0 +1,328 @@
+{
+  "id": "session_20260924_135725_real_0004_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0004_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "primary_evidence": [
+      "E-c42f412a83"
+    ],
+    "report": "图像中存在显著的JPEG压缩异常，包括块效应和DCT系数分布异常。这些特征是双次JPEG压缩和重新保存的典型标记，通常出现在编辑或伪造后的图像中。然而，由于缺乏其他独立证据支持，且考虑到图像可能来自社交媒体重新保存的情况，无法确定其为伪造。因此，需要进一步调查以确认图像的真实性和来源。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [180, 179, 435, 297]\nVisual Anomalies: 硬盘电路板上的贴片元件排列整齐，但边缘有轻微的不规则感。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[180, 179, 435, 297]</call_jpeg>，因为硬盘电路板看起来像是经过压缩处理的。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-a541abec18\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[68, 90, 163, 148]\", \"region_pixels\": [68, 90, 163, 148], \"region_normalized_1000\": [180, 179, 435, 297], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.8874, DCT anomaly: 2.9508)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.8874, DCT anomaly=2.9508). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.3602, \"raw_metric\": 1.712728, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\", \"counter_explanation\": \"任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-a541abec18.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-a541abec18.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-a541abec18.png",
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-a541abec18.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [68, 90, 163, 148]\nVisual Anomalies: 图像中存在明显的块状效应和DCT系数分布异常。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[68, 90, 163, 148]</call_jpeg>，因为图像显示了轻度的JPEG结构异常，可能表明经过了轻度重新压缩。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-18e048b366\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[26, 45, 61, 74]\", \"region_pixels\": [26, 45, 61, 74], \"region_normalized_1000\": [68, 90, 163, 148], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.0000, DCT anomaly: 3.5935)\", \"reasoning\": \"JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.\", \"strength\": 0.2451, \"raw_metric\": 1.437419, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\", \"counter_explanation\": \"任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-18e048b366.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-18e048b366.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-18e048b366.png",
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-18e048b366.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 45, 61, 74]\nVisual Anomalies: 图像中存在明显的DCT系数分布异常。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[26, 45, 61, 74]</call_jpeg>，因为图像显示了DCT系数分布异常，可能表明经过了JPEG压缩。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-0ae74b9016\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[10, 22, 26, 38]\", \"region_pixels\": [10, 22, 26, 38], \"region_normalized_1000\": [26, 45, 61, 74], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.0000, DCT anomaly: 4.5826)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.0000, DCT anomaly=4.5826). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.4173, \"raw_metric\": 1.83303, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\", \"counter_explanation\": \"任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-0ae74b9016.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-0ae74b9016.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-0ae74b9016.png",
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-0ae74b9016.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [10, 22, 26, 38]\nVisual Anomalies: 图像中存在明显的DCT系数分布异常。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[10, 22, 26, 38]</call_jpeg>，因为图像显示了DCT系数分布异常，可能表明经过了JPEG压缩。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-4c4c6fb0cf\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[4, 11, 20, 27]\", \"region_pixels\": [4, 11, 20, 27], \"region_normalized_1000\": [10, 22, 26, 38], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.0000, DCT anomaly: 5.1208)\", \"reasoning\": \"Mild JPEG structural anomalies detected (blockiness=0.0000, DCT anomaly=5.1208). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.\", \"strength\": 0.5241, \"raw_metric\": 2.048305, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\", \"counter_explanation\": \"任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-4c4c6fb0cf.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-4c4c6fb0cf.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-4c4c6fb0cf.png",
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-4c4c6fb0cf.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [4, 11, 20, 27]\nVisual Anomalies: 图像中存在明显的DCT系数分布异常。\nExpert Target & Hypothesis: 首先调用 <call_jpeg>[4, 11, 20, 27]</call_jpeg>，因为图像显示了DCT系数分布异常，可能表明经过了JPEG压缩。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-c42f412a83\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[2, 6, 18, 22]\", \"region_pixels\": [2, 6, 18, 22], \"region_normalized_1000\": [4, 11, 20, 27], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 3.2528, DCT anomaly: 3.4641)\", \"reasoning\": \"Significant JPEG compression anomalies detected (blockiness=3.2528, DCT anomaly=3.4641). Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries, and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic markers of post-capture editing or forgery.\", \"strength\": 0.9355, \"raw_metric\": 3.337313, \"source\": \"jpeg_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Severe statistical anomaly matching artificial generative fingerprints.\", \"counter_explanation\": \"任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.705, \"Fake\": 0.295}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-c42f412a83.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-c42f412a83.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-c42f412a83.png",
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-c42f412a83.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析所有专家意见，图像中存在显著的JPEG压缩异常，包括块效应和DCT系数分布异常。这些特征是双次JPEG压缩和重新保存的典型标记，通常出现在编辑或伪造后的图像中。然而，由于缺乏其他独立证据支持，且考虑到图像可能来自社交媒体重新保存的情况，无法确定其为伪造。因此，需要进一步调查以确认图像的真实性和来源。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"E-c42f412a83\"], \"report\": \"图像中存在显著的JPEG压缩异常，包括块效应和DCT系数分布异常。这些特征是双次JPEG压缩和重新保存的典型标记，通常出现在编辑或伪造后的图像中。然而，由于缺乏其他独立证据支持，且考虑到图像可能来自社交媒体重新保存的情况，无法确定其为伪造。因此，需要进一步调查以确认图像的真实性和来源。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-a541abec18",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[68, 90, 163, 148]",
+      "region_pixels": [
+        68,
+        90,
+        163,
+        148
+      ],
+      "region_normalized_1000": [
+        180,
+        179,
+        435,
+        297
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.8874, DCT anomaly: 2.9508)",
+      "reasoning": "Mild JPEG structural anomalies detected (blockiness=0.8874, DCT anomaly=2.9508). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.",
+      "strength": 0.3602,
+      "raw_metric": 1.712728,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-a541abec18.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-a541abec18.png"
+      ]
+    },
+    {
+      "evidence_id": "E-18e048b366",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[26, 45, 61, 74]",
+      "region_pixels": [
+        26,
+        45,
+        61,
+        74
+      ],
+      "region_normalized_1000": [
+        68,
+        90,
+        163,
+        148
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.0000, DCT anomaly: 3.5935)",
+      "reasoning": "JPEG structural analysis shows blockiness and DCT coefficient patterns within the normal range for a single-compressed image. No evidence of double JPEG compression or tampering-related re-quantisation artifacts. Note: if the image is in PNG format, absence of JPEG traces is expected and does not indicate forgery.",
+      "strength": 0.2451,
+      "raw_metric": 1.437419,
+      "source": "jpeg_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-18e048b366.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-18e048b366.png"
+      ]
+    },
+    {
+      "evidence_id": "E-0ae74b9016",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[10, 22, 26, 38]",
+      "region_pixels": [
+        10,
+        22,
+        26,
+        38
+      ],
+      "region_normalized_1000": [
+        26,
+        45,
+        61,
+        74
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.0000, DCT anomaly: 4.5826)",
+      "reasoning": "Mild JPEG structural anomalies detected (blockiness=0.0000, DCT anomaly=4.5826). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.",
+      "strength": 0.4173,
+      "raw_metric": 1.83303,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-0ae74b9016.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-0ae74b9016.png"
+      ]
+    },
+    {
+      "evidence_id": "E-4c4c6fb0cf",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[4, 11, 20, 27]",
+      "region_pixels": [
+        4,
+        11,
+        20,
+        27
+      ],
+      "region_normalized_1000": [
+        10,
+        22,
+        26,
+        38
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.0000, DCT anomaly: 5.1208)",
+      "reasoning": "Mild JPEG structural anomalies detected (blockiness=0.0000, DCT anomaly=5.1208). These could indicate light re-compression (e.g. social media re-save) rather than malicious tampering. Correlate with other expert findings before drawing conclusions.",
+      "strength": 0.5241,
+      "raw_metric": 2.048305,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-4c4c6fb0cf.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-4c4c6fb0cf.png"
+      ]
+    },
+    {
+      "evidence_id": "E-c42f412a83",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[2, 6, 18, 22]",
+      "region_pixels": [
+        2,
+        6,
+        18,
+        22
+      ],
+      "region_normalized_1000": [
+        4,
+        11,
+        20,
+        27
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 3.2528, DCT anomaly: 3.4641)",
+      "reasoning": "Significant JPEG compression anomalies detected (blockiness=3.2528, DCT anomaly=3.4641). Double JPEG compression and re-saving leave distinct forensic traces: (1) anomalous gradient energy at 8×8 block boundaries, and (2) periodic gaps in the DCT coefficient histogram caused by re-quantisation with different quality factors. These are classic markers of post-capture editing or forgery.",
+      "strength": 0.9355,
+      "raw_metric": 3.337313,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints.",
+      "counter_explanation": "任何一次 JPEG 保存都会留下块效应与 DCT 痕迹，真实照片同样如此；PNG 来源无压缩历史时低分属正常。单凭本指标不能证明伪造（G2 校准：格式配平后接近随机）。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.705,
+        "Fake": 0.295
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/region_E-c42f412a83.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_135725_real_0004_jpeg_q85/jpeg_blockiness_map_E-c42f412a83.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      375,
+      500
+    ],
+    "total_steps": 6,
+    "halting_reason": "budget_exhausted",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:57:25.708615",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 6,
+    "expert_call_count": 5,
+    "unique_evidence_count": 5,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 8.0
+  }
+}

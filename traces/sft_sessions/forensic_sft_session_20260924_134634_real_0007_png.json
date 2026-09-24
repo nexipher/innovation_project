@@ -1,0 +1,160 @@
+{
+  "id": "session_20260924_134634_real_0007_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0007_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.75,
+    "primary_evidence": [
+      "noise_residual_inconsistency"
+    ],
+    "report": "图像中存在显著的局部噪声一致性异常，可能表明图像经过了人为编辑或AI生成。然而，由于取证资源已耗尽或信息增益收敛，无法进一步确认图像的真实性和生成方式。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [227, 68, 274, 99]\nVisual Anomalies: 黄色贴纸位于额头中央，形状不自然且边缘模糊。\nExpert Target & Hypothesis: 首先调用 <call_noise>[227, 68, 274, 99]，检查是否有噪声残留或人为涂抹痕迹。\n</planning>\n<call_noise>[227, 68, 274, 99]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-6d337040f3\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[76, 34, 92, 50]\", \"region_pixels\": [76, 34, 92, 50], \"region_normalized_1000\": [227, 68, 274, 99], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 5.0000). Variance collapse or inflation detected.\", \"reasoning\": \"Significant localised noise variance anomaly detected (inconsistency ratio=5.0000). Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). This level of inconsistency is characteristic of manipulated or AI-generated image regions.\", \"strength\": 0.9644, \"raw_metric\": 5.0, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Severe statistical anomaly matching artificial generative fingerprints.\", \"counter_explanation\": \"降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.886, \"Fake\": 0.114}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_134634_real_0007_png/region_E-6d337040f3.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_134634_real_0007_png/noise_residual_map_E-6d337040f3.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_134634_real_0007_png/region_E-6d337040f3.png",
+        "traces/evidence/session_20260924_134634_real_0007_png/noise_residual_map_E-6d337040f3.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [76, 34, 92, 50]\nVisual Anomalies: 该区域存在明显的噪声残差异常，表现为局部噪声一致性显著偏离正常范围。\nExpert Target & Hypothesis: 首先调用 <call_noise>[76, 34, 92, 50]，检查是否存在噪声残留或人为涂抹痕迹。\n</planning>\n<call_noise>[76, 34, 92, 50]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-5b786c799f\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[25, 17, 41, 33]\", \"region_pixels\": [25, 17, 41, 33], \"region_normalized_1000\": [76, 34, 92, 50], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Localised noise variance measures abnormally (inconsistency ratio: 5.0000). Variance collapse or inflation detected.\", \"reasoning\": \"Significant localised noise variance anomaly detected (inconsistency ratio=5.0000). Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). This level of inconsistency is characteristic of manipulated or AI-generated image regions.\", \"strength\": 0.9644, \"raw_metric\": 5.0, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Severe statistical anomaly matching artificial generative fingerprints.\", \"counter_explanation\": \"降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.886, \"Fake\": 0.114}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_134634_real_0007_png/region_E-5b786c799f.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_134634_real_0007_png/noise_residual_map_E-5b786c799f.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_134634_real_0007_png/region_E-5b786c799f.png",
+        "traces/evidence/session_20260924_134634_real_0007_png/noise_residual_map_E-5b786c799f.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise>[76, 34, 92, 50] 和 <call_noise>[25, 17, 41, 33] 的结果，两个区域均显示出显著的局部噪声一致性异常（inconsistency ratio分别为5.0000和5.0000）。这表明图像可能存在人为编辑或AI生成的痕迹。结合这些证据，可以推断图像经过了局部处理，导致局部噪声一致性异常。\n\n尽管如此，由于取证资源已耗尽或信息增益收敛，我们无法进一步确认图像的真实性和生成方式。因此，需要综合考虑所有已有的证据进行最终判断。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.75, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中存在显著的局部噪声一致性异常，可能表明图像经过了人为编辑或AI生成。然而，由于取证资源已耗尽或信息增益收敛，无法进一步确认图像的真实性和生成方式。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-6d337040f3",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[76, 34, 92, 50]",
+      "region_pixels": [
+        76,
+        34,
+        92,
+        50
+      ],
+      "region_normalized_1000": [
+        227,
+        68,
+        274,
+        99
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 5.0000). Variance collapse or inflation detected.",
+      "reasoning": "Significant localised noise variance anomaly detected (inconsistency ratio=5.0000). Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). This level of inconsistency is characteristic of manipulated or AI-generated image regions.",
+      "strength": 0.9644,
+      "raw_metric": 5.0,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_134634_real_0007_png/region_E-6d337040f3.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_134634_real_0007_png/noise_residual_map_E-6d337040f3.png"
+      ]
+    },
+    {
+      "evidence_id": "E-5b786c799f",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[25, 17, 41, 33]",
+      "region_pixels": [
+        25,
+        17,
+        41,
+        33
+      ],
+      "region_normalized_1000": [
+        76,
+        34,
+        92,
+        50
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 5.0000). Variance collapse or inflation detected.",
+      "reasoning": "Significant localised noise variance anomaly detected (inconsistency ratio=5.0000). Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU). Splicing, inpainting, or AI-based local editing disrupts this homogeneity, causing either variance collapse (over-smoothing) or inflation (unnatural texture). This level of inconsistency is characteristic of manipulated or AI-generated image regions.",
+      "strength": 0.9644,
+      "raw_metric": 5.0,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_134634_real_0007_png/region_E-5b786c799f.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_134634_real_0007_png/noise_residual_map_E-5b786c799f.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      333,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:46:34.882220",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5
+  }
+}

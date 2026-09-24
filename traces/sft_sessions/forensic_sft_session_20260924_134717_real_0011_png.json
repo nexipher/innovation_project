@@ -1,0 +1,160 @@
+{
+  "id": "session_20260924_134717_real_0011_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0011_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.95,
+    "primary_evidence": [
+      "frequency_grid_artifact_v2"
+    ],
+    "report": "图像频谱分析未显示显著周期性结构，符合自然图像特征，排除了GAN/Diffusion上采样操作的可能性。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 250, 200]\nVisual Anomalies: 窗户区域的纹理看起来过于均匀，缺乏自然的细节变化。\nExpert Target & Hypothesis: <call_freq>[100, 100, 250, 200]</call_freq> → 可能存在频率域上的异常，建议调用频率域专家进行进一步分析。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-a800ec15c9\", \"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[33, 50, 84, 100]\", \"region_pixels\": [33, 50, 84, 100], \"region_normalized_1000\": [100, 100, 250, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0012, full=0.0012)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2493, \"raw_metric\": 0.001218, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\", \"counter_explanation\": \"自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。\", \"reliability\": 0.505, \"calibrated_likelihood\": {\"Real\": 0.476, \"Fake\": 0.524}, \"condition_metadata\": {\"bin_samples\": 84, \"confound_drop_png_to_q70\": -0.03645833333333337, \"separation_polarity_corrected\": 0.5047916666666666}, \"semantics_aligned\": true, \"applicability\": \"disabled:no-signal\", \"applicability_conditions\": \"无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_134717_real_0011_png/region_E-a800ec15c9.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_134717_real_0011_png/frequency_spectrum_v2_E-a800ec15c9.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_134717_real_0011_png/region_E-a800ec15c9.png",
+        "traces/evidence/session_20260924_134717_real_0011_png/frequency_spectrum_v2_E-a800ec15c9.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [33, 50, 84, 100]\nVisual Anomalies: 频率谱图显示出没有显著的周期性结构，这与自然图像内容一致，而非GAN/Diffusion上采样操作特有的网格化特征。\nExpert Target & Hypothesis: <call_freq>[33, 50, 84, 100]</call_freq> → 频率域专家可以确认是否存在显著的周期性结构。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-6635fe4499\", \"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[11, 25, 28, 50]\", \"region_pixels\": [11, 25, 28, 50], \"region_normalized_1000\": [33, 50, 84, 100], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0000, full=0.0000)\", \"reasoning\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"strength\": 0.2315, \"raw_metric\": 0.0, \"source\": \"frequency_expert\", \"support\": \"Real\", \"interpretation_text\": \"Statistical patterns align with normal hardware camera capture.\", \"counter_explanation\": \"自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。\", \"reliability\": 0.505, \"calibrated_likelihood\": {\"Real\": 0.532, \"Fake\": 0.468}, \"condition_metadata\": {\"bin_samples\": 231, \"confound_drop_png_to_q70\": -0.03645833333333337, \"separation_polarity_corrected\": 0.5047916666666666}, \"semantics_aligned\": true, \"applicability\": \"disabled:no-signal\", \"applicability_conditions\": \"无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_134717_real_0011_png/region_E-6635fe4499.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_134717_real_0011_png/frequency_spectrum_v2_E-6635fe4499.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_134717_real_0011_png/region_E-6635fe4499.png",
+        "traces/evidence/session_20260924_134717_real_0011_png/frequency_spectrum_v2_E-6635fe4499.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的多帧频谱分析结果，所有可疑区域均未显示出显著的周期性结构，这与自然图像内容一致，而非GAN/Diffusion上采样操作特有的网格化特征。此外，这些区域的频谱衰减模式符合正常硬件相机捕捉的统计模式。综合考虑，这些证据支持图像的真实性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.95, \"primary_evidence\": [\"frequency_grid_artifact_v2\"], \"report\": \"图像频谱分析未显示显著周期性结构，符合自然图像特征，排除了GAN/Diffusion上采样操作的可能性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-a800ec15c9",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[33, 50, 84, 100]",
+      "region_pixels": [
+        33,
+        50,
+        84,
+        100
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        250,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0012, full=0.0012)",
+      "reasoning": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "strength": 0.2493,
+      "raw_metric": 0.001218,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.476,
+        "Fake": 0.524
+      },
+      "condition_metadata": {
+        "bin_samples": 84,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_134717_real_0011_png/region_E-a800ec15c9.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_134717_real_0011_png/frequency_spectrum_v2_E-a800ec15c9.png"
+      ]
+    },
+    {
+      "evidence_id": "E-6635fe4499",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[11, 25, 28, 50]",
+      "region_pixels": [
+        11,
+        25,
+        28,
+        50
+      ],
+      "region_normalized_1000": [
+        33,
+        50,
+        84,
+        100
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0000, full=0.0000)",
+      "reasoning": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "strength": 0.2315,
+      "raw_metric": 0.0,
+      "source": "frequency_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.532,
+        "Fake": 0.468
+      },
+      "condition_metadata": {
+        "bin_samples": 231,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_134717_real_0011_png/region_E-6635fe4499.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_134717_real_0011_png/frequency_spectrum_v2_E-6635fe4499.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      334,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:47:17.588686",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "id": "session_20260924_133756_real_0004_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0004_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.85,
+    "primary_evidence": [
+      "noise_expert",
+      "jpeg_expert"
+    ],
+    "report": "图像右侧存在严重的块状纹理，可能是由于 JPEG 压缩造成的。同时，图像左侧区域存在明显的噪声残留，表明该区域可能经过了多次压缩或处理。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [180, 179, 435, 299]\nVisual Anomalies: 硬盘电路板上的焊接点和连接器看起来有些不自然。\nExpert Target & Hypothesis: 首先调用 <call_noise> 专家，因为硬盘电路板的焊接点和连接器看起来有些不自然。\n</planning>\n<call_noise>[180, 179, 435, 299]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[诊断证据图已附：noise_expert 对区域 [68, 90, 163, 150] 的分析产物，请结合图像自行判断。]",
+      "image_paths": [
+        "traces/evidence/session_20260924_133756_real_0004_jpeg_q85/region_E-6e732a3ed3.png",
+        "traces/evidence/session_20260924_133756_real_0004_jpeg_q85/noise_residual_map_E-6e732a3ed3.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 noise_expert 的分析，区域 [68, 90, 163, 150] 存在明显的噪声残留，这表明该区域可能经过了多次压缩或处理。结合图像整体来看，图像右侧存在严重的块状纹理，可能是由于 JPEG 压缩造成的。因此，综合考虑，图像可能是伪造的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.85, \"primary_evidence\": [\"noise_expert\", \"jpeg_expert\"], \"report\": \"图像右侧存在严重的块状纹理，可能是由于 JPEG 压缩造成的。同时，图像左侧区域存在明显的噪声残留，表明该区域可能经过了多次压缩或处理。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-6e732a3ed3",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[68, 90, 163, 150]",
+      "region_pixels": [
+        68,
+        90,
+        163,
+        150
+      ],
+      "region_normalized_1000": [
+        180,
+        179,
+        435,
+        299
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Localised noise variance measures within normal range (inconsistency ratio: 2.1787). No significant local variance anomaly.",
+      "reasoning": "The micro-noise pattern exhibits uniform variance across the analysed region (inconsistency=2.1787), consistent with a single camera sensor capture. No evidence of local editing, splicing, or AI-based inpainting that would disrupt noise homogeneity.",
+      "strength": 0.2825,
+      "raw_metric": 2.178699,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Statistical patterns align with normal hardware camera capture.",
+      "counter_explanation": "降噪、锐化、重压缩与局部后处理都会改变局部噪声一致性。G2 校准显示该指标在 Real/JPEG 图像上系统性偏高（方向与语义标签相反），高 strength 不等于 AI 生成。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_133756_real_0004_jpeg_q85/region_E-6e732a3ed3.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_133756_real_0004_jpeg_q85/noise_residual_map_E-6e732a3ed3.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      375,
+      500
+    ],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T13:37:56.946006",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0
+  }
+}

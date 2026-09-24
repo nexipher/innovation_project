@@ -1,0 +1,160 @@
+{
+  "id": "session_20260924_140142_fake_glide_0012_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_glide_0012_jpeg_q85.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.6,
+    "primary_evidence": [
+      "frequency_grid_artifact_v2"
+    ],
+    "report": "图像在特定区域显示出轻微的周期性能量聚集，可能是由于轻微的数学失真、局部压缩或模糊处理造成的。然而，这些发现不足以明确判断图像的真实性。综合考虑所有专家意见和现有证据，无法排除图像经过轻微处理的可能性，但也不能确定其真实性。"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 蜘蛛的纹理看起来过于均匀，没有明显的细节变化。\nExpert Target & Hypothesis: <call_freq>[100, 100, 200, 200]</call_freq> → 检查频率域是否存在异常信号。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-ffc6bff5f3\", \"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0099, full=0.0099)\", \"reasoning\": \"Multi-scale frequency analysis detects weak periodic energy (raw=0.0099) below the confident detection threshold. This may indicate mild post-processing or natural texture patterns. Cross-reference with other forensic experts is recommended.\", \"strength\": 0.3994, \"raw_metric\": 0.009901, \"source\": \"frequency_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\", \"counter_explanation\": \"自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。\", \"reliability\": 0.505, \"calibrated_likelihood\": {\"Real\": 0.476, \"Fake\": 0.524}, \"condition_metadata\": {\"bin_samples\": 84, \"confound_drop_png_to_q70\": -0.03645833333333337, \"separation_polarity_corrected\": 0.5047916666666666}, \"semantics_aligned\": true, \"applicability\": \"disabled:no-signal\", \"applicability_conditions\": \"无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/region_E-ffc6bff5f3.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/frequency_spectrum_v2_E-ffc6bff5f3.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/region_E-ffc6bff5f3.png",
+        "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/frequency_spectrum_v2_E-ffc6bff5f3.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [26, 26, 51, 51]\nVisual Anomalies: 频率谱图中存在异常的局部峰值，可能表明图像经过了某种数学处理或压缩。\nExpert Target & Hypothesis: <call_freq>[26, 26, 51, 51]</call_freq> → 检查是否存在异常频率信号。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-f9f2649a10\", \"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[7, 7, 23, 23]\", \"region_pixels\": [7, 7, 23, 23], \"region_normalized_1000\": [26, 26, 51, 51], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"phenomenon\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0127, full=0.0127)\", \"reasoning\": \"Multi-scale frequency analysis detects weak periodic energy (raw=0.0127) below the confident detection threshold. This may indicate mild post-processing or natural texture patterns. Cross-reference with other forensic experts is recommended.\", \"strength\": 0.4533, \"raw_metric\": 0.012658, \"source\": \"frequency_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Mild mathematical distortions noted; localized compression or blurring suspected.\", \"counter_explanation\": \"自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。\", \"reliability\": 0.505, \"calibrated_likelihood\": {\"Real\": 0.476, \"Fake\": 0.524}, \"condition_metadata\": {\"bin_samples\": 84, \"confound_drop_png_to_q70\": -0.03645833333333337, \"separation_polarity_corrected\": 0.5047916666666666}, \"semantics_aligned\": true, \"applicability\": \"disabled:no-signal\", \"applicability_conditions\": \"无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。\", \"diagnostic_region_image\": \"traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/region_E-f9f2649a10.png\", \"visual_artifacts\": [\"traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/frequency_spectrum_v2_E-f9f2649a10.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/region_E-f9f2649a10.png",
+        "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/frequency_spectrum_v2_E-f9f2649a10.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽或信息增益收敛，请立即基于已获取的全部证据撰写最终报告并输出 <verdict>。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的多帧频谱分析结果，图像在特定区域显示出轻微的周期性能量聚集，这可能是由于轻微的数学失真、局部压缩或模糊处理造成的。然而，这些发现不足以明确判断图像的真实性。此外，图像的频率谱图显示没有显著的周期结构，这与自然纹理的特征相符。综合考虑所有专家意见和现有证据，无法排除图像经过轻微处理的可能性，但也不能确定其真实性。\n\n鉴于取证资源已耗尽且信息增益收敛，我们无法得出更进一步的结论。因此，基于当前证据，我们倾向于认为图像可能是真实的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.6, \"primary_evidence\": [\"frequency_grid_artifact_v2\"], \"report\": \"图像在特定区域显示出轻微的周期性能量聚集，可能是由于轻微的数学失真、局部压缩或模糊处理造成的。然而，这些发现不足以明确判断图像的真实性。综合考虑所有专家意见和现有证据，无法排除图像经过轻微处理的可能性，但也不能确定其真实性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-ffc6bff5f3",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0099, full=0.0099)",
+      "reasoning": "Multi-scale frequency analysis detects weak periodic energy (raw=0.0099) below the confident detection threshold. This may indicate mild post-processing or natural texture patterns. Cross-reference with other forensic experts is recommended.",
+      "strength": 0.3994,
+      "raw_metric": 0.009901,
+      "source": "frequency_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.476,
+        "Fake": 0.524
+      },
+      "condition_metadata": {
+        "bin_samples": 84,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/region_E-ffc6bff5f3.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/frequency_spectrum_v2_E-ffc6bff5f3.png"
+      ]
+    },
+    {
+      "evidence_id": "E-f9f2649a10",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[7, 7, 23, 23]",
+      "region_pixels": [
+        7,
+        7,
+        23,
+        23
+      ],
+      "region_normalized_1000": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "phenomenon": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0127, full=0.0127)",
+      "reasoning": "Multi-scale frequency analysis detects weak periodic energy (raw=0.0127) below the confident detection threshold. This may indicate mild post-processing or natural texture patterns. Cross-reference with other forensic experts is recommended.",
+      "strength": 0.4533,
+      "raw_metric": 0.012658,
+      "source": "frequency_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Mild mathematical distortions noted; localized compression or blurring suspected.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.505,
+      "calibrated_likelihood": {
+        "Real": 0.476,
+        "Fake": 0.524
+      },
+      "condition_metadata": {
+        "bin_samples": 84,
+        "confound_drop_png_to_q70": -0.03645833333333337,
+        "separation_polarity_corrected": 0.5047916666666666
+      },
+      "semantics_aligned": true,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "diagnostic_region_image": "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/region_E-f9f2649a10.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260924_140142_fake_glide_0012_jpeg_q85/frequency_spectrum_v2_E-f9f2649a10.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 3,
+    "halting_reason": "info_gain_converged",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-24T14:01:42.452999",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5
+  }
+}
