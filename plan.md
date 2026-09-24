@@ -1432,6 +1432,17 @@ EvidenceBundle
 
 **交付物**：`scripts/qwen_gain_baseline.py` + `calibration/g2_gain_report.json`。
 
+**实施状态（2026-09-24，CPU 侧就绪，待 GPU 授权）**：
+
+- `scripts/qwen_gain_baseline.py` 已完成：四条件映射 `rgb → evidence_injection="none" + BASELINE_SYSTEM_PROMPT`、`text → "text"`、`image → "image"`（附产物图与中性标记，不向模型显示数值）、`both → "text+image"`（G2-c 默认协议）；分层抽样仅取格式对齐单元（`real/fake × png/q95/q85/q70`，共 8 格），指标含 Accuracy / F1 / AUROC / ECE / Uncertain 率 / 平均轮数与调用数 / 分格准确率。
+- **两个必须修的问题已在 CPU 侧修掉**：
+  1. 原实现在样本循环内调用 `client_factory` —— GPU 模式下等于**每张图新建 `QwenVLClient` 并重新加载 16.6GB 权重**。现改为每个条件构建一次 client 与 expert 工具集并复用，状态机仍按样本重建以保证会话隔离（`run()` 内部 `mllm.reset()`）。
+  2. `mllm/__init__.py` 原急切导入 `qwen_client`，使所有 CPU 路径（干跑、测试）都付出 torch+transformers 的 ~450MB 代价。改为 PEP 562 惰性导出后，导入基线 **586MB → 116MB**。
+- 干跑报告与正式报告分离：`calibration/g2_gain_report_dry_run.json`（mock 数字永不覆盖 GPU 真实报告）。
+- **运行环境前置条件（重要）**：执行 shell 处于 **2GB cgroup**（`memory.max=2147MB`，只读不可调），与 VS Code server、claude 本体、jupyter、tensorboard 等共享；当前常驻 anon ~1.08GB、可回收页缓存 ~0.47GB，**单进程实际可用约 0.93GB**。实测 GPU 栈 `torch + transformers + processor` ≈ 0.65GB RSS（未计权重加载）。故 G2-d 执行前需确认无其他重进程，运行期间监控 `/sys/fs/cgroup/memory.current`。
+- 干跑语义说明：Mock 从对话中的 Evidence Token JSON 取判定依据，故 `rgb`（无注入）与 `image`（中性标记、无数值）两臂必然返回 Uncertain 并落在随机水平 —— 这是 mock 对注入模式的忠实反映，**不构成科学结论**，干跑只证明管线通。
+- 测试：全量 **197 通过**（新增 33 项：注入模式轴 5 项、四条件工具集 28 项）。
+
 #### G2-e 准入决策与收口（CPU，结论依赖 G2-b + G2-d）
 
 - 依据"稳定净增益且非高度冗余"标准，逐 Expert 给出 **保留 / 限制适用条件 / 降权 / 停用** 决定；

@@ -525,3 +525,28 @@
 * **执行结果与验证状态**：G2-a/b/c 全部完成; 164 测试通过; 校准集 700 样本; 关键发现: 三个现有专家均受格式/压缩历史混杂支配, ELA 为最强但捷径型分离
 * **置信度或遗留待办（TODO）**：G2-d 需 GPU 授权(~1-1.5h RTX 4090)做四条件增益对比; G2-e 依赖 G2-d 结论
 ---
+### 2026-09-24 12:33:42 - 4.9 G2-d 实施就绪（CPU 侧完成，待 GPU 授权）
+
+* **当前操作动作**：4.9 G2-d 四条件增益对比脚本实现 + Mock 干跑验证（用户指令第 2 步："完成 scripts/qwen_gain_baseline.py，这部分编写和 Mock 测试不需要 GPU"）
+* **核心变更说明**：
+  1. G2-c 语义传递补齐(承接上一步骤): semantics_aligned / applicability / applicability_conditions 已随 Token 传入 Evidence Bundle, 验证端到端
+  2. 四条件实现: rgb(evidence_injection="none" + BASELINE_SYSTEM_PROMPT 禁工具) / text(仅 Token JSON) / image(附区域图+产物图, 中性标记不含数值) / both(Token JSON + 图像, G2-c 默认)
+  3. 分层抽样限格式对齐 8 格(real|fake × png|q95|q85|q70), 指标: Accuracy/F1/AUROC/ECE/Uncertain率/平均轮数与调用数/分格准确率
+  4. 内存阻塞定位与修复(**关键**): 干跑曾被 SIGKILL(exit 137)。实测确认**无内存泄漏**(每 run 后 RSS 恒定 591.7MB), 真因是执行 shell 处于 2GB 只读 cgroup 且与 VS Code/claude/jupyter/tensorboard 共享(常驻 anon ~1.08GB + 可回收页缓存 ~0.47GB, 单进程实际可用 ~0.93GB), 而导入基线达 586MB
+  5. 修复①: mllm/__init__.py 急切导入 qwen_client 导致所有 CPU 路径加载 torch+transformers；改 PEP 562 惰性导出 → 导入基线 586MB → 116MB, 干跑四条件全部通过
+  6. 修复②(**否则 GPU 运行必失败**): run_condition 原在样本循环内调用 client_factory, GPU 模式下等于每张图新建 QwenVLClient 并重复加载 16.6GB 权重; 改为每条件构建一次 client 与 expert 工具集复用, 状态机按样本重建保证会话隔离
+  7. 干跑报告与正式报告分离(g2_gain_report_dry_run.json), mock 数字永不覆盖 GPU 真实报告
+  8. GPU 运行前置预检: torch+transformers+processor ≈ 668MB RSS(未计权重加载), 与 0.93GB 可用余量对比 —— 执行前需确认无其他重进程, 运行期监控 memory.current
+  9. 全量测试 197 passed(新增 33: 注入模式轴 5 + 四条件工具集 28)
+* **涉及/修改的文件清单**：
+  - `scripts/qwen_gain_baseline.py (Created — 四条件 runner/分层抽样/指标/报告)`
+  - `mllm/__init__.py (Modified — PEP 562 惰性导出 QwenVLClient)`
+  - `mllm/message_builder.py (Modified — BASELINE_SYSTEM_PROMPT 无工具变体)`
+  - `mllm/qwen_client.py (Modified — system_prompt 覆盖)`
+  - `state_machine/controller.py (Modified — evidence_injection 四模式轴)`
+  - `tests/test_qwen_gain_baseline.py (Created), tests/test_controller.py (Modified — 注入模式 5 项)`
+  - `calibration/g2_gain_report_dry_run.json (Created — mock 干跑产物)`
+  - `plan.md (Modified — G2-d 实施状态与运行前置条件)`
+* **执行结果与验证状态**：CPU 侧全部就绪; 197 测试通过; 干跑四条件完成(报告 calibration/g2_gain_report_dry_run.json); 干跑中 rgb/image 两臂必然 Uncertain 属 mock 语义(mock 依据对话内 Token JSON 判定), 不构成结论
+* **置信度或遗留待办（TODO）**：G2-d 四条件对比等待用户 GPU 授权(~1500-1800 次生成 ≈ 1-1.5h RTX 4090); 执行前需确认 cgroup 余量充足; G2-e 依赖 G2-d 结论
+---
