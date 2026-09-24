@@ -6,7 +6,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-95%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-152%20passed-brightgreen)](./tests/)
 
 ---
 
@@ -80,15 +80,17 @@ sequenceDiagram
 | 层 | 模块 | 职责 |
 |----|------|------|
 | 控制 | `state_machine/controller.py` | 主循环编排：解析 → 执行专家 → 注入证据 → 终止判断 |
-| 控制 | `state_machine/halting.py` | 四重终止守卫（verdict / max_steps / conflict / info_gain） |
+| 控制 | `state_machine/halting.py` | 四重终止守卫（verdict / budget / conflict / info_gain） |
 | 控制 | `state_machine/evidence_tokenizer.py` | 标量 → 语义映射 + Evidence Token Schema 构建 |
 | 模型 | `mllm/qwen_client.py` | 真实 Qwen2.5-VL 推理 + 格式纠错反馈环 |
 | 模型 | `mllm/mock_client.py` | 模板驱动 Mock（4 种行为模式，CPU 测试用） |
+| 模型 | `mllm/message_builder.py` | 多轮消息构建：原图 + 诊断区域裁剪图（G1） |
 | 专家 | `experts/frequency.py` / `frequency_v2.py` | 2D-FFT 功率谱周期峰值检测 |
 | 专家 | `experts/noise.py` | SRM 高通滤波 + 局部方差不一致性 |
 | 专家 | `experts/jpeg.py` | 8×8 块效应 + DCT 直方图双重量化 |
 | 工具 | `utils/parser.py` | 正则解析 XML 标签 + 容错归一化 |
-| 工具 | `utils/coordinate_transformer.py` | [0,1000] 相对坐标 ↔ 绝对像素坐标 |
+| 工具 | `utils/coordinate_transformer.py` | 双空间坐标转换（normalized_1000 ↔ pixels，G1） |
+| 工具 | `utils/evidence_consistency.py` | 证据方向一致性门：strength 与论述方向必须一致（G1） |
 | 工具 | `utils/logger.py` | SessionLogger（SFT Trace）+ 操作审计日志 |
 
 ---
@@ -184,6 +186,7 @@ innovation_project/
 ├── mllm/                           # MLLM 客户端抽象层
 │   ├── base.py                     # BaseMLLMClient 抽象接口
 │   ├── mock_client.py              # 模板驱动 Mock（4 种行为模式，CPU）
+│   ├── message_builder.py          # Qwen 多轮消息构建（原图 + 区域裁剪图，G1）
 │   └── qwen_client.py              # 真实 Qwen2.5-VL 客户端（GPU）+ 格式纠错环
 │
 ├── state_machine/                  # 状态机核心
@@ -195,6 +198,7 @@ innovation_project/
 │   ├── image_utils.py              # 图像加载 / 裁剪 / 灰度化 / RGBA 处理
 │   ├── coordinate_transformer.py   # [0,1000] 相对 ↔ 绝对像素坐标
 │   ├── parser.py                   # 正则解析器（XML 标签 + 容错归一化）
+│   ├── evidence_consistency.py     # 证据方向一致性门（G1）
 │   └── logger.py                   # SessionLogger (ShareGPT) + 操作审计日志
 │
 ├── scripts/                        # 批处理脚本
@@ -209,6 +213,7 @@ innovation_project/
 ├── sft_data/train/final/           # 旧版 SFT 候选集（509 条）+ 拒绝集（68 条）
 ├── calibration/                    # 专家校准报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）
+├── traces/evidence/                # 诊断区域裁剪图（运行期生成，未纳入版本控制）
 └── claude_operation_log.md         # 开发操作审计日志
 ```
 
@@ -222,8 +227,13 @@ innovation_project/
 
 ```json
 {
+  "evidence_id": "E-1a2b3c4d5e",
   "evidence_name": "noise_residual_inconsistency",
   "region": "patch_coordinates_[380, 220, 720, 580]",
+  "region_pixels": [380, 220, 720, 580],
+  "region_normalized_1000": [371, 275, 703, 725],
+  "coordinate_space": "pixels",
+  "region_semantics": "diagnostic_evidence_region",
   "phenomenon": "Localised noise variance measures abnormally (inconsistency ratio: 3.2802). Variance collapse or inflation detected.",
   "reasoning": "Significant localised noise variance anomaly detected. Real camera sensors produce spatially homogeneous micro-noise (shot noise + PRNU)...",
   "strength": 0.7630,
@@ -338,6 +348,7 @@ innovation_project/
 | **二** 2.4 | 验证与评估 | 格式覆盖率 98%+；端到端准确率 25%（确认 SFT 必要性） |
 | **三** 3.1a | SFT 数据构造 | **509 条候选训练数据**（correct 166 / conflict 143 / borderline 100 / format 100）+ 68 条拒绝记录 |
 | **四** G0 | 旧 SFT 数据审计收口 | 全部旧样本获得明确处置状态（regenerate 409 / format_only 100 / rejected 68）；correct 硬拒绝 30 条；幂等审计脚本 + 16 项测试 |
+| **四** G1 | 运行协议与证据正确性 | 双空间坐标协议 + 稳定 evidence_id；证据去重（消除虚假收敛）；方向一致性门；原图+诊断区域图多轮回灌；任务语义字段与分离计数全部写入 Trace |
 | **三** 3.2 | 专家重构 | `frequency_v2.py`（多尺度 FFT）+ 四专家 reasoning 条件化修复 |
 
 ### 7.2 后续执行顺序
@@ -347,7 +358,7 @@ innovation_project/
 | 顺序 | 阶段 | 主要工作 | GPU |
 |------|------|----------|-----|
 | 1 | G0 ✅ | 旧 SFT 数据用途隔离与拒绝集收口（已完成） | 否 |
-| 2 | G1 | 坐标协议、证据去重、多轮图像历史和语义一致性修复 | 否 |
+| 2 | G1 ✅ | 坐标协议、证据去重、多轮图像历史和语义一致性修复（已完成） | 否 |
 | 3 | G2 | Expert 准入、条件校准和 Evidence Bundle | Qwen 对比需要 |
 | 4 | G3 | EvidenceRectifier 与停止策略 v2 | 校准需要 |
 | 5 | G4 | 重新生成并审核 `final_v2`，随后进行 LoRA | 是 |
@@ -360,7 +371,7 @@ innovation_project/
 - **专家检测的是"格式差异"**：数据集 Real 为 JPEG、Fake 为 PNG，导致 noise/jpeg 专家的信号强度受图像格式影响大于受 AI 伪造影响。
 - **频域专家信号弱**：v1 separation=0.05（无效），v2 提升至 0.24 但仍不足以独立判定。
 - **旧 SFT 尚未达到训练准入**：G0 审计后 509 条候选全部获得明确处置状态（regenerate / format_only），68 条结构失效样本进入拒绝集；correct 集 166 条全部生成于专家 reasoning 修复之前，必须用修复后的专家重新生成后才能投入 LoRA。
-- **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查；重复证据可能造成虚假收敛。
+- **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查。G1 已通过证据去重消除虚假收敛路径，但后验校准与工具增益驱动的停止策略仍待 G3（依赖 G2 Expert 校准）。
 - **仅支持静态图像**：无视频帧采样 / 时序一致性分析能力。
 
 ---

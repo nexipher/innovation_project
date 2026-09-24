@@ -471,3 +471,32 @@
 * **执行结果与验证状态**：pytest 16 passed；幂等验证通过；5 个 JSON 全部可解析；G0 完成门槛全部满足
 * **置信度或遗留待办（TODO）**：correct 集需在 G4 用修复后的专家与 G1 新协议重新生成（final_v2）。下一步：G1 运行协议与证据正确性修复（纯 CPU）
 ---
+### 2026-09-24 10:24:32 - 4.8 G1 运行协议与证据正确性修复（完成）
+
+* **当前操作动作**：4.8 G1 运行协议与证据正确性修复（完成）
+* **核心变更说明**：
+  1. 对应计划锚点: plan.md §4.8 全部 6 个实施项完成
+  2. 坐标协议: CoordinateTransformer.transform() 双空间返回(region_normalized_1000/region_pixels/coordinate_space/clipped); Evidence Token 同时保存两空间与遗留 region 字符串
+  3. 证据去重: EvidenceTokenizer.evidence_id() 稳定 sha1 短 id; 重复结果不进链/不进对话/不进停止统计, suppressed_duplicate_count 单独记录
+  4. 多轮图像历史: 新增 mllm/message_builder.py(torch-free); 原图保留首轮, 每个证据轮附诊断区域裁剪图(最多2张, 缺图降级纯文本); 裁剪图落盘 traces/evidence/<session>/ 并写入 token 与对话轮 image_paths
+  5. 语义一致性门: 新增 utils/evidence_consistency.py 确定性方向检查(低 strength 不得声称生成伪迹/高 strength 不得声称正常); 失败证据标记 consistency.fail 并降级 support→Uncertain
+  6. 任务语义字段: Trace metadata 增加 task_type/evidence_scope/region_semantics; 证据 token 携带 region_semantics
+  7. 可观测计数: model_turn_count/expert_call_count/unique_evidence_count/suppressed_duplicate_count/weighted_cost; 停止预算改为 MAX_EXPERT_CALLS=5/MAX_MODEL_TURNS=6 双计数, 原因更名 budget_exhausted
+  8. 完成门槛全部满足: 坐标往返 5 种尺寸无漂移; 重复证据不增数不触发虚假收敛; 一致性门捕获 080862af(方向矛盾)+00eb3be4(重复证据 id 碰撞) 两类反例; Mock 端到端 Trace 含任务语义与计数
+  9. 提交: f8f010b(坐标+id) 0d706ec(去重+计数+预算) 30d2ae7(一致性门) fac5c36(多轮图像)
+* **涉及/修改的文件清单**：
+  - `config.py (Modified — 双计数预算/任务语义常量/artifact 目录)`
+  - `utils/coordinate_transformer.py (Modified — transform() 双空间)`
+  - `utils/evidence_consistency.py (Created)`
+  - `utils/image_utils.py (Modified — save_image)`
+  - `utils/logger.py (Modified — image_paths/counters/task-semantics)`
+  - `mllm/message_builder.py (Created)`
+  - `mllm/qwen_client.py (Modified — 委托共享消息构建)`
+  - `state_machine/controller.py (Modified — 去重/计数/预算/一致性/artifact)`
+  - `state_machine/halting.py (Modified — 双计数预算)`
+  - `state_machine/evidence_tokenizer.py (Modified — evidence_id/双空间)`
+  - `tests/test_coordinate_transformer.py, test_evidence_tokenizer.py, test_halting.py, test_controller.py, test_evidence_consistency.py, test_message_builder.py, test_pipeline.py (Modified/Created)`
+  - `plan.md, CURRENT_PROGRAM_ARCHITECTURE.md, README.md (Modified — G1 状态收口)`
+* **执行结果与验证状态**：全量测试 152 passed; 四条完成门槛全部通过; 4 个原子提交
+* **置信度或遗留待办（TODO）**：G2 入口: 格式配平校准集与单 Expert 增益基线（Qwen 对比需 GPU 授权）；停止策略重构留待 G3
+---

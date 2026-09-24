@@ -1299,25 +1299,38 @@ innovation_project/
 - `sft_data/train/sft_correct.json`（139 条合成旁支）已标记 `superseded`，不被 `final/` 引用；
 - 旧数据仅用于定位生成流程缺陷；`final_v2` 在 G4 用修复后的专家与协议重新生成。
 
-## 4.8 G1：运行协议与证据正确性修复
+## 4.8 G1：运行协议与证据正确性修复 ✅（已完成 2026-09-24）
 
 该阶段先修主管道正确性，再更新 Expert。否则新的 Expert 输出仍会被错误坐标、重复回灌或旧停止规则污染。
 
-### 实施内容
+### 实施结果
 
-1. **统一坐标协议**：Trace 中同时保存 `region_normalized_1000` 与 `region_pixels`，每次转换带 `coordinate_space`，禁止把像素坐标再次作为归一化坐标解析；
-2. **证据去重**：以 `evidence_id`、Expert、输入区域、参数和结果摘要生成稳定键；相同结果不得重复进入 conversation、evidence chain 或停止统计；
-3. **Qwen 多轮图像历史**：确保原图、诊断区域和后续工具可视化在多轮消息中按协议保留，不能只回灌文字；
-4. **证据语义一致性**：增加确定性检查，保证 `phenomenon`、`reasoning`、`support`、`strength` 和 `interpretation_text` 方向一致；
-5. **任务语义字段**：Trace 增加 `task_type`、`evidence_scope` 和 `region_semantics`。当前默认值为 `fully_generated/global/diagnostic_evidence_region`；
-6. **可观测计数**：分离 `model_turn_count`、`expert_call_count`、`unique_evidence_count` 和加权成本，停止预算不再使用含义混杂的 `step`。
+1. ✅ **统一坐标协议**：`CoordinateTransformer.transform()` 返回 `region_normalized_1000` + `region_pixels` + `coordinate_space` + `clipped`；Evidence Token 同时保存两个空间（遗留的 `region: "patch_coordinates_[...]"` 字符串保留兼容）；
+2. ✅ **证据去重**：`EvidenceTokenizer.evidence_id()` 以 source/region/strength/evidence_name 生成稳定 sha1 短 id；重复结果不再进入 conversation、evidence chain 或停止统计，`suppressed_duplicate_count` 单独记录；
+3. ✅ **Qwen 多轮图像历史**：`mllm/message_builder.py`（无 torch 依赖）重建完整历史——原图保留在首轮，每个证据轮附诊断区域裁剪图（最多 2 张），相对路径按项目根解析，缺图降级为纯文本；裁剪图落盘 `traces/evidence/<session>/`；
+4. ✅ **证据语义一致性**：`utils/evidence_consistency.py` 确定性短语方向检查（低 strength 不得声称生成伪迹、高 strength 不得声称正常），失败证据标记 `consistency.fail` 并降级 `support→Uncertain`；
+5. ✅ **任务语义字段**：Trace metadata 增加 `task_type=fully_generated`、`evidence_scope=global`、`region_semantics=diagnostic_evidence_region`；证据 token 携带 `region_semantics`；
+6. ✅ **可观测计数**：`model_turn_count`、`expert_call_count`、`unique_evidence_count`、`suppressed_duplicate_count`、`weighted_cost` 全部写入 Trace；停止预算改为 `MAX_EXPERT_CALLS=5` / `MAX_MODEL_TURNS=6` 双计数，停止原因更名 `budget_exhausted`。
 
-### 完成门槛
+### 完成门槛核对
 
-- 坐标往返测试覆盖不同图像尺寸，不发生二次缩放；
-- 重复工具响应不会增加 evidence 数或触发信息增益收敛；
-- 自动一致性检查能捕获本轮审计发现的两类 `correct` 反例；
-- CPU Mock 端到端 Trace 包含完整任务语义与计数字段。
+- ✅ 坐标往返测试覆盖 5 种图像尺寸（含非方形），二次转换不产生缩放漂移（`test_roundtrip_no_second_scaling`）；
+- ✅ 重复工具响应不增加 evidence 数、不触发信息增益收敛（`TestEvidenceDeduplication`，复现 `0b0d0ad4` 失败模式）；
+- ✅ 一致性检查捕获两类审计反例：`080862af`（方向矛盾）由检查器捕获、`00eb3be4`（重复证据）由 evidence_id 碰撞捕获（`test_evidence_consistency.py` 集成用例）；
+- ✅ CPU Mock 端到端 Trace 含完整任务语义与计数字段（`TestTraceSemantics`）。
+
+### 提交记录
+
+- `f8f010b` 双空间坐标协议 + evidence_id
+- `0d706ec` 证据去重 + 分离计数 + 预算语义
+- `30d2ae7` 确定性一致性门
+- `fac5c36` 多轮图像历史（region 裁剪图回灌）
+
+### 遗留（进入 G2）
+
+- 停止策略仍未重构（`<verdict>` 仍优先进退出、info_gain 仍比较相邻 strength）——依赖 G2 校准后的后验与工具增益（G3）；
+- Expert 仍输出单标量，无 `reliable/counter_explanation`/可视化产物（G2）；
+- 旧 Trace 不回溯迁移到新协议，`final_v2` 由 G4 重新生成。
 
 ## 4.9 G2：Expert 准入、校准与 Evidence Bundle
 

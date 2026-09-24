@@ -143,12 +143,17 @@ Expert Target & Hypothesis: 说明专家选择及假设
 
 ### 4.5 Evidence Token
 
-`EvidenceTokenizer` 将 `ExpertResult` 转换成可注入 MLLM 上下文的 JSON：
+`EvidenceTokenizer` 将 `ExpertResult` 转换成可注入 MLLM 上下文的 JSON（G1 后带明确坐标空间与稳定 id）：
 
 ```json
 {
+  "evidence_id": "E-1a2b3c4d5e",
   "evidence_name": "noise_residual_inconsistency",
   "region": "patch_coordinates_[100, 120, 500, 520]",
+  "region_pixels": [100, 120, 500, 520],
+  "region_normalized_1000": [200, 150, 800, 750],
+  "coordinate_space": "pixels",
+  "region_semantics": "diagnostic_evidence_region",
   "phenomenon": "Localized noise variance measures abnormally...",
   "reasoning": "Significant localized noise variance anomaly detected...",
   "strength": 0.763,
@@ -157,6 +162,8 @@ Expert Target & Hypothesis: 说明专家选择及假设
   "interpretation_text": "Severe statistical anomaly matching artificial generative fingerprints."
 }
 ```
+
+进入证据链前会经过 `EvidenceConsistencyChecker`：方向词与 strength 不一致的证据会标记 `consistency.fail` 并把 `support` 降级为 `Uncertain`。
 
 默认强度映射为：
 
@@ -214,26 +221,27 @@ raw_output = mllm.generate(image_path, conversation)
 当模型输出合法调用时，状态机按以下流程处理每个调用：
 
 1. `Parser.extract_all_calls()` 提取专家名称和相对 bbox；
-2. `CoordinateTransformer.relative_to_absolute()` 将 `[0,1000]` 坐标转换为图像像素；
-3. `clip_bbox()` 将坐标限制到图像边界内，并保证最小裁剪尺寸；
-4. `ImageUtils.crop_bbox()` 裁剪图像 patch；
-5. 根据调用名称查找对应专家；
-6. 执行 `expert.analyze(patch)`；
-7. 将 `ExpertResult` 转换为 Evidence Token；
-8. 把 Evidence Token 写入证据链，并作为新的 user 消息注入对话历史。
+2. `CoordinateTransformer.transform()` 将 `[0,1000]` 坐标转换为图像像素，同时保留请求的归一化坐标与 `clipped` 标记；
+3. 裁剪图像 patch；
+4. 根据调用名称查找对应专家并执行 `expert.analyze(patch)`；
+5. 将 `ExpertResult` 转换为 Evidence Token（带稳定 `evidence_id`）；
+6. `EvidenceConsistencyChecker.enforce()` 执行确定性方向检查，失败证据降级 `support`；
+7. **去重**：`evidence_id` 已存在的相同结果不再进入证据链、对话或停止统计，只增加 `suppressed_duplicate_count`；
+8. 唯一证据保存诊断区域裁剪图到 `traces/evidence/<session>/`，并把项目相对路径写入证据 token 与对话轮（`image_paths`）；
+9. 把 Evidence Token 写入证据链，并作为新的 user 消息注入对话历史。
 
-一轮 MLLM 输出可以包含多个专家调用。当前 `step` 在处理完该轮所有调用后只增加一次，因此它表示“包含专家调用的模型轮数”，不严格等于专家调用总次数。
+一轮 MLLM 输出可以包含多个专家调用。计数分开记录：`model_turn_count`（generate 调用次数）、`expert_call_count`（专家调用总次数，含重复）、`unique_evidence_count`（去重后证据数）。
 
 ### 5.4 终止判断
 
 每轮专家调用完成后，`HaltingChecker.check()` 按优先级检查：
 
 1. **模型主动结案**：输出了有效 `<verdict>`；
-2. **最大步数**：`step >= MAX_STEPS`，当前默认上限为 5；
+2. **预算耗尽**：`expert_call_count >= MAX_EXPERT_CALLS (5)` 或 `model_turn_count >= MAX_MODEL_TURNS (6)`（终止原因 `budget_exhausted`）；
 3. **证据冲突**：证据链中同时存在 `strength > 0.7` 和 `strength < 0.3`；
-4. **信息增益收敛**：最后两条证据的 strength 差值小于当前阈值。
+4. **信息增益收敛**：最后两条**唯一**证据的 strength 差值小于当前阈值（重复证据已在上游去重，不会触发虚假收敛）。
 
-最大步数或信息增益收敛时，状态机会追加预算耗尽提示，再调用一次 MLLM 生成最终 verdict。证据冲突时，则追加“疑罪从无”提示，要求模型进行双向反思并输出 `Uncertain`。
+预算耗尽或信息增益收敛时，状态机会追加预算耗尽提示，再调用一次 MLLM 生成最终 verdict。证据冲突时，则追加“疑罪从无”提示，要求模型进行双向反思并输出 `Uncertain`。
 
 如果最终输出仍无法解析，状态机会生成兜底判定：
 
@@ -251,10 +259,10 @@ raw_output = mllm.generate(image_path, conversation)
 
 - Session ID 和图像路径；
 - ground truth 与图像来源；
-- 全部 user/gpt 对话；
-- Evidence Token 链；
+- 全部 user/gpt 对话（证据轮可携带 `image_paths` 诊断区域裁剪图）；
+- Evidence Token 链（双坐标空间、`evidence_id`、一致性标记）；
 - 最终 verdict；
-- 图像尺寸、总步数、终止原因和模型模式。
+- 元数据：图像尺寸、`halting_reason`、模型模式、G1 任务语义字段（`task_type` / `evidence_scope` / `region_semantics`）与分离计数（`model_turn_count` / `expert_call_count` / `unique_evidence_count` / `suppressed_duplicate_count` / `weighted_cost`）。
 
 文件写入：
 
@@ -298,7 +306,9 @@ sequenceDiagram
 - 当前默认主管道仍使用 Frequency Expert v1；
 - Noise/JPEG 信号会受到 Real JPEG、Fake PNG 数据格式差异影响；
 - LoRA 微调、GRPO、全数据集评估和消融实验尚未进入当前运行管道；
-- 每次运行都会生成一份 Trace，可用于调试和后续 SFT 数据加工。
+- 停止策略仍是固定优先级（`<verdict>` 可立即退出、info_gain 仍比较相邻 strength），重构依赖 G2 校准后的后验与工具增益（G3）；
+- Expert 仍只输出标量与文本，无可靠性字段；诊断区域裁剪图已回灌，但专家自身的可视化产物（频谱/残差图）尚未生成（G2）；
+- 每次运行都会生成一份 Trace（含 G1 任务语义与分离计数），可用于调试和后续 SFT 数据加工。
 
 ## 8. 主要代码阅读入口
 
@@ -681,11 +691,11 @@ ForgeryVCR：Tool → ELA/FFT/NPP 可视化图 → 视觉编码器 → MLLM
 
 结合 ForgeryVCR 与本轮代码、数据审计，可以确认三个问题：
 
-1. **Expert 输出需要升级**：现有标量与文字 Evidence Token 会丢失空间分布，不同 Expert 的 strength 也没有统一概率意义；Qwen 无法直接复核频谱、噪声残差或压缩结构。
-2. **停止策略需要重构**：当前固定优先级会让候选 verdict 绕过冲突检查；所谓信息增益只是相邻 strength 差，不是 KL divergence；重复 evidence 还会制造虚假收敛。
-3. **旧 SFT 不能直接训练**：原始 577 条中已自动拒绝 38 条伪冲突，磁盘保留 539 条候选；borderline 高度模板化，correct 抽查发现答案正确但推理错误，format 只能作为格式专用数据。
+1. **Expert 输出需要升级**：现有标量与文字 Evidence Token 会丢失空间分布，不同 Expert 的 strength 也没有统一概率意义；Qwen 无法直接复核频谱、噪声残差或压缩结构。（**部分缓解**：G1 已增加确定性方向一致性门与诊断区域图回灌；条件可靠性与可视化产物仍待 G2。）
+2. **停止策略需要重构**：当前固定优先级会让候选 verdict 绕过冲突检查；所谓信息增益只是相邻 strength 差，不是 KL divergence；重复 evidence 还会制造虚假收敛。（**部分缓解**：G1 已通过证据去重消除虚假收敛路径、预算改为专家调用/模型轮双计数；固定优先级与真实信息增益仍待 G3。）
+3. **旧 SFT 不能直接训练**：原始 577 条中已自动拒绝 38 条伪冲突，磁盘保留 539 条候选；borderline 高度模板化，correct 抽查发现答案正确但推理错误，format 只能作为格式专用数据。（**已收口**：G0 完成后候选 509 条全部带明确处置状态、拒绝集 68 条；`final_v2` 由 G4 重新生成。）
 
-这些是已经确认的架构诊断，不代表相关改造已经实现。
+这些是已经确认的架构诊断；括号内标注了 G0/G1 完成后的缓解状态。
 
 ### 11.4 计划入口
 

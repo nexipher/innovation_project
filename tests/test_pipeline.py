@@ -88,3 +88,38 @@ class TestEndToEnd:
     def test_operation_log_appended(self):
         """claude_operation_log.md should exist after pipeline run."""
         assert os.path.exists("claude_operation_log.md")
+
+
+class TestTraceSemantics:
+    """G1 (§4.8) completion gate: CPU Mock end-to-end trace must carry the
+    full task-semantics block and separated counters."""
+
+    def test_trace_has_task_semantics_and_counters(self):
+        import json
+        fsm = _build_fsm("two_calls")
+        result = fsm.run(REAL_IMAGE, "Real")
+
+        with open(result["sft_data_path"], encoding="utf-8") as handle:
+            trace = json.load(handle)
+
+        metadata = trace["metadata"]
+        assert metadata["task_type"] == "fully_generated"
+        assert metadata["evidence_scope"] == "global"
+        assert metadata["region_semantics"] == "diagnostic_evidence_region"
+
+        assert metadata["model_turn_count"] >= 1
+        assert metadata["expert_call_count"] >= 1
+        assert metadata["unique_evidence_count"] == len(trace["evidence_chain"])
+        assert metadata["suppressed_duplicate_count"] >= 0
+        assert metadata["weighted_cost"] > 0
+
+    def test_evidence_tokens_carry_coordinate_spaces(self):
+        fsm = _build_fsm("two_calls")
+        result = fsm.run(FAKE_PATH := "dataset/GenImage_Test/Midjourney/0_midjourney_169.png", "Fake")
+
+        for token in result["evidence_chain"]:
+            assert token["coordinate_space"] == "pixels"
+            assert isinstance(token["region_pixels"], list)
+            assert len(token["region_pixels"]) == 4
+            assert token["evidence_id"].startswith("E-")
+            assert token["region_semantics"] == "diagnostic_evidence_region"
