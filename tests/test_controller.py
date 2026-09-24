@@ -234,3 +234,78 @@ class TestEvidenceBundleWiring:
         fsm = ForensicStateMachine(mllm, _build_experts())
         result = fsm.run(FAKE_PATH, "Fake")
         assert "raw_metric" in result["evidence_chain"][0]
+
+
+class TestEvidenceInjectionModes:
+    """G2-d (§4.9): the four-condition axis controls what the model sees —
+    text channel, visual channel, both, or nothing (RGB baseline)."""
+
+    CALL = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"
+    VERDICT = ('<reasoning>ok</reasoning>\n<verdict>'
+               '{"verdict": "Real", "confidence": 0.7, "primary_evidence": [], "report": "ok"}</verdict>')
+
+    def _run(self, mode):
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts(), evidence_injection=mode)
+        return fsm.run(FAKE_PATH, "Fake")
+
+    def _evidence_turns(self, result):
+        """User turns that are not the initial <image> prompt."""
+        return [
+            turn for turn in result["conversation"]
+            if turn["from"] == "user" and "<image>" not in turn["value"]
+        ]
+
+    def test_unknown_mode_rejected(self):
+        with pytest.raises(ValueError):
+            ForensicStateMachine(ScriptedMLLM([self.VERDICT]), _build_experts(),
+                                 evidence_injection="text+images")
+
+    def test_none_mode_surfaces_nothing_but_still_audits(self):
+        """RGB baseline: the call is executed and recorded, never shown."""
+        result = self._run("none")
+
+        assert result["expert_call_count"] == 1
+        assert result["unique_evidence_count"] == 1  # audit chain intact
+        assert self._evidence_turns(result) == []
+        token = result["evidence_chain"][0]
+        assert "diagnostic_region_image" not in token
+        assert "visual_artifacts" not in token
+
+    def test_text_mode_injects_json_without_images(self):
+        """G1 behaviour, kept as the text-only arm of the comparison."""
+        result = self._run("text")
+
+        turns = self._evidence_turns(result)
+        assert len(turns) == 1
+        assert json.loads(turns[0]["value"])["evidence_name"]  # token JSON
+        assert not turns[0].get("image_paths")
+
+        token = result["evidence_chain"][0]
+        assert "diagnostic_region_image" not in token
+
+    def test_image_mode_injects_artifacts_without_numbers(self):
+        """Visual-only arm: images are attached, the metric values are not."""
+        result = self._run("image")
+
+        turns = self._evidence_turns(result)
+        assert len(turns) == 1
+        assert turns[0]["image_paths"], "artifacts must be attached"
+        text = turns[0]["value"]
+        assert "evidence_name" not in text and "strength" not in text
+
+        # The audit chain keeps the numbers the model does not get to see.
+        assert result["evidence_chain"][0]["strength"] > 0
+
+    def test_both_mode_is_the_default(self):
+        default = self._run("text+image")
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        explicit = ForensicStateMachine(
+            mllm, _build_experts(), evidence_injection="text+image"
+        ).run(FAKE_PATH, "Fake")
+
+        for result in (default, explicit):
+            turns = self._evidence_turns(result)
+            assert len(turns) == 1
+            assert json.loads(turns[0]["value"])["evidence_name"]
+            assert turns[0]["image_paths"]

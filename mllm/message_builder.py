@@ -61,6 +61,21 @@ RULES:
 
 MAX_REGION_IMAGES_PER_TURN = 2
 
+# No-tool variant (G2-d condition 1): the RGB baseline must answer from the
+# image alone, so tool calls are forbidden instead of merely unavailable.
+BASELINE_SYSTEM_PROMPT = """You are an AI forensic image analyst. Decide whether the image is real (camera-captured) or AI-generated/tampered using ONLY your own visual inspection. You have NO access to external forensic tools in this session.
+
+CRITICAL OUTPUT FORMAT RULES:
+1. Do NOT output <planning> or <call_*> tags — tool calls are forbidden.
+2. Respond with a short <reasoning> block and then the verdict JSON:
+<reasoning>
+[your visual observations supporting the judgement]
+</reasoning>
+<verdict>
+{"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": [], "report": "concise report in Chinese"}
+</verdict>
+"""
+
 
 def _load_image(path: str) -> Optional[Image.Image]:
     """Load an image; relative paths resolve against the project root."""
@@ -71,7 +86,8 @@ def _load_image(path: str) -> Optional[Image.Image]:
         return None
 
 
-def build_messages(image_path: str, history: List[Dict[str, str]]) -> List[dict]:
+def build_messages(image_path: str, history: List[Dict[str, str]],
+                   system_prompt: str = FORENSIC_SYSTEM_PROMPT) -> List[dict]:
     """
     Convert internal conversation history into Qwen2.5-VL chat messages.
 
@@ -79,12 +95,14 @@ def build_messages(image_path: str, history: List[Dict[str, str]]) -> List[dict]
         image_path: Path of the original image under analysis.
         history: List of {"from": "user"|"gpt", "value": str, ...} turns.
                  User turns may carry optional "image_paths" (region crops).
+        system_prompt: System prompt variant (forensic default or the no-tool
+                 baseline prompt used by the G2-d comparison).
 
     Returns:
         List of Qwen-style message dicts (role/content blocks).
     """
     messages: List[dict] = [
-        {"role": "system", "content": FORENSIC_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
     ]
 
     for turn in history:

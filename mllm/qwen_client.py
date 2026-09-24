@@ -34,12 +34,14 @@ class QwenVLClient(BaseMLLMClient):
     so it is a drop-in replacement for MockMLLMClient in the state machine.
     """
 
-    def __init__(self, max_retries: int = 2):
+    def __init__(self, max_retries: int = 2, system_prompt: str = None):
         self._max_retries = max_retries
         self._processor = None
         self._model = None
         self._loaded = False
         self._retry_count = 0  # per-session retry counter
+        # G2-d: optional prompt variant (the no-tool baseline uses its own)
+        self._system_prompt = system_prompt
 
     # ------------------------------------------------------------------
     # Lazy loading (model is heavy — load once, reuse across sessions)
@@ -149,6 +151,8 @@ class QwenVLClient(BaseMLLMClient):
         history: List[Dict[str, str]],
     ) -> List[dict]:
         """Delegate to the shared, CPU-testable message builder (G1)."""
+        if self._system_prompt:
+            return build_messages(image_path, history, system_prompt=self._system_prompt)
         return build_messages(image_path, history)
 
     def _inference(self, messages: List[dict]) -> str:

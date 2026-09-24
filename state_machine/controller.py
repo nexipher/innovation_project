@@ -60,16 +60,30 @@ class ForensicStateMachine:
         mllm_client,
         experts: dict,
         logger: Optional[SessionLogger] = None,
+        evidence_injection: str = "text+image",
     ):
         """
         Args:
             mllm_client: BaseMLLMClient instance (mock or real).
             experts: Dict mapping expert source_name → BaseExpert instance.
             logger: SessionLogger instance for SFT trace collection.
+            evidence_injection: How executed evidence reaches the MLLM
+                conversation (G2-d experiment axis):
+                  - "text+image" (default, G2-c): Evidence Token JSON plus the
+                    region crop and expert artifacts;
+                  - "text" (G1 behaviour): Evidence Token JSON only;
+                  - "image": region crop and artifacts, with the text replaced
+                    by a neutral marker (no numbers are shown to the model);
+                  - "none": nothing is surfaced (RGB baseline); calls are still
+                    executed and recorded for audit.
         """
+        if evidence_injection not in ("text+image", "text", "image", "none"):
+            raise ValueError(f"unknown evidence_injection: {evidence_injection}")
+
         self._mllm = mllm_client
         self._experts = experts  # {"frequency_expert": ..., "noise_expert": ..., "jpeg_expert": ...}
         self._logger = logger or SessionLogger()
+        self._evidence_injection = evidence_injection
 
         # G2 §4.9: empirical reliability table (None before calibration exists)
         self._reliability_table = ReliabilityTable.load()
@@ -205,42 +219,61 @@ class ForensicStateMachine:
                     seen_evidence_ids.add(evidence_id)
 
                     # Persist the diagnostic region crop (G1) and the expert's
-                    # visual artifacts (G2) so multi-turn image history can
-                    # re-attach them.
+                    # visual artifacts (G2) when the current condition will
+                    # actually show them. Paths are project-relative so traces
+                    # stay portable; the message builder resolves them on load.
+                    attach_images = self._evidence_injection in ("image", "text+image")
                     artifact_rels = []
-                    region_rel = self._save_artifact(patch, evidence_id, "region")
-                    if region_rel:
-                        evidence_token["diagnostic_region_image"] = region_rel
-                        artifact_rels.append(region_rel)
-                    try:
-                        rendered = expert.render_artifacts(patch)
-                    except Exception:
-                        rendered = {}
-                    for artifact_name, artifact_image in rendered.items():
-                        rel = self._save_artifact(artifact_image, evidence_id, artifact_name)
-                        if rel:
-                            artifact_rels.append(rel)
-                    if len(artifact_rels) > 1:
-                        evidence_token["visual_artifacts"] = artifact_rels[1:]
+                    if attach_images:
+                        region_rel = self._save_artifact(patch, evidence_id, "region")
+                        if region_rel:
+                            evidence_token["diagnostic_region_image"] = region_rel
+                            artifact_rels.append(region_rel)
+                        try:
+                            rendered = expert.render_artifacts(patch)
+                        except Exception:
+                            rendered = {}
+                        for artifact_name, artifact_image in rendered.items():
+                            rel = self._save_artifact(artifact_image, evidence_id, artifact_name)
+                            if rel:
+                                artifact_rels.append(rel)
+                        if len(artifact_rels) > 1:
+                            evidence_token["visual_artifacts"] = artifact_rels[1:]
 
-                    # Record
+                    # Record (always — the chain is the audit source of truth)
                     evidence_chain.append(evidence_token)
                     self._logger.add_evidence(evidence_token)
 
-                    # Inject into conversation as user message, attaching the
-                    # region crop and artifacts for the real MLLM backend.
-                    # Paths are stored project-relative so traces stay
-                    # portable; the message builder resolves them at load time.
-                    evidence_json = EvidenceTokenizer.to_json(evidence_token)
-                    artifact_paths = artifact_rels or None
-                    self._logger.add_conversation_turn(
-                        "user", evidence_json, image_paths=artifact_paths
-                    )
-                    conversation.append({
-                        "from": "user",
-                        "value": evidence_json,
-                        **({"image_paths": artifact_paths} if artifact_paths else {}),
-                    })
+                    # Surface to the model according to the injection mode
+                    # (G2-d experiment axis: text channel vs visual channel).
+                    if self._evidence_injection == "none":
+                        pass
+                    elif self._evidence_injection == "text":
+                        evidence_json = EvidenceTokenizer.to_json(evidence_token)
+                        self._logger.add_conversation_turn("user", evidence_json)
+                        conversation.append({"from": "user", "value": evidence_json})
+                    elif self._evidence_injection == "image":
+                        marker = (
+                            f"[诊断证据图已附：{expert_result.source} 对区域 "
+                            f"{abs_bbox} 的分析产物，请结合图像自行判断。]"
+                        )
+                        self._logger.add_conversation_turn(
+                            "user", marker, image_paths=artifact_rels
+                        )
+                        conversation.append({
+                            "from": "user", "value": marker,
+                            "image_paths": artifact_rels,
+                        })
+                    else:  # "text+image" (default)
+                        evidence_json = EvidenceTokenizer.to_json(evidence_token)
+                        self._logger.add_conversation_turn(
+                            "user", evidence_json, image_paths=artifact_rels or None
+                        )
+                        conversation.append({
+                            "from": "user",
+                            "value": evidence_json,
+                            **({"image_paths": artifact_rels} if artifact_rels else {}),
+                        })
             else:
                 # No calls and no verdict — malformed output, inject correction
                 valid, msg = Parser.validate_tag_structure(raw_output)
