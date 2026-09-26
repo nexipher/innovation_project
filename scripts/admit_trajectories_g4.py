@@ -195,7 +195,23 @@ def admit(tool_record: dict, baseline_record: Optional[dict],
                                        or (baseline_record is not None
                                            and baseline_record.get("final_verdict") == "Uncertain"))
 
-    if retired or introduced_confident_error or not conditional_ok:
+    # A tool-free trajectory has no tool gain to measure — comparing it with
+    # its own baseline yields zero by construction, which silently discarded
+    # every correct no-tool answer.  What makes it training material is that it
+    # reached the right label from the image alone.
+    no_tools = not tools
+    if no_tools:
+        if (not introduced_confident_error and _correct(tool_record)
+                and tool_record.get("final_verdict") in ("Real", "Fake")):
+            category = "positive"
+            reasons.append("no-tool conclusion, correct and confident")
+        elif abstained:
+            category = "honest_abstention"
+        else:
+            category = "reject"
+            if not _correct(tool_record):
+                reasons.append("no-tool conclusion is wrong")
+    elif retired or introduced_confident_error or not conditional_ok:
         category = "reject"
     elif positive_allowed and risk_reduced and _correct(tool_record):
         category = "positive"
@@ -211,6 +227,7 @@ def admit(tool_record: dict, baseline_record: Optional[dict],
     return {
         "trajectory_id": tool_record["trajectory_id"],
         "policy": tool_record["policy"],
+        "uses_tools": not no_tools,
         "tools_served": tools,
         "variant_id": tool_record["variant_id"],
         "source_id": tool_record["source_id"],
@@ -246,9 +263,12 @@ def run(records: List[dict], applicability: Dict[str, Dict[str, float]],
         values = [v for v in values if v is not None]
         return round(sum(values) / len(values), 4) if values else None
 
+    no_tool_positives = [d for d in admitted if not d.get("uses_tools", True)]
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "applicability_threshold": threshold,
+        "no_tool_positive_labels": dict(
+            Counter(d["ground_truth"] for d in no_tool_positives)),
         "risk_epsilon": RISK_EPSILON,
         "trajectories": len(decisions),
         "variants": len(paired),

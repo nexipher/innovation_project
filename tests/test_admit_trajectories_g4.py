@@ -167,8 +167,10 @@ class TestRun:
         report = run(self._corpus(), APPLICABILITY)
         assert report["trajectories"] == 3
         assert report["variants"] == 1
-        assert report["categories"]["positive"] == 1
-        assert report["categories"]["reject"] == 2
+        # The no-tool run answers correctly from the image alone and the noise
+        # run improves on it; the q70 jpeg run is gated out.
+        assert report["categories"]["positive"] == 2
+        assert report["categories"]["reject"] == 1
 
     def test_it_reports_cost_for_admitted_versus_rejected(self):
         report = run(self._corpus(), APPLICABILITY)
@@ -199,3 +201,50 @@ class TestLoading:
         paired = pair_by_variant(records)
         assert set(paired) == {"v1", "v2"}
         assert set(paired["v1"]) == {"no-tool", "noise"}
+
+
+class TestNoToolTrajectories:
+    """
+    A tool-free run has no tool gain to measure against — comparing it with its
+    own baseline is zero by construction, which silently discarded every
+    correct no-tool answer until this was fixed.
+    """
+
+    BASELINE = dict(policy="no-tool", tools=())
+
+    def test_a_correct_no_tool_conclusion_is_a_positive_sample(self):
+        decision = admit(_record(**self.BASELINE, verdict="Real", ground_truth="Real"),
+                         _record(**self.BASELINE, verdict="Real", ground_truth="Real"),
+                         APPLICABILITY)
+        assert decision["category"] == "positive"
+        assert any("no-tool conclusion" in r for r in decision["reasons"])
+
+    def test_a_confident_no_tool_error_is_rejected(self):
+        decision = admit(_record(**self.BASELINE, verdict="Real", ground_truth="Fake",
+                                 confidence=0.95),
+                         _record(**self.BASELINE, verdict="Real", ground_truth="Fake",
+                                 confidence=0.95),
+                         APPLICABILITY)
+        assert decision["category"] == "reject"
+        assert any("confident error" in r for r in decision["reasons"])
+
+    def test_an_uncertain_no_tool_run_is_an_honest_abstention(self):
+        decision = admit(_record(**self.BASELINE, verdict="Uncertain", confidence=0.5),
+                         _record(**self.BASELINE, verdict="Uncertain", confidence=0.5),
+                         APPLICABILITY)
+        assert decision["category"] == "honest_abstention"
+
+    def test_the_decision_flags_whether_tools_were_used(self):
+        assert admit(_record(**self.BASELINE), None, APPLICABILITY)["uses_tools"] is False
+        assert admit(_record("noise", ("noise",)), None, APPLICABILITY)["uses_tools"] is True
+
+    def test_the_report_records_the_no_tool_label_composition(self):
+        # The baseline is right mostly where it says Real — on Fake samples it
+        # answers Real confidently and is rejected — so this bucket skews, and
+        # the skew is recorded because a training set that cannot see it will
+        # happily learn it.
+        report = run([_record(**self.BASELINE, verdict="Real", ground_truth="Real"),
+                      _record("no-tool", variant="v2", verdict="Real",
+                              ground_truth="Fake", confidence=0.95)],
+                     APPLICABILITY)
+        assert report["no_tool_positive_labels"] == {"Real": 1}
