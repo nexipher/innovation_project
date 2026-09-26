@@ -902,3 +902,23 @@
 * **执行结果与验证状态**：G4-a 完成; 386 测试通过; 划分校验全过（无跨分区源、holdout 不重叠、评测分区类别平衡且生成器均摊）
 * **置信度或遗留待办（TODO）**：G4-b（轨迹生成器 Schema + Mock 测试, CPU）→ G4-c（两级准入）→ G4-d（final_v2 Schema 与校验器）均在 CPU 完成; G4-e/g 需 GPU（当前未开启）
 ---
+### 2026-09-26 11:20:40 - G4-b 前半：按工具集的提示词 + 训练源格式变体
+
+* **当前操作动作**：G4-b 的 CPU 前置件 —— ①提示词可按键允许的工具集生成 ②为训练源生成格式变体
+* **核心变更说明**：
+  1. **提示词策略化**（`build_forensic_prompt(allowed_tools)`）: 只允许 noise 的轨迹不得被告知存在三个专家, 否则会花回合请求本会话不会服务的工具。按工具集过滤"可用动作"与"各工具实测说明"两块, 子集额外声明"本会话仅存在上列工具"
+  2. **字节级兼容**: 全工具集输出与已 ship 的 FORENSIC_SYSTEM_PROMPT **逐字节一致**（用 git HEAD 原文本拆解重组, 修正了拆解时空行被 rstrip 吃掉的接缝差异）, 并以内容哈希 `09dd259ae0b130f6` 钉在测试里 —— 保证 G3 的测量仍描述实际运行的提示词
+  3. **变体构建**（`scripts/build_variants_g4.py`）: 校准集只为它自己的 98 个源建过格式格, 训练源需要同样的变体; 复用 `build_calibration_set.build_cells`（新增 out_dir 参数）而**不重新实现** —— 可靠性表描述的就是那套变换, 另写一份会静默使其失效
+  4. 源来自 `split_v2.json`, 因此变体继承源的划分, 任何重编码都不可能跨分区; 抽样默认**类别配平**（使用划分记录的权重）, 不静默继承数据集 1:8
+  5. 产物: `sft_data/variants/manifest.json`（变体 → 源/生成器/划分/处理）; 生成图像加入 gitignore, manifest 保留入库
+  6. 测试 404 通过（新增 6 项提示词策略 + 12 项变体构建）
+* **涉及/修改的文件清单**：
+  - `mllm/message_builder.py (Modified — TOOL_ACTIONS/TOOL_MEASURES/build_forensic_prompt)`
+  - `scripts/build_calibration_set.py (Modified — build_cells 支持 out_dir)`
+  - `scripts/build_variants_g4.py (Created)`
+  - `tests/test_message_builder.py, tests/test_build_variants_g4.py (Modified/Created)`
+  - `.gitignore (Modified — 变体图像)`
+  - `claude_operation_log.md (Modified)`
+* **执行结果与验证状态**：提示词字节一致性与子集过滤均已测试锁定; 变体构建 8 源冒烟通过（32 变体）; 404 测试通过
+* **置信度或遗留待办（TODO）**：G4-b 核心（候选轨迹生成器 + Schema + Mock 测试）随后提交; 执行需 GPU（当前未开启）
+---
