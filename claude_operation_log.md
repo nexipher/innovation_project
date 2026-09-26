@@ -922,3 +922,20 @@
 * **执行结果与验证状态**：提示词字节一致性与子集过滤均已测试锁定; 变体构建 8 源冒烟通过（32 变体）; 404 测试通过
 * **置信度或遗留待办（TODO）**：G4-b 核心（候选轨迹生成器 + Schema + Mock 测试）随后提交; 执行需 GPU（当前未开启）
 ---
+### 2026-09-26 12:05:10 - G4-b 完成：候选轨迹生成器（Schema + 门控 + Mock 测试）
+
+* **当前操作动作**：G4-b 核心 —— 每条 (源变体 × 工具策略) 生成一条完整轨迹记录
+* **核心变更说明**：
+  1. 六种策略: `no-tool`（基线, 不服务任何工具且禁止探索）/ `noise` / `jpeg` / `frequency` / `noise+jpeg` / `noise+frequency`; 会话开始前即确定可调用工具 —— 提示词只列这些, 且只注册这些专家, 未服务的调用无专家可派发
+  2. **记录内容**（每条轨迹自足, G4-c 可仅凭记录做准入）: 原始模型判断、每个 Evidence Token（含 measurement_scope/raw_metric/calibrated_likelihood/applicability/适用条件）、停止策略后验与 reasons、最终判断与置信度、计数器（轮/调用/唯一证据/抑制/加权成本）、耗时, 以及**两条概率各自的 NLL/Brier**（模型自报概率与结构化后验分开计分）
+  3. **jpeg 门控是数据驱动的**: `load_applicability` 读 G2-b 的逐格 AUROC 并按极性校正（jpeg 高值=Real, 故其可提供分离度 = 1−auroc）, 需要 jpeg 的策略在该格分离度低于 **与 G4-c 同一把尺**（0.65）时不予生成, q70（0.431）被门掉并记录原因
+  4. 弱专家 frequency 仍按用户要求生成 —— 其准入是 G4-c 的判断, 不是生成阶段的判断
+  5. 记录 `model_probability` 仅在模型确实给出候选结论时填写（无候选则为 None, 不以策略标签冒充模型意见）
+  6. 测试 426 通过（新增 22 项: 适用性校正与拒绝、策略完整性、门控计划、NLL/Brier、聚合、端到端干跑与续跑）
+* **涉及/修改的文件清单**：
+  - `scripts/generate_trajectories_g4.py (Created)`
+  - `tests/test_generate_trajectories_g4.py (Created — 22 项)`
+  - `claude_operation_log.md (Modified)`
+* **执行结果与验证状态**：G4-b 完成; 干跑 2 变体 × 6 策略 = 12 条轨迹落盘; q70 的 jpeg 类策略按门控跳过; 426 测试通过
+* **置信度或遗留待办（TODO）**：G4-c 两级准入（CPU）→ G4-d final_v2 Schema 与校验器（CPU）; 实际生成需 GPU（当前未开启）
+---
