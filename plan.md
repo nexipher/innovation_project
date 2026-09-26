@@ -1834,6 +1834,17 @@ noise + frequency  正交组合
 
 自动校验至少覆盖：同源划分泄漏；格式与标签结构；Evidence ID 引用存在；测量范围与 bbox 一致；重复调用；support / 文字 / 校准方向矛盾；不适用专家被采纳；verdict 与后验不一致；高置信但证据不足；**把 PNG/JPEG 容器直接当真假理由**。输出到 `sft_data/train/final_v2/`，**不得覆盖 `final/`**（旧集冻结用于回归）。
 
+#### G4-a ~ G4-d 完成状态（2026-09-26，CPU）
+
+| 项 | 状态 | 关键产物 |
+|----|------|---------|
+| G4-a 数据划分与防泄漏 | ✅ | `sft_data/split_v2.json`（9000 源；泄漏单元=源图；val/test 类别平衡且生成器均摊；98 个校准源 holdout；hash `d8e9d81597ead53f`） |
+| G4-b 候选轨迹生成器 | ✅ | 按策略生成提示词（全工具集字节一致）+ `sft_data/variants/`（变体复用校准集同一编码路径）+ `scripts/generate_trajectories_g4.py`（六策略、jpeg 门控数据驱动、每条轨迹含双概率 NLL/Brier） |
+| G4-c 两级准入 | ✅ | `scripts/admit_trajectories_g4.py`（条件层与生成同尺 0.65；增益层要求风险确实下降且结论正确；弱专家仅佐证；训练分区守卫） |
+| G4-d final_v2 Schema 与校验器 | ✅ | `utils/final_v2.py` 四段式 + 十项自动校验；`scripts/build_final_v2.py`（分桶输出、拒绝写入冻结的 `final/`） |
+
+端到端干跑：22 条准入轨迹 → 4 正样本 + 18 合理弃权，校验 0 拒绝。测试 483 通过。
+
 #### G4-e 小规模 GPU 试生成（需 GPU）
 
 先以 **100–200 个来源配平样本**试运行，覆盖 Real/Fake × PNG/q95/q85/q70 × 多生成器 × no-tool/single/multi × 正常判断/冲突/合理弃权。重点检查：模板化程度；JPEG 格是否仍错误依赖 jpeg 专家；无理由 Uncertain 比例；confidence 是否来自结构化后验；工具轨迹是否真的优于 no-tool。**试生成不通过则不进入全量**。
