@@ -122,15 +122,20 @@ def render_reasoning(record: dict) -> str:
 
 def render_answer(record: dict, observation_text: str = "") -> str:
     """The structured assistant turn final_v2 trains on."""
-    evidence = "\n".join(render_evidence_block(t) for t in (record.get("evidence") or []))
+    tokens = record.get("evidence") or []
+    evidence_blocks = "\n".join(render_evidence_block(t) for t in tokens)
     verdict = {
         "verdict": record.get("final_verdict"),
         "confidence": record.get("confidence"),
-        "posterior": record.get("posterior"),
+        # A tool-free conclusion rests on the model's perception, not on an
+        # evidence posterior — which is 0.5 by construction and says nothing.
+        "basis": "model_perception" if not tokens else "evidence_posterior",
     }
+    if tokens:
+        verdict["posterior"] = record.get("posterior")
     return (
         f"<observation>\n{render_observation(record, observation_text)}\n</observation>\n\n"
-        f"<forensic_evidence>\n{evidence or '- 本轨迹未调用工具'}\n</forensic_evidence>\n\n"
+        f"<forensic_evidence>\n{evidence_blocks or '- 本轨迹未调用工具'}\n</forensic_evidence>\n\n"
         f"<reasoning>\n{render_reasoning(record)}\n</reasoning>\n\n"
         f"<verdict>\n{json.dumps(verdict, ensure_ascii=False)}\n</verdict>"
     )
@@ -148,7 +153,7 @@ def render_sample(record: dict, category: str, observation_text: str = "",
         "final_verdict": {
             "verdict": record.get("final_verdict"),
             "confidence": record.get("confidence"),
-            "posterior": record.get("posterior"),
+            "posterior": record.get("posterior") if record.get("evidence") else None,
             "policy_reasons": record.get("policy_reasons"),
         },
         "conversations": [
@@ -163,6 +168,7 @@ def render_sample(record: dict, category: str, observation_text: str = "",
             "region_semantics": "diagnostic_evidence_region",
             "trajectory_id": record["trajectory_id"],
             "policy": record.get("policy"),
+            "model_candidate": record.get("model_candidate"),
             "tools_served": record.get("tools_served"),
             "treatment": record.get("treatment"),
             "split": record.get("split"),
@@ -335,8 +341,23 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         if deferred and not carrying_passed and record["final_verdict"] in ("Real", "Fake"):
             problems += [f"applicability: {why}" for why in deferred]
 
-    # 8. verdict agrees with its own posterior
-    posterior = record.get("posterior")
+    # Tool usage is declared by the policy, not inferred from whether evidence
+    # came back: a tool session that produced none is a defect to report, not a
+    # tool-free sample to wave through.
+    uses_tools = bool(metadata.get("tools_served"))
+    if not uses_tools:
+        # A tool-free answer is the model's own; the posterior is the prior and
+        # the evidence requirement does not apply.  What must hold is that the
+        # sample reports the conclusion the model actually reached.
+        candidate = metadata.get("model_candidate")
+        if (record["final_verdict"] in ("Real", "Fake")
+                and candidate and record["final_verdict"] != candidate):
+            problems.append(
+                f"verdict: no-tool sample claims {record['final_verdict']} "
+                f"but the model said {candidate}")
+
+    # 8. verdict agrees with its own posterior (evidence-based conclusions)
+    posterior = record.get("posterior") if uses_tools else None
     if posterior is not None:
         expected = "Fake" if posterior >= 0.5 else "Real"
         if record["final_verdict"] in ("Real", "Fake") and record["final_verdict"] != expected:
@@ -351,9 +372,9 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
     admissible = [t for t in record["evidence"]
                   if t.get("support") in ("Real", "AI-generated")
                   and (t.get("applicability") or "").startswith(("strong", "weak", "inverted"))]
-    if record["final_verdict"] in ("Real", "Fake") and confidence >= CONFIDENT_THRESHOLD:
-        if not admissible:
-            problems.append("confidence: label is confident but no evidence supports it")
+    if (uses_tools and record["final_verdict"] in ("Real", "Fake")
+            and confidence >= CONFIDENT_THRESHOLD and not admissible):
+        problems.append("confidence: label is confident but no evidence supports it")
 
     # 10. the container is not a reason
     for offender in _container_reason_sentences(answer):

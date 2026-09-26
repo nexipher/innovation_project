@@ -28,6 +28,7 @@ import json
 import os
 import re
 import sys
+import collections
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -168,9 +169,26 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
     with open(os.path.join(output_dir, "sft_invalid.json"), "w", encoding="utf-8") as handle:
         json.dump(invalid, handle, ensure_ascii=False, indent=2)
 
+    labels = collections.Counter(
+        sample["ground_truth"] for samples in buckets.values() for sample in samples)
+    # Training weights to sample the buckets class-balanced: evidence helps
+    # mostly where the no-tool baseline is confidently wrong, which in this
+    # dataset means Fake, so the raw composition is Fake-heavy (75/25) and
+    # would otherwise teach a "tools mean Fake" prior.
+    weights = {
+        label: round(labels[max(labels, key=labels.get)]
+                     / max(1, labels.get(label, 0)), 4)
+        for label in ("Real", "Fake")
+    }
     metadata = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "schema_version": SCHEMA_VERSION,
+        "label_composition": dict(labels),
+        "training_weights": weights,
+        "per_bucket_labels": {
+            bucket: dict(collections.Counter(s["ground_truth"] for s in samples))
+            for bucket, samples in buckets.items()
+        },
         "admission_report": os.path.relpath(admission_path, PROJECT_ROOT).replace(os.sep, "/"),
         "split_hash": (split or {}).get("hash"),
         "counts": {bucket: len(samples) for bucket, samples in buckets.items()},

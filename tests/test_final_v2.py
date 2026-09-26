@@ -107,7 +107,8 @@ class TestRendering:
 
     def test_verdict_section_is_json(self):
         verdict = json.loads(parse_sections(render_answer(_record()))["verdict"])
-        assert verdict == {"verdict": "Fake", "confidence": 0.9, "posterior": 0.9}
+        assert verdict == {"verdict": "Fake", "confidence": 0.9, "posterior": 0.9,
+                           "basis": "evidence_posterior"}
 
     def test_sample_shape_matches_the_frozen_format(self):
         sample = _sample()
@@ -154,14 +155,17 @@ class TestStructure:
     def test_invalid_verdict_json(self):
         sample = _sample()
         sample["conversations"][1]["value"] = sample["conversations"][1]["value"].replace(
-            '{"verdict": "Fake", "confidence": 0.9, "posterior": 0.9}', "{not json}")
+            '{"verdict": "Fake", "confidence": 0.9, "basis": "evidence_posterior", '
+            '"posterior": 0.9}', "{not json}")
         assert any("not valid JSON" in p for p in _validate(sample))
 
     def test_illegal_label_and_confidence(self):
         sample = _sample()
         sample["conversations"][1]["value"] = sample["conversations"][1]["value"].replace(
-            '{"verdict": "Fake", "confidence": 0.9, "posterior": 0.9}',
-            '{"verdict": "Probably", "confidence": 1.9, "posterior": 0.9}')
+            '{"verdict": "Fake", "confidence": 0.9, "basis": "evidence_posterior", '
+            '"posterior": 0.9}',
+            '{"verdict": "Probably", "confidence": 1.9, "basis": "evidence_posterior", '
+            '"posterior": 0.9}')
         problems = _validate(sample)
         assert any("illegal label" in p for p in problems)
         assert any("confidence out of range" in p for p in problems)
@@ -244,8 +248,11 @@ class TestVerdictAgainstPosterior:
 
 
 class TestConfidenceSupport:
-    def test_a_confident_label_without_evidence_is_caught(self):
-        problems = _validate(_sample(evidence=[], tools_served=[], policy="no-tool"))
+    def test_a_confident_label_with_inadmissible_evidence_is_caught(self):
+        """Evidence came back, but it carries no direction to stand on."""
+        token = _token(support="Uncertain", likelihood=0.5)
+        problems = _validate(_sample(evidence=[token], tools_served=["noise"],
+                                     policy="noise"))
         assert any("no evidence supports it" in p for p in problems)
 
     def test_a_confident_label_with_admissible_evidence_passes(self):
@@ -298,3 +305,45 @@ class TestBuildGuards:
         assert bucket_for({"tools_served": []}, "positive") == "no_tool_positive"
         assert bucket_for({"tools_served": ["noise"]}, "honest_abstention") == \
             "honest_abstention"
+
+
+class TestNoToolSamples:
+    """A tool-free answer rests on perception, not on an evidence posterior."""
+
+    def _no_tool(self, **overrides):
+        return render_sample(
+            _record(policy="no-tool", tools_served=[], evidence=[],
+                    model_candidate="Real", final_verdict="Real", confidence=0.95,
+                    posterior=0.5, **overrides),
+            "no_tool_positive", split_entry=SPLIT["sources"]["ADM/x"])
+
+    def test_the_verdict_section_names_its_basis(self):
+        verdict = json.loads(parse_sections(
+            self._no_tool()["conversations"][1]["value"])["verdict"])
+        assert verdict["basis"] == "model_perception"
+        assert "posterior" not in verdict
+
+    def test_tool_samples_name_the_evidence_basis(self):
+        verdict = json.loads(parse_sections(
+            _sample()["conversations"][1]["value"])["verdict"])
+        assert verdict["basis"] == "evidence_posterior"
+        assert verdict["posterior"] == 0.9
+
+    def test_a_correct_no_tool_answer_passes(self):
+        assert _validate(self._no_tool()) == []
+
+    def test_a_prior_posterior_is_not_held_against_it(self):
+        """The 0.5 posterior is the prior, not a judgement to contradict."""
+        assert not [p for p in _validate(self._no_tool()) if p.startswith("verdict")]
+
+    def test_confidence_without_evidence_is_fine_without_tools(self):
+        assert not [p for p in _validate(self._no_tool()) if p.startswith("confidence")]
+
+    def test_claiming_a_conclusion_the_model_did_not_reach_is_caught(self):
+        sample = self._no_tool()
+        sample["metadata"]["model_candidate"] = "Fake"
+        assert any("but the model said" in p for p in _validate(sample))
+
+    def test_tool_samples_still_need_admissible_evidence(self):
+        problems = _validate(_sample(evidence=[], tools_served=["noise"]))
+        assert any("no evidence supports it" in p for p in problems)
