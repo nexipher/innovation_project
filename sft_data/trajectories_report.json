@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-26T18:02:21",
+  "generated_at": "2026-09-26T18:06:34",
   "mode": "dry_run",
   "config_fingerprint": {
     "experts": {
@@ -24,25 +24,36 @@
     "rectifier": "g3b",
     "tokenizer": "g3a",
     "halting_policy": "v2",
-    "git_commit": "7664f45",
+    "git_commit": "59d485e",
     "digest": "25b169996ff2d422"
   },
   "applicability_threshold": 0.65,
-  "planned": 12,
+  "planned": 22,
   "already_present": 0,
-  "written": 12,
-  "gated_out": [],
+  "written": 22,
+  "gated_out": [
+    {
+      "variant_id": "Real_d0613436-c113-45e5-9bd7-9f9d30a25701_jpeg_q70",
+      "policy": "jpeg",
+      "reason": "jpeg: separation 0.431 < 0.65 in jpeg_q70"
+    },
+    {
+      "variant_id": "Real_d0613436-c113-45e5-9bd7-9f9d30a25701_jpeg_q70",
+      "policy": "noise+jpeg",
+      "reason": "jpeg: separation 0.431 < 0.65 in jpeg_q70"
+    }
+  ],
   "aggregate": {
     "frequency": {
-      "n": 2,
+      "n": 4,
       "uncertain_rate": 1.0,
       "mean_calls": 1.0,
       "mean_turns": 2.0,
-      "mean_posterior_brier": 0.2489,
+      "mean_posterior_brier": 0.2678,
       "mean_model_brier": 0.0
     },
     "jpeg": {
-      "n": 2,
+      "n": 3,
       "uncertain_rate": 1.0,
       "mean_calls": 5.0,
       "mean_turns": 6.0,
@@ -50,7 +61,7 @@
       "mean_model_brier": 0.0
     },
     "no-tool": {
-      "n": 2,
+      "n": 4,
       "uncertain_rate": 1.0,
       "mean_calls": 5.0,
       "mean_turns": 6.0,
@@ -58,7 +69,7 @@
       "mean_model_brier": 0.0
     },
     "noise": {
-      "n": 2,
+      "n": 4,
       "uncertain_rate": 1.0,
       "mean_calls": 5.0,
       "mean_turns": 6.0,
@@ -66,15 +77,15 @@
       "mean_model_brier": 0.0
     },
     "noise+frequency": {
-      "n": 2,
+      "n": 4,
       "uncertain_rate": 0.0,
       "mean_calls": 2.0,
       "mean_turns": 3.0,
-      "mean_posterior_brier": 0.0957,
-      "mean_model_brier": 0.0957
+      "mean_posterior_brier": 0.106,
+      "mean_model_brier": 0.106
     },
     "noise+jpeg": {
-      "n": 2,
+      "n": 3,
       "uncertain_rate": 1.0,
       "mean_calls": 5.0,
       "mean_turns": 6.0,
