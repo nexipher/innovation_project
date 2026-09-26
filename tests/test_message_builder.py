@@ -126,3 +126,59 @@ class TestPromptMeasurementContract:
 
     def test_the_read_contract_explains_the_global_scope_field(self):
         assert "measurement_scope" in FORENSIC_SYSTEM_PROMPT
+
+
+class TestToolPolicies:
+    """G4-b: the prompt must describe only the tools a session will serve."""
+
+    def test_default_prompt_is_byte_identical_to_the_shipped_one(self):
+        """
+        The refactor into a per-policy builder must not have moved a character
+        of the all-tools prompt the G3 runs were measured under.
+        """
+        import hashlib
+
+        from mllm.message_builder import build_forensic_prompt
+
+        assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
+        assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(["freq", "noise", "jpeg"])
+        assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
+            "09dd259ae0b130f6"
+
+    def test_subset_lists_only_the_served_tools(self):
+        from mllm.message_builder import build_forensic_prompt
+
+        prompt = build_forensic_prompt(["noise"])
+        actions = prompt.split("variations):")[1].split("FORBIDDEN")[0]
+        assert "- <call_noise>" in actions
+        assert "- <call_freq>" not in actions
+        assert "- <call_jpeg>" not in actions
+
+    def test_subset_drops_other_tools_measurement_guidance(self):
+        from mllm.message_builder import build_forensic_prompt
+
+        prompt = build_forensic_prompt(["noise"])
+        measures = prompt.split("WHAT EACH TOOL ACTUALLY MEASURES")[1]
+        assert "<call_noise>" in measures
+        assert "<call_jpeg>" not in measures
+
+    def test_subset_says_other_tools_do_not_exist(self):
+        from mllm.message_builder import build_forensic_prompt
+
+        subset = build_forensic_prompt(["noise", "jpeg"])
+        assert "ONLY the tools listed above exist" in subset
+        assert "ONLY the tools listed above exist" not in FORENSIC_SYSTEM_PROMPT
+
+    def test_tool_order_is_stable_whatever_the_caller_passes(self):
+        from mllm.message_builder import build_forensic_prompt
+
+        assert build_forensic_prompt(["jpeg", "noise"]) == \
+            build_forensic_prompt(["noise", "jpeg"])
+
+    def test_empty_tool_set_is_rejected(self):
+        import pytest
+
+        from mllm.message_builder import build_forensic_prompt
+
+        with pytest.raises(ValueError):
+            build_forensic_prompt([])

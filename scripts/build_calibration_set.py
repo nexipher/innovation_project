@@ -31,7 +31,7 @@ import json
 import os
 import sys
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import cv2
 import numpy as np
@@ -70,17 +70,27 @@ def _write_jpeg(path: str, image: np.ndarray, quality: int) -> bool:
 # Treatments
 # ---------------------------------------------------------------------------
 
-def build_cells(image: np.ndarray, sample_id: str) -> List[Dict[str, Any]]:
-    """Derive the format cells for one source image."""
+def build_cells(image: np.ndarray, sample_id: str,
+                out_dir: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Derive the format cells for one source image.
+
+    `out_dir` lets other stages (G4-b builds variants for training sources)
+    reuse the exact treatment encodings the calibration set was built with —
+    the two must not drift, or the reliability table would describe a different
+    transform than the pipeline applies.
+    """
+    directory = out_dir or IMAGES_DIR
+    os.makedirs(directory, exist_ok=True)
     outputs = []
 
-    png_path = os.path.join(IMAGES_DIR, f"{sample_id}_png.png")
+    png_path = os.path.join(directory, f"{sample_id}_png.png")
     if _write_png(png_path, image):
         outputs.append({"treatment": "png", "container": "png", "quality": None,
                         "path": os.path.relpath(png_path, PROJECT_ROOT).replace(os.sep, "/")})
 
     for quality in JPEG_QUALITIES:
-        jpeg_path = os.path.join(IMAGES_DIR, f"{sample_id}_jpeg_q{quality}.jpg")
+        jpeg_path = os.path.join(directory, f"{sample_id}_jpeg_q{quality}.jpg")
         if _write_jpeg(jpeg_path, image, quality):
             outputs.append({"treatment": f"jpeg_q{quality}", "container": "jpg",
                             "quality": quality,

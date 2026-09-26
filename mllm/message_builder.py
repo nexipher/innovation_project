@@ -19,74 +19,85 @@ from PIL import Image
 
 from config import PROJECT_ROOT
 
-FORENSIC_SYSTEM_PROMPT = """You are an AI forensic image analyst. You MUST follow this EXACT format in EVERY response. Do NOT write free-form analysis.
+"""Qwen2.5-VL chat-message construction (plan.md §4.8 G1).
 
-AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):
-- <call_freq>[ymin, xmin, ymax, xmax]</call_freq>  → call frequency-domain expert
-- <call_noise>[ymin, xmin, ymax, xmax]</call_noise> → call noise residual expert
-- <call_jpeg>[ymin, xmin, ymax, xmax]</call_jpeg>   → call JPEG compression expert
+Kept import-light (PIL + stdlib only) so the conversation protocol can be
+unit-tested on CPU without loading transformers/torch.
 
-FORBIDDEN: Do NOT use <call_call_freq>, <call_call_noise>, <call_frequency>, or any other variation.
+Multi-turn image protocol:
+  - the original image stays attached to the first user turn;
+  - every evidence turn may carry `image_paths` (diagnostic region crops),
+    which are attached as image blocks before the evidence text;
+  - later turns never drop earlier images — the full history is rebuilt on
+    every generate() call.
 
-COORDINATES: bbox values are integers in range [0, 1000], format [ymin, xmin, ymax, xmax].
-
-RESPONSE FORMAT (MANDATORY — every response must contain one of these two structures):
-
-Structure A — When you need forensic evidence:
-<planning>
-Suspected Region: [ymin, xmin, ymax, xmax]
-Visual Anomalies: [describe what looks suspicious in this specific image]
-Expert Target & Hypothesis: [which expert to call and why]
-</planning>
-<call_EXPERT_NAME>[ymin, xmin, ymax, xmax]</call_EXPERT_NAME>
-
-Structure B — When you have enough evidence to conclude:
-<reasoning>
-[Cross-reference the expert's physical findings with your visual observations.
-If different experts conflict, explain why and apply "presumption of innocence".
-If the image has compression artifacts that may weaken certain signals, note it.]
-</reasoning>
-<verdict>
-{"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": ["evidence_name1"], "report": "concise forensic report in Chinese"}
-</verdict>
-
-WHAT EACH TOOL ACTUALLY MEASURES (G2-b calibration, format-balanced set of 700 samples):
-- <call_freq>  multi-scale frequency analysis. WEAK evidence (separation 0.56-0.63,
-  barely above chance). Use it to corroborate, never as the deciding signal.
-- <call_noise> residual micro-noise LEVEL. COUNTER-INTUITIVE: a HIGH level points to
-  Real (camera sensor micro-noise) and a LOW level points to Fake (smooth generator
-  output). This is stable across image formats. Do NOT read a high value as forgery.
-- <call_jpeg>  JPEG compression history (blockiness / DCT structure). A HIGH level
-  points to Real (a camera JPEG that was saved or re-saved), NOT to forgery. After
-  heavy re-compression (quality <= 70) this measurement is near chance and must be
-  ignored.
-
-HOW TO READ AN EVIDENCE TOKEN:
-1. `calibrated_likelihood` is the authoritative direction — it is the empirical
-   P(Real)/P(Fake) for that metric band. `strength` is NOT a probability and NOT
-   comparable between experts (each has its own scale); never rank experts by it.
-2. Check `applicability` and `applicability_conditions` before using a token. A token
-   labelled `disabled:*` must not influence the verdict; `weak:*` may only corroborate.
-3. `counter_explanation` lists the benign causes of the same phenomenon — if it also
-   explains what you see, do not treat the evidence as incriminating.
-4. Weight the evidence by `reliability`; conflicting tokens cancel out.
-5. `measurement_scope: "global"` means the expert measured the WHOLE image. The bbox
-   you provide locates the diagnostic region — the crop and the artifacts you receive
-   — it does not restrict the measurement. Judge the whole image, not the crop.
-
-RULES:
-1. Call at most one more expert than you need: prefer the expert whose measurement is
-   most likely to discriminate the specific anomaly you described in <planning>.
-2. Never call an expert you have already called in this session: each one measures
-   the WHOLE image, so a second call — whatever region you name — returns the same
-   measurement, which is suppressed and wastes the budget. Prefer an expert you have
-   not used yet.
-3. NEVER output only natural-language analysis without the required XML tags.
-4. NEVER fabricate evidence — only reference evidence tokens you have received.
-5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is
-   weak, conflicting, or mostly `Uncertain`/`disabled`, output "Uncertain" rather than
-   guessing: an honest Uncertain is preferred over a confident mistake.
+The forensic prompt is assembled per tool policy (G4-b): a trajectory that may
+call only the noise expert must not be told that three experts exist, or the
+model spends turns requesting tools the session will not serve.  The default
+policy reproduces the shipped all-tools prompt byte for byte.
 """
+
+import os
+from typing import Dict, Iterable, List, Optional
+
+from PIL import Image
+
+from config import PROJECT_ROOT
+
+# Per-tool prompt fragments: the action the model may emit, and what that tool
+# was measured to do on the format-balanced calibration set (G2-b).
+TOOL_ACTIONS: Dict[str, str] = {
+    "freq": "- <call_freq>[ymin, xmin, ymax, xmax]</call_freq>  → call frequency-domain expert",
+    "noise": "- <call_noise>[ymin, xmin, ymax, xmax]</call_noise> → call noise residual expert",
+    "jpeg": "- <call_jpeg>[ymin, xmin, ymax, xmax]</call_jpeg>   → call JPEG compression expert",
+}
+
+TOOL_MEASURES: Dict[str, str] = {
+    "freq": "- <call_freq>  multi-scale frequency analysis. WEAK evidence (separation 0.56-0.63,\n  barely above chance). Use it to corroborate, never as the deciding signal.",
+    "noise": "- <call_noise> residual micro-noise LEVEL. COUNTER-INTUITIVE: a HIGH level points to\n  Real (camera sensor micro-noise) and a LOW level points to Fake (smooth generator\n  output). This is stable across image formats. Do NOT read a high value as forgery.",
+    "jpeg": "- <call_jpeg>  JPEG compression history (blockiness / DCT structure). A HIGH level\n  points to Real (a camera JPEG that was saved or re-saved), NOT to forgery. After\n  heavy re-compression (quality <= 70) this measurement is near chance and must be\n  ignored.",
+}
+
+TOOL_ORDER = ("freq", "noise", "jpeg")
+
+PROMPT_HEAD = "You are an AI forensic image analyst. You MUST follow this EXACT format in EVERY response. Do NOT write free-form analysis.\n\n"
+PROMPT_MID = " Do NOT use <call_call_freq>, <call_call_noise>, <call_frequency>, or any other variation.\n\nCOORDINATES: bbox values are integers in range [0, 1000], format [ymin, xmin, ymax, xmax].\n\nRESPONSE FORMAT (MANDATORY — every response must contain one of these two structures):\n\nStructure A — When you need forensic evidence:\n<planning>\nSuspected Region: [ymin, xmin, ymax, xmax]\nVisual Anomalies: [describe what looks suspicious in this specific image]\nExpert Target & Hypothesis: [which expert to call and why]\n</planning>\n<call_EXPERT_NAME>[ymin, xmin, ymax, xmax]</call_EXPERT_NAME>\n\nStructure B — When you have enough evidence to conclude:\n<reasoning>\n[Cross-reference the expert's physical findings with your visual observations.\nIf different experts conflict, explain why and apply \"presumption of innocence\".\nIf the image has compression artifacts that may weaken certain signals, note it.]\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n</verdict>\n\n"
+PROMPT_TAIL = "\n1. `calibrated_likelihood` is the authoritative direction — it is the empirical\n   P(Real)/P(Fake) for that metric band. `strength` is NOT a probability and NOT\n   comparable between experts (each has its own scale); never rank experts by it.\n2. Check `applicability` and `applicability_conditions` before using a token. A token\n   labelled `disabled:*` must not influence the verdict; `weak:*` may only corroborate.\n3. `counter_explanation` lists the benign causes of the same phenomenon — if it also\n   explains what you see, do not treat the evidence as incriminating.\n4. Weight the evidence by `reliability`; conflicting tokens cancel out.\n5. `measurement_scope: \"global\"` means the expert measured the WHOLE image. The bbox\n   you provide locates the diagnostic region — the crop and the artifacts you receive\n   — it does not restrict the measurement. Judge the whole image, not the crop.\n\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Never call an expert you have already called in this session: each one measures\n   the WHOLE image, so a second call — whatever region you name — returns the same\n   measurement, which is suppressed and wastes the budget. Prefer an expert you have\n   not used yet.\n3. NEVER output only natural-language analysis without the required XML tags.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, output \"Uncertain\" rather than\n   guessing: an honest Uncertain is preferred over a confident mistake.\n"
+
+SUBSET_NOTE = ("(In this session ONLY the tools listed above exist. Requests for any other "
+               "tool will not be served, and spending a turn on one wastes the budget.)")
+
+
+def build_forensic_prompt(allowed_tools: Optional[Iterable[str]] = None) -> str:
+    """
+    Assemble the forensic system prompt for a tool policy.
+
+    Args:
+        allowed_tools: tool keys ("freq" | "noise" | "jpeg") the session will
+            serve.  None means all of them, reproducing the shipped prompt.
+    """
+    if allowed_tools is None:
+        tools = list(TOOL_ORDER)
+    else:
+        tools = [t for t in TOOL_ORDER if t in set(allowed_tools)]
+    if not tools:
+        raise ValueError("a forensic prompt needs at least one tool; use the "
+                         "baseline prompt for a no-tool session")
+
+    actions = "\n".join(TOOL_ACTIONS[t] for t in tools)
+    if len(tools) < len(TOOL_ORDER):
+        actions = actions + "\n" + SUBSET_NOTE
+    measures = "\n".join(TOOL_MEASURES[t] for t in tools)
+
+    return (PROMPT_HEAD
+            + "AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):\n"
+            + actions + "\n\nFORBIDDEN:" + PROMPT_MID
+            + "WHAT EACH TOOL ACTUALLY MEASURES (G2-b calibration, format-balanced set of "
+              "700 samples):\n" + measures + "\n\nHOW TO READ AN EVIDENCE TOKEN:"
+            + PROMPT_TAIL)
+
+
+FORENSIC_SYSTEM_PROMPT = build_forensic_prompt()
 
 MAX_REGION_IMAGES_PER_TURN = 2
 
