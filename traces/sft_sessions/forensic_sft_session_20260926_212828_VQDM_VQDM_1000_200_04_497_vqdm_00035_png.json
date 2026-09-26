@@ -1,0 +1,121 @@
+{
+  "id": "session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants/VQDM_VQDM_1000_200_04_497_vqdm_00035_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像右侧的建筑结构区域存在轻微的噪声变异，但其强度接近于相机传感器捕捉图像时的中位数噪声水平，这在统计上接近随机。尽管如此，高噪声水平通常与相机传感器捕捉图像时的微小噪声相关联，但噪声水平接近随机，我们不能排除图像为伪造的可能性。此外，图像左侧的蓝色区域没有显示出任何显著的噪声变异，这表明图像可能经过了合成或编辑处理。然而，在现有工具的限制下，我们无法进一步降低不确定性。",
+    "posterior": 0.5331,
+    "conflict_score": 0.0,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [200, 100, 300, 200]\nVisual Anomalies: 图像右侧的建筑结构看起来不自然，可能是合成或编辑的结果。\nExpert Target & Hypothesis: <call_noise>[200, 100, 300, 200]</call_noise> → 使用噪声残留专家来检测合成图像中的微小噪声水平。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-9d2039f13b\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[51, 26, 77, 51]\", \"region_pixels\": [51, 26, 77, 51], \"region_normalized_1000\": [200, 100, 300, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 2.8075). Residual consistent with a camera sensor.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=2.8075). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.5028, \"raw_metric\": 2.807482, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.009918}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"diagnostic_region_image\": \"traces/evidence/session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png/region_E-9d2039f13b.png\", \"visual_artifacts\": [\"traces/evidence/session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png/noise_residual_map_E-9d2039f13b.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png/region_E-9d2039f13b.png",
+        "traces/evidence/session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png/noise_residual_map_E-9d2039f13b.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析现有证据，<call_noise>的测量结果表明图像右侧的建筑结构区域存在轻微的噪声变异，但其强度接近于相机传感器捕捉图像时的中位数噪声水平，这在统计上接近随机（P(Real)=0.436, P(Fake)=0.564）。这种测量结果不足以确定图像的真实性，因为其方向性较弱，且在不同格式间保持一致。\n\n尽管如此，<call_noise>的测量结果支持了图像可能为真实图像的假设，因为高噪声水平通常与相机传感器捕捉图像时的微小噪声相关联。然而，由于噪声水平接近随机，我们不能排除图像为伪造的可能性。此外，图像左侧的蓝色区域没有显示出任何显著的噪声变异，这表明图像可能经过了合成或编辑处理，但现有工具无法提供足够的信息来确认这一点。\n\n因此，在现有工具的限制下，我们无法进一步降低不确定性。图像的真实性仍需通过其他方法进行验证，例如图像比对、内容分析或其他专业工具。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像右侧的建筑结构区域存在轻微的噪声变异，但其强度接近于相机传感器捕捉图像时的中位数噪声水平，这在统计上接近随机。尽管如此，高噪声水平通常与相机传感器捕捉图像时的微小噪声相关联，但噪声水平接近随机，我们不能排除图像为伪造的可能性。此外，图像左侧的蓝色区域没有显示出任何显著的噪声变异，这表明图像可能经过了合成或编辑处理。然而，在现有工具的限制下，我们无法进一步降低不确定性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-9d2039f13b",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[51, 26, 77, 51]",
+      "region_pixels": [
+        51,
+        26,
+        77,
+        51
+      ],
+      "region_normalized_1000": [
+        200,
+        100,
+        300,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 2.8075). Residual consistent with a camera sensor.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.8075). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.5028,
+      "raw_metric": 2.807482,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.009918
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png/region_E-9d2039f13b.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_212828_VQDM_VQDM_1000_200_04_497_vqdm_00035_png/noise_residual_map_E-9d2039f13b.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 2,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-26T21:28:28.249688",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.5331,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

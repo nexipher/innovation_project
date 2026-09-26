@@ -1,0 +1,131 @@
+{
+  "id": "session_20260926_205011_SD14_122_sdv4_00039_png",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants/SD14_122_sdv4_00039_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中的局部噪声残差接近随机水平，无法确定图像的真实性。此外，图像中的红色龙虾纹理和颜色看起来非常均匀，没有明显的颗粒感或噪点。由于没有明显的噪声特征，现有的工具无法进一步降低不确定性。",
+    "posterior": 0.5331,
+    "conflict_score": 0.0,
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 400, 300]\nVisual Anomalies: 红色龙虾的纹理和颜色在图像中显得非常均匀，没有明显的颗粒感或噪点。\nExpert Target & Hypothesis: <call_noise>[100, 100, 400, 300]</call_noise> → 检查是否存在微小噪声，以判断图像的真实性。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-6a0816fb6f\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[51, 51, 205, 154]\", \"region_pixels\": [51, 51, 205, 154], \"region_normalized_1000\": [100, 100, 400, 300], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.0080). Residual consistent with a camera sensor.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=3.0080). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.5774, \"raw_metric\": 3.008044, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.060509}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"diagnostic_region_image\": \"traces/evidence/session_20260926_205011_SD14_122_sdv4_00039_png/region_E-6a0816fb6f.png\", \"visual_artifacts\": [\"traces/evidence/session_20260926_205011_SD14_122_sdv4_00039_png/noise_residual_map_E-6a0816fb6f.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260926_205011_SD14_122_sdv4_00039_png/region_E-6a0816fb6f.png",
+        "traces/evidence/session_20260926_205011_SD14_122_sdv4_00039_png/noise_residual_map_E-6a0816fb6f.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [51, 51, 205, 154]\nVisual Anomalies: 图像中的红色龙虾纹理和颜色看起来非常均匀，没有明显的颗粒感或噪点。\nExpert Target & Hypothesis: <call_noise>[51, 51, 205, 154]</call_noise> → 检查是否存在微小噪声，以判断图像的真实性。\n</planning>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据 <call_noise> 的结果，图像中的局部噪声残差为 3.0080，接近于随机水平（P(Fake) ≈ 0.56）。这意味着该区域的噪声水平不足以确定图像的真实性，因此无法提供有力的证据来支持或反驳图像的真实性。\n\n此外，图像中红色龙虾的纹理和颜色看起来非常均匀，没有明显的颗粒感或噪点。这进一步表明图像可能是经过处理的，可能是通过计算机生成的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中的局部噪声残差接近随机水平，无法确定图像的真实性。此外，图像中的红色龙虾纹理和颜色看起来非常均匀，没有明显的颗粒感或噪点。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析现有证据，<call_noise> 的结果显示图像中的局部噪声残差接近随机水平（P(Fake) ≈ 0.56），无法提供有力的证据来支持或反驳图像的真实性。同时，图像中红色龙虾的纹理和颜色看起来非常均匀，没有明显的颗粒感或噪点，这进一步表明图像可能是经过处理的，可能是通过计算机生成的。\n\n然而，由于图像中没有明显的噪声特征，现有的工具无法进一步降低不确定性。图像的纹理和颜色均匀性可能由多种原因造成，包括但不限于图像处理技术、图像合成等。因此，在没有更多特定的证据来区分真实图像与伪造图像的情况下，我们只能得出“不确定”的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中的局部噪声残差接近随机水平，无法确定图像的真实性。此外，图像中的红色龙虾纹理和颜色看起来非常均匀，没有明显的颗粒感或噪点。由于没有明显的噪声特征，现有的工具无法进一步降低不确定性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-6a0816fb6f",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[51, 51, 205, 154]",
+      "region_pixels": [
+        51,
+        51,
+        205,
+        154
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        400,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.0080). Residual consistent with a camera sensor.",
+      "reasoning": "Intermediate residual micro-noise level (metric=3.0080). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.5774,
+      "raw_metric": 3.008044,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.060509
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_205011_SD14_122_sdv4_00039_png/region_E-6a0816fb6f.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_205011_SD14_122_sdv4_00039_png/noise_residual_map_E-6a0816fb6f.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      512,
+      512
+    ],
+    "total_steps": 4,
+    "halting_reason": "model_stalled",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-26T20:50:11.810950",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 4.0,
+    "policy_version": "v2",
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "posterior": 0.5331,
+    "conflict_score": 0.0,
+    "candidate_overridden": true
+  }
+}

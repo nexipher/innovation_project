@@ -1,0 +1,121 @@
+{
+  "id": "session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants/Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中存在高微噪声残留，这通常与相机传感器的特性相关联，而不是伪造图像的特征。此外，图像的整体模糊度和像素化也表明图像可能经过了压缩处理。尽管如此，图像的全局特征和局部区域的高微噪声残留都可能出现在真实图像中。因此，我们无法排除图像为伪造的可能性，但也不能确定图像为真实图像。",
+    "posterior": 0.3891,
+    "conflict_score": 0.0,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 300, 200]\nVisual Anomalies: 地面和背景的模糊度较高，可能表明图像经过了压缩。\nExpert Target & Hypothesis: <call_noise>[100, 100, 300, 200]</call_noise> → 检查是否存在微噪声残留，以判断图像是否经过了压缩处理。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-1221f816b1\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[75, 50, 225, 100]\", \"region_pixels\": [75, 50, 225, 100], \"region_normalized_1000\": [100, 100, 300, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.4163). Residual consistent with a camera sensor.\", \"reasoning\": \"High residual micro-noise level (metric=3.4163). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.\", \"strength\": 0.7159, \"raw_metric\": 3.416288, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.718, \"Fake\": 0.282}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.02}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.\", \"diagnostic_region_image\": \"traces/evidence/session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/region_E-1221f816b1.png\", \"visual_artifacts\": [\"traces/evidence/session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/noise_residual_map_E-1221f816b1.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/region_E-1221f816b1.png",
+        "traces/evidence/session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/noise_residual_map_E-1221f816b1.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的证据，我们观察到图像中存在高微噪声残留，这通常与相机传感器的特性相关联，而不是伪造图像的特征。这种现象在图像压缩过程中也会出现，因此不能简单地将高微噪声残留视为伪造的证据。此外，图像的整体模糊度和像素化也表明图像可能经过了压缩处理。\n\n尽管如此，我们仍需考虑图像的全局特征。图像整体呈现出一种像素化的风格，这可能是由于图像生成器的输出特性，而不是伪造图像的特征。然而，图像中的局部区域（如诊断区域）显示出高微噪声残留，这与相机传感器的统计特性一致，支持图像为真实图像的假设。\n\n综合以上分析，现有工具无法进一步降低不确定性，因为高微噪声残留和图像的像素化风格都可能出现在真实图像中。因此，我们无法排除图像为伪造的可能性，但也不能确定图像为真实图像。在这种情况下，我们只能给出一个不确定的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中存在高微噪声残留，这通常与相机传感器的特性相关联，而不是伪造图像的特征。此外，图像的整体模糊度和像素化也表明图像可能经过了压缩处理。尽管如此，图像的全局特征和局部区域的高微噪声残留都可能出现在真实图像中。因此，我们无法排除图像为伪造的可能性，但也不能确定图像为真实图像。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-1221f816b1",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[75, 50, 225, 100]",
+      "region_pixels": [
+        75,
+        50,
+        225,
+        100
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        300,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.4163). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=3.4163). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.7159,
+      "raw_metric": 3.416288,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.718,
+        "Fake": 0.282
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.02
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/region_E-1221f816b1.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_203819_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/noise_residual_map_E-1221f816b1.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 2,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-26T20:38:19.430550",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.3891,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

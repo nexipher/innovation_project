@@ -1,0 +1,121 @@
+{
+  "id": "session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants/Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png.png",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中的局部噪声残差水平与相机传感器的统计特征一致，支持图像的真实性。然而，图像背景的模糊和清晰的细节差异可能暗示了图像处理过程。尽管如此，由于图像中存在高微噪声残差，我们不能简单地断定图像为伪造。此外，图像的背景模糊可能是因为图像处理或压缩导致的，而不是伪造的直接证据。综合考虑这些因素，虽然图像中的局部噪声残差水平支持图像的真实性，但背景模糊和清晰的细节差异仍需进一步分析。然而，在当前可用的工具中，我们无法进一步降低不确定性，因为现有的工具只能提供关于噪声残差的信息，而无法对图像的整体处理过程进行更深入的分析。",
+    "posterior": 0.3891,
+    "conflict_score": 0.0,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [110, 340, 406, 630]\nVisual Anomalies: 虎的毛发细节清晰，但背景模糊，可能暗示了图像处理。\nExpert Target & Hypothesis: <call_noise>[110, 340, 406, 630]</call_noise> → 检查是否存在微噪声残留，以判断图像是否经过合成或编辑。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-bcba78e901\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[82, 170, 304, 315]\", \"region_pixels\": [82, 170, 304, 315], \"region_normalized_1000\": [110, 340, 406, 630], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.1029). Residual consistent with a camera sensor.\", \"reasoning\": \"High residual micro-noise level (metric=4.1029). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.\", \"strength\": 0.8759, \"raw_metric\": 4.102868, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.718, \"Fake\": 0.282}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.08584}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.\", \"diagnostic_region_image\": \"traces/evidence/session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png/region_E-bcba78e901.png\", \"visual_artifacts\": [\"traces/evidence/session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png/noise_residual_map_E-bcba78e901.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png/region_E-bcba78e901.png",
+        "traces/evidence/session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png/noise_residual_map_E-bcba78e901.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据已有的证据，图像中的局部噪声残差水平（4.1029）与相机传感器的统计特征一致，这表明图像可能是通过真实相机拍摄的。然而，图像整体的背景模糊和清晰的细节差异可能暗示了图像处理过程。尽管如此，由于图像中存在高微噪声残差，我们不能简单地断定图像为伪造。此外，图像的背景模糊可能是因为图像处理或压缩导致的，而不是伪造的直接证据。\n\n综合考虑这些因素，虽然图像中的局部噪声残差水平支持图像的真实性，但背景模糊和清晰的细节差异仍需进一步分析。然而，在当前可用的工具中，我们无法进一步降低不确定性，因为现有的工具只能提供关于噪声残差的信息，而无法对图像的整体处理过程进行更深入的分析。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\"], \"report\": \"图像中的局部噪声残差水平与相机传感器的统计特征一致，支持图像的真实性。然而，图像背景的模糊和清晰的细节差异可能暗示了图像处理过程。尽管如此，由于图像中存在高微噪声残差，我们不能简单地断定图像为伪造。此外，图像的背景模糊可能是因为图像处理或压缩导致的，而不是伪造的直接证据。综合考虑这些因素，虽然图像中的局部噪声残差水平支持图像的真实性，但背景模糊和清晰的细节差异仍需进一步分析。然而，在当前可用的工具中，我们无法进一步降低不确定性，因为现有的工具只能提供关于噪声残差的信息，而无法对图像的整体处理过程进行更深入的分析。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-bcba78e901",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[82, 170, 304, 315]",
+      "region_pixels": [
+        82,
+        170,
+        304,
+        315
+      ],
+      "region_normalized_1000": [
+        110,
+        340,
+        406,
+        630
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.1029). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=4.1029). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.8759,
+      "raw_metric": 4.102868,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.718,
+        "Fake": 0.282
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.08584
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png/region_E-bcba78e901.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_210242_Real_f0984e98-df5d-4f07-9874-080b8b10dc64_png/noise_residual_map_E-bcba78e901.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 2,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-26T21:02:42.660485",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 2,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.0,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.3891,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

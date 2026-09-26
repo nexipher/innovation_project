@@ -1,0 +1,93 @@
+{
+  "trajectory_id": "noise__VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q85",
+  "policy": "noise",
+  "tools_served": [
+    "noise"
+  ],
+  "variant_id": "VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q85",
+  "source_id": "VQDM/VQDM_1000_200_04_497_vqdm_00035",
+  "split": "train",
+  "generator": "VQDM",
+  "treatment": "jpeg_q85",
+  "container": "jpg",
+  "ground_truth": "Fake",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "当前证据不足以提供明确的伪造或真实图像的判断。图像存在局部噪声不一致现象，但其强度接近于随机水平，无法明确区分伪造与真实图像。此外，图像整体呈现出较高的背景噪声水平，这可能是由于图像压缩引起的。综合来看，现有证据不足以得出确定性的结论。",
+  "posterior": 0.5331,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-327901b5ee",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.7863). Variance collapse detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.7863). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.4949,
+      "raw_metric": 2.786292,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_213042_VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q85/region_E-327901b5ee.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_213042_VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q85/noise_residual_map_E-327901b5ee.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 16.13,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_213042_VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q85.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.629,
+    "posterior_brier": 0.218,
+    "posterior_error": 0.4669
+  }
+}

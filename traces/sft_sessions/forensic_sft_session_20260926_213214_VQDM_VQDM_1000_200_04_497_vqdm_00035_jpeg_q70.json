@@ -1,0 +1,55 @@
+{
+  "id": "session_20260926_213214_VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q70",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants/VQDM_VQDM_1000_200_04_497_vqdm_00035_jpeg_q70.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.85,
+    "report": "这张图片看起来是真实的，但雕像的不协调性表明它可能是AI生成或修改的。",
+    "posterior": 0.5,
+    "conflict_score": 0.0,
+    "policy_reason": "candidate_without_tools",
+    "policy_reasons": [
+      "candidate_without_tools"
+    ],
+    "model_candidate": "Real"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\n标签: 视觉分析\n工具: 法证专家（仅限于视觉观察）\n</planning>\n\n<reasoning>\n这张图片展示了一座建筑物，看起来像是一个教堂或类似的宗教建筑。建筑物的结构和细节看起来很真实，包括窗户、柱子和雕像等元素。背景中的天空和树木也显得自然。然而，建筑物的某些部分，如顶部的雕像，似乎与整体风格不太匹配，可能暗示了后期处理或合成。\n\n综合来看，虽然大部分细节看起来是真实的，但雕像的不协调性可能是AI生成或修改的迹象。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.85, \"primary_evidence\": [\"雕像的不协调性\"], \"report\": \"这张图片看起来是真实的，但雕像的不协调性表明它可能是AI生成或修改的。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 1,
+    "halting_reason": "candidate_without_tools",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-26T21:32:14.604815",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 1,
+    "expert_call_count": 0,
+    "unique_evidence_count": 0,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 0.5,
+    "policy_version": "v2",
+    "policy_reason": "candidate_without_tools",
+    "policy_reasons": [
+      "candidate_without_tools"
+    ],
+    "posterior": 0.5,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

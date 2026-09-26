@@ -1,0 +1,94 @@
+{
+  "trajectory_id": "jpeg__Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95",
+  "policy": "jpeg",
+  "tools_served": [
+    "jpeg"
+  ],
+  "variant_id": "Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95",
+  "source_id": "Real/d90d46bc-de04-4306-93cf-a7818d190aee",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "jpeg_q95",
+  "container": "jpg",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Fake",
+  "confidence": 0.7354,
+  "report": "图像中存在AI生成特征，且JPEG结构分析显示图像可能经过了压缩处理，但由于测量水平接近随机，无法断定这是伪造的。",
+  "posterior": 0.7354,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-df5e84eadb",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[75, 50, 225, 100]",
+      "region_pixels": [
+        75,
+        50,
+        225,
+        100
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        300,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.1942, DCT anomaly: 3.3166)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.1942, DCT anomaly=3.3166). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.5216,
+      "raw_metric": 2.043166,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.02
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_203720_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/region_E-df5e84eadb.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_203720_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95/jpeg_blockiness_map_E-df5e84eadb.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 19.56,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_203720_Real_d90d46bc-de04-4306-93cf-a7818d190aee_jpeg_q95.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 1.3295,
+    "posterior_brier": 0.5408,
+    "posterior_error": 0.7354
+  }
+}

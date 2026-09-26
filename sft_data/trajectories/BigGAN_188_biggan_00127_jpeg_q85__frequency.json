@@ -1,0 +1,96 @@
+{
+  "trajectory_id": "frequency__BigGAN_188_biggan_00127_jpeg_q85",
+  "policy": "frequency",
+  "tools_served": [
+    "freq"
+  ],
+  "variant_id": "BigGAN_188_biggan_00127_jpeg_q85",
+  "source_id": "BigGAN/188_biggan_00127",
+  "split": "train",
+  "generator": "BigGAN",
+  "treatment": "jpeg_q85",
+  "container": "jpg",
+  "ground_truth": "Fake",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "当前多尺度频率分析未能揭示出显著的周期性结构，这与自然图像内容一致，而非GAN/Diffusion上采样操作特有的网格化伪影特征。尽管频谱衰减模式符合自然图像内容，但不足以排除图像合成的可能性。由于缺乏更明确的信号异常，无法通过现有工具进一步降低不确定性。",
+  "posterior": 0.4989,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-99b1c41394",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[13, 13, 29, 29]",
+      "region_pixels": [
+        13,
+        13,
+        29,
+        29
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Calibration: this measurement band is near chance (P(Fake)=0.49) and does not determine a direction. (raw peak ratio: 0.0006, full=0.0009, half=0.0000)",
+      "reasoning": "Calibration: this measurement band is near chance (P(Fake)=0.49) and does not determine a direction.",
+      "strength": 0.2395,
+      "raw_metric": 0.000556,
+      "source": "frequency_expert_v2",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.49) and does not determine a direction.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.556,
+      "calibrated_likelihood": {
+        "Real": 0.513,
+        "Fake": 0.487
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07833333333333337,
+        "separation_polarity_corrected": 0.5558333333333333,
+        "region_area_ratio": 0.015625
+      },
+      "semantics_aligned": true,
+      "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
+      "support_raw": "Real",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Statistical patterns align with normal hardware camera capture.",
+      "reasoning_raw": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "phenomenon_raw": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0006, full=0.0009, half=0.0000)",
+      "diagnostic_region_image": "traces/evidence/session_20260926_200144_BigGAN_188_biggan_00127_jpeg_q85/region_E-99b1c41394.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_200144_BigGAN_188_biggan_00127_jpeg_q85/frequency_spectrum_v2_E-99b1c41394.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 18.2,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_200144_BigGAN_188_biggan_00127_jpeg_q85.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.6953,
+    "posterior_brier": 0.2511,
+    "posterior_error": 0.5011
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "trajectory_id": "noise+frequency__Wukong_965_wukong_image128_jpeg_q95",
+  "policy": "noise+frequency",
+  "tools_served": [
+    "noise",
+    "freq"
+  ],
+  "variant_id": "Wukong_965_wukong_image128_jpeg_q95",
+  "source_id": "Wukong/965_wukong_image128",
+  "split": "train",
+  "generator": "Wukong",
+  "treatment": "jpeg_q95",
+  "container": "jpg",
+  "ground_truth": "Fake",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "图像中存在局部噪声变异，其值为2.6968，接近于生成图像的校准水平（P(Fake)=0.56）。这意味着该测量结果对判断图像的真实性没有显著的方向性信息。此外，图像的整体噪声水平也处于中等范围，这与生成图像的校准水平一致。综合来看，这些证据不足以明确区分图像的真实性和伪造性。在图像处理领域，图像的噪声水平通常用于识别图像是否经过了生成或编辑。然而，在这种情况下，图像的噪声水平并不足以作为决定性的证据。图像的噪声水平可以受到多种因素的影响，包括图像的压缩、锐化和降噪过程。因此，尽管图像的噪声水平较高，但这并不能作为伪造的直接证据。此外，图像的其他特征，如颜色、形状和纹理，也需要结合考虑以做出更准确的判断。综上所述，现有的工具无法进一步降低不确定性，因为它们提供的证据不足以明确区分图像的真实性和伪造性。需要更多的证据或不同的分析方法来解决这个问题。",
+  "posterior": 0.5331,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-0b5a399460",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[0, 0, 256, 256]",
+      "region_pixels": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        500,
+        500
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.6968). Variance collapse detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.6968). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.4614,
+      "raw_metric": 2.696777,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.25
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_192301_Wukong_965_wukong_image128_jpeg_q95/region_E-0b5a399460.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_192301_Wukong_965_wukong_image128_jpeg_q95/noise_residual_map_E-0b5a399460.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 25.09,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_192301_Wukong_965_wukong_image128_jpeg_q95.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.629,
+    "posterior_brier": 0.218,
+    "posterior_error": 0.4669
+  }
+}

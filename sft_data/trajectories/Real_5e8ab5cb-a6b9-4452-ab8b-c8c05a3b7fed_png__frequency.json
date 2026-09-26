@@ -1,0 +1,96 @@
+{
+  "trajectory_id": "frequency__Real_5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed_png",
+  "policy": "frequency",
+  "tools_served": [
+    "freq"
+  ],
+  "variant_id": "Real_5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed_png",
+  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "png",
+  "container": "png",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "尽管图像中存在一些自然现象，如太阳镜的反射和水中的光线折射，但频率域分析显示图像没有显著的周期性结构，这与自然图像内容一致。然而，频率域分析的可靠性较低（0.556），且存在轻微的伪影（0.449），我们无法得出明确的结论。因此，我们无法排除图像被篡改的可能性，但现有的工具不足以提供足够的证据来确定这一点。",
+  "posterior": 0.4957,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-a4cb7363e6",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[0, 0, 166, 250]",
+      "region_pixels": [
+        0,
+        0,
+        166,
+        250
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        500,
+        500
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction. (raw peak ratio: 0.0003, full=0.0001, half=0.0006)",
+      "reasoning": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "strength": 0.2353,
+      "raw_metric": 0.000269,
+      "source": "frequency_expert_v2",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.556,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07833333333333337,
+        "separation_polarity_corrected": 0.5558333333333333,
+        "region_area_ratio": 0.249249
+      },
+      "semantics_aligned": true,
+      "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
+      "support_raw": "Real",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Statistical patterns align with normal hardware camera capture.",
+      "reasoning_raw": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "phenomenon_raw": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0003, full=0.0001, half=0.0006)",
+      "diagnostic_region_image": "traces/evidence/session_20260926_205651_Real_5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed_png/region_E-a4cb7363e6.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_205651_Real_5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed_png/frequency_spectrum_v2_E-a4cb7363e6.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 16.52,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_205651_Real_5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed_png.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.6846,
+    "posterior_brier": 0.2457,
+    "posterior_error": 0.4957
+  }
+}

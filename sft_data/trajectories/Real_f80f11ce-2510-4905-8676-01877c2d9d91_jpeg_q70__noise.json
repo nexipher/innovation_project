@@ -1,0 +1,94 @@
+{
+  "trajectory_id": "noise__Real_f80f11ce-2510-4905-8676-01877c2d9d91_jpeg_q70",
+  "policy": "noise",
+  "tools_served": [
+    "noise"
+  ],
+  "variant_id": "Real_f80f11ce-2510-4905-8676-01877c2d9d91_jpeg_q70",
+  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "jpeg_q70",
+  "container": "jpg",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "图像中心区域存在局部噪声变异，但测量值接近于随机概率，无法提供明确的方向性信息。现有工具无法进一步降低不确定性。",
+  "posterior": 0.5725,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-593af71fda",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[54, 23, 97, 104]",
+      "region_pixels": [
+        54,
+        23,
+        97,
+        104
+      ],
+      "region_normalized_1000": [
+        210,
+        46,
+        380,
+        209
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.4779). Variance collapse detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.4779). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.3815,
+      "raw_metric": 2.477865,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.64); the generative reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.359,
+        "Fake": 0.641
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.027318
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_201851_Real_f80f11ce-2510-4905-8676-01877c2d9d91_jpeg_q70/region_E-593af71fda.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_201851_Real_f80f11ce-2510-4905-8676-01877c2d9d91_jpeg_q70/noise_residual_map_E-593af71fda.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 17.3,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_201851_Real_f80f11ce-2510-4905-8676-01877c2d9d91_jpeg_q70.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.8498,
+    "posterior_brier": 0.3278,
+    "posterior_error": 0.5725
+  }
+}

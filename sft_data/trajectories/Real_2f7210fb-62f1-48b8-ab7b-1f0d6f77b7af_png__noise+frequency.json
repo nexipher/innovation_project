@@ -1,0 +1,94 @@
+{
+  "trajectory_id": "noise+frequency__Real_2f7210fb-62f1-48b8-ab7b-1f0d6f77b7af_png",
+  "policy": "noise+frequency",
+  "tools_served": [
+    "noise",
+    "freq"
+  ],
+  "variant_id": "Real_2f7210fb-62f1-48b8-ab7b-1f0d6f77b7af_png",
+  "source_id": "Real/2f7210fb-62f1-48b8-ab7b-1f0d6f77b7af",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "png",
+  "container": "png",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "尽管存在高残差微噪声水平，但缺乏足够的视觉细节和复杂的图像特征来进一步降低不确定性。",
+  "posterior": 0.3891,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-bdd577cd9b",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[82, 119, 214, 252]",
+      "region_pixels": [
+        82,
+        119,
+        214,
+        252
+      ],
+      "region_normalized_1000": [
+        165,
+        238,
+        429,
+        504
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 3.6015). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=3.6015). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.7689,
+      "raw_metric": 3.60153,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.718,
+        "Fake": 0.282
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.070224
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_191347_Real_2f7210fb-62f1-48b8-ab7b-1f0d6f77b7af_png/region_E-bdd577cd9b.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_191347_Real_2f7210fb-62f1-48b8-ab7b-1f0d6f77b7af_png/noise_residual_map_E-bdd577cd9b.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 20.7,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_191347_Real_2f7210fb-62f1-48b8-ab7b-1f0d6f77b7af_png.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.4928,
+    "posterior_brier": 0.1514,
+    "posterior_error": 0.3891
+  }
+}

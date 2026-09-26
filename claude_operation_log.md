@@ -974,3 +974,25 @@
 * **执行结果与验证状态**：**G4-a~d（CPU 部分）全部完成**; 483 测试通过
 * **置信度或遗留待办（TODO）**：**下一步需要 GPU（当前未开启）** —— G4-e 小规模试生成（100–200 源 × 6 策略）→ G4-f 人工审核 → G4-g LoRA 试训并重跑四臂验收
 ---
+### 2026-09-26 15:10:20 - G4-e 试生成完成（20 源 / 440 轨迹）+ 两处修复
+
+* **当前操作动作**：G4-e 小规模试生成（用户指定先跑 20 源）→ 准入 → final_v2 组装与校验
+* **核心变更说明**：
+  1. **规模**: 20 源（10 Real + 10 Fake）× 4 处理 × 6 策略 = **440 次会话**（q70 的 40 次 jpeg 类策略在生成阶段门控跳过）; 平均 20.2s/会话, 约 2.5 小时
+  2. **修复 1（G4-c）**: 无工具轨迹与自身基线比较恒为 Δ0, 导致**正确答案的无工具轨迹被系统性丢弃**（50 条里 38 条）, `no_tool_positive` 桶永远为空。判据改为"仅凭图像答对且无自信错误"; 另 40 条仍被正确拒绝 —— 基线在 Fake 上高置信判 Real
+  3. **修复 2（G4-d）**: 无工具样本被两项只适用于"证据结论"的校验全部拒绝（37/37）: 无证据时后验按构造为 0.5 → "verdict 与后验矛盾"; "高置信必须有合格证据" → 而仅凭视觉下结论正是该桶要教的。verdict 段现标明依据（`model_perception` / `evidence_posterior`), 无工具样本改校验"是否与模型实际结论一致"
+  4. **顺带修复渲染 bug**: render_answer 内 `evidence` 变量被二次赋值成原始列表, 会把 Python repr 写进训练文本（测试立即捕获）
+  5. **质量检查全部达标**: 报告唯一率 100%; q70 的 jpeg 策略 0 次生成; 弃权 100% 有理由（后验偏离<0.15）; 360 条工具会话置信度 0 条偏离后验; 配对 ΔBrier: noise −0.027 / jpeg −0.025 / noise+jpeg −0.021 / noise+frequency −0.027 / **frequency −0.001**（与标定预测一致）
+  6. **准入**: 440 条 → 正样本 97（工具 60 + 无工具 37）/ 合理弃权 140 / 拒绝 203; frequency 正样本 0
+  7. **final_v2**: 237 条, 十项校验 **0 拒绝**
+  8. **须在训练前处理**: 类别成分 Fake 178 / Real 59（75/25）, 各桶内部同样偏斜。原因是任务结构（证据只在基线自信判错处有增益, 而基线在 Fake 上正高置信判 Real）; 风险是学出"调用工具⇒Fake"的新捷径。已记录 `label_composition` 与 `training_weights`(Real ×3.02) 供 G4-f/G4-g 裁决
+  9. 测试 495 通过
+* **涉及/修改的文件清单**：
+  - `scripts/admit_trajectories_g4.py, tests/test_admit_trajectories_g4.py (Modified — 无工具判据)`
+  - `utils/final_v2.py, scripts/build_final_v2.py, tests/test_final_v2.py (Modified — 依据区分/渲染修复/成分权重)`
+  - `sft_data/trajectories/ (Created — 440 条), trajectories_report.json, admission_report.json`
+  - `sft_data/train/final_v2/ (Created — 237 条 + metadata)`
+  - `plan.md (Modified — G4-e 结果与质量检查表)`
+* **执行结果与验证状态**：G4-e 完成; 495 测试通过; 十项校验 0 拒绝; 五项质量检查全部达标
+* **置信度或遗留待办（TODO）**：类别成分偏斜须在训练前裁决; G4-f 人工审核（全量首审 + conflict/Uncertain/multi-tool/高置信双审）→ G4-g LoRA 试训并重跑四臂验收
+---

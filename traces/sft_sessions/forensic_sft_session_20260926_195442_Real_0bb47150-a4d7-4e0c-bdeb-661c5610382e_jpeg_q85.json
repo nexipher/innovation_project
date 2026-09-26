@@ -1,0 +1,131 @@
+{
+  "id": "session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants/Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "图像中存在明显的JPEG压缩痕迹，但根据G2校准，这种测量水平接近随机（P(Fake) = 0.449），因此不能作为确定伪造的依据。尽管如此，图像中存在一些视觉异常，如结构突兀的建筑元素，这些可能是伪造的迹象。然而，由于现有工具无法提供更具体的量化证据来支持或反驳这些视觉异常，我们无法进一步降低不确定性。",
+    "posterior": 0.464,
+    "conflict_score": 0.0,
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [160, 140, 380, 260]\nVisual Anomalies: 在图像的中央区域，有一个明显的结构，看起来像是一个建筑物或设施，周围有道路和缆车轨道。这个结构在图像中显得有些突兀，可能是一个伪造的元素。\nExpert Target & Hypothesis: 首先调用 <call_jpeg> 来检查图像是否经过了JPEG压缩，因为这可能是伪造图像的一个迹象。\n</planning>\n<call_jpeg>[160, 140, 380, 260]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-894754761c\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[53, 70, 126, 130]\", \"region_pixels\": [53, 70, 126, 130], \"region_normalized_1000\": [160, 140, 380, 260], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2579, DCT anomaly: 3.9804)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=1.2579, DCT anomaly=3.9804). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.6668, \"raw_metric\": 2.346936, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.551, \"Fake\": 0.449}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.026386}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\", \"diagnostic_region_image\": \"traces/evidence/session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85/region_E-894754761c.png\", \"visual_artifacts\": [\"traces/evidence/session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85/jpeg_blockiness_map_E-894754761c.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85/region_E-894754761c.png",
+        "traces/evidence/session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85/jpeg_blockiness_map_E-894754761c.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [53, 70, 126, 130]\nVisual Anomalies: 图像中存在明显的JPEG压缩痕迹，表现为块状结构和DCT系数分布异常，这可能是伪造图像的一个迹象。\nExpert Target & Hypothesis: 首先调用 <call_jpeg> 来检查图像是否经过了JPEG压缩，因为这可能是伪造图像的一个迹象。\n</planning>\n<call_jpeg>[53, 70, 126, 130]</call_jpeg>"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n图像中的JPEG压缩痕迹（blockiness = 1.2579, DCT anomaly = 3.9804）表明图像可能经过了JPEG压缩。然而，根据G2校准，这种测量水平接近随机（P(Fake) = 0.449），因此不能作为确定伪造的依据。此外，图像经过重压缩（质量≤70）后，这种测量水平会进一步降低，因此不应作为独立判据。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"图像中存在明显的JPEG压缩痕迹，但根据G2校准，这种测量水平接近随机，不能作为确定伪造的依据。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析现有的证据，我们发现图像中存在明显的JPEG压缩痕迹，但根据G2校准，这种测量水平接近随机（P(Fake) = 0.449），因此不能作为确定伪造的依据。此外，图像经过重压缩（质量≤70）后，这种测量水平会进一步降低，因此不应作为独立判据。尽管如此，图像中存在一些视觉异常，如结构突兀的建筑元素，这些可能是伪造的迹象。然而，由于现有工具无法提供更具体的量化证据来支持或反驳这些视觉异常，我们无法进一步降低不确定性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"图像中存在明显的JPEG压缩痕迹，但根据G2校准，这种测量水平接近随机（P(Fake) = 0.449），因此不能作为确定伪造的依据。尽管如此，图像中存在一些视觉异常，如结构突兀的建筑元素，这些可能是伪造的迹象。然而，由于现有工具无法提供更具体的量化证据来支持或反驳这些视觉异常，我们无法进一步降低不确定性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-894754761c",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[53, 70, 126, 130]",
+      "region_pixels": [
+        53,
+        70,
+        126,
+        130
+      ],
+      "region_normalized_1000": [
+        160,
+        140,
+        380,
+        260
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2579, DCT anomaly: 3.9804)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.2579, DCT anomaly=3.9804). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.6668,
+      "raw_metric": 2.346936,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.026386
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85/region_E-894754761c.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_195442_Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85/jpeg_blockiness_map_E-894754761c.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      332,
+      500
+    ],
+    "total_steps": 4,
+    "halting_reason": "model_stalled",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-09-26T19:54:42.654207",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 4.0,
+    "policy_version": "v2",
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "posterior": 0.464,
+    "conflict_score": 0.0,
+    "candidate_overridden": true
+  }
+}

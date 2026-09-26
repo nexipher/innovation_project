@@ -1,0 +1,96 @@
+{
+  "trajectory_id": "frequency__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85",
+  "policy": "frequency",
+  "tools_served": [
+    "freq"
+  ],
+  "variant_id": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85",
+  "source_id": "Real/532bd15d-b868-4dc1-b476-788e22f24fa9",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "jpeg_q85",
+  "container": "jpg",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "根据现有的频率分析结果，图像中存在一些不自然的细节和阴影，这可能是伪造的迹象。然而，频率分析结果显示，图像中的高频率区域没有显著的周期性结构，这与自然图像内容一致，而不是GAN/Diffusion上采样操作特有的网格状伪影特征。此外，频率分析的可靠性较低，仅为0.556，且属于“弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。”因此，尽管有可疑之处，但现有工具无法提供足够的证据来确定图像的真实性。",
+  "posterior": 0.5175,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "no_expected_gain"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-fcb1baaf5e",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[85, 111, 170, 179]",
+      "region_pixels": [
+        85,
+        111,
+        170,
+        179
+      ],
+      "region_normalized_1000": [
+        160,
+        222,
+        320,
+        358
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies. (raw peak ratio: 0.0013, full=0.0016, half=0.0007)",
+      "reasoning": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies.",
+      "strength": 0.2499,
+      "raw_metric": 0.001259,
+      "source": "frequency_expert_v2",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.556,
+      "calibrated_likelihood": {
+        "Real": 0.291,
+        "Fake": 0.709
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07833333333333337,
+        "separation_polarity_corrected": 0.5558333333333333,
+        "region_area_ratio": 0.021811
+      },
+      "semantics_aligned": true,
+      "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
+      "support_raw": "Real",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Statistical patterns align with normal hardware camera capture.",
+      "reasoning_raw": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "phenomenon_raw": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0013, full=0.0016, half=0.0007)",
+      "diagnostic_region_image": "traces/evidence/session_20260926_202444_Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85/region_E-fcb1baaf5e.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_202444_Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85/frequency_spectrum_v2_E-fcb1baaf5e.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 2,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 2.0
+  },
+  "halting_reason": "no_expected_gain",
+  "elapsed_s": 21.16,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_202444_Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.7288,
+    "posterior_brier": 0.2678,
+    "posterior_error": 0.5175
+  }
+}

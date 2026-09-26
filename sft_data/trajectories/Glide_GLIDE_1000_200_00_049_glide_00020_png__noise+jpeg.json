@@ -1,0 +1,95 @@
+{
+  "trajectory_id": "noise+jpeg__Glide_GLIDE_1000_200_00_049_glide_00020_png",
+  "policy": "noise+jpeg",
+  "tools_served": [
+    "noise",
+    "jpeg"
+  ],
+  "variant_id": "Glide_GLIDE_1000_200_00_049_glide_00020_png",
+  "source_id": "Glide/GLIDE_1000_200_00_049_glide_00020",
+  "split": "train",
+  "generator": "Glide",
+  "treatment": "png",
+  "container": "png",
+  "ground_truth": "Fake",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Fake",
+  "confidence": 0.7354,
+  "report": "图像中存在明显的JPEG压缩块状结构，但根据G2校准，这种测量水平接近随机，且在重压缩到质量70后进一步减弱信号，因此不应作为独立判据。综合考虑，图像可能为AI生成。",
+  "posterior": 0.7354,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "candidate_matches_posterior"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-df7bafa2ed",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 26, 26]",
+      "region_pixels": [
+        0,
+        0,
+        26,
+        26
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        100,
+        100
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.0251, DCT anomaly: 2.9588)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.0251, DCT anomaly=2.9588). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.4006,
+      "raw_metric": 1.798595,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.010315
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20260926_211621_Glide_GLIDE_1000_200_00_049_glide_00020_png/region_E-df7bafa2ed.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20260926_211621_Glide_GLIDE_1000_200_00_049_glide_00020_png/jpeg_blockiness_map_E-df7bafa2ed.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 3,
+    "expert_calls": 2,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 1,
+    "weighted_cost": 3.5
+  },
+  "halting_reason": "candidate_matches_posterior",
+  "elapsed_s": 16.5,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20260926_211621_Glide_GLIDE_1000_200_00_049_glide_00020_png.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.3073,
+    "posterior_brier": 0.07,
+    "posterior_error": 0.2646
+  }
+}
