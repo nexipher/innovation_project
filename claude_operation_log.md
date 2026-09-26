@@ -882,3 +882,23 @@
 * **执行结果与验证状态**：G3-e 完成（四臂 480 会话）; 365 测试通过; 报告指纹 25b169996ff2d422
 * **置信度或遗留待办（TODO）**：G3 全部完成（a–e）; 下一步 G4：以修复后的管线重新生成 SFT final_v2 并人工抽检, 训练目标显式覆盖上述两条模型侧缺陷
 ---
+### 2026-09-26 10:35:20 - G4 计划补全 + G4-a 数据划分与防泄漏（完成）
+
+* **当前操作动作**：①按项目规范把 G4 拆为可验收子阶段写入 plan.md ②修正 README/plan 中 G3-e 的旧状态 ③实施 G4-a 数据划分
+* **核心变更说明**：
+  1. **G4 执行计划（a–g）** 写入 plan.md §4.11: G4-a 数据划分与防泄漏(CPU) / G4-b 候选轨迹生成器(Schema 与测试 CPU, 执行需 GPU) / G4-c 两级准入(CPU) / G4-d final_v2 Schema 与校验器(CPU) / G4-e 小规模 GPU 试生成 / G4-f 全量人工审核 / G4-g LoRA 小规模试训并重跑四臂验收
+  2. 旧状态修正: plan.md 的 "G3-e ⏸ 等待 GPU 授权" 改为 "✅ 已完成（四臂 480 会话）"; README 进度表的 "G3-e 进行中" 改为 "✅ 完成"，并新增 G4-a~d 行
+  3. **G4-a 实现** `scripts/build_split_v2.py` + `sft_data/split_v2.json`: 泄漏单元是**源图**而非文件（同一源图的 native/png/q95/q85/q70 由 `split_for_variant()` 归一到同一分区, 并在 build 时逐条断言）; 记录生成器来源供 G5 跨生成器评测; 98 个 G2-b 校准源划为 `calibration_holdout`（既不训练也不评测, 避免标定数据自评）; 内容哈希 `d8e9d81597ead53f` 保证划分可复现
+  4. **划分口径修正（重要）**: 数据集本身是 1000 Real : 8000 Fake（1:8）, 按 (label×generator) 忠实分层会让评测集变成 11/89 的类别混比, 与校准集 50/50 及 G3-e 四臂不可比, 还会放大"Fake 先验"这一已知失效模式。故 **val/test 类别平衡**（Real 142/143 对 Fake 142/143, 每格 8 个生成器均摊）, **train 保留全部候选并记录采样权重**（`train_sampling_weights: {Real: 1.0, Fake: 11.53}`）供 G4-b 按权重显式配平
+  5. 测试抓到两个真实 bug 并修复: ①`validate()` 在发现问题时引用不存在的 `entry["source_id"]`（真出问题时反而 KeyError 崩溃）②Python 默认参数在定义期绑定, 导致测试注入的 root 不生效（`load_holdout_sources` 现显式传 root）
+  6. 测试 386 通过（新增 split 测试 21 项）; 端到端测试单例约 3.6s（G3-a 整图度量的预期代价, 非测试问题）
+* **涉及/修改的文件清单**：
+  - `plan.md (Modified — G4 执行计划 a–g; G3-e 状态修正)`
+  - `README.md (Modified — G3-e 状态修正 + G4-a~d 行)`
+  - `scripts/build_split_v2.py (Created — 源级划分/防泄漏/生成器来源/holdout/校验器)`
+  - `tests/test_split_v2.py (Created — 21 项)`
+  - `sft_data/split_v2.json (Created — 9000 源划分, 1572 KB)`
+  - `claude_operation_log.md (Modified)`
+* **执行结果与验证状态**：G4-a 完成; 386 测试通过; 划分校验全过（无跨分区源、holdout 不重叠、评测分区类别平衡且生成器均摊）
+* **置信度或遗留待办（TODO）**：G4-b（轨迹生成器 Schema + Mock 测试, CPU）→ G4-c（两级准入）→ G4-d（final_v2 Schema 与校验器）均在 CPU 完成; G4-e/g 需 GPU（当前未开启）
+---
