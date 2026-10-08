@@ -1,0 +1,117 @@
+{
+  "id": "session_20261008_121436_real_0003_jpeg_q70",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0003_jpeg_q70.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.3102,
+    "report": "基于校准后验与已获取证据的判定。",
+    "posterior": 0.3102,
+    "conflict_score": 0.0,
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "model_candidate": "Real"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [292, 0, 504, 332]\nVisual Anomalies: 猫的毛发看起来有些模糊，可能是因为拍摄时的光线不足或相机设置不当。\nExpert Target & Hypothesis: <call_noise>[292, 0, 504, 332]</call_noise> → 检查是否存在微小噪声，以确定图像是否经过了处理。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-66239244f8\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[97, 0, 168, 166]\", \"region_pixels\": [97, 0, 168, 166], \"region_normalized_1000\": [292, 0, 504, 332], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.1321). Residual consistent with a camera sensor.\", \"reasoning\": \"High residual micro-noise level (metric=4.1321). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.\", \"strength\": 0.8806, \"raw_metric\": 4.132063, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.886, \"Fake\": 0.114}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.070787}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：猫的毛发看起来有些模糊，可能是因为拍摄时的光线不足或相机设置不当。\n- container: jpg, quality: jpeg_q70\n- resolution: [512, 512]\n</observation>\n\n<forensic_evidence>\n- evidence_id: E-66239244f8\n  expert: noise_expert\n  measurement_scope: global\n  raw_metric: 4.132063\n  region (diagnostic): patch_coordinates_[97, 0, 168, 166]\n  calibrated_likelihood: Real=0.886, Fake=0.114\n  applicability: inverted:high-metric-means-real\n  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n</forensic_evidence>\n\n<reasoning>\n支持的证据：\n- noise_expert: Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.\n反证与替代解释：\n- 该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\n专家失效条件：\n- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n剩余不确定性：后验 P(Fake)=0.3102，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.3102, \"basis\": \"evidence_posterior\", \"posterior\": 0.3102}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：猫的毛发看起来有些模糊，可能是因为拍摄时的光线不足或相机设置不当。\n- container: jpg, quality: jpeg_q70\n- resolution: [512, 512]\n</observation>\n\n<forensic_evidence>\n- evidence_id: E-66239244f8\n  expert: noise_expert\n  measurement_scope: global\n  raw_metric: 4.132063\n  region (diagnostic): patch_coordinates_[97, 0, 168, 166]\n  calibrated_likelihood: Real=0.886, Fake=0.114\n  applicability: inverted:high-metric-means-real\n  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n</forensic_evidence>\n\n<reasoning>\n支持的证据：\n- noise_expert: Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.\n反证与替代解释：\n- 该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\n专家失效条件：\n- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n剩余不确定性：后验 P(Fake)=0.3102，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.3102, \"basis\": \"evidence_posterior\", \"posterior\": 0.3102}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-66239244f8",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[97, 0, 168, 166]",
+      "region_pixels": [
+        97,
+        0,
+        168,
+        166
+      ],
+      "region_normalized_1000": [
+        292,
+        0,
+        504,
+        332
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with camera capture (spatially rich sensor noise) (inconsistency ratio: 4.1321). Residual consistent with a camera sensor.",
+      "reasoning": "High residual micro-noise level (metric=4.1321). Camera sensors leave spatially rich micro-noise (shot noise + PRNU) that survives re-encoding, which is the condition the G2 calibration set associates with real capture. Note this is the opposite of the original manipulation reading: high residual does NOT indicate forgery. Sharpening can also inflate this metric.",
+      "strength": 0.8806,
+      "raw_metric": 4.132063,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.11); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.886,
+        "Fake": 0.114
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.070787
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High residual micro-noise level — spatially rich sensor noise of the kind the calibration set associates with camera capture."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      333,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "candidate_matches_posterior",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-08T12:14:36.489554",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 1,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 2.5,
+    "policy_version": "v2",
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "posterior": 0.3102,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

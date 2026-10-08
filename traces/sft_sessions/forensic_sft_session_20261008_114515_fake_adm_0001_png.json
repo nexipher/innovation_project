@@ -1,0 +1,175 @@
+{
+  "id": "session_20261008_114515_fake_adm_0001_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/fake_adm_0001_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.7604,
+    "report": "基于校准后验与已获取证据的判定。",
+    "posterior": 0.7604,
+    "conflict_score": 0.0,
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 图像中有一只鸟站在木头上，背景是湖泊和山脉。然而，图像的右上角似乎有一些不自然的光影效果。\nExpert Target & Hypothesis: 首先调用<call_noise>专家，因为图像右上角的光影效果可能是噪声残留。\n</planning>\n<call_noise>[100, 100, 200, 200]</call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-577f1b545e\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.7635). Variance collapse detected.\", \"reasoning\": \"Intermediate residual micro-noise level (metric=2.7635). This band sits near the calibrated chance level; the measurement carries little directional information.\", \"strength\": 0.4863, \"raw_metric\": 2.763452, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.009537}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\"}"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：图像中有一只鸟站在木头上，背景是湖泊和山脉。然而，图像的右上角似乎有一些不自然的光影效果。\n- container: jpg, quality: jpeg_q85\n- resolution: [512, 512]\n</observation>\n\n<forensic_evidence>\n- evidence_id: E-577f1b545e\n  expert: noise_expert\n  measurement_scope: global\n  raw_metric: 2.763452\n  region (diagnostic): patch_coordinates_[26, 26, 51, 51]\n  calibrated_likelihood: Real=0.436, Fake=0.564\n  applicability: inverted:high-metric-means-real\n  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\n专家失效条件：\n- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n剩余不确定性：后验 P(Fake)=0.5331，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.5331}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.53，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：图像中有一只鸟站在木头上，背景是湖泊和山脉。然而，图像的右上角似乎有一些不自然的光影效果。\n- container: jpg, quality: jpeg_q85\n- resolution: [512, 512]\n</observation>\n\n<forensic_evidence>\n- evidence_id: E-577f1b545e\n  expert: noise_expert\n  measurement_scope: global\n  raw_metric: 2.763452\n  region (diagnostic): patch_coordinates_[26, 26, 51, 51]\n  calibrated_likelihood: Real=0.436, Fake=0.564\n  applicability: inverted:high-metric-means-real\n  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\n专家失效条件：\n- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n剩余不确定性：后验 P(Fake)=0.5331，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<planning>\nSuspected Region: [100, 100, 200, 200]\nVisual Anomalies: 图像右上角的光影效果不自然。\nExpert Target & Hypothesis: 调用<call_jpeg>专家，以确定图像是否经过了JPEG压缩。\n</planning>\n<call_jpeg>[100, 100, 200, 200]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-d7cd24b1e1\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[26, 26, 51, 51]\", \"region_pixels\": [26, 26, 51, 51], \"region_normalized_1000\": [100, 100, 200, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9316, DCT anomaly: 3.4392)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=0.9316, DCT anomaly=3.4392). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.\", \"strength\": 0.4674, \"raw_metric\": 1.934639, \"source\": \"jpeg_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.139, \"Fake\": 0.861}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.009537}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"support_raw\": \"Uncertain\", \"direction\": \"AI-generated\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\"}"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：图像中有一只鸟站在木头上，背景是湖泊和山脉。然而，图像的右上角似乎有一些不自然的光影效果。\n- container: jpg, quality: jpeg_q85\n- resolution: [512, 512]\n</observation>\n\n<forensic_evidence>\n- evidence_id: E-577f1b545e\n  expert: noise_expert\n  measurement_scope: global\n  raw_metric: 2.763452\n  region (diagnostic): patch_coordinates_[26, 26, 51, 51]\n  calibrated_likelihood: Real=0.436, Fake=0.564\n  applicability: inverted:high-metric-means-real\n  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n- evidence_id: E-d7cd24b1e1\n  expert: jpeg_expert\n  measurement_scope: global\n  raw_metric: 1.934639\n  region (diagnostic): patch_coordinates_[26, 26, 51, 51]\n  calibrated_likelihood: Real=0.139, Fake=0.861\n  applicability: inverted:high-metric-means-real\n  conditions: 高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\n- 本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\n专家失效条件：\n- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\n- 高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\n剩余不确定性：后验 P(Fake)=0.5331，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.5331}\n</verdict>\n\n最终报告：\n在分析图像中右上角的光影效果时，我们调用了噪声残留专家并获得了以下结果：\n- 残差微噪声水平为 2.763452，接近校准的随机概率（P(Fake)=0.564），这表明图像可能经过了生成处理，但不足以确定其为伪造。\n随后，我们调用了JPEG压缩历史专家，得到的结果为：\n- 中等程度的JPEG结构分析揭示了DCT系数直方图的空洞现象（块性=0.9316，DCT异常=3.4392），表明图像可能经过了JPEG压缩。然而，这种水平的校准概率接近随机（P(Fake)=0.861），并且在重新压缩后会进一步减弱信号，因此不应驱动判决。\n\n综合以上证据，图像右上角的光影效果确实存在一些不自然之处，但现有工具无法提供足够的信息来降低图像为伪造的不确定性。尽管图像可能经过了生成处理或JPEG压缩，但现有技术无法区分这些可能性。因此，根据现有证据，我们得出“不确定”的结论。"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-577f1b545e",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 2.7635). Variance collapse detected.",
+      "reasoning": "Intermediate residual micro-noise level (metric=2.7635). This band sits near the calibrated chance level; the measurement carries little directional information.",
+      "strength": 0.4863,
+      "raw_metric": 2.763452,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band."
+    },
+    {
+      "evidence_id": "E-d7cd24b1e1",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[26, 26, 51, 51]",
+      "region_pixels": [
+        26,
+        26,
+        51,
+        51
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        200,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 0.9316, DCT anomaly: 3.4392)",
+      "reasoning": "Moderate JPEG structure found (blockiness=0.9316, DCT anomaly=3.4392). At this level the calibrated likelihood is near chance; re-compression weakens the signal further, so this band should not drive a verdict.",
+      "strength": 0.4674,
+      "raw_metric": 1.934639,
+      "source": "jpeg_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.86); the generative reading applies.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.139,
+        "Fake": 0.861
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.009537
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further."
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 4,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-08T11:45:15.808948",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 4.0,
+    "policy_version": "v2",
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.7604,
+    "conflict_score": 0.0,
+    "candidate_overridden": false
+  }
+}

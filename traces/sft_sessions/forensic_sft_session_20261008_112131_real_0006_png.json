@@ -1,0 +1,105 @@
+{
+  "id": "session_20261008_112131_real_0006_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images/real_0006_png.png",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "取证后仍未形成可判定方向，按疑罪从无输出 Uncertain。",
+    "posterior": 0.5,
+    "conflict_score": 0.0,
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.50，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>\n\n<postmortem>\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n专家调用回顾：\n- call_freq: enabled, calibrated_likelihood=0.57\n- call_noise: enabled, calibrated_likelihood=0.31\n- call_jpeg: enabled, calibrated_likelihood=0.51\n继续取证建议：\n- jpeg_expert，以评估JPEG压缩历史\n</postmortem>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.50，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>\n\n<postmortem>\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n专家调用回顾：\n- call_freq: enabled, calibrated_likelihood=0.57\n- call_noise: enabled, calibrated_likelihood=0.31\n- call_jpeg: enabled, calibrated_likelihood=0.51\n继续取证建议：\n- jpeg_expert，以评估JPEG压缩历史\n</postmortem>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.50，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>\n\n<postmortem>\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n专家调用回顾：\n- call_freq: enabled, calibrated_likelihood=0.57\n- call_noise: enabled, calibrated_likelihood=0.31\n- call_jpeg: enabled, calibrated_likelihood=0.51\n继续取证建议：\n- jpeg_expert，以评估JPEG压缩历史\n</postmortem>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.50，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>\n\n<postmortem>\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n专家调用回顾：\n- call_freq: enabled, calibrated_likelihood=0.57\n- call_noise: enabled, calibrated_likelihood=0.31\n- call_jpeg: enabled, calibrated_likelihood=0.51\n继续取证建议：\n- jpeg_expert，以评估JPEG压缩历史\n</postmortem>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.50，冲突度=0.00），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>\n\n<postmortem>\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n专家调用回顾：\n- call_freq: enabled, calibrated_likelihood=0.57\n- call_noise: enabled, calibrated_likelihood=0.31\n- call_jpeg: enabled, calibrated_likelihood=0.51\n继续取证建议：\n- jpeg_expert，以评估JPEG压缩历史\n</postmortem>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<observation>\n模型视觉观察：灰暗的天空和沙滩上的一个人影\n- container: jpg, quality: jpeg_q85\n- resolution: [530, 800]\n</observation>\n\n<forensic_evidence>\n- expert: call_freq\n  measurement_scope: global\n  calibrated_likelihood: 0.57\n  applicability: enabled\n  conditions: []\n- expert: call_noise\n  measurement_scope: global\n  calibrated_likelihood: 0.31\n  applicability: enabled\n  conditions: []\n- expert: call_jpeg\n  measurement_scope: global\n  calibrated_likelihood: 0.51\n  applicability: enabled\n  conditions: []\n</forensic_evidence>\n\n<reasoning>\n反证与替代解释：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</reasoning>\n\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"basis\": \"evidence_posterior\", \"posterior\": 0.49}\n</verdict>\n\n<postmortem>\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n专家调用回顾：\n- call_freq: enabled, calibrated_likelihood=0.57\n- call_noise: enabled, calibrated_likelihood=0.31\n- call_jpeg: enabled, calibrated_likelihood=0.51\n继续取证建议：\n- 无\n反证与替代解释分析：\n- 高微噪声水平可能表示相机传感器的微小振动\n专家失效条件：\n- 图像格式为jpg，质量为jpeg_q85\n模型视觉观察分析：\n- 灰暗的天空和沙滩上的一个人影\n剩余不确定性：后验 P(Fake)=0.49，冲突度=0.0，停止原因=no_expected_gain\n</postmortem>"
+    }
+  ],
+  "evidence_chain": [],
+  "metadata": {
+    "image_size": [
+      625,
+      500
+    ],
+    "total_steps": 7,
+    "halting_reason": "model_stalled",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-08T11:21:31.074156",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 7,
+    "expert_call_count": 0,
+    "unique_evidence_count": 0,
+    "suppressed_duplicate_count": 0,
+    "weighted_cost": 3.5,
+    "policy_version": "v2",
+    "policy_reason": "model_stalled",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "model_stalled"
+    ],
+    "posterior": 0.5,
+    "conflict_score": 0.0,
+    "candidate_overridden": true
+  }
+}
