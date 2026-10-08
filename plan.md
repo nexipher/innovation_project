@@ -1873,6 +1873,18 @@ noise + frequency  正交组合
 
 全量首审；conflict / Uncertain / multi-tool / 高置信样本**双审**；按格式与生成器分层抽查；审计界面需同时可见源图、Evidence Bundle、可视化证据与轨迹增益；严重错误进拒绝集，**不做"稍改即训"**。
 
+#### G4-f 审核工作台与处置工具（2026-10-08 完成，CPU）
+
+| 工具 | 用途 |
+|------|------|
+| `scripts/build_review_workstation.py` | 生成 `sft_data/review/`：**237 个样本页**（源图 vs 变体图并排、专家产物、Evidence Bundle 表、与 no-tool 基线的对比、该样本将教模型说的四段答案、逐项审核清单）+ `index.html` + `worklist.csv` + `review_sets.json`。静态 HTML、无服务端依赖，图片按相对路径引用（0 张缺失） |
+| `scripts/record_review.py` | 记录处置（`accept` / `format_only` / `revise` / `reject`，沿用 G0 词汇），追加式 JSONL、同一样本以最新为准、对错误样本 id 拒绝写入；`--summary` 报进度 |
+| `scripts/apply_review.py` | 按处置生成 `sft_data/train/final_v2_reviewed/`（四个集合 + metadata），**未审完则拒绝运行**（`--allow-partial` 可出临时集并标注），并计算 accepted 集的类别权重以抵消成分偏斜；不写入任何冻结集 |
+
+**审核清单（工作台内置，逐条勾选）**：观察可核验 / 证据段与 token 一致 / 推理只引合格证据 / **未把容器当真假理由** / verdict 与后验一致 / 增益真实 / 不教坏习惯（捷径、无理由弃权、模板化）。
+
+**双审清单规模提醒**：按规范定义（conflict / Uncertain / multi-tool / 高置信）双审覆盖 **207/237**（弃权 140 + 多工具 78 + 高置信 38）。若全按字面执行需约 450 次阅读；是否对"设计上就弃权"的样本也双审，由审核者决定。
+
 #### G4-g LoRA 小规模试训（需 GPU）
 
 小规模试训后**立即重跑与 G3 完全相同的四臂实验**（RGB / Text / Image / Both）。验收不看 loss：

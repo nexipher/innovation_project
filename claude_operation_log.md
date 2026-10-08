@@ -996,3 +996,22 @@
 * **执行结果与验证状态**：G4-e 完成; 495 测试通过; 十项校验 0 拒绝; 五项质量检查全部达标
 * **置信度或遗留待办（TODO）**：类别成分偏斜须在训练前裁决; G4-f 人工审核（全量首审 + conflict/Uncertain/multi-tool/高置信双审）→ G4-g LoRA 试训并重跑四臂验收
 ---
+### 2026-10-08 09:35:10 - G4-f 审核工作台与处置工具（CPU）
+
+* **当前操作动作**：G4-f 前置 —— 搭建人工审核工作台、处置记录器与审核后组装器
+* **核心变更说明**：
+  1. **环境变化**: GPU 已释放（No devices found）→ G4-e 扩量与 G4-g 阻塞; 仓库远端同步、工作区干净; 526 测试通过（单例耗时因机器变慢约 1.5–2×）
+  2. **工作台** `scripts/build_review_workstation.py`: 为 237 条样本各生成一页 —— 源图与模型实际输入的变体并排、专家可视化产物、Evidence Bundle 表（evidence_id/测量范围/原始数值/校准概率/适用性/适用条件）、与 no-tool 基线的对比、**该样本将教模型说的四段答案**、以及逐项审核清单; 另出 index/工作单 CSV/审核集合 JSON。静态 HTML、无外部依赖、图片相对路径引用（0 张缺失）
+  3. **审核清单内置 7 项**（规范要求"不能只看格式"）: 观察可核验 / 证据段与 token 一致 / 推理只引合格证据 / 不得把容器当真假理由 / verdict 与后验一致 / 增益真实 / 不教坏习惯
+  4. **双审清单规模提醒**: 按字面定义覆盖 207/237（弃权 140、多工具 78、高置信 38）, 是否对"设计上弃权"的样本也双审留由审核者裁决, 工具不替其决定
+  5. **记录器** `scripts/record_review.py`: 四类处置沿用 G0 词汇; 追加式 JSONL、最新为准、错误样本 id 拒绝写入（否则真实样本会"看着已审"却未审）
+  6. **组装器** `scripts/apply_review.py`: 依处置分四集输出到 `final_v2_reviewed/`, 样本携带审核人与理由; **未审完拒绝运行**（防"训练了没人看过的样本"）; 自动计算 accepted 集类别权重以抵消偏斜; 不写入任何冻结集
+  7. 测试 526 通过（新增工作台 14 项 + 审核管线 17 项）
+* **涉及/修改的文件清单**：
+  - `scripts/build_review_workstation.py, tests/test_review_workstation.py (Created)`
+  - `scripts/record_review.py, scripts/apply_review.py, tests/test_review_pipeline.py (Created)`
+  - `sft_data/review/ (Created — 237 页 + index + worklist + review_sets)`
+  - `plan.md (Modified — G4-f 工具与双审规模)`
+* **执行结果与验证状态**：工作台与处置管线就绪; 526 测试通过; 演练（记录两条处置、最新生效、未审完拒绝出训）验证通过
+* **置信度或遗留待办（TODO）**：等待人工审核（G4-f）; GPU 恢复后 G4-g(LoRA 试训 + 四臂复跑) 与 G4-e 扩量
+---
