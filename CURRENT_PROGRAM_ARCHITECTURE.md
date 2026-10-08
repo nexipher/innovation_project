@@ -289,6 +289,28 @@ traces/sft_sessions/forensic_sft_session_时间_图像名.json
 
 状态机同时向调用者返回内存中的结果字典，`main.py` 据此打印 verdict、confidence、步数、终止原因、专家证据和 SFT 文件路径。
 
+### 5.6 G4 数据管线（final_v2 的生成、准入与审核）
+
+单次会话之上是一条离线的数据生产线，每一步都有独立产物与校验，且**只读训练分区**：
+
+```text
+split_v2.json ──► variants/ ──► trajectories/ ──► admission_report.json ──► final_v2/ ──► review/
+   (源级划分)      (格式变体)      (六策略会话)        (两级准入)            (四段式样本)   (人工审核)
+```
+
+| 步骤 | 脚本 | 关键约束 |
+|------|------|----------|
+| 划分 | `build_split_v2.py` | **泄漏单元是源图**：变体经 `split_for_variant()` 归一到源的分区并在构建时逐条断言；98 个 G2-b 校准源划为 `calibration_holdout`（既不训练也不评测）；val/test 类别平衡（数据集本身 1:8），train 记录采样权重 |
+| 变体 | `build_variants_g4.py` | 复用 `build_calibration_set.build_cells`（**不重新实现**，否则可靠性表描述的变换与实际不符）；抽样默认类别配平 |
+| 轨迹 | `generate_trajectories_g4.py` | 六策略（no-tool / noise / jpeg / frequency / noise+jpeg / noise+frequency）；**提示词按策略生成**（只列可服务的工具）且只注册对应专家；jpeg 类策略在逐格分离度 < 0.65 的格式上**不予生成**；每条记录含完整 Bundle、后验与双概率 NLL/Brier |
+| 准入 | `admit_trajectories_g4.py` | 条件层（与生成同一把尺；弱专家可佐证但不可单独支撑正样本；v1/ELA 一律否决）+ 增益层（相对同变体 no-tool，Brier/NLL 须实际改善且结论正确；无工具轨迹按"仅凭图像答对"判定）；**判断前断言 `split == "train"`** |
+| 组装 | `build_final_v2.py` | 四段式渲染；十项自动校验（泄漏/结构/证据引用/测量范围/重复调用/方向矛盾/适用性/verdict-后验一致/高置信无证据/**容器当真假理由**）；拒绝写入冻结的 `final/` |
+| 审核 | `build_review_workstation.py` + `record_review.py` + `apply_review.py` | 静态 HTML 工作台（源图 vs 变体图、产物、Bundle、与基线对比、将教模型说的话、清单）；处置 append-only JSONL 且**未审完拒绝出训练集**；accepted 集自动计算类别权重 |
+
+**方向权威链**（贯穿全线的单一事实来源）：`raw_metric` → 校准表分位分箱 → `calibrated_likelihood` → `EvidenceRectifier` 决定 `support` 与文本 → G1 门校验。`strength` 分带退化为 UI/遗留用途，不再决定方向。
+
+**当前产物规模**（20 源试生成）：440 轨迹 → 准入 97 正样本 / 140 合理弃权 / 203 拒绝 → `final_v2` 237 条、十项校验 0 拒绝。
+
 ## 6. 运行时序示例
 
 ```mermaid

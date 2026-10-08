@@ -150,6 +150,23 @@ python main.py --batch Midjourney            # 全部 Midjourney
 python main.py --batch all --max 10          # 全部类别，每类 10 张
 ```
 
+### 3.6b G4 数据管线（CPU 全流程，除轨迹生成需 GPU）
+
+```bash
+python scripts/build_split_v2.py            # 1) 源级划分（9000 源，防泄漏 + 校准源 holdout）
+python scripts/build_variants_g4.py --sources 20   # 2) 训练源的格式变体（类别配平抽样）
+python scripts/generate_trajectories_g4.py --dry-run --limit 1   # 3) 轨迹生成（Mock 验证管线）
+python scripts/generate_trajectories_g4.py         #    真实生成（需 GPU 授权）
+python scripts/admit_trajectories_g4.py     # 4) 两级准入（仅读训练分区）
+python scripts/build_final_v2.py            # 5) 组装 final_v2 并过十项校验
+python scripts/build_review_workstation.py  # 6) 生成审核工作台（sft_data/review/index.html）
+# 人工审核：浏览器打开 index.html，逐条记录处置
+python scripts/record_review.py --sample <id> --reviewer <你> \
+    --decision accept|format_only|revise|reject --notes "…"
+python scripts/record_review.py --summary   # 审核进度
+python scripts/apply_review.py              # 7) 按处置出训练集（未审完会拒绝运行）
+```
+
 ### 3.7 Mock 行为模式（CPU 调试）
 
 ```bash
@@ -206,7 +223,18 @@ innovation_project/
 │   ├── build_calibration_set.py    # G2 格式配平校准集（2×4 网格 + 扰动）
 │   ├── evaluate_experts_g2.py      # G2 专家区分度/稳定性/适用条件评估
 │   ├── build_reliability_table.py  # G2 分箱校准表与适用性标签生成
-│   ├── qwen_gain_baseline.py       # G2-d 四条件增益对比（Mock 干跑 / GPU）
+│   ├── qwen_gain_baseline.py       # G2-d/G3-e 四条件增益对比（Mock 干跑 / GPU，带配置指纹与续跑）
+│   ├── analyze_g2_gain.py          # G2-d 统计推断（McNemar / Bootstrap AUROC CI）
+│   ├── analyze_gain_mechanism.py   # G2-d 机制分析（token 方向跟随、Bundle 自洽性、视觉泄漏）
+│   ├── replay_halting_g3.py        # G3-c 停止策略 v1/v2 离线回放对比
+│   ├── build_split_v2.py           # G4-a 源级 train/val/test 划分（防泄漏 + 校准源 holdout）
+│   ├── build_variants_g4.py        # G4-b 训练源的格式变体（复用校准集编码路径）
+│   ├── generate_trajectories_g4.py # G4-b 六策略候选轨迹生成（Mock 干跑 / GPU）
+│   ├── admit_trajectories_g4.py    # G4-c 两级准入（条件层 + 增益层，仅用训练分区）
+│   ├── build_final_v2.py           # G4-d 组装 final_v2 并过十项校验
+│   ├── build_review_workstation.py # G4-f 审核工作台（静态 HTML + 工作单 + 审核集合）
+│   ├── record_review.py            # G4-f 处置记录（append-only JSONL，最新为准）
+│   ├── apply_review.py             # G4-f→g 按处置出训练集（未审完拒绝运行）
 │   ├── generate_sft_data.py        # A/B 双线 SFT 数据规模化生成（GPU）
 │   ├── build_sft_data.py           # 四类 SFT 数据构造（合成）
 │   ├── finalize_sft_data.py        # A 线筛选 + 数据整合 → final/
@@ -214,8 +242,15 @@ innovation_project/
 │   └── audit_sft_correct.py        # correct 结构审计 + 全量处置状态标记
 │
 ├── tests/                          # CPU 单元测试与端到端测试
-├── sft_data/train/final/           # 旧版 SFT 候选集（509 条）+ 拒绝集（68 条）
-├── calibration/                    # 专家校准集、可靠性与增益报告
+├── sft_data/train/final/           # 旧版 SFT 候选集（509 条，冻结作回归基线）
+├── sft_data/train/final_v2/        # G4 生成的 final_v2（237 条，十项校验 0 拒绝）
+├── sft_data/train/final_v2_reviewed/  # 人工审核后按处置分集的训练集（待生成）
+├── sft_data/split_v2.json          # G4-a 源级划分（9000 源，含校准源 holdout 与采样权重）
+├── sft_data/variants/              # G4-b 格式变体（图像 gitignore，manifest 入库）
+├── sft_data/trajectories/          # G4-b 轨迹记录（440 条，六策略）
+├── sft_data/admission_report.json  # G4-c 逐轨迹准入判定与理由
+├── sft_data/review/                # G4-f 审核工作台（237 页 + 工作单 + 审核集合）
+├── calibration/                    # 专家校准集、可靠性表、G2-d/G3-e 增益与回放报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）—— 真实会话入库作为 SFT provenance
 ├── traces/evidence/                # 诊断区域裁剪图（运行期生成，未纳入版本控制）
 ├── traces/dry_run_sessions/        # Mock 干跑 Trace（与真实会话隔离，未纳入版本控制）
@@ -317,26 +352,74 @@ innovation_project/
 
 ---
 
+### 5.6 G4 数据管线 Schema
+
+**划分（`sft_data/split_v2.json`）**：泄漏单元是**源图**，同一源的 native/png/q95/q85/q70 必归同一分区。
+
+```json
+{"version": "split_v2", "seed": 20260926, "hash": "d8e9d81597ead53f",
+ "counts": {"train": {"sources": 8332, "labels": {...}}, "val": {...}, "test": {...}},
+ "train_sampling_weights": {"Real": 1.0, "Fake": 11.53},
+ "holdout": {"Hard/x": "calibration_g2b"},
+ "sources": {"ADM/49_adm_153": {"split": "train", "path": "...", "label": "Fake",
+             "generator": "ADM", "resolution": [256, 256]}}}
+```
+
+**轨迹记录（`sft_data/trajectories/<variant>__<policy>.json`）**：`policy` 与 `tools_served`（六策略之一）、`model_candidate`（模型原始判断）、`final_verdict`/`confidence`/`posterior`/`policy_reasons`（停止策略）、`evidence[]`（完整 Evidence Bundle）、`counters`（轮/调用/唯一证据/抑制/加权成本）、`elapsed_s`、`scores`（模型概率与结构化后验各自的 NLL/Brier）。
+
+**准入判定（`sft_data/admission_report.json`）**：逐轨迹 `category`（positive / honest_abstention / reject）、`conditional_ok`、`risk_reduced`、`brier_delta`、`cost_delta`、`reasons[]`；报告含 `no_tool_positive_labels` 记录无工具桶的标签构成。
+
+**final_v2 样本（`sft_data/train/final_v2/sft_*.json`）**：四段式训练目标
+
+```text
+<observation>         可直接核验的视觉事实（含模型首轮观察）
+<forensic_evidence>   evidence_id / 专家 / 测量范围 / 原始数值 / 校准概率 / 适用性 / 适用条件
+<reasoning>           支持证据、反证与替代解释、专家失效条件、剩余不确定性
+<verdict>             {"verdict", "confidence", "basis": model_perception|evidence_posterior, "posterior"?}
+```
+
+`metadata` 携带 `admission_category`、`counters`、`scores`、`split`，以及集级 `label_composition` 与 `training_weights`。
+
+**审核记录（`sft_data/review/dispositions.jsonl`）**：一行一条，`{"sample_id", "reviewer", "decision", "notes", "recorded_at"}`，同一样本以最新为准（日志式，永不重写）。工作单 `worklist.csv` 供离线填写。
+
+---
+
 ## 6. 法证专家与终止机制
 
-### 6.1 三个专家
+### 6.1 专家准入（G2 标定后的实测口径）
 
-| 专家 | 算法 | 检测目标 | CPU |
-|------|------|----------|-----|
-| **频域专家** (`freq`) | Hanning 窗 → 2D-FFT → 功率谱 → 高频径向峰值检测 | GAN/Diffusion 上采样网格伪迹 | ✓ |
-| **噪声专家** (`noise`) | SRM 5×5 高通滤波核 → 局部方差 vs 全局方差 | 拼接 / AI 局部重绘 / 边缘羽化 | ✓ |
-| **JPEG 专家** (`jpeg`) | 8×8 块边界梯度比 + DCT 系数直方图"挖空"检测 | 双重 JPEG 压缩 / 二次保存痕迹 | ✓ |
+G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最初的理论相反；G2-e 据此逐个准入：
 
-> 每个专家的 `reasoning` 字段为**三段式条件化输出**：strength < 0.3 解释为何正常 → 0.3–0.7 描述模糊并建议交叉验证 → ≥ 0.7 说明为何判 AI 生成。
+| 专家 | 算法 | 实测方向 | 逐格分离度（极性校正） | 准入 |
+|------|------|----------|------------------------|------|
+| **频域 v1** (`freq`) | Hanning 窗 → 2D-FFT → 高频径向峰值 | 无信号 | 0.505 | **停用**，不注册 |
+| **频域 v2** | 多尺度 FFT | 对齐但弱 | 0.556 → q70 0.634 | 注册为 `frequency_expert_v2`，**仅佐证** |
+| **噪声** (`noise`) | SRM 5×5 高通 → 局部方差 vs 全局方差 | **反向**：高残差 = Real（相机微噪声） | native 0.847 / png 0.845 / q95 0.823 / q85 0.784 / q70 0.772 | **保留**，主力（跨格式最稳定） |
+| **JPEG** (`jpeg`) | 8×8 块边界梯度比 + DCT 直方图挖空 | **反向**：高结构 = Real（JPEG 来源史） | png 0.972 / q95 0.717 / q85 0.734 / **q70 0.431** | **保留 + 限制**：q70 失效区禁止进入轨迹 |
+| **ELA** | 误差水平分析 | 压缩历史捷径 | png 0.948 → q70 0.504 | **不注册**（能力等同压缩历史，运行期不可知） |
 
-### 6.2 四重终止守卫
+> 专家的 `support`、`interpretation_text`、`reasoning` 与 `phenomenon` 已按实测方向改写（`BaseExpert.metric_polarity` + `inverted_text_map`）；进入证据链前由 `EvidenceRectifier` 统一方向权威（校准概率 > 专家声明 > 自由文本）。
 
-| 优先级 | 条件 | 触发逻辑 |
-|--------|------|----------|
-| 1 | **模型主动结案** | MLLM 输出 `<verdict>` 标签 |
-| 2 | **最大步数封顶** | 专家调用 ≥ 5 轮（`config.MAX_STEPS`） |
-| 3 | **证据强冲突** | 一专家强判假（strength > 0.7），另一专家强判真（strength < 0.3） |
-| 4 | **信息增益收敛** | 连续两轮 Evidence Token 的 strength 变化 < 0.1 |
+### 6.2 终止策略 v2（后验驱动，`HALTING_POLICY="v2"`）
+
+v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条真实会话显示，v1 有 342 次由"相邻 strength 差值"这条无意义规则终止，且 G2-e 之后高 strength 对不同专家含义相反。
+
+```text
+后验 P(Fake)  = 可靠度加权 log-odds（权重 = Youden margin 2·AUROC−1；未校准 token 权重 0）
+冲突度        = 1 − |Σ 加权贡献| / Σ|加权贡献|
+工具效用      = 专家权重 × 0.5 × 不确定性(1−|2p−1|) − 调用成本
+```
+
+| 顺序 | 条件 | 动作 |
+|------|------|------|
+| 1 | 尚无证据 | 继续并推荐效用最高的专家 |
+| 2 | 模型输出 `<verdict>` | **仅作候选**：需后验同意 + 自信（\|P(Fake)\| ≥ 0.65）+ 无未决冲突才接受，否则驳回并说明 |
+| 3 | 模型重复被驳回的候选 | `model_stalled` 停（策略能建议不能强制，空转只会更慢地烧预算） |
+| 4 | 预算耗尽 | 停；**耗尽本身不决定标签**（后验自信才给标签，否则 Uncertain），未决冲突一并记入原因 |
+| 5 | 无工具具正预期收益 | `no_expected_gain` 停 |
+| 6 | 无工具协议（基线臂） | `candidate_without_tools`：模型自身结论即测量 |
+
+回放对比（1191 条真实会话）：v1 标注 802 条准确率 0.414 ｜ v2 标注 367 条准确率 **0.534**、冲突样本 74/74 全部弃权（v1 曾给其中 14 条定标签）。
 
 ---
 
@@ -355,6 +438,9 @@ innovation_project/
 | **四** G0 | 旧 SFT 数据审计收口 | 全部旧样本获得明确处置状态（regenerate 409 / format_only 100 / rejected 68）；correct 硬拒绝 30 条；幂等审计脚本 + 16 项测试 |
 | **四** G1 | 运行协议与证据正确性 | 双空间坐标协议 + 稳定 evidence_id；证据去重（消除虚假收敛）；方向一致性门；原图+诊断区域图多轮回灌；任务语义字段与分离计数全部写入 Trace |
 | **三** 3.2 | 专家重构 | `frequency_v2.py`（多尺度 FFT）+ 四专家 reasoning 条件化修复 |
+| **四** G2 | Expert 准入与 Evidence Bundle | 格式配平校准集（700 样本）+ 逐格区分度/适用条件；可靠性表（分位分箱 → 经验 P(Fake)）；Evidence Bundle（校准概率/适用性/反证/可视化产物）；**四条件增益对比证明证据曾显著有害**（三臂均低于基线，p≤0.0007），并定位为专家语义反向 + 一致性门抹除 |
+| **四** G3 | 管线重建与复核 | 整图度量（消除尺度外推）/ EvidenceRectifier（方向权威单一化）/ 停止策略 v2（后验决策）/ 配置指纹；四臂复核：工具臂由**低于随机**回到**随机至弱正**，PNG 格获真实判别力 0.78–0.83（基线 0.61） |
+| **四** G4-a~f | final_v2 数据管线与审核工作台 | 源级防泄漏划分（9000 源）/ 六策略轨迹生成器 / 两级准入 / final_v2 Schema 与十项校验 / 20 源试生成（440 轨迹 → 237 样本，0 拒绝）/ 审核工作台 + 处置管线 |
 
 ### 7.2 后续执行顺序
 
@@ -453,9 +539,10 @@ pytest tests/test_parser.py -v          # 单模块
 
 基于 **AutoDL 算力云平台** 开发与测试：
 
-- **GPU**：NVIDIA RTX 4090 (24 GB) — 按需开启
-- **CPU 模式**：日常开发默认模式，零 GPU 费用
+- **GPU**：NVIDIA RTX 4090 (24 GB) — 按需开启，**当前已释放**（`nvidia-smi` 报 No devices found）；需 GPU 的步骤见 §3.6b、§7.2
+- **CPU 模式**：日常开发默认模式，零 GPU 费用；所有业务逻辑均可无卡运行并通过测试（`--dry-run` + Mock）
 - **基础镜像**：Ubuntu 22.04 / Python 3.12 / PyTorch 2.5.1 / CUDA 12.4
+- **内存约束**：执行 shell 的 cgroup 上限随实例形态变化（无卡时曾为 **2 GB** 且与编辑器等进程共享，单进程实际可用约 0.93 GB；开启 GPU 后为 128 GB）。为此 `mllm/__init__.py` 惰性导出 `QwenVLClient`，使 CPU 路径不加载 torch（导入基线 586 MB → 116 MB）
 
 ---
 
