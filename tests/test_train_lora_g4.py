@@ -4,6 +4,7 @@ import json
 
 import pytest
 import torch
+import torch.nn.functional as F
 from PIL import Image
 
 from config import PROJECT_ROOT
@@ -11,6 +12,7 @@ from config import PROJECT_ROOT
 from scripts.train_lora_g4 import (
     TrajectoryDataset,
     build_messages,
+    compute_masked_loss,
     load_training_samples,
     sampling_weights,
     split_answer,
@@ -195,12 +197,114 @@ class TestDataset:
         assert item["image_grid_thw"].shape[0] == 3      # original + 2 artifacts
         assert item["pixel_values"].shape[0] == 12       # 3 images x 4 patches
 
-    def test_the_text_tensors_lose_their_batch_dimension(self, tmp_path):
+    def test_the_text_tensors_keep_their_batch_dimension(self, tmp_path):
+        """The vision position computation indexes input_ids.shape[1]."""
         item = self._dataset(tmp_path)[0]
-        assert item["input_ids"].dim() == 1
-        assert item["attention_mask"].dim() == 1
+        assert item["input_ids"].dim() == 2
+        assert item["attention_mask"].dim() == 2
         assert item["labels"].shape == item["input_ids"].shape
 
     def test_length_is_reported(self, tmp_path):
         item = self._dataset(tmp_path)[0]
-        assert item["prompt_tokens"] + item["answer_tokens"] == item["input_ids"].shape[0]
+        assert item["prompt_tokens"] + item["answer_tokens"] == item["input_ids"].shape[1]
+
+
+class _StubVLModel:
+    """
+    The two things the loss path touches: a callable returning hidden states,
+    and the language-model head.
+
+    `hidden_states` is a tuple whose *last* entry is the only one carrying the
+    token embeddings — the loss has to read the last layer, and a version that
+    read `[0]` would score noise.
+    """
+
+    def __init__(self, vocab=7, hidden=6):
+        torch.manual_seed(0)
+        self.embed = torch.nn.Embedding(vocab, hidden)
+        self.lm_head = torch.nn.Linear(hidden, vocab, bias=False)
+        self.calls = []
+
+    def __call__(self, **kwargs):
+        self.calls.append(kwargs)
+        ids = kwargs["input_ids"]
+        buried = torch.zeros_like(self.embed(ids))
+
+        class _Output:
+            pass
+
+        output = _Output()
+        output.hidden_states = (buried, self.embed(ids))
+        return output
+
+
+def _batch(ids, labels, **extra):
+    batch = {
+        "input_ids": torch.tensor([ids]),
+        "labels": torch.tensor([labels]),
+        "attention_mask": torch.ones(1, len(ids), dtype=torch.long),
+    }
+    batch.update(extra)
+    return batch
+
+
+class TestMaskedLoss:
+    """
+    The model's own loss projects every position through a 152k-token head;
+    this one projects only the supervised positions (the memory fix that made
+    a 2.4k-token sample fit on 24 GB).  These pin the objective so the saving
+    cannot quietly change what is being optimised.
+    """
+
+    def test_it_equals_cross_entropy_on_the_answer_positions(self):
+        model = _StubVLModel()
+        ids = [1, 2, 3, 4, 5]
+        labels = [-100, -100, 3, 4, 5]
+        loss = compute_masked_loss(model, _batch(ids, labels))
+
+        hidden = model.embed(torch.tensor([ids]))[:, :-1, :]
+        shifted = torch.tensor([labels])[:, 1:]
+        mask = shifted != -100
+        expected = F.cross_entropy(model.lm_head(hidden[mask]).float(), shifted[mask])
+        assert torch.allclose(loss, expected)
+
+    def test_a_masked_position_does_not_reach_the_loss(self):
+        """Only positions whose *next* token is supervised may contribute."""
+        model = _StubVLModel()
+        labels = [-100, 3, -100, 4, 5]
+        baseline = compute_masked_loss(model, _batch([1, 2, 3, 4, 5], labels))
+        perturbed = compute_masked_loss(model, _batch([1, 6, 3, 4, 5], labels))
+        assert torch.allclose(baseline, perturbed)
+
+    def test_the_head_only_sees_the_supervised_positions(self):
+        model = _StubVLModel(vocab=7, hidden=6)
+        seen = {}
+
+        def record(module, args):
+            seen["shape"] = tuple(args[0].shape)
+            return None   # a hook returning a tuple would *replace* the inputs
+
+        handle = model.lm_head.register_forward_pre_hook(record)
+        try:
+            compute_masked_loss(model, _batch([1, 2, 3, 4, 5], [-100, -100, 3, 4, 5]))
+        finally:
+            handle.remove()
+        assert seen["shape"] == (3, 6)   # three supervised positions, not five
+
+    def test_the_multimodal_inputs_reach_the_model(self):
+        model = _StubVLModel()
+        pixels = torch.zeros(4, 3)
+        grid = torch.tensor([[1, 2, 2]])
+        compute_masked_loss(model, _batch([1, 2, 3], [-100, 2, 3],
+                                          pixel_values=pixels, image_grid_thw=grid))
+        call = model.calls[-1]
+        assert call["pixel_values"] is pixels and call["image_grid_thw"] is grid
+        assert call["output_hidden_states"] is True
+        assert call["use_cache"] is False
+
+    def test_the_loss_stays_attached_to_the_graph(self):
+        model = _StubVLModel()
+        loss = compute_masked_loss(model, _batch([1, 2, 3], [-100, 2, 3]))
+        loss.backward()
+        assert model.lm_head.weight.grad is not None
+        assert model.embed.weight.grad is not None

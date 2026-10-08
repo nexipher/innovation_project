@@ -230,13 +230,14 @@ class TrajectoryDataset:
         prompt_length = min(prompt["input_ids"].shape[1], labels.shape[0])
         labels[:prompt_length] = -100
 
-        # Only the text tensors carry the batch dimension.  `pixel_values` is
-        # (patches, dim) and `image_grid_thw` is (images, 3): indexing those
-        # with [0] would silently train on the first image only.
-        item = {key: (value[0] if key in ("input_ids", "attention_mask") else value)
-                for key, value in full.items() if key != "input_ids"}
-        item["input_ids"] = input_ids
-        item["labels"] = labels
+        # Keep every tensor exactly as the processor returned it.  `input_ids`
+        # must stay 2-D — the vision position computation indexes shape[1] —
+        # while `pixel_values` (patches, dim) and `image_grid_thw` (images, 3)
+        # carry no batch dimension, and indexing those with [0] would silently
+        # train on the first image only.
+        item = {key: value for key, value in full.items() if key != "input_ids"}
+        item["input_ids"] = input_ids.unsqueeze(0)
+        item["labels"] = labels.unsqueeze(0)
         item["sample_id"] = sample["id"]
         item["prompt_tokens"] = int(prompt_length)
         item["answer_tokens"] = int(labels.shape[0] - prompt_length)
@@ -266,13 +267,28 @@ def train(samples: List[dict], run_name: str, epochs: int, lr: float,
         trust_remote_code=True,
     )
     model.config.use_cache = False
-    model.gradient_checkpointing_enable()
+    # Enable checkpointing on the base model *before* wrapping: peft proxies
+    # the call, but the decoder modules have to see the flag when the graph is
+    # built, and a wrapped call is easy to get wrong silently.
+    model.gradient_checkpointing_enable(
+        gradient_checkpointing_kwargs={"use_reentrant": False})
+    model.enable_input_require_grads()
+    print(f"[train] gradient checkpointing on base: {model.is_gradient_checkpointing}")
 
     config = LoraConfig(
         r=rank, lora_alpha=alpha, lora_dropout=0.05, bias="none",
         task_type="CAUSAL_LM", target_modules=list(LORA_TARGETS),
     )
     model = get_peft_model(model, config)
+    # After wrapping: without `enable_input_require_grads` a checkpointed graph
+    # gives the adapters no gradient at all, and with the reentrant
+    # implementation the recomputation does not happen — the activations stay
+    # alive instead, which is what exhausted the card.
+    model.enable_input_require_grads()
+    model.gradient_checkpointing_enable(
+        gradient_checkpointing_kwargs={"use_reentrant": False})
+    print(f"[train] gradient checkpointing after wrap: {model.is_gradient_checkpointing}")
+    _freeze_vision_backward(model)
     model.print_trainable_parameters()
 
     dataset = TrajectoryDataset(samples, processor, max_length)
@@ -302,8 +318,7 @@ def train(samples: List[dict], run_name: str, epochs: int, lr: float,
         for step, batch in enumerate(loader):
             batch = {k: v.to(model.device) if hasattr(v, "to") else v
                      for k, v in batch.items()}
-            out = model(**batch)
-            loss = out.loss / 1
+            loss = compute_masked_loss(model, batch)
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -316,6 +331,69 @@ def train(samples: List[dict], run_name: str, epochs: int, lr: float,
     print(f"[train] adapter saved to {output_dir}")
     return {"loss_first": losses[0], "loss_last": losses[-1],
             "steps": len(losses), "output_dir": output_dir}
+
+
+def compute_masked_loss(model, batch: dict):
+    """
+    Cross-entropy on the supervised positions only.
+
+    The model's own loss projects every position through a 152k-token head —
+    742 MB of logits and as much again in gradients, for a sample whose answer
+    is a fifth of the sequence.  Running the head on the masked positions keeps
+    the same objective at a fraction of the memory.
+    """
+    import torch
+    import torch.nn.functional as F
+
+    labels = batch["labels"]
+    outputs = model(
+        input_ids=batch["input_ids"],
+        attention_mask=batch.get("attention_mask"),
+        pixel_values=batch.get("pixel_values"),
+        image_grid_thw=batch.get("image_grid_thw"),
+        output_hidden_states=True,
+        use_cache=False,
+    )
+    hidden = outputs.hidden_states[-1][:, :-1, :]
+    shifted = labels[:, 1:]
+    supervised = shifted != -100
+    logits = model.lm_head(hidden[supervised])
+    return F.cross_entropy(logits.float(), shifted[supervised])
+
+
+def _freeze_vision_backward(model) -> None:
+    """
+    Keep the vision tower out of the backward graph.
+
+    It is frozen — LoRA trains the language tower — but a frozen module still
+    stores activations for the backward pass, and for a multi-image sample that
+    alone exhausted a 24 GB card.  Running it under `no_grad` makes its output
+    a constant; the graph then starts at the language embeddings, which
+    `enable_input_require_grads` has already hooked.
+    """
+    import torch
+
+    # Wrapping (PeftModel -> LoraModel -> the VL model -> its vision tower)
+    # makes the attribute path brittle, so find it by class name instead.
+    visual = None
+    for name, module in model.named_modules():
+        class_name = type(module).__name__.lower()
+        if "vision" in class_name and hasattr(module, "forward"):
+            visual = module
+            break
+    if visual is None:
+        print("[train] WARNING: no vision tower found to detach; "
+              "the backward pass may not fit")
+        return
+
+    original_forward = visual.forward
+
+    def forward_without_grad(*args, **kwargs):
+        with torch.no_grad():
+            return original_forward(*args, **kwargs)
+
+    visual.forward = forward_without_grad
+    print("[train] vision tower runs outside the backward graph")
 
 
 def _cuda_available() -> bool:
@@ -337,7 +415,7 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=DEFAULT_LR)
     parser.add_argument("--rank", type=int, default=DEFAULT_RANK)
     parser.add_argument("--alpha", type=int, default=DEFAULT_ALPHA)
-    parser.add_argument("--max-length", type=int, default=4096)
+    parser.add_argument("--max-length", type=int, default=2560)
     parser.add_argument("--dry-run", action="store_true",
                         help="CPU: build and check the data, load no model")
     args = parser.parse_args()
