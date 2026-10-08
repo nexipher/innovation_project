@@ -34,7 +34,8 @@ class QwenVLClient(BaseMLLMClient):
     so it is a drop-in replacement for MockMLLMClient in the state machine.
     """
 
-    def __init__(self, max_retries: int = 2, system_prompt: str = None):
+    def __init__(self, max_retries: int = 2, system_prompt: str = None,
+                 adapter_path: str = None):
         self._max_retries = max_retries
         self._processor = None
         self._model = None
@@ -42,6 +43,9 @@ class QwenVLClient(BaseMLLMClient):
         self._retry_count = 0  # per-session retry counter
         # G2-d: optional prompt variant (the no-tool baseline uses its own)
         self._system_prompt = system_prompt
+        # G4-g: optional LoRA adapter, so the four-arm comparison can measure a
+        # fine-tuned model with the same harness that measured the base one.
+        self._adapter_path = adapter_path
 
     # ------------------------------------------------------------------
     # Lazy loading (model is heavy — load once, reuse across sessions)
@@ -68,6 +72,11 @@ class QwenVLClient(BaseMLLMClient):
             device_map="auto",
             trust_remote_code=True,
         )
+        if self._adapter_path:
+            from peft import PeftModel
+
+            self._model = PeftModel.from_pretrained(self._model, self._adapter_path)
+            print(f"[QwenVLClient] LoRA adapter loaded: {self._adapter_path}")
         self._model.eval()
 
         elapsed = time.time() - t0

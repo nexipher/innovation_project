@@ -358,6 +358,10 @@ def main() -> None:
     parser.add_argument("--output", default=None,
                         help="Report path, relative to the project root "
                              "(default: the fixed GPU or dry-run report)")
+    parser.add_argument("--adapter", default=None,
+                        help="LoRA adapter directory to evaluate (G4-g); the "
+                             "fingerprint records it, so a comparison cannot "
+                             "silently reuse the base model's numbers")
     args = parser.parse_args()
 
     unknown = [c for c in args.conditions if c not in CONDITIONS]
@@ -386,11 +390,11 @@ def main() -> None:
 
         def client_factory(variant):
             prompt = BASELINE_SYSTEM_PROMPT if variant == "baseline" else None
-            return QwenVLClient(system_prompt=prompt)
+            return QwenVLClient(system_prompt=prompt, adapter_path=args.adapter)
         mode = "gpu"
 
     output_path = report_path(args.dry_run, args.output)
-    fingerprint = config_fingerprint.compute(_build_experts())
+    fingerprint = config_fingerprint.compute(_build_experts(), args.adapter)
     completed = initial_completed(output_path, mode, args.per_cell, args.fresh,
                                   fingerprint)
     if os.path.exists(output_path) and (not completed or args.fresh):

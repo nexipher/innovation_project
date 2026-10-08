@@ -84,9 +84,12 @@ def expert_specs(experts: Dict[str, object]) -> Dict[str, dict]:
     }
 
 
-def compute(experts: Dict[str, object]) -> dict:
+def compute(experts: Dict[str, object], adapter_path: Optional[str] = None) -> dict:
     """Assemble the fingerprint for one evaluation configuration."""
     components = {
+        # G4-g: the base model and a LoRA-tuned one are different instruments.
+        "adapter": _file_digest(os.path.join(adapter_path, "adapter_model.safetensors"))
+        if adapter_path else None,
         "experts": expert_specs(experts),
         "prompts": prompt_digest(),
         "reliability_table": _file_digest(RELIABILITY_TABLE_PATH),
