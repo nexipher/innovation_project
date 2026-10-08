@@ -1,0 +1,379 @@
+{
+  "generated_at": "2026-10-08T12:20:42",
+  "mode": "gpu",
+  "per_cell": 4,
+  "samples": 32,
+  "config_fingerprint": {
+    "adapter": "d7c0b6b938ae3921",
+    "experts": {
+      "frequency_expert_v2": {
+        "class": "FrequencyExpertV2",
+        "polarity": 1,
+        "source_name": "frequency_expert_v2"
+      },
+      "jpeg_expert": {
+        "class": "JPEGExpert",
+        "polarity": -1,
+        "source_name": "jpeg_expert"
+      },
+      "noise_expert": {
+        "class": "NoiseExpert",
+        "polarity": -1,
+        "source_name": "noise_expert"
+      }
+    },
+    "prompts": "da58f416a63a0216",
+    "reliability_table": "b538b952915b0d8c",
+    "rectifier": "g3b",
+    "tokenizer": "g3a",
+    "halting_policy": "v2",
+    "git_commit": "cd682c2",
+    "digest": "e5c65cf27cda04ee"
+  },
+  "conditions": {
+    "text": {
+      "metrics": {
+        "n": 32,
+        "accuracy": 0.375,
+        "f1_fake": 0.47619047619047616,
+        "auroc": 0.501953125,
+        "ece": 0.13268125,
+        "uncertain_rate": 0.5625,
+        "avg_model_turns": 3.6875,
+        "avg_expert_calls": 1.625,
+        "per_cell_accuracy": {
+          "fake_jpeg_q70": 0.25,
+          "fake_jpeg_q85": 0.0,
+          "fake_jpeg_q95": 0.0,
+          "fake_png": 1.0,
+          "real_jpeg_q70": 0.5,
+          "real_jpeg_q85": 0.5,
+          "real_jpeg_q95": 0.25,
+          "real_png": 0.5
+        }
+      },
+      "records": [
+        {
+          "sample_id": "real_0000_png",
+          "cell": "real_png",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 73.2
+        },
+        {
+          "sample_id": "real_0001_png",
+          "cell": "real_png",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 75.14
+        },
+        {
+          "sample_id": "real_0002_png",
+          "cell": "real_png",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 88.67
+        },
+        {
+          "sample_id": "real_0003_png",
+          "cell": "real_png",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.315,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 82.45
+        },
+        {
+          "sample_id": "fake_adm_0000_png",
+          "cell": "fake_png",
+          "gt": "Fake",
+          "verdict": "Fake",
+          "confidence": 0.6727,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 57.76
+        },
+        {
+          "sample_id": "fake_adm_0001_png",
+          "cell": "fake_png",
+          "gt": "Fake",
+          "verdict": "Fake",
+          "confidence": 0.7604,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 84.65
+        },
+        {
+          "sample_id": "fake_adm_0002_png",
+          "cell": "fake_png",
+          "gt": "Fake",
+          "verdict": "Fake",
+          "confidence": 0.6727,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 58.15
+        },
+        {
+          "sample_id": "fake_adm_0003_png",
+          "cell": "fake_png",
+          "gt": "Fake",
+          "verdict": "Fake",
+          "confidence": 0.7882,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 88.65
+        },
+        {
+          "sample_id": "real_0000_jpeg_q95",
+          "cell": "real_jpeg_q95",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 56.62
+        },
+        {
+          "sample_id": "real_0001_jpeg_q95",
+          "cell": "real_jpeg_q95",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 85.65
+        },
+        {
+          "sample_id": "real_0002_jpeg_q95",
+          "cell": "real_jpeg_q95",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 90.79
+        },
+        {
+          "sample_id": "real_0003_jpeg_q95",
+          "cell": "real_jpeg_q95",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 86.34
+        },
+        {
+          "sample_id": "fake_adm_0000_jpeg_q95",
+          "cell": "fake_jpeg_q95",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 90.69
+        },
+        {
+          "sample_id": "fake_adm_0001_jpeg_q95",
+          "cell": "fake_jpeg_q95",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 76.73
+        },
+        {
+          "sample_id": "fake_adm_0002_jpeg_q95",
+          "cell": "fake_jpeg_q95",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 84.29
+        },
+        {
+          "sample_id": "fake_adm_0003_jpeg_q95",
+          "cell": "fake_jpeg_q95",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 85.99
+        },
+        {
+          "sample_id": "real_0000_jpeg_q85",
+          "cell": "real_jpeg_q85",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 64.69
+        },
+        {
+          "sample_id": "real_0001_jpeg_q85",
+          "cell": "real_jpeg_q85",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 85.43
+        },
+        {
+          "sample_id": "real_0002_jpeg_q85",
+          "cell": "real_jpeg_q85",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 1,
+          "elapsed_s": 92.64
+        },
+        {
+          "sample_id": "real_0003_jpeg_q85",
+          "cell": "real_jpeg_q85",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 60.46
+        },
+        {
+          "sample_id": "fake_adm_0000_jpeg_q85",
+          "cell": "fake_jpeg_q85",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 88.6
+        },
+        {
+          "sample_id": "fake_adm_0001_jpeg_q85",
+          "cell": "fake_jpeg_q85",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 78.2
+        },
+        {
+          "sample_id": "fake_adm_0002_jpeg_q85",
+          "cell": "fake_jpeg_q85",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 90.12
+        },
+        {
+          "sample_id": "fake_adm_0003_jpeg_q85",
+          "cell": "fake_jpeg_q85",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 1,
+          "elapsed_s": 72.87
+        },
+        {
+          "sample_id": "real_0000_jpeg_q70",
+          "cell": "real_jpeg_q70",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 72.41
+        },
+        {
+          "sample_id": "real_0001_jpeg_q70",
+          "cell": "real_jpeg_q70",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 77.9
+        },
+        {
+          "sample_id": "real_0002_jpeg_q70",
+          "cell": "real_jpeg_q70",
+          "gt": "Real",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 88.77
+        },
+        {
+          "sample_id": "real_0003_jpeg_q70",
+          "cell": "real_jpeg_q70",
+          "gt": "Real",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 66.65
+        },
+        {
+          "sample_id": "fake_adm_0000_jpeg_q70",
+          "cell": "fake_jpeg_q70",
+          "gt": "Fake",
+          "verdict": "Uncertain",
+          "confidence": 0.5,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 82.88
+        },
+        {
+          "sample_id": "fake_adm_0001_jpeg_q70",
+          "cell": "fake_jpeg_q70",
+          "gt": "Fake",
+          "verdict": "Real",
+          "confidence": 0.2627,
+          "model_turns": 4,
+          "expert_calls": 2,
+          "elapsed_s": 86.78
+        },
+        {
+          "sample_id": "fake_adm_0002_jpeg_q70",
+          "cell": "fake_jpeg_q70",
+          "gt": "Fake",
+          "verdict": "Fake",
+          "confidence": 0.6727,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 62.91
+        },
+        {
+          "sample_id": "fake_adm_0003_jpeg_q70",
+          "cell": "fake_jpeg_q70",
+          "gt": "Fake",
+          "verdict": "Real",
+          "confidence": 0.3102,
+          "model_turns": 3,
+          "expert_calls": 1,
+          "elapsed_s": 66.41
+        }
+      ]
+    }
+  }
+}
