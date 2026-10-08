@@ -84,18 +84,20 @@ def load_training_samples(reviewed_dir: str = REVIEWED_DIR,
 
 def system_prompt_for(sample: dict) -> str:
     """
-    The prompt this sample's conversation was produced under.
+    The prompt this sample has to be trained under — the one inference sends.
 
-    A tool-free sample was run with the baseline prompt, a tool sample with the
-    forensic prompt listing exactly the tools it was allowed to call — training
-    it under a different prompt would teach it to answer a question it is not
-    being asked at inference.
+    A tool-free sample ran under the baseline prompt, so it trains under it.
+    A tool sample trains under the *shipped* prompt (all three tools), not the
+    per-policy subset it was generated with: the subset was how the generator
+    forced diversity, and the four arms never send it — training on it would
+    hand the model a question that inference does not ask.  The recorded answer
+    is still a valid response under the full prompt, since calling the tool it
+    already called remains a legal choice.
     """
     tools = (sample.get("metadata") or {}).get("tools_served") or []
     if not tools:
         return BASELINE_SYSTEM_PROMPT
-    # `tools_served` already holds tool keys ("freq"/"noise"/"jpeg").
-    return build_forensic_prompt(tools)
+    return build_forensic_prompt()
 
 
 def split_answer(sample: dict) -> Tuple[List[dict], dict]:
@@ -193,9 +195,44 @@ def build_messages(sample: dict, load_images: bool = False):
 # Dataset (needs the processor)
 # ---------------------------------------------------------------------------
 
+TURN_START = "<|im_start|>"
+TURN_END = "<|im_end|>"
+
+
+def assistant_spans(input_ids: List[int], tokenizer) -> List[Tuple[int, int]]:
+    """
+    Half-open spans of the assistant turns inside a templated conversation.
+
+    Only the model's own turns are supervised.  Supervising "everything after
+    the prompt" is not the same thing: in a tool trajectory the *call* turn is
+    an assistant turn too, and masking it teaches the model that the answer
+    follows the question directly — which is exactly the shortcut that makes a
+    fine-tuned agent answer without ever calling an expert.
+
+    The span runs to and includes `<|im_end|>`: the model has to learn to stop.
+    """
+    start_id = tokenizer.convert_tokens_to_ids(TURN_START)
+    end_id = tokenizer.convert_tokens_to_ids(TURN_END)
+    role_id = tokenizer.convert_tokens_to_ids("assistant")
+
+    spans: List[Tuple[int, int]] = []
+    index = 0
+    while index < len(input_ids) - 1:
+        if input_ids[index] != start_id or input_ids[index + 1] != role_id:
+            index += 1
+            continue
+        stop = index + 2
+        while stop < len(input_ids) and input_ids[stop] != end_id:
+            stop += 1
+        stop = min(stop + 1, len(input_ids))   # include the turn terminator
+        spans.append((index + 2, stop))
+        index = stop
+    return spans
+
+
 class TrajectoryDataset:
     """
-    One tokenised sample per item, prompt masked out of the loss.
+    One tokenised sample per item, everything but the assistant turns masked.
 
     Batch size stays 1 on purpose: Qwen-VL builds vision tensors per image, and
     batching would mean padding text and stitching image grids for no benefit —
@@ -219,16 +256,19 @@ class TrajectoryDataset:
         return self._processor(**kwargs)
 
     def __getitem__(self, index: int) -> dict:
+        import torch
+
         sample = self._samples[index]
-        prompt_messages, full_messages, images = build_messages(sample, load_images=True)
+        _, full_messages, images = build_messages(sample, load_images=True)
 
         full = self.encode(full_messages, images)
-        prompt = self.encode(prompt_messages, images)
-
         input_ids = full["input_ids"][0]
-        labels = input_ids.clone()
-        prompt_length = min(prompt["input_ids"].shape[1], labels.shape[0])
-        labels[:prompt_length] = -100
+
+        tokenizer = getattr(self._processor, "tokenizer", self._processor)
+        spans = assistant_spans(input_ids.tolist(), tokenizer)
+        labels = torch.full_like(input_ids, -100)
+        for start, stop in spans:
+            labels[start:stop] = input_ids[start:stop]
 
         # Keep every tensor exactly as the processor returned it.  `input_ids`
         # must stay 2-D — the vision position computation indexes shape[1] —
@@ -239,8 +279,8 @@ class TrajectoryDataset:
         item["input_ids"] = input_ids.unsqueeze(0)
         item["labels"] = labels.unsqueeze(0)
         item["sample_id"] = sample["id"]
-        item["prompt_tokens"] = int(prompt_length)
-        item["answer_tokens"] = int(labels.shape[0] - prompt_length)
+        item["supervised_turns"] = len(spans)
+        item["supervised_tokens"] = int((labels != -100).sum())
         return item
 
     @property
@@ -300,8 +340,8 @@ def train(samples: List[dict], run_name: str, epochs: int, lr: float,
         # Batch size 1: the item already carries exactly what the model needs.
         item = dict(batch[0])
         item.pop("sample_id", None)
-        item.pop("prompt_tokens", None)
-        item.pop("answer_tokens", None)
+        item.pop("supervised_turns", None)
+        item.pop("supervised_tokens", None)
         return item
 
     loader = torch.utils.data.DataLoader(

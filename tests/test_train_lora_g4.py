@@ -1,6 +1,9 @@
 """Tests for the LoRA trainer's CPU paths (G4-g)."""
 
+import glob
 import json
+import os
+import re
 
 import pytest
 import torch
@@ -11,6 +14,7 @@ from config import PROJECT_ROOT
 
 from scripts.train_lora_g4 import (
     TrajectoryDataset,
+    assistant_spans,
     build_messages,
     compute_masked_loss,
     load_training_samples,
@@ -64,11 +68,14 @@ class TestSystemPrompt:
         assert "NO access to external forensic tools" in \
             system_prompt_for(_sample(tools=()))
 
-    def test_a_tool_sample_lists_only_its_own_tools(self):
-        prompt = system_prompt_for(_sample(tools=("noise", "jpeg")))
+    def test_a_tool_sample_gets_the_shipped_prompt(self):
+        """Not the generator's per-policy subset: inference never sends those."""
+        from mllm.message_builder import FORENSIC_SYSTEM_PROMPT
+
+        prompt = system_prompt_for(_sample(tools=("noise",)))
+        assert prompt == FORENSIC_SYSTEM_PROMPT
         actions = prompt.split("variations):")[1].split("FORBIDDEN")[0]
-        assert "- <call_noise>" in actions and "- <call_jpeg>" in actions
-        assert "- <call_freq>" not in actions
+        assert "- <call_noise>" in actions and "- <call_freq>" in actions
 
 
 class TestSplitAnswer:
@@ -139,26 +146,44 @@ class TestMessageAssembly:
         assert paths == ["dataset/Real/x.jpg"]
 
 
+class _StubTokenizer:
+    """The marker lookups the label builder makes, and nothing else."""
+
+    IDS = {"<|im_start|>": 151644, "<|im_end|>": 151645,
+           "assistant": 77091, "user": 872}
+
+    def convert_tokens_to_ids(self, token):
+        return self.IDS[token]
+
+
 class _StubProcessor:
     """
     A processor shaped like Qwen's, so the dataset's tensor handling is
     testable without loading the real one.
+
+    The template emits real turn markers, because the labels are built by
+    finding them: user turns are ten `x`, assistant turns five `y`, and the
+    markers map to the ids the scanner looks for.
 
     `pixel_values` is (patches, dim) and `image_grid_thw` is (images, 3) — both
     *without* a batch dimension, which is what makes them easy to break: an
     unconditional `value[0]` silently trains on the first image only.
     """
 
+    def __init__(self):
+        self.tokenizer = _StubTokenizer()
+
     def apply_chat_template(self, messages, tokenize=False, add_generation_prompt=False):
-        """Ten tokens of prompt, plus five if the answer is included."""
-        text = "x" * 10
-        if messages and messages[-1]["role"] == "assistant":
-            text += "y" * 5
-        return text
+        parts = []
+        for message in messages:
+            body = "y" * 5 if message["role"] == "assistant" else "x" * 10
+            parts.append(f"<|im_start|>{message['role']}\n{body}<|im_end|>\n")
+        return "".join(parts)
 
     def __call__(self, text, images=None, return_tensors=None, padding=None):
-        length = len(text[0])
-        ids = torch.arange(length).unsqueeze(0)
+        pieces = re.findall(r"<\|im_start\|>|<\|im_end\|>|assistant|user|x|y", text[0])
+        ids = torch.tensor([[self.tokenizer.IDS.get(piece, 500 + ord(piece[0]) % 100)
+                             for piece in pieces]])
         out = {"input_ids": ids, "attention_mask": torch.ones_like(ids)}
         if images:
             out["pixel_values"] = torch.zeros((len(images) * 4, 3))
@@ -189,7 +214,27 @@ class TestDataset:
         labels = item["labels"]
         assert (labels == -100).sum() > 0
         assert (labels != -100).sum() > 0
-        assert item["answer_tokens"] > 0
+        assert item["supervised_tokens"] > 0
+
+    def test_the_tool_call_turn_is_supervised_too(self, tmp_path):
+        """
+        The regression this exists for: masking everything before the final
+        answer leaves the call turn unsupervised, and a model that was never
+        trained to emit `<call_*>` answers straight from the question — which
+        is what the first provisional adapter did, in 126 of 127 sessions.
+        """
+        item = self._dataset(tmp_path)[0]          # tool sample: call + answer
+        assert item["supervised_turns"] == 2
+        supervised = item["labels"][item["labels"] != -100]
+        # Both assistant turns in the stub are five `y` tokens plus `<|im_end|>`.
+        assert supervised.numel() == 2 * (5 + 1)
+
+    def test_a_tool_free_sample_supervises_only_the_answer(self, tmp_path):
+        image = tmp_path / "source.png"
+        Image.new("RGB", (16, 16), (10, 20, 30)).save(image)
+        dataset = TrajectoryDataset([_sample(tools=(), image=str(image))],
+                                    _StubProcessor())
+        assert dataset[0]["supervised_turns"] == 1
 
     def test_multi_image_tensors_are_not_squeezed(self, tmp_path):
         """The regression: [0] on these tensors drops every image but the first."""
@@ -204,9 +249,22 @@ class TestDataset:
         assert item["attention_mask"].dim() == 2
         assert item["labels"].shape == item["input_ids"].shape
 
-    def test_length_is_reported(self, tmp_path):
-        item = self._dataset(tmp_path)[0]
-        assert item["prompt_tokens"] + item["answer_tokens"] == item["input_ids"].shape[1]
+class TestAssistantSpans:
+    """The label builder, exercised on ids rather than through a processor."""
+
+    def test_it_spans_every_assistant_turn(self):
+        ids = [151644, 872, 5, 5, 151645,          # <|im_start|>user ... <|im_end|>
+               151644, 77091, 7, 7, 7, 151645,     # assistant turn
+               151644, 872, 5, 151645,             # user turn
+               151644, 77091, 9, 151645]           # assistant turn
+        assert assistant_spans(ids, _StubTokenizer()) == [(7, 11), (17, 19)]
+
+    def test_a_conversation_without_markers_yields_nothing(self):
+        assert assistant_spans([1, 2, 3], _StubTokenizer()) == []
+
+    def test_an_unterminated_turn_still_ends_at_the_sequence(self):
+        ids = [151644, 77091, 7, 8]
+        assert assistant_spans(ids, _StubTokenizer()) == [(2, 4)]
 
 
 class _StubVLModel:
@@ -308,3 +366,52 @@ class TestMaskedLoss:
         loss.backward()
         assert model.lm_head.weight.grad is not None
         assert model.embed.weight.grad is not None
+
+
+def _load_json(*parts):
+    with open(os.path.join(PROJECT_ROOT, *parts), encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+class TestTrainingLeak:
+    """
+    The trial trains on sources from the `train` split and is measured on the
+    calibration sources, which the split excludes — a rebuild that pulled
+    training data from the wrong pool would produce a gain that is really
+    memorisation.  These read the real artifacts, so they fail if the two
+    pools ever touch.
+    """
+
+    def _training_source_paths(self, split):
+        """Training sample -> the dataset file it was rendered from."""
+        by_stem = {key.replace("/", "_"): value for key, value in split["sources"].items()}
+        paths, unresolved = set(), []
+        for name in glob.glob(os.path.join(PROJECT_ROOT, "sft_data/train/final_v2/sft_*.json")):
+            for sample in json.load(open(name, encoding="utf-8")):
+                stem = re.sub(r"_(native|png|jpe?g_q\d+)\.[A-Za-z]+$", "",
+                              os.path.basename(sample["image_path"]))
+                if stem not in by_stem:
+                    unresolved.append(stem)
+                    continue
+                paths.add((by_stem[stem]["path"], by_stem[stem]["split"]))
+        return paths, unresolved
+
+    def test_every_training_source_resolves_into_the_split(self):
+        split = _load_json("sft_data", "split_v2.json")
+        paths, unresolved = self._training_source_paths(split)
+        assert unresolved == []
+        assert paths
+
+    def test_training_sources_are_all_in_the_train_split(self):
+        split = _load_json("sft_data", "split_v2.json")
+        paths, _ = self._training_source_paths(split)
+        assert {stage for _, stage in paths} == {"train"}
+
+    def test_no_training_source_is_a_calibration_source(self):
+        """The eval pool is the 98 held-out sources the split table never sees."""
+        split = _load_json("sft_data", "split_v2.json")
+        training = {path for path, _ in self._training_source_paths(split)[0]}
+        manifest = _load_json("calibration", "set", "manifest.json")
+        calibration = {sample["source_path"] for sample in manifest["samples"]}
+        assert training and calibration
+        assert training & calibration == set()
