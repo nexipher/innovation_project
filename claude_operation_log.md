@@ -1052,3 +1052,23 @@
 * **执行结果与验证状态**：训练对话与推理协议一致; 551 测试通过; 工作台已重建
 * **置信度或遗留待办（TODO）**：**用户要求暂停**。恢复后待办：①LoRA 训练脚本（`scripts/train_lora_g4.py`：按 accepted 集 + 类别权重采样，含 CPU dry-run）②四臂 harness 支持 `--adapter` 加载 LoRA ③G4-f 人工审核（工作台已就绪）④G4-e 扩量与 G4-g 训练需 GPU（当前已释放）
 ---
+### 2026-10-08 10:55:00 - G4-g 显存适配：掩码位置交叉熵，试训跑通
+
+* **当前操作动作**：在 24 GB 卡上跑通 LoRA 小规模试训 —— 定位并修复反向传播 OOM
+* **对应计划锚点**：plan.md §4.11 G4-g（LoRA 小规模试训）之「训练显存适配」；agent.md §3.2.3（GPU 授权）
+* **核心变更说明**：
+  1. **根因（逐项排除后定位）**: ①模态编码器是否仍在反向图 —— 日志确认已断开，排除；②梯度检查点是否生效 —— 包装前后 `is_gradient_checkpointing` 均为 True，排除；③**模型自带 loss 把全部 2442 个位置投影过 152k 词表**：logits 及其梯度各约 742 MB，外加交叉熵中间量，而监督位置只有 489 个 —— 视为根因
+  2. 新增 `compute_masked_loss()`：不再把 `labels` 交给模型，取 `output_hidden_states[-1][:, :-1]`，只在 `labels != -100` 的移位位置上过 `lm_head` 做交叉熵；训练循环改调此函数
+  3. **等价性由测试钉住**（`TestMaskedLoss` 5 项，全 CPU）：与独立计算的掩码交叉熵逐值一致 / 扰动被掩位置不改变 loss / head 只见监督位置（形状 3×6 而非 5×6）/ 多模态张量透传（`pixel_values`、`image_grid_thw`、`output_hidden_states`、`use_cache=False`）/ loss 仍连着计算图（可 backward 到 head 与 embedding）
+  4. 试训结果：237 样本 × 2 epoch = **474 步**完成，loss 1.0630 → 0.0002，adapter 190 MB 落盘；`run_manifest.json` 记录数据成分、采样权重、LoRA 超参与**含 adapter 的配置指纹**（`5052be1b498fcf75`）
+  5. **样本成分未变**（Fake 178 / Real 59，Real 权重 ×3.02 配平），但 2 epoch 内 loss 已至 3e-4 —— **是记忆而非泛化**，故本次试训**只作训练管线与四臂接线的验证**
+  6. 四臂评估（`--adapter`）随即启动：`calibration/lora_arms.json`，per_cell=15 与 G3 基线同一样本集（配对比较），预计约 1.5–2 h
+* **涉及/修改的文件清单**：
+  - `scripts/train_lora_g4.py (Modified — compute_masked_loss + 训练循环改用)`
+  - `tests/test_train_lora_g4.py (Modified — TestMaskedLoss 5 项)`
+  - `sft_data/lora_runs/provisional_20src/ (Created — adapter + run_manifest.json)`
+  - `plan.md (Modified — G4-g「训练显存适配」)`
+  - `calibration/lora_arms.json (Created — 四臂评估，运行中)`
+* **执行结果与验证状态**：576 测试通过；训练 exit 0（OOM 消除）；适配器加载成功（18.1 s / 17.0 GB 显存）；四臂评估进行中
+* **置信度或遗留待办（TODO）**：①本次数据**未经 G4-f 人工审核**（`--from-final-v2` 临时集），任何指标都不具科学结论性，审核后须以 accepted 集重训 ②四臂 ΔAUROC / JPEG 格 / 弃权率与 `check_acceptance_g5.py` 判据待评估完成 ③2 epoch 已明显记忆，真集上需重定 epoch 与早停策略
+---
