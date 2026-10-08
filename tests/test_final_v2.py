@@ -347,3 +347,94 @@ class TestNoToolSamples:
     def test_tool_samples_still_need_admissible_evidence(self):
         problems = _validate(_sample(evidence=[], tools_served=["noise"]))
         assert any("no evidence supports it" in p for p in problems)
+
+
+class TestTrainingConversation:
+    """
+    A tool sample cites evidence ids, so its conversation must contain the
+    turns that delivered them — otherwise training teaches the model to cite
+    evidence it never received, which is indistinguishable from fabricating it.
+    """
+
+    TRACE = {"conversations": [
+        {"from": "user", "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱。"},
+        {"from": "gpt", "value": "<planning>Suspected Region: [1, 2, 3, 4]\n</planning>\n"
+                                  "<call_noise>[1, 2, 3, 4]</call_noise>"},
+        {"from": "user", "value": '{"evidence_name": "raw"}'},
+        {"from": "user", "value": "[System: 预算已耗尽，请立即输出 <verdict>。]"},
+        {"from": "gpt", "value": "旧结案文本"},
+    ]}
+
+    def _sample(self):
+        return render_sample(_record(), "positive", trace=self.TRACE,
+                             split_entry=SPLIT["sources"]["ADM/x"])
+
+    def test_the_tool_call_is_preserved(self):
+        turns = self._sample()["conversations"]
+        calls = [t for t in turns if t["from"] == "gpt" and "<call_noise>" in t["value"]]
+        assert len(calls) == 1
+
+    def test_the_evidence_turn_is_rebuilt_from_the_rectified_token(self):
+        turns = self._sample()["conversations"]
+        evidence_turns = [t for t in turns
+                          if t["from"] == "user" and t["value"].lstrip().startswith("{")]
+        assert len(evidence_turns) == 1
+        payload = json.loads(evidence_turns[0]["value"])
+        assert payload["evidence_id"] == "E-1"
+        assert payload["measurement_scope"] == "global"
+
+    def test_scaffolding_and_the_old_conclusion_are_dropped(self):
+        values = " ".join(t["value"] for t in self._sample()["conversations"])
+        assert "[System:" not in values
+        assert "旧结案文本" not in values
+
+    def test_the_answer_is_the_final_turn(self):
+        turns = self._sample()["conversations"]
+        assert turns[-1]["from"] == "gpt"
+        assert "<forensic_evidence>" in turns[-1]["value"]
+
+    def test_a_tool_free_sample_has_no_evidence_turns(self):
+        sample = render_sample(_record(policy="no-tool", tools_served=[], evidence=[]),
+                               "no_tool_positive", trace=self.TRACE,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+        evidence_turns = [t for t in sample["conversations"]
+                          if t["from"] == "user" and t["value"].lstrip().startswith("{")]
+        assert evidence_turns == []
+
+
+class TestConversationValidation:
+    def _sample_with_trace(self):
+        return render_sample(_record(), "positive", trace=TestTrainingConversation.TRACE,
+                             split_entry=SPLIT["sources"]["ADM/x"])
+
+    def test_a_conversation_that_delivers_its_evidence_passes(self):
+        assert _validate(self._sample_with_trace()) == []
+
+    def test_an_answer_citing_evidence_that_was_never_delivered_is_caught(self):
+        sample = self._sample_with_trace()
+        sample["conversations"] = [t for t in sample["conversations"]
+                                   if not (t["from"] == "user"
+                                           and t["value"].lstrip().startswith("{"))]
+        problems = _validate(sample)
+        assert any("never given" in p for p in problems)
+
+    def test_a_fabricated_evidence_id_in_the_conversation_is_caught(self):
+        sample = self._sample_with_trace()
+        for turn in sample["conversations"]:
+            if turn["from"] == "user" and turn["value"].lstrip().startswith("{"):
+                turn["value"] = turn["value"].replace("E-1", "E-ghost")
+        assert any("unknown evidence_id" in p for p in _validate(sample))
+
+    def test_a_tool_free_sample_carrying_evidence_turns_is_caught(self):
+        # Rendered with a trace, so the conversation does carry evidence turns;
+        # the policy then claims no tools were used, which cannot both be true.
+        sample = self._sample_with_trace()
+        sample["metadata"]["tools_served"] = []
+        problems = _validate(sample)
+        assert any("tool-free sample carries evidence turns" in p for p in problems)
+
+    def test_the_shape_is_checked(self):
+        sample = _sample()
+        sample["conversations"] = list(reversed(sample["conversations"]))
+        problems = _validate(sample)
+        assert any("must open with a user turn" in p for p in problems)

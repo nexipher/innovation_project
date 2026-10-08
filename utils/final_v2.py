@@ -141,10 +141,56 @@ def render_answer(record: dict, observation_text: str = "") -> str:
     )
 
 
+def render_conversation(record: dict, trace: Optional[dict] = None,
+                        observation_text: str = "") -> List[dict]:
+    """
+    Rebuild the training conversation from the session that produced it.
+
+    A tool sample's answer cites evidence ids, so the conversation has to
+    contain the turns that delivered them — the model's tool call and the
+    evidence message — exactly as inference does.  Rendering only
+    "<image> question -> structured answer" would train the model to cite
+    evidence it never received, which is indistinguishable from fabricating it.
+
+    The evidence turns are rebuilt from the record's (rectified) tokens rather
+    than copied from the trace, so the text the model trains on is the text the
+    pipeline actually injects.  Session scaffolding ("[System: ...]" notes) is
+    dropped: it manages the loop, it is not behaviour to imitate.
+    """
+    from state_machine.evidence_tokenizer import EvidenceTokenizer
+
+    evidence = record.get("evidence") or []
+    trace_turns = (trace or {}).get("conversations", [])
+    task_prompt = next((t["value"] for t in trace_turns
+                        if t.get("from") == "user"), "<image>\n请分析这张图像的真实性。")
+
+    turns: List[dict] = [{"from": "user", "value": task_prompt}]
+    delivered = 0
+    for turn in trace_turns:
+        if turn.get("from") != "gpt" or "<call_" not in turn.get("value", ""):
+            continue
+        turns.append({"from": "gpt", "value": turn["value"].strip()})
+        if delivered < len(evidence):
+            token = evidence[delivered]
+            delivered += 1
+            entry = {"from": "user", "value": EvidenceTokenizer.to_json(token)}
+            paths = [path for path in
+                     ([token.get("diagnostic_region_image")]
+                      + list(token.get("visual_artifacts") or [])) if path]
+            if paths:
+                # Inference attaches at most two images per turn; mirror it.
+                entry["image_paths"] = paths[:2]
+            turns.append(entry)
+    turns.append({"from": "gpt", "value": render_answer(record, observation_text)})
+    return turns
+
+
 def render_sample(record: dict, category: str, observation_text: str = "",
-                  split_entry: Optional[dict] = None) -> dict:
+                  split_entry: Optional[dict] = None,
+                  trace: Optional[dict] = None) -> dict:
     """Assemble a final_v2 sample from one admitted trajectory."""
     image_path = record.get("image_path") or record.get("variant_path", "")
+    record = {**record, "_trace": trace}
     sample = {
         "id": f"f2_{record['trajectory_id']}",
         "image_path": image_path,
@@ -156,10 +202,8 @@ def render_sample(record: dict, category: str, observation_text: str = "",
             "posterior": record.get("posterior") if record.get("evidence") else None,
             "policy_reasons": record.get("policy_reasons"),
         },
-        "conversations": [
-            {"from": "user", "value": "<image>\n请分析这张图像的真实性。"},
-            {"from": "gpt", "value": render_answer(record, observation_text)},
-        ],
+        "conversations": render_conversation(record, record.get("_trace"),
+                                             observation_text),
         "evidence_chain": record.get("evidence") or [],
         "metadata": {
             "schema_version": SCHEMA_VERSION,
@@ -245,7 +289,9 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
             problems.append(f"leakage: source belongs to partition {entry['split']}")
 
     # 2. structure
-    answer = next((t["value"] for t in sample.get("conversations", [])
+    # The training target is the *last* assistant turn: earlier ones are the
+    # tool calls that delivered the evidence.
+    answer = next((t["value"] for t in reversed(sample.get("conversations", []))
                    if t.get("from") == "gpt"), "")
     sections = parse_sections(answer)
     for name in SECTIONS:
@@ -376,7 +422,34 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
             and confidence >= CONFIDENT_THRESHOLD and not admissible):
         problems.append("confidence: label is confident but no evidence supports it")
 
-    # 10. the container is not a reason
+    # 10. the conversation delivers the evidence its answer cites
+    turns = sample.get("conversations") or []
+    evidence_turns = [t for t in turns
+                      if t.get("from") == "user" and str(t.get("value", "")).lstrip().startswith("{")]
+    if turns and turns[0].get("from") != "user":
+        problems.append("conversation: must open with a user turn")
+    if turns and turns[-1].get("from") != "gpt":
+        problems.append("conversation: must close with the assistant answer")
+    if uses_tools:
+        if len(evidence_turns) != len(record["evidence"]):
+            problems.append(
+                f"conversation: {len(evidence_turns)} evidence turns for "
+                f"{len(record['evidence'])} tokens — the answer cites evidence "
+                f"the model was never given")
+        for turn in evidence_turns:
+            try:
+                payload = json.loads(turn["value"])
+            except ValueError:
+                problems.append("conversation: an evidence turn is not valid JSON")
+                continue
+            if payload.get("evidence_id") not in known:
+                problems.append(
+                    f"conversation: turn delivers unknown evidence_id "
+                    f"{payload.get('evidence_id')}")
+    elif evidence_turns:
+        problems.append("conversation: a tool-free sample carries evidence turns")
+
+    # 11. the container is not a reason
     for offender in _container_reason_sentences(answer):
         problems.append(f"container_reason: {offender}")
 

@@ -74,6 +74,18 @@ def bucket_for(record: dict, category: str) -> str:
 _PLANNING_ANOMALIES = re.compile(r"Visual Anomalies:\s*(.+)", re.I)
 
 
+def load_trace(record: dict) -> Optional[dict]:
+    """The session this trajectory came from, for reconstructing the turns."""
+    path = record.get("trace_path")
+    if not path:
+        return None
+    try:
+        with open(os.path.join(PROJECT_ROOT, path), encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return None
+
+
 def extract_observation(record: dict) -> str:
     """
     The model's own first-turn observation, if the trace recorded one.
@@ -154,7 +166,8 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
         split_entry = (split or {}).get("sources", {}).get(record["source_id"])
         sample = render_sample(record, decision["category"],
                                observation_text=extract_observation(record),
-                               split_entry=split_entry)
+                               split_entry=split_entry,
+                               trace=load_trace(record))
 
         problems = validate_sample(sample, split=split, applicability=applicability)
         if problems:

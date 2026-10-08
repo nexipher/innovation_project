@@ -1031,3 +1031,24 @@
 * **执行结果与验证状态**：文档与当前实现一致（G0–G4）；526 测试通过未受影响
 * **置信度或遗留待办（TODO）**：README §7.2 的 G4-g/G5 仍待 GPU；审核工作台待人工使用
 ---
+### 2026-10-08 10:25:40 - G4-d 修复：训练对话必须复现推理协议
+
+* **当前操作动作**：暂停前收尾 —— 修复 final_v2 训练对话缺失工具调用与证据轮的问题（并在暂停后不遗留未提交改动）
+* **对应计划锚点**：plan.md §4.11 G4-d（final_v2 Schema 与校验器）；agent.md §3.2.1（CPU 可测）
+* **核心变更说明**：
+  1. **发现的问题（严重）**: `render_sample` 只渲染两轮（`<image>` 提问 + 四段答案），**丢掉了工具调用轮与证据轮**，而答案里引用了 evidence_id —— 这等于教模型引用从未收到的证据，与伪造证据无法区分
+  2. 修复: 新增 `render_conversation(record, trace)` **按推理协议重建对话** —— 保留原始 trace 中模型的 planning+调用轮，证据轮由**整流后的 token** 重建（用 `EvidenceTokenizer.to_json`，附最多两张产物图，与推理一致），丢弃 `[System: ...]` 脚手架轮与旧结案文本，最后接上四段答案; 构建器现读取 trace 并传入
+  3. 新增**第 11 项自动校验**: 对话必须以 user 开头、以助手答案结尾; 工具样本的证据轮数必须等于 token 数（否则报"答案引用了从未交付的证据"）; 证据轮的 evidence_id 必须在链中; 无工具样本不得携带证据轮
+  4. 校验器另修一处读取错误: 答案取**最后一个** gpt 轮（重建后第一轮是工具调用）
+  5. 效果: 工具样本训练对话现为 4 轮（提问 → planning+调用 → 证据 token+图 → 四段答案）；重建后 237 条全部通过校验（0 拒绝）
+  6. 测试 551 通过（新增 10 项：对话重建 5 + 对话校验 5）
+* **涉及/修改的文件清单**：
+  - `utils/final_v2.py (Modified — render_conversation + 第 11 项校验 + 答案轮次修正)`
+  - `scripts/build_final_v2.py (Modified — load_trace 并传入渲染)`
+  - `tests/test_final_v2.py (Modified — 对话重建与校验 10 项)`
+  - `sft_data/train/final_v2/ (Modified — 按推理协议重建 237 条)`
+  - `sft_data/review/ (Modified — 工作台按新样本重建)`
+  - `scripts/check_acceptance_g5.py, tests/test_check_acceptance_g5.py (Created — G5 验收核对器)`
+* **执行结果与验证状态**：训练对话与推理协议一致; 551 测试通过; 工作台已重建
+* **置信度或遗留待办（TODO）**：**用户要求暂停**。恢复后待办：①LoRA 训练脚本（`scripts/train_lora_g4.py`：按 accepted 集 + 类别权重采样，含 CPU dry-run）②四臂 harness 支持 `--adapter` 加载 LoRA ③G4-f 人工审核（工作台已就绪）④G4-e 扩量与 G4-g 训练需 GPU（当前已释放）
+---
