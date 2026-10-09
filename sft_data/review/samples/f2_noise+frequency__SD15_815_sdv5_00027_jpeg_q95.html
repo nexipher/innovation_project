@@ -4,54 +4,334 @@
 <style>
  body { font-family: system-ui, sans-serif; margin: 24px; max-width: 1200px; color: #222; }
  h1 { font-size: 18px; } h2 { font-size: 15px; margin-top: 28px; border-bottom: 1px solid #ddd; }
+ h3 { font-size: 14px; margin: 4px 0; }
  img { max-width: 420px; max-height: 420px; border: 1px solid #ccc; }
  figure { display: inline-block; margin: 6px 12px 6px 0; vertical-align: top; }
  figcaption { font-size: 12px; color: #555; max-width: 420px; }
  .missing { background: #f6f6f6; color: #999; padding: 20px; font-size: 12px; }
- table { border-collapse: collapse; font-size: 13px; width: 100%; }
+ table { border-collapse: collapse; font-size: 13px; width: 100%; margin-bottom: 10px; }
  th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; vertical-align: top; }
  th { background: #f4f4f4; }
+ table.kv th { width: 260px; background: #fafafa; font-weight: 600; }
  .note { color: #666; font-size: 12px; }
- .answer { background: #fafafa; border: 1px solid #eee; padding: 10px; white-space: pre-wrap;
-            font-size: 13px; }
- .flag { background: #fff3cd; border-left: 4px solid #e0a800; padding: 8px 12px; }
+ .flag { background: #fff3cd; border-left: 4px solid #e0a800; padding: 8px 12px; margin: 6px 0; }
+ .warn { background: #fff9e6; border-left: 4px solid #e0a800; padding: 8px 12px; margin: 6px 0; font-size: 13px; }
+ .warn-red { background: #fdecea; border-left: 4px solid #d93025; padding: 8px 12px; margin: 6px 0; font-size: 13px; }
  .ok { color: #1a7f37; }
+ .badge { font-size: 11px; padding: 1px 6px; border-radius: 8px; }
+ .badge.sup { background: #e6f4ea; color: #137333; border: 1px solid #b7e1c4; }
+ .badge.mask { background: #eee; color: #666; border: 1px solid #ddd; }
+ .turn { border: 1px solid #e5e5e5; border-radius: 4px; margin: 8px 0; }
+ .turn.gpt { border-left: 4px solid #137333; }
+ .turn.user { border-left: 4px solid #9aa0a6; }
+ .turnhead { background: #fafafa; padding: 4px 8px; font-size: 12px; color: #444; border-bottom: 1px solid #eee; }
+ .turnbody { margin: 0; padding: 8px; white-space: pre-wrap; font-size: 12.5px; max-height: 420px; overflow: auto; }
+ .card { border: 1px solid #e5e5e5; border-radius: 4px; padding: 10px; margin: 12px 0; }
+ .pill { font-size: 11px; background: #eef; border: 1px solid #ccd; padding: 1px 6px; border-radius: 8px; margin-left: 8px; }
  ul.checklist { list-style: none; padding-left: 0; font-size: 13px; }
  ul.checklist li { margin: 4px 0; }
-</style></head><body>
+ .toolbar { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 8px 0; z-index: 5; }
+ .toolbar button { font-size: 13px; padding: 4px 10px; margin-right: 6px; border: 1px solid #bbb;
+                   background: #f8f8f8; border-radius: 4px; cursor: pointer; }
+ .toolbar button.active { background: #137333; color: #fff; border-color: #137333; }
+ .toolbar textarea { width: 100%; height: 46px; font-size: 13px; margin-top: 6px; }
+ .status { font-size: 12px; color: #555; }
+ tr.decided td[data-cell="decision"] { color: #137333; font-weight: 600; }
+ tr.pending td[data-cell="decision"] { color: #999; }
+</style></head>
+<body data-sample="f2_noise+frequency__SD15_815_sdv5_00027_jpeg_q95" data-samples="237">
+<div class="toolbar"><a id="go-prev" href="f2_noise+frequency__SD15_815_sdv5_00027_jpeg_q85.html">← 上一条</a> ｜ <a id="go-next" href="f2_noise+frequency__SD15_815_sdv5_00027_png.html">下一条 →</a> ｜ <button data-decision="accept" title="快捷键 1">接受（内容与格式都可训练）</button><button data-decision="format_only" title="快捷键 2">仅格式（内容不可信，只学格式）</button><button data-decision="revise" title="快捷键 3">待修（修改后才可训练）</button><button data-decision="reject" title="快捷键 4">拒绝（严重错误，永不训练）</button><label class="status"><input type="checkbox" id="auto-advance" checked> 决定后自动跳下一条</label><div><textarea id="notes" placeholder="备注（必填于 revise / reject）：问题在哪、为什么"></textarea></div><div class="status"><label>审核人 <input id="reviewer" size="8" placeholder="你的名字"></label> ｜ <span id="save-status">—</span> ｜ <button id="export">导出全部决定</button><label class="status"> 导入 <input type="file" id="import" accept=".json"></label> ｜ 快捷键：1 接受 / 2 仅格式 / 3 待修 / 4 拒绝 / ← → 翻页 / e 导出</div></div>
 <p><a href="../index.html">← 返回索引</a></p>
 <h1>f2_noise+frequency__SD15_815_sdv5_00027_jpeg_q95</h1>
-<p>桶：<strong>positive</strong> ｜ 真值：<strong>Fake</strong>
+<p>桶：<strong>tool_positive</strong>（工具正样本（调用过专家））
+ ｜ 真值：<strong>Fake</strong>
  ｜ 策略：noise+frequency ｜ 处理：jpeg_q95
  ｜ 生成器：SD15 ｜ 分区：train</p>
-<div class="flag">需双审：multi_tool</div>
+<div class="flag">高风险标记：multi_tool</div>
 
 <h2>图像证据</h2>
-<figure><img src="../../variants/SD15_815_sdv5_00027_jpeg_q95.jpg" alt="模型实际输入的变体（jpeg_q95）"><figcaption>模型实际输入的变体（jpeg_q95）</figcaption></figure><figure><img src="../../../dataset/GenImage_Test/SD15/815_sdv5_00027.png" alt="数据集源图（未经处理）"><figcaption>数据集源图（未经处理）</figcaption></figure><figure><img src="../../../traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/region_E-7b6d603a33.png" alt="诊断区域（noise_expert）"><figcaption>诊断区域（noise_expert）</figcaption></figure><figure><img src="../../../traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/noise_residual_map_E-7b6d603a33.png" alt="专家产物 noise_residual_map_E-7b6d603a33.png"><figcaption>专家产物 noise_residual_map_E-7b6d603a33.png</figcaption></figure>
+<figure><img src="../../variants/SD15_815_sdv5_00027_jpeg_q95.jpg" alt="模型实际输入的变体（jpeg_q95）"><figcaption>模型实际输入的变体（jpeg_q95）</figcaption></figure><figure><img src="../../../dataset/GenImage_Test/SD15/815_sdv5_00027.png" alt="数据集源图（未经处理）"><figcaption>数据集源图（未经处理）</figcaption></figure>
 
-<h2>Evidence Bundle</h2>
-<table><thead><tr><th>evidence_id</th><th>专家</th><th>测量范围</th><th>原始数值</th><th>P(Real)/P(Fake)</th><th>方向</th><th>适用性</th><th>适用条件</th></tr></thead><tbody><tr><td><code>E-7b6d603a33</code></td><td>noise_expert</td><td>global</td><td>1.430198</td><td>0.152 / 0.848</td><td>AI-generated</td><td>inverted:high-metric-means-real</td><td class='note'>高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。</td></tr></tbody></table>
+<h2>判定与置信度（各自的含义不同，别混用）</h2>
+<table class='kv'><tr><th>原始模型判定</th><td>Uncertain（p=0.5）</td><td class='note'>模型自己选的标签与自报概率，未受后验约束</td></tr><tr><th>停止后验 P(Fake)</th><td>0.6727</td><td class='note'>Youden 加权 log-odds 后验</td></tr><tr><th>停止后验 P(Real)</th><td>0.3273</td><td class='note'>1 − P(Fake)</td></tr><tr><th>所选标签置信度</th><td>0.6727</td><td class='note'>工具轨迹：所选标签置信度取自停止后验（与 P(Fake)/P(Real) 同源）</td></tr><tr><th>模型 Brier</th><td>0.25</td><td class='note'>模型自报概率的 Brier 分数</td></tr><tr><th>停止后验 Brier</th><td>0.1071</td><td class='note'>后验概率的 Brier 分数</td></tr><tr><th>ΔBrier（模型 → 后验）</th><td>0.1429</td><td class='note'>负值 = 证据让预测更接近真值；这是工具轨迹的增益判据</td></tr><tr><th>停止原因</th><td>no_expected_gain</td><td class='note'>halting_reason: no_expected_gain</td></tr></table><table><thead><tr><th>来源</th><th>判定</th><th>后验 P(Fake)</th><th>后验 Brier</th><th>加权成本</th></tr></thead><tbody><tr><th>本轨迹</th><td>Fake</td><td>0.6727</td><td>0.1071</td><td>2.0</td></tr><tr><th>no-tool 基线</th><td>Real</td><td>0.5</td><td>0.25</td><td>0.5</td></tr></tbody></table>
 
-<h2>轨迹与基线对比</h2>
-<table><thead><tr><th>来源</th><th>判定</th><th>后验</th><th>Brier</th><th>加权成本</th></tr></thead>
-<tbody>
-<tr><th>本轨迹</th><td>Fake</td><td>0.6727</td>
-<td>0.1071</td><td>2.0</td></tr>
-<tr><th>no-tool 基线</th><td>Real</td><td>0.5</td><td>0.25</td><td>0.5</td></tr>
-</tbody></table>
-<p>准入判定：<strong>positive</strong>
- ｜ 策略原因：no_expected_gain</p>
-
-<h2>该样本将教模型说的话</h2>
-<pre class="answer">&lt;planning&gt;
+<h2>完整训练对话（共 4 轮：助手 2 轮参与训练，用户/系统 2 轮掩码）</h2>
+<p class="note">训练脚本只对助手轮计算 loss（<code>assistant_spans</code>）：绿色左边框的轮次就是模型要学的内容。
+上面这条对话（含工具调用轮、证据轮）就是该样本将要教给模型的全部内容。</p>
+<div class="turn user"><div class="turnhead">轮 0 ｜ 用户/系统 ｜ <span class="badge mask">掩码 · 不进 loss</span></div><pre class="turnbody">&lt;image&gt;
+请分析这张图像的真实性，并使用法证工具箱开展多轮质证。</pre></div><div class="turn gpt"><div class="turnhead">轮 1 ｜ 助手 ｜ <span class="badge sup">参与训练 · 被监督</span></div><pre class="turnbody">&lt;planning&gt;
 Suspected Region: [0, 0, 500, 500]
 Visual Anomalies: 图像显示了一个蜘蛛网图案，但没有明显的瑕疵或异常。
 Expert Target &amp; Hypothesis: 首先调用 &lt;call_noise&gt; 专家，因为图像看起来像是一个合成的图案，而 &lt;call_noise&gt; 可以帮助我们判断图像的真实性和合成程度。
 &lt;/planning&gt;
-&lt;call_noise&gt;[0, 0, 500, 500]&lt;/call_noise&gt;</pre>
+&lt;call_noise&gt;[0, 0, 500, 500]&lt;/call_noise&gt;</pre></div><div class="turn user"><div class="turnhead">轮 2 ｜ 用户/系统 ｜ <span class="badge mask">掩码 · 不进 loss</span> ｜ 附 2 张图</div><pre class="turnbody">{
+ &quot;evidence_id&quot;: &quot;E-7b6d603a33&quot;,
+ &quot;evidence_name&quot;: &quot;noise_residual_inconsistency&quot;,
+ &quot;region&quot;: &quot;patch_coordinates_[0, 0, 256, 256]&quot;,
+ &quot;region_pixels&quot;: [
+  0,
+  0,
+  256,
+  256
+ ],
+ &quot;region_normalized_1000&quot;: [
+  0,
+  0,
+  500,
+  500
+ ],
+ &quot;coordinate_space&quot;: &quot;pixels&quot;,
+ &quot;region_semantics&quot;: &quot;diagnostic_evidence_region&quot;,
+ &quot;measurement_scope&quot;: &quot;global&quot;,
+ &quot;phenomenon&quot;: &quot;Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 1.4302). Variance collapse detected.&quot;,
+ &quot;reasoning&quot;: &quot;Low residual micro-noise level (metric=1.4302). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.&quot;,
+ &quot;strength&quot;: 0.1136,
+ &quot;raw_metric&quot;: 1.430198,
+ &quot;source&quot;: &quot;noise_expert&quot;,
+ &quot;support&quot;: &quot;AI-generated&quot;,
+ &quot;interpretation_text&quot;: &quot;Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.85); the generative reading applies.&quot;,
+ &quot;counter_explanation&quot;: &quot;该指标衡量残差水平而非\&quot;不一致性\&quot;：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\&quot;异常即伪造\&quot;的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。&quot;,
+ &quot;reliability&quot;: 0.845,
+ &quot;calibrated_likelihood&quot;: {
+  &quot;Real&quot;: 0.152,
+  &quot;Fake&quot;: 0.848
+ },
+ &quot;condition_metadata&quot;: {
+  &quot;bin_samples&quot;: 79,
+  &quot;confound_drop_png_to_q70&quot;: -0.07333333333333333,
+  &quot;separation_polarity_corrected&quot;: 0.8454166666666667,
+  &quot;region_area_ratio&quot;: 0.25
+ },
+ &quot;semantics_aligned&quot;: false,
+ &quot;applicability&quot;: &quot;inverted:high-metric-means-real&quot;,
+ &quot;applicability_conditions&quot;: &quot;高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。&quot;,
+ &quot;direction&quot;: &quot;AI-generated&quot;,
+ &quot;direction_source&quot;: &quot;calibrated_likelihood&quot;,
+ &quot;interpretation_text_raw&quot;: &quot;Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.&quot;,
+ &quot;diagnostic_region_image&quot;: &quot;traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/region_E-7b6d603a33.png&quot;,
+ &quot;visual_artifacts&quot;: [
+  &quot;traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/noise_residual_map_E-7b6d603a33.png&quot;
+ ]
+}</pre><figure><img src="../../../traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/region_E-7b6d603a33.png" alt="第 2 轮附图：region_E-7b6d603a33.png"><figcaption>第 2 轮附图：region_E-7b6d603a33.png</figcaption></figure><figure><img src="../../../traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/noise_residual_map_E-7b6d603a33.png" alt="第 2 轮附图：noise_residual_map_E-7b6d603a33.png"><figcaption>第 2 轮附图：noise_residual_map_E-7b6d603a33.png</figcaption></figure></div><div class="turn gpt"><div class="turnhead">轮 3 ｜ 助手 ｜ <span class="badge sup">参与训练 · 被监督</span></div><pre class="turnbody">&lt;observation&gt;
+模型视觉观察：图像显示了一个蜘蛛网图案，但没有明显的瑕疵或异常。
+- container: jpg, quality: jpeg_q95
+- resolution: [512, 512]
+&lt;/observation&gt;
 
-<h2>审核清单（逐项勾选）</h2>
-<ul class="checklist"><li><label><input type="checkbox"> <strong>observation</strong> — &lt;observation&gt; 里的每条视觉陈述，都能在图上直接核验吗？</label></li><li><label><input type="checkbox"> <strong>evidence_fidelity</strong> — &lt;forensic_evidence&gt; 与真实 token 一致吗（evidence_id、测量范围、原始数值、校准概率）？</label></li><li><label><input type="checkbox"> <strong>reasoning</strong> — &lt;reasoning&gt; 只引用了合格证据吗？反证与失效条件是否如实写出？</label></li><li><label><input type="checkbox"> <strong>container</strong> — 有没有把 PNG/JPEG 容器当成真假的理由？（这是必须拒绝的错误）</label></li><li><label><input type="checkbox"> <strong>verdict</strong> — &lt;verdict&gt; 与后验、与证据强度一致吗？高置信是否有证据支撑？</label></li><li><label><input type="checkbox"> <strong>gain</strong> — 这条轨迹相对 no-tool 基线的增益是真的吗（ΔBrier 为负且结论正确）？</label></li><li><label><input type="checkbox"> <strong>teaching</strong> — 训练这条样本会不会教出坏习惯（格式捷径 / 无理由弃权 / 模板化）？</label></li></ul>
-<p class="note">记录方式：<code>python scripts/record_review.py --sample f2_noise+frequency__SD15_815_sdv5_00027_jpeg_q95
- --reviewer &lt;你&gt; --decision accept|revise|reject|format_only --notes "…"</code></p>
+&lt;forensic_evidence&gt;
+- evidence_id: E-7b6d603a33
+  expert: noise_expert
+  measurement_scope: global
+  raw_metric: 1.430198
+  region (diagnostic): patch_coordinates_[0, 0, 256, 256]
+  calibrated_likelihood: Real=0.152, Fake=0.848
+  applicability: inverted:high-metric-means-real
+  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。
+&lt;/forensic_evidence&gt;
+
+&lt;reasoning&gt;
+支持的证据：
+- noise_expert: Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.85); the generative reading applies.
+反证与替代解释：
+- 该指标衡量残差水平而非&quot;不一致性&quot;：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始&quot;异常即伪造&quot;的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。
+专家失效条件：
+- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。
+剩余不确定性：后验 P(Fake)=0.6727，冲突度=0.0，停止原因=no_expected_gain
+&lt;/reasoning&gt;
+
+&lt;verdict&gt;
+{&quot;verdict&quot;: &quot;Fake&quot;, &quot;confidence&quot;: 0.6727, &quot;basis&quot;: &quot;evidence_posterior&quot;, &quot;posterior&quot;: 0.6727}
+&lt;/verdict&gt;</pre></div>
+
+<h2>Evidence Bundle（逐 token）</h2>
+<p class="note">共 1 个 token，其中 <strong>1</strong> 个 semantics_aligned=false（方向被校准纠正过）。</p><div class="card"><h3>Token 1：noise_residual_inconsistency<span class="pill">noise_expert</span></h3><div class="warn-red">⚠ <strong>semantics_aligned = false</strong>：该专家的原始语义方向与校准实测相反（原始值越高，实际越可能是 Real）。本 token 的方向由 <code>calibrated_likelihood</code> 决定，下列「原始解释」只作历史记录，<strong>不得作为方向依据</strong>。</div><table class="kv"><tr><th>evidence_name</th><td>noise_residual_inconsistency</td></tr><tr><th>专家</th><td>noise_expert（E-7b6d603a33）</td></tr><tr><th>测量范围</th><td>global ｜ diagnostic_evidence_region</td></tr><tr><th>区域（region_pixels / region_normalized_1000）</th><td>像素 [0, 0, 256, 256] ｜ 归一化(‰) [0, 0, 500, 500] ｜ 坐标空间 pixels</td></tr><tr><th>原始数值 / 强度</th><td>raw_metric 1.430198 ｜ strength 0.1136</td></tr><tr><th>校准似然</th><td><strong>P(Fake) 0.848</strong> ｜ P(Real) 0.152</td></tr><tr><th>support（整流后主张）</th><td>AI-generated</td></tr><tr><th>support_raw（专家原始主张）</th><td>—（未被改写）</td></tr><tr><th>direction ← direction_source（方向权威）</th><td><strong>AI-generated</strong> ← calibrated_likelihood</td></tr><tr><th>reliability（校准可靠性）</th><td>0.845</td></tr><tr><th>applicability</th><td>inverted:high-metric-means-real</td></tr><tr><th>适用条件</th><td>高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。</td></tr><tr><th>phenomenon（现象）</th><td>Localised noise variance at the level the calibration set associates with generated imagery (variance collapse) (inconsistency ratio: 1.4302). Variance collapse detected.</td></tr><tr><th>reasoning（专家推理）</th><td>Low residual micro-noise level (metric=1.4302). The region is smooth at the sensor-noise scale — the condition under which the G2 calibration set identifies generated imagery (fake median 2.0 vs real median 3.6). Denoising or heavy recompression produces the same signature, so this is a weak signal on its own.</td></tr><tr><th>原始解释 interpretation_text_raw</th><td>Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.</td></tr><tr><th>校准后解释 interpretation_text</th><td>Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.85); the generative reading applies.</td></tr><tr><th>反解释 counter_explanation</th><td>该指标衡量残差水平而非&quot;不一致性&quot;：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始&quot;异常即伪造&quot;的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。</td></tr><tr><th>condition_metadata</th><td>bin_samples: 79 ｜ confound_drop_png_to_q70: -0.0733 ｜ separation_polarity_corrected: 0.8454 ｜ region_area_ratio: 0.25</td></tr></table><figure><img src="../../../traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/region_E-7b6d603a33.png" alt="诊断区域（noise_expert）"><figcaption>诊断区域（noise_expert）</figcaption></figure><figure><img src="../../../traces/evidence/session_20260926_203055_SD15_815_sdv5_00027_jpeg_q95/noise_residual_map_E-7b6d603a33.png" alt="专家产物 noise_residual_map_E-7b6d603a33.png"><figcaption>专家产物 noise_residual_map_E-7b6d603a33.png</figcaption></figure></div>
+
+<h2>审核清单（本桶适用，逐项勾选）</h2>
+<ul class="checklist"><li><label><input type="checkbox"> <strong>observation</strong> — &lt;observation&gt; 里每条视觉陈述都能在图上直接核验吗？</label></li><li><label><input type="checkbox"> <strong>evidence_fidelity</strong> — &lt;forensic_evidence&gt; 与真实 token 一致吗（evidence_id、测量范围、原始数值、校准概率）？</label></li><li><label><input type="checkbox"> <strong>container</strong> — 有没有把 PNG/JPEG 容器当成真假的理由？（这是必须拒绝的错误）</label></li><li><label><input type="checkbox"> <strong>format</strong> — 四段式与 &lt;verdict&gt; JSON 格式完整、无多余脚手架文字吗？</label></li><li><label><input type="checkbox"> <strong>teaching</strong> — 训练这条样本会不会教出坏习惯（格式捷径 / 模板化 / 空话）？</label></li><li><label><input type="checkbox"> <strong>verdict_correct</strong> — 结论与真值一致吗？与停止后验一致吗？</label></li><li><label><input type="checkbox"> <strong>gain_real</strong> — 相对 no-tool 基线确有增益吗（ΔBrier&lt;0 且结论更正确）？</label></li><li><label><input type="checkbox"> <strong>evidence_used</strong> — 推理真的用了拿到的证据吗（而非背结论）？</label></li><li><label><input type="checkbox"> <strong>no_fabrication</strong> — 没有编造未收到的证据或数值吗？</label></li></ul>
+<p class="note">决定写在页面顶部的工具条，或直接用快捷键。导出后执行：
+<code>python scripts/record_review.py --import review_decisions.json --reviewer &lt;你&gt;</code></p>
+<h2>本页的修改历史（浏览器本地）</h2>
+<ul id="history" class="note"></ul>
+<script>window.__review = {sample: "f2_noise+frequency__SD15_815_sdv5_00027_jpeg_q95"};</script>
+<script>
+/* One decision per sample, kept in the browser; export feeds record_review.py.
+   No server: localStorage survives a refresh, the export is the record. */
+(function () {
+  var KEY = 'finalv2review.v1';
+  var state = load();
+  var storageOk = true;
+
+  function load() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(KEY)) || {};
+      if (!parsed.decisions) { parsed.decisions = {}; }
+      if (!parsed.reviewer) { parsed.reviewer = ''; }
+      return parsed;
+    } catch (e) { return { reviewer: '', decisions: {} }; }
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+    catch (e) { return false; }
+  }
+  function decisionOf(id) { return (state.decisions || {})[id] || null; }
+
+  function flash(message) {
+    var box = document.getElementById('save-status');
+    if (box) { box.textContent = message; }
+  }
+  function count() {
+    return Object.keys(state.decisions || {}).filter(function (k) {
+      return state.decisions[k] && state.decisions[k].decision;
+    }).length;
+  }
+  function refreshStatus() {
+    var total = document.body.getAttribute('data-samples');
+    var decided = count();
+    flash('本地已记录 ' + decided + (total ? ' / ' + total : '') + ' 条（导出后才写入仓库）');
+    var progress = document.getElementById('progress');
+    if (progress && total) { progress.textContent = decided + ' / ' + total; }
+  }
+
+  function exportAll() {
+    var payload = {
+      reviewer: (document.getElementById('reviewer') || {}).value || state.reviewer || '',
+      exported_at: new Date().toISOString(),
+      decisions: state.decisions || {}
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'review_decisions.json';
+    document.body.appendChild(link); link.click(); link.remove();
+  }
+
+  function importFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var parsed = JSON.parse(reader.result);
+        var incoming = parsed.decisions || parsed;
+        Object.keys(incoming).forEach(function (id) { state.decisions[id] = incoming[id]; });
+        if (parsed.reviewer) { state.reviewer = parsed.reviewer; }
+        persist(); refreshStatus(); renderIndex();
+        flash('已导入 ' + Object.keys(incoming).length + ' 条');
+      } catch (e) { flash('导入失败：不是有效的 JSON'); }
+    };
+    reader.readAsText(file);
+  }
+
+  function apply(id, decision, notes) {
+    state.decisions[id] = { decision: decision, notes: notes || '', saved_at: new Date().toISOString() };
+    storageOk = persist();
+    if (!storageOk) { flash('浏览器禁止本地保存：请改用导出/导入，或经 http 服务打开本页'); }
+    refreshStatus();
+    renderIndex();
+    var buttons = document.querySelectorAll('[data-decision]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.toggle('active', buttons[i].getAttribute('data-decision') === decision);
+    }
+    var history = document.getElementById('history');
+    if (history) {
+      history.innerHTML = '<li>' + new Date().toLocaleString() + ' → <strong>' + decision +
+        '</strong>' + (notes ? '：' + notes.replace(/</g, '&lt;') : '') + '</li>' + history.innerHTML;
+    }
+  }
+
+  function nextLink() { return document.getElementById('go-next'); }
+  function prevLink() { return document.getElementById('go-prev'); }
+
+  function renderIndex() {
+    var rows = document.querySelectorAll('[data-row-sample]');
+    for (var i = 0; i < rows.length; i++) {
+      var id = rows[i].getAttribute('data-row-sample');
+      var entry = decisionOf(id);
+      var cell = rows[i].querySelector('[data-cell="decision"]');
+      var note = rows[i].querySelector('[data-cell="notes"]');
+      var done = entry && entry.decision ? entry.decision : '';
+      if (cell) { cell.textContent = done || '—'; }
+      if (note) { note.textContent = (entry && entry.notes) || ''; }
+      rows[i].classList.toggle('decided', !!done);
+      rows[i].classList.toggle('pending', !done);
+    }
+    var only = document.getElementById('only-pending');
+    for (var j = 0; j < rows.length; j++) {
+      var decided = rows[j].classList.contains('decided');
+      var hide = (only && only.checked && decided) ||
+        (document.getElementById('only-high-risk') && document.getElementById('only-high-risk').checked &&
+         rows[j].getAttribute('data-high-risk') !== '1');
+      rows[j].style.display = hide ? 'none' : '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var id = document.body.getAttribute('data-sample');
+    var notes = document.getElementById('notes');
+    var reviewer = document.getElementById('reviewer');
+    if (reviewer) {
+      reviewer.value = state.reviewer || '';
+      reviewer.addEventListener('change', function () { state.reviewer = reviewer.value; persist(); });
+    }
+    if (id && notes) {
+      var entry = decisionOf(id);
+      notes.value = (entry && entry.notes) || '';
+      notes.addEventListener('change', function () {
+        var existing = decisionOf(id);
+        if (existing) { apply(id, existing.decision, notes.value); }
+      });
+    }
+    var buttons = document.querySelectorAll('[data-decision]');
+    for (var i = 0; i < buttons.length; i++) {
+      if (id && decisionOf(id) &&
+          buttons[i].getAttribute('data-decision') === decisionOf(id).decision) {
+        buttons[i].classList.add('active');
+      }
+      buttons[i].addEventListener('click', function (event) {
+        var decision = event.currentTarget.getAttribute('data-decision');
+        if (!id) { return; }
+        apply(id, decision, notes ? notes.value : '');
+        var jump = document.getElementById('auto-advance');
+        if (jump && jump.checked && decision !== 'revise' && nextLink()) {
+          setTimeout(function () { nextLink().click(); }, 250);
+        }
+      });
+    }
+    var exportButton = document.getElementById('export');
+    if (exportButton) { exportButton.addEventListener('click', exportAll); }
+    var importInput = document.getElementById('import');
+    if (importInput) {
+      importInput.addEventListener('change', function (event) {
+        if (event.target.files.length) { importFile(event.target.files[0]); }
+      });
+    }
+    var onlyPending = document.getElementById('only-pending');
+    var onlyRisk = document.getElementById('only-high-risk');
+    if (onlyPending) { onlyPending.addEventListener('change', renderIndex); }
+    if (onlyRisk) { onlyRisk.addEventListener('change', renderIndex); }
+
+    document.addEventListener('keydown', function (event) {
+      var tag = (event.target.tagName || '').toLowerCase();
+      if (tag === 'textarea' || tag === 'input' || tag === 'select') { return; }
+      var map = { '1': 'accept', '2': 'format_only', '3': 'revise', '4': 'reject' };
+      if (id && map[event.key]) {
+        var button = document.querySelector('[data-decision="' + map[event.key] + '"]');
+        if (button) { button.click(); event.preventDefault(); }
+      } else if (event.key === 'ArrowLeft' && prevLink()) { prevLink().click(); }
+      else if (event.key === 'ArrowRight' && nextLink()) { nextLink().click(); }
+      else if (event.key === 'e') { exportAll(); }
+    });
+
+    if (!(function () { try { localStorage.setItem('probe', '1'); localStorage.removeItem('probe'); return true; }
+                        catch (e) { return false; } })()) {
+      var banner = document.createElement('div');
+      banner.className = 'warn-red';
+      banner.textContent = '本页无法使用浏览器本地保存（file:// 限制）：请在仓库目录运行 ' +
+        'python3 -m http.server 8000 后经 http://localhost:8000/sft_data/review/ 打开，' +
+        '否则刷新会丢失勾选。';
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+    refreshStatus();
+    renderIndex();
+  });
+})();
+</script>
 </body></html>
