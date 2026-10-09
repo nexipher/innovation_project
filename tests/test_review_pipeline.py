@@ -11,7 +11,14 @@ from scripts.apply_review import (
     class_weights,
     load_samples,
 )
-from scripts.record_review import DECISIONS, load_dispositions, record, summary
+from scripts.record_review import (
+    DECISIONS,
+    import_decisions,
+    load_dispositions,
+    parse_export,
+    record,
+    summary,
+)
 
 
 def _sample(sample_id, truth="Fake", bucket="positive"):
@@ -94,6 +101,103 @@ class TestSummary:
         report = summary(load_dispositions(path), final_v2)
         assert report["complete"] is True
         assert report["by_decision"] == {"accept": 4}
+
+
+class TestImport:
+    """The workstation saves in the browser; this is how it reaches the repo."""
+
+    def _export(self, tmp_path, decisions, reviewer="hj", name="export.json"):
+        path = tmp_path / name
+        path.write_text(json.dumps({"reviewer": reviewer, "exported_at": "2026-10-09T10:00:00",
+                                    "decisions": decisions}, ensure_ascii=False),
+                        encoding="utf-8")
+        return str(path)
+
+    def test_it_appends_every_decided_row(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {
+            "s1": {"decision": "accept", "notes": "证据一致", "saved_at": "2026-10-09T09:00:00"},
+            "s2": {"decision": "reject", "notes": "容器当理由"},
+        })
+        path = str(tmp_path / "d.jsonl")
+        report = import_decisions(source, None, path, final_v2)
+        assert report["imported"] == 2
+        assert report["by_decision"] == {"accept": 1, "reject": 1}
+        latest = load_dispositions(path)
+        assert latest["s1"]["notes"] == "证据一致"
+        assert latest["s1"]["reviewer"] == "hj"       # taken from the export
+        assert latest["s2"]["decision"] == "reject"
+
+    def test_an_untouched_row_is_not_a_decision(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {"s1": {"decision": "", "notes": ""},
+                                         "s2": {"decision": "accept"}})
+        report = import_decisions(source, "hj", str(tmp_path / "d.jsonl"), final_v2)
+        assert report["imported"] == 1
+
+    def test_a_typo_costs_one_row_not_the_import(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {"s9": {"decision": "accept"},
+                                         "s1": {"decision": "accept"}})
+        report = import_decisions(source, "hj", str(tmp_path / "d.jsonl"), final_v2)
+        assert report["imported"] == 1
+        assert report["unknown"] == ["s9"]
+
+    def test_an_unknown_decision_is_skipped_and_reported(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {"s1": {"decision": "maybe"}})
+        report = import_decisions(source, "hj", str(tmp_path / "d.jsonl"), final_v2)
+        assert report["imported"] == 0
+        assert report["invalid"] == [("s1", "maybe")]
+
+    def test_re_importing_the_same_export_changes_nothing(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {"s1": {"decision": "accept", "notes": "n"}})
+        path = str(tmp_path / "d.jsonl")
+        import_decisions(source, "hj", path, final_v2)
+        report = import_decisions(source, "hj", path, final_v2)
+        assert report["imported"] == 0 and report["unchanged"] == 1
+        assert len(open(path, encoding="utf-8").read().strip().split("\n")) == 1
+
+    def test_a_changed_decision_is_appended(self, tmp_path, final_v2):
+        path = str(tmp_path / "d.jsonl")
+        import_decisions(self._export(tmp_path, {"s1": {"decision": "accept"}}, name="a.json"),
+                         "hj", path, final_v2)
+        import_decisions(self._export(tmp_path, {"s1": {"decision": "revise", "notes": "漏了反证"}},
+                                      name="b.json"), "hj", path, final_v2)
+        assert load_dispositions(path)["s1"]["decision"] == "revise"
+        assert len(open(path, encoding="utf-8").read().strip().split("\n")) == 2
+
+    def test_the_reviewer_can_come_from_the_command_line_instead(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {"s1": {"decision": "accept"}}, reviewer="")
+        path = str(tmp_path / "d.jsonl")
+        import_decisions(source, "hj", path, final_v2)
+        assert load_dispositions(path)["s1"]["reviewer"] == "hj"
+
+    def test_no_reviewer_anywhere_is_refused(self, tmp_path, final_v2):
+        source = self._export(tmp_path, {"s1": {"decision": "accept"}}, reviewer="")
+        with pytest.raises(ValueError, match="reviewer"):
+            import_decisions(source, None, str(tmp_path / "d.jsonl"), final_v2)
+
+    def test_a_filled_worklist_csv_is_read(self, tmp_path, final_v2):
+        path = tmp_path / "worklist.csv"
+        path.write_text(
+            "sample_id,bucket,ground_truth,decision,notes,reviewer\n"
+            "s1,positive,Fake,accept,看起来对,hj\n"
+            "s2,positive,Fake,,\n"
+            "s3,no_tool_positive,Real,format_only,结论勉强,hj\n",
+            encoding="utf-8")
+        report = import_decisions(str(path), None, str(tmp_path / "d.jsonl"), final_v2)
+        assert report["imported"] == 2
+        assert report["by_decision"] == {"accept": 1, "format_only": 1}
+
+    def test_a_file_without_decisions_is_refused(self, tmp_path):
+        path = tmp_path / "not_an_export.json"
+        path.write_text(json.dumps({"hello": "world"}), encoding="utf-8")
+        with pytest.raises(ValueError, match="decisions"):
+            parse_export(str(path))
+
+    def test_a_bare_id_map_is_accepted(self, tmp_path):
+        path = tmp_path / "bare.json"
+        path.write_text(json.dumps({"s1": {"decision": "accept", "notes": "x"}}),
+                        encoding="utf-8")
+        _, entries = parse_export(str(path))
+        assert entries["s1"]["decision"] == "accept"
 
 
 class TestApply:
