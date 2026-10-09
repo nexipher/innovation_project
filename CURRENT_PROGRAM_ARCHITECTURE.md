@@ -305,7 +305,7 @@ split_v2.json ──► variants/ ──► trajectories/ ──► admission_re
 | 轨迹 | `generate_trajectories_g4.py` | 六策略（no-tool / noise / jpeg / frequency / noise+jpeg / noise+frequency）；**提示词按策略生成**（只列可服务的工具）且只注册对应专家；jpeg 类策略在逐格分离度 < 0.65 的格式上**不予生成**；每条记录含完整 Bundle、后验与双概率 NLL/Brier |
 | 准入 | `admit_trajectories_g4.py` | 条件层（与生成同一把尺；弱专家可佐证但不可单独支撑正样本；v1/ELA 一律否决）+ 增益层（相对同变体 no-tool，Brier/NLL 须实际改善且结论正确；无工具轨迹按"仅凭图像答对"判定）；**判断前断言 `split == "train"`** |
 | 组装 | `build_final_v2.py` | 四段式渲染；十项自动校验（泄漏/结构/证据引用/测量范围/重复调用/方向矛盾/适用性/verdict-后验一致/高置信无证据/**容器当真假理由**）；拒绝写入冻结的 `final/` |
-| 审核 | `build_review_workstation.py` + `record_review.py` + `apply_review.py` | 静态 HTML 工作台（源图 vs 变体图、产物、Bundle、与基线对比、将教模型说的话、清单）；处置 append-only JSONL 且**未审完拒绝出训练集**；accepted 集自动计算类别权重 |
+| 审核 | `build_review_workstation.py` + `record_review.py` + `apply_review.py` | 静态 HTML 工作台（源图 vs 变体图、产物、**完整训练对话并标出被监督的助手轮**、逐 token 的 Bundle 语义与方向权威链、与基线对比、按桶清单）；**单次全量审核** + `high_risk` 标记；决定在浏览器本地保存、导出后由 `--import` 写入 append-only JSONL，**未审完拒绝出训练集**；accepted 集自动计算类别权重 |
 
 **方向权威链**（贯穿全线的单一事实来源）：`raw_metric` → 校准表分位分箱 → `calibrated_likelihood` → `EvidenceRectifier` 决定 `support` 与文本 → G1 门校验。`strength` 分带退化为 UI/遗留用途，不再决定方向。
 

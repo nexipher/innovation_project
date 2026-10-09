@@ -1096,3 +1096,24 @@
 * **执行结果与验证状态**：583 测试通过；两次训练 exit 0；修复前报告按诚实命名保留（`_prefix`）；`sft_data/lora_runs/` 已加入 `.gitignore`（单次 190 MB，可由脚本 + 入库数据复现）
 * **置信度或遗留待办（TODO）**：**停在 G4-f 人工审核**。需人工裁决：①237 条样本的审核与处置（工作台 `sft_data/review/index.html`，双审集合 207/237）②标签成分偏斜如何处置（配平采样 / 接受 / 补充 Real 侧工具样本）③是否投入全量四臂（修复后每样本 75–90 s，480 会话约 10 GPU 小时）—— 建议先出 accepted 集再重训与比较
 ---
+### 2026-10-09 11:20:00 - G4-f 工作台修订：单次审核 + 全量对话 + 证据语义 + 可保存决定
+
+* **当前操作动作**：按用户逐条复核意见重修审核工作台（审核尚未开始，此时修成本最低），并取消双审协议
+* **对应计划锚点**：plan.md §4.11 G4-f 之「G4-f 工作台修订（2026-10-09）」；agent.md §1.2（原子提交）、§3.2（CPU 可测）
+* **核心变更说明**：
+  1. **完整训练对话（严重）**: 原页 `answer = next(gpt turn)` 只渲染**第一个**助手轮 —— 237 条中 198 条是多轮，页面因此只显示 `<planning>`，把工具调用轮、证据输入轮与最终四段答案全部藏掉，等于让审核者凭最没信息量的一轮下判断。改为按序渲染**全部轮次**，逐轮标注「参与训练 · 被监督」（助手轮）/「掩码 · 不进 loss」（用户/系统轮），与 `scripts/train_lora_g4.py` 的 `assistant_spans` 监督范围一一对应；顶部给出「共 N 轮：助手 M 轮参与训练」
+  2. **Evidence Bundle 语义补全**: 原表 8 列且把 `support` 标成"方向"。改为逐 token 卡片：`evidence_name` / `phenomenon` / `reasoning` / `counter_explanation` / `reliability` / `semantics_aligned` / `direction` + `direction_source` / `condition_metadata` / 像素与归一化坐标；**显式区分** `support`（整流后主张）、`support_raw`（专家原始主张）、`direction ← direction_source`（方向权威链）、`P(Fake)/P(Real)`（校准似然）；`semantics_aligned=false` 显示**红色告警**并同时给出原始解释、校准后方向与反解释。全量核对：**200 个 token 中 158 个为 false**（工具桶 61/61、弃权桶 97/139），此前无一处可见
+  3. **按桶审核标准**: 原清单对所有样本都用"ΔBrier 为负且结论正确"，会把 140 条**设计上就弃权**的样本判死。改为共用项 + 三套分桶清单：`tool_positive`（结论正确 / 增益真实 / 证据被真正使用 / 无编造）、`no_tool_positive`（**不得虚构法证证据** / **不得形成"无工具⇒Real"捷径**）、`honest_abstention`（弃权须有弱证据·冲突·不适用三种成因，**不要求 ΔBrier<0**）
+  4. **决定可保存（静态页 + 导入）**: 页面按钮 `accept / format_only / revise / reject`、备注框、上一条/下一条、快捷键 1–4 与 ← →、决定后自动跳转、进度与本次修改历史；状态存 `localStorage`（刷新不丢，`file://` 受限时页面顶端红字提示改用 `http.server`），「导出全部决定」得 `review_decisions.json`；`record_review.py` 新增 `--import`（读导出 JSON 或填好的 `worklist.csv`），逐条走与 CLI 相同的校验：未知样本 id 与非法处置被**跳过并计数上报**（一个错别字不该毁掉另外 236 条），重复导入同一文件为 no-op，改过的决定追加并保持"最新为准"
+  5. **置信度四分**: 分别显示**原始模型判定与自报概率**（`model_candidate` / `model_probability`）、**停止后验 P(Fake)/P(Real)**、**所选标签置信度**、**ΔBrier（模型→后验）**，并注明无工具轨迹没有后验（不打印先验 0.5 冒充后验）
+  6. **取消双审**: `double_review` → **`high_risk`**（uncertain / multi_tool / high_confidence / conflict，207/237，仅作重点提示），`review_sets.json` 增 `"protocol": "single_pass"` 并去掉 `stratified`；不再有首审/二审/仲裁与分层抽查；`apply_review.py` 维持"一条样本一个最终决定"不变；plan.md 两处旧表述加注"已于 2026-10-09 修订"，README 与架构文档同步改写
+* **涉及/修改的文件清单**：
+  - `scripts/build_review_workstation.py (Modified — 全量对话 / 证据卡片 / 分桶清单 / 交互与本地保存 / high_risk)`
+  - `scripts/record_review.py (Modified — parse_export + import_decisions + --import)`
+  - `tests/test_review_workstation.py (Modified — 30 项，含"只显示第一轮"回归)`
+  - `tests/test_review_pipeline.py (Modified — 导入通道 11 项)`
+  - `sft_data/review/ (Modified — 237 页 + index + review_sets.json + worklist.csv 重建)`
+  - `plan.md, README.md, CURRENT_PROGRAM_ARCHITECTURE.md (Modified — 单次审核协议与工作台说明)`
+* **执行结果与验证状态**：610 测试通过（新增 27）；工作台重建成功（237 页、0 张图缺失、6.5 MB）；页面内嵌 JS 通过 `node --check`；抽样核对 tool/no-tool/abstention 三类页面各含对应清单与语义字段
+* **置信度或遗留待办（TODO）**：①审核者需在浏览器内完成 237 条并导出，再 `--import` 写回仓库（`--summary` 查进度）②`file://` 下若浏览器禁用本地存储，需用 `python3 -m http.server` 打开（页面会自动提示）③标签成分偏斜仍待人工裁决（配平 / 接受 / 补样本）
+---

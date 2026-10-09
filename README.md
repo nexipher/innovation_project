@@ -160,9 +160,11 @@ python scripts/generate_trajectories_g4.py         #    真实生成（需 GPU �
 python scripts/admit_trajectories_g4.py     # 4) 两级准入（仅读训练分区）
 python scripts/build_final_v2.py            # 5) 组装 final_v2 并过十项校验
 python scripts/build_review_workstation.py  # 6) 生成审核工作台（sft_data/review/index.html）
-# 人工审核：浏览器打开 index.html，逐条记录处置
+# 人工审核（单次全量）：浏览器打开 index.html，逐条按 1–4 快捷键给处置，
+# 决定存在浏览器本地；改完点「导出全部决定」得到 review_decisions.json
+python scripts/record_review.py --import review_decisions.json --reviewer <你>   # 写回仓库
 python scripts/record_review.py --sample <id> --reviewer <你> \
-    --decision accept|format_only|revise|reject --notes "…"
+    --decision accept|format_only|revise|reject --notes "…"      # 也可单条记录
 python scripts/record_review.py --summary   # 审核进度
 python scripts/apply_review.py              # 7) 按处置出训练集（未审完会拒绝运行）
 ```
@@ -232,8 +234,8 @@ innovation_project/
 │   ├── generate_trajectories_g4.py # G4-b 六策略候选轨迹生成（Mock 干跑 / GPU）
 │   ├── admit_trajectories_g4.py    # G4-c 两级准入（条件层 + 增益层，仅用训练分区）
 │   ├── build_final_v2.py           # G4-d 组装 final_v2 并过十项校验
-│   ├── build_review_workstation.py # G4-f 审核工作台（静态 HTML + 工作单 + 审核集合）
-│   ├── record_review.py            # G4-f 处置记录（append-only JSONL，最新为准）
+│   ├── build_review_workstation.py # G4-f 审核工作台（完整训练对话 + 证据语义 + 浏览器内保存决定）
+│   ├── record_review.py            # G4-f 处置记录（append-only JSONL，支持导入浏览器导出/CSV）
 │   ├── apply_review.py             # G4-f→g 按处置出训练集（未审完拒绝运行）
 │   ├── train_lora_g4.py            # G4-g LoRA 试训（监督全部助手轮；掩码位置交叉熵省显存）
 │   ├── check_acceptance_g5.py      # G5 验收核对器（六条判据 + 容器理由扫描）
@@ -251,7 +253,7 @@ innovation_project/
 ├── sft_data/variants/              # G4-b 格式变体（图像 gitignore，manifest 入库）
 ├── sft_data/trajectories/          # G4-b 轨迹记录（440 条，六策略）
 ├── sft_data/admission_report.json  # G4-c 逐轨迹准入判定与理由
-├── sft_data/review/                # G4-f 审核工作台（237 页 + 工作单 + 审核集合）
+├── sft_data/review/                # G4-f 审核工作台（237 页 + 工作单 + 高风险标记，单次全量审核）
 ├── calibration/                    # 专家校准集、可靠性表、G2-d/G3-e 增益与回放报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）—— 真实会话入库作为 SFT provenance
 ├── traces/evidence/                # 诊断区域裁剪图（运行期生成，未纳入版本控制）
@@ -382,7 +384,7 @@ innovation_project/
 
 `metadata` 携带 `admission_category`、`counters`、`scores`、`split`，以及集级 `label_composition` 与 `training_weights`。
 
-**审核记录（`sft_data/review/dispositions.jsonl`）**：一行一条，`{"sample_id", "reviewer", "decision", "notes", "recorded_at"}`，同一样本以最新为准（日志式，永不重写）。工作单 `worklist.csv` 供离线填写。
+**审核记录（`sft_data/review/dispositions.jsonl`）**：一行一条，`{"sample_id", "reviewer", "decision", "notes", "recorded_at"}`，同一样本以最新为准（日志式，永不重写）。浏览器里做的决定存在 `localStorage`，导出的 `review_decisions.json`（或填好的 `worklist.csv`）由 `record_review.py --import` 读入，走与单条记录相同的校验；重复导入同一文件不会重复记账。**审核是一次全量通读**，`review_sets.json` 里的 `high_risk` 只是提示重点，不触发第二次阅读。
 
 ---
 
@@ -443,6 +445,7 @@ v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条�
 | **四** G2 | Expert 准入与 Evidence Bundle | 格式配平校准集（700 样本）+ 逐格区分度/适用条件；可靠性表（分位分箱 → 经验 P(Fake)）；Evidence Bundle（校准概率/适用性/反证/可视化产物）；**四条件增益对比证明证据曾显著有害**（三臂均低于基线，p≤0.0007），并定位为专家语义反向 + 一致性门抹除 |
 | **四** G3 | 管线重建与复核 | 整图度量（消除尺度外推）/ EvidenceRectifier（方向权威单一化）/ 停止策略 v2（后验决策）/ 配置指纹；四臂复核：工具臂由**低于随机**回到**随机至弱正**，PNG 格获真实判别力 0.78–0.83（基线 0.61） |
 | **四** G4-a~f | final_v2 数据管线与审核工作台 | 源级防泄漏划分（9000 源）/ 六策略轨迹生成器 / 两级准入 / final_v2 Schema 与十项校验 / 20 源试生成（440 轨迹 → 237 样本，0 拒绝）/ 审核工作台 + 处置管线 |
+| **四** G4-f 修订 | 工作台可用性修订（2026-10-09） | **完整训练对话**（原页只显示第一个助手轮，198/237 条把调用轮、证据轮和最终四段答案全藏了）/ **逐 token 证据语义**（support vs support_raw vs direction 分离，158/200 个 `semantics_aligned=false` 现以红色告警显示）/ **按桶清单**（工具 / 无工具 / 弃权三套，弃权不再被要求 ΔBrier<0）/ **浏览器内保存决定 + 导出导入**（`record_review.py --import`）/ 置信度四分（原始模型 / 后验 / 自报 / ΔBrier）/ 取消双审，改单次全量审核 + `high_risk` 标记 |
 | **四** G4-g | LoRA 试训（临时集）与两处协议失配修复 | 24 GB 显存适配（掩码位置交叉熵，OOM 消除）/ 首轮四臂暴露"从不调用工具"（127 会话 1 次调用）→ 定位为**调用轮被掩进提示**（未监督）+ **训练用子集提示而推理用出厂提示**，两者已修并复训；冒烟显示工具调用恢复（每样本 1–2 次） |
 
 ### 7.2 后续执行顺序
