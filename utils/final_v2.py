@@ -59,6 +59,42 @@ CONTAINER_DENIALS = ("不代表", "不能作为", "不能据此", "与伪造无�
 _SECTION_PATTERN = re.compile(r"<(observation|forensic_evidence|reasoning|verdict)>(.*?)</\1>", re.S)
 _SENTENCE_SPLIT = re.compile(r"[。.;；\n]")
 
+# Grounding (2026-10-11): the assistant may cite an expert's *results* only if
+# that expert ran.  A call-shaped mention is an action — the controller decides
+# whether it executes — but "the frequency expert's analysis shows ..." is a
+# claim about a measurement, and 15 samples in the review contained one for an
+# expert that was never invoked.
+TOOL_EXPERTS = {"noise": "noise_expert", "jpeg": "jpeg_expert",
+                "freq": "frequency_expert_v2", "frequency": "frequency_expert_v2"}
+_CALL_TAG = re.compile(r"<call_(\w+)>\s*(\[)?")
+_PLANNING_BLOCK = re.compile(r"<planning>.*?</planning>", re.S)
+
+# A global measurement described as a local one: the noise expert's own
+# "Localised noise variance ..." is the canonical case.
+_LOCAL_MEASUREMENT = re.compile(
+    r"(localis|local(?:ized)?\s+(?:variance|noise|residual)|局部|该区域|区域内)"
+    r"[^。.;\n]{0,24}(方差|噪声|残差|纹理|频谱|variance|noise|residual)", re.I)
+# Observation lines that describe the file rather than the picture.
+_METADATA_LINE = re.compile(r"^[-*\s]*(container|quality|resolution|格式|分辨率)\b", re.I)
+
+
+def _tool_mentions(text: str):
+    """(expert, is_call_shaped) for every tool the assistant refers to."""
+    mentions = []
+    planning = " ".join(match.group(0) for match in _PLANNING_BLOCK.finditer(text))
+    for match in _CALL_TAG.finditer(text):
+        expert = TOOL_EXPERTS.get(match.group(1).lower())
+        if expert is None:
+            continue
+        followed_by_region = bool(match.group(2))
+        # Inside a planning block, or followed by coordinates: the turn is
+        # proposing a call, not reading results back.
+        mentions.append((expert, followed_by_region or match.group(0) in planning))
+    for expert in ("noise_expert", "jpeg_expert", "frequency_expert_v2"):
+        if expert in text:
+            mentions.append((expert, False))
+    return mentions
+
 
 # ---------------------------------------------------------------------------
 # Rendering
@@ -477,6 +513,17 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         if record["final_verdict"] == "Uncertain" and abs(posterior - 0.5) >= 0.34:
             problems.append(
                 f"verdict: abstained although the posterior is {posterior:.2f}")
+        # The reported confidence is P(the label we report), not the posterior:
+        # a Real verdict carrying P(Fake) is what the review found in 12 samples.
+        reported = record.get("confidence")
+        if record["final_verdict"] in ("Real", "Fake") and reported is not None:
+            expected_confidence = (posterior if record["final_verdict"] == "Fake"
+                                   else 1.0 - posterior)
+            if abs(float(reported) - expected_confidence) > 1e-3:
+                problems.append(
+                    f"confidence: {record['final_verdict']} reported at {reported} "
+                    f"but P({record['final_verdict']}) is "
+                    f"{round(expected_confidence, 4)}")
 
     # 9. confident labels need admissible evidence
     confidence = record.get("confidence") or 0.0
@@ -517,6 +564,38 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
     # 11. the container is not a reason
     for offender in _container_reason_sentences(answer):
         problems.append(f"container_reason: {offender}")
+
+    # 12. the assistant may not cite an expert it never ran (grounding)
+    called = {t.get("source") for t in record["evidence"]}
+    for index, turn in enumerate(turns):
+        if turn.get("from") != "gpt":
+            continue
+        for tool, is_call in _tool_mentions(turn.get("value", "")):
+            if is_call:
+                continue        # an action the controller decides to execute
+            if tool not in called:
+                problems.append(
+                    f"grounding: assistant turn {index} refers to {tool} results "
+                    f"but that expert was never called")
+
+    # 13. a global measurement may not be described as a local one
+    for token in record["evidence"]:
+        if token.get("measurement_scope") != "global":
+            continue
+        for field in ("phenomenon", "reasoning", "interpretation_text"):
+            if _LOCAL_MEASUREMENT.search(str(token.get(field) or "")):
+                problems.append(
+                    f"scope: {token.get('evidence_id')} is a global measurement but "
+                    f"its {field} describes a local one")
+
+    # 14. the observation has to say something about the image
+    observation = sections.get("observation", "")
+    content_lines = [line for line in observation.splitlines()
+                     if line.strip() and not _METADATA_LINE.match(line.strip())]
+    if not content_lines:
+        problems.append(
+            "observation: only container and resolution — nothing about the image "
+            "that a reviewer could check")
 
     return problems
 

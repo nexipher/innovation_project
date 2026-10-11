@@ -76,8 +76,12 @@ def _record(**overrides):
     return record
 
 
+OBSERVATION = "模型视觉观察：眼睛周围的皮肤纹理不一致，可能存在合成痕迹。"
+
+
 def _sample(**overrides):
     return render_sample(_record(**overrides), "positive",
+                         observation_text=OBSERVATION,
                          split_entry=SPLIT["sources"]["ADM/x"])
 
 
@@ -322,6 +326,63 @@ class TestBuildGuards:
             "honest_abstention"
 
 
+class TestGroundingChecks:
+    """
+    The four checks the review demanded (plan.md §4.11 C1-C4): they exist to
+    catch the defects the validator used to wave through.
+    """
+
+    def _with_freq_claim(self, text):
+        sample = _sample()
+        turns = sample["conversations"]
+        turns.insert(-1, {"from": "gpt", "value": text})
+        return sample
+
+    def test_citing_an_expert_that_never_ran_is_caught(self):
+        """The real case: noise ran, the turn reported frequency results."""
+        sample = self._with_freq_claim(
+            "<reasoning>此外，<call_freq>专家的多尺度频率分析结果表明，图像的频率分布与"
+            "生成图像的统计特征相符，但其分离度仅为0.56-0.63。</reasoning>")
+        assert any("frequency_expert_v2 results" in p for p in _validate(sample))
+
+    def test_a_call_shaped_mention_is_an_action_not_a_claim(self):
+        sample = self._with_freq_claim(
+            "<planning>Expert Target & Hypothesis: <call_freq>[0, 0, 100, 100]</planning>")
+        assert not [p for p in _validate(sample) if p.startswith("grounding")]
+
+    def test_naming_a_delivered_expert_is_fine(self):
+        sample = _sample()
+        problem = [p for p in _validate(sample) if p.startswith("grounding")]
+        assert problem == []          # the closing answer names noise_expert, which ran
+
+    def test_a_real_verdict_must_carry_p_real(self):
+        sample = _sample(final_verdict="Real", confidence=0.1, posterior=0.1)
+        assert any("confidence: Real reported at 0.1" in p for p in _validate(sample))
+
+    def test_a_real_verdict_with_p_real_passes(self):
+        sample = _sample(final_verdict="Real", confidence=0.9, posterior=0.1)
+        assert not [p for p in _validate(sample) if p.startswith("confidence")]
+
+    def test_a_global_measurement_described_as_local_is_caught(self):
+        token = _token()
+        token["phenomenon"] = ("Localised noise variance at the level the calibration "
+                               "set associates with generated imagery (variance collapse).")
+        sample = _sample()
+        sample["evidence_chain"] = [token]
+        assert any("global measurement" in p for p in _validate(sample))
+
+    def test_a_global_measurement_kept_global_passes(self):
+        sample = _sample()
+        assert not [p for p in _validate(sample) if p.startswith("scope:")]
+
+    def test_an_observation_without_picture_content_is_caught(self):
+        sample = _sample()
+        answer = sample["conversations"][-1]["value"]
+        sample["conversations"][-1]["value"] = answer.replace(
+            OBSERVATION, "")
+        assert any(p.startswith("observation:") for p in _validate(sample))
+
+
 class TestNoToolSamples:
     """A tool-free answer rests on perception, not on an evidence posterior."""
 
@@ -330,7 +391,8 @@ class TestNoToolSamples:
             _record(policy="no-tool", tools_served=[], evidence=[],
                     model_candidate="Real", final_verdict="Real", confidence=0.95,
                     posterior=0.5, **overrides),
-            "no_tool_positive", split_entry=SPLIT["sources"]["ADM/x"])
+            "no_tool_positive", observation_text=OBSERVATION,
+            split_entry=SPLIT["sources"]["ADM/x"])
 
     def test_the_verdict_section_names_its_basis(self):
         verdict = json.loads(parse_sections(
@@ -416,8 +478,8 @@ class TestTrainingConversation:
             {"from": "user", "value": "[System: 你的结论与后验不一致，请继续取证。]"},
             {"from": "gpt", "value": "<observation>o</observation>\n<verdict>{}</verdict>"},
         ]}
-        sample = render_sample(_record(), "positive", trace=trace,
-                               split_entry=SPLIT["sources"]["ADM/x"])
+        sample = render_sample(_record(), "positive", observation_text=OBSERVATION,
+                               trace=trace, split_entry=SPLIT["sources"]["ADM/x"])
         turns = sample["conversations"]
         roles = [t["from"] for t in turns]
         # 中间结论 → 纠正 → 结案，三者都在且顺序不变
@@ -436,8 +498,8 @@ class TestTrainingConversation:
             {"from": "user", "value": "[System: 尾巴。]"},
             {"from": "gpt", "value": "这是结案之后的杂音"},
         ]}
-        sample = render_sample(_record(), "positive", trace=trace,
-                               split_entry=SPLIT["sources"]["ADM/x"])
+        sample = render_sample(_record(), "positive", observation_text=OBSERVATION,
+                               trace=trace, split_entry=SPLIT["sources"]["ADM/x"])
         values = " ".join(t["value"] for t in sample["conversations"])
         assert "杂音" not in values
         assert sample["conversations"][-1]["value"].startswith("<observation>")
@@ -454,8 +516,8 @@ class TestTrainingConversation:
             {"from": "user", "value": "[System: 请撰写最终报告。]"},
             {"from": "gpt", "value": "<reasoning>我倾向 Uncertain，<call_noise> 的结果说明…</reasoning>\n<verdict>{\"verdict\": \"Uncertain\"}</verdict>"},
         ]}
-        sample = render_sample(_record(), "positive", trace=trace,
-                               split_entry=SPLIT["sources"]["ADM/x"])
+        sample = render_sample(_record(), "positive", observation_text=OBSERVATION,
+                               trace=trace, split_entry=SPLIT["sources"]["ADM/x"])
         turns = sample["conversations"]
         assert [t["from"] for t in turns] == ["user", "gpt", "user", "user", "gpt"]
         assert turns[-1]["value"].startswith("<observation>")
@@ -479,7 +541,8 @@ class TestTrainingConversation:
 
 class TestConversationValidation:
     def _sample_with_trace(self):
-        return render_sample(_record(), "positive", trace=TestTrainingConversation.TRACE,
+        return render_sample(_record(), "positive", observation_text=OBSERVATION,
+                             trace=TestTrainingConversation.TRACE,
                              split_entry=SPLIT["sources"]["ADM/x"])
 
     def test_a_conversation_that_delivers_its_evidence_passes(self):
