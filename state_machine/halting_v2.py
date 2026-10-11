@@ -50,6 +50,21 @@ from config import (
 )
 
 
+# What `confidence` means, stated once so it cannot drift again:
+#
+#   posterior_fake (the `posterior` field)  P(Fake) — the halting posterior
+#   confidence, verdict == "Fake"          P(Fake)
+#   confidence, verdict == "Real"          1 - P(Fake)
+#   confidence, verdict == "Uncertain"     UNRESOLVED_CONFIDENCE, which is the
+#                                          documented "I did not conclude"
+#                                          marker, NOT a third calibrated
+#                                          probability
+#
+# Passing the posterior through unchanged used to give every Real verdict a
+# confidence of ~0.31 ("31% sure it is Real"), which the review found in 12
+# samples and which the four-arm evaluation then read backwards.
+UNRESOLVED_CONFIDENCE = 0.5
+
 @dataclass
 class HaltingDecision:
     """Why the loop continues or stops, and with what conclusion."""
@@ -244,7 +259,7 @@ class HaltingPolicyV2:
                 decision.all_reasons = [cls.CANDIDATE_WITHOUT_TOOLS]
                 return decision
             if cls._budget_exhausted(model_turns, expert_calls):
-                return cls._halt(decision, "Uncertain", 0.5, cls.BUDGET_EXHAUSTED,
+                return cls._halt(decision, "Uncertain", posterior, cls.BUDGET_EXHAUSTED,
                                  [cls.BUDGET_EXHAUSTED])
             decision.primary_reason = cls.AWAITING_VERDICT
             decision.all_reasons = [cls.AWAITING_VERDICT]
@@ -272,10 +287,10 @@ class HaltingPolicyV2:
             reasons = decision.all_reasons + [cls.MODEL_STALLED]
             if conflict_open:
                 reasons.append(cls.CONFLICT_UNRESOLVED)
-                return cls._halt(decision, "Uncertain", 0.5, cls.MODEL_STALLED, reasons)
+                return cls._halt(decision, "Uncertain", posterior, cls.MODEL_STALLED, reasons)
             if confident:
                 return cls._halt(decision, label, posterior, cls.MODEL_STALLED, reasons)
-            return cls._halt(decision, "Uncertain", 0.5, cls.MODEL_STALLED, reasons)
+            return cls._halt(decision, "Uncertain", posterior, cls.MODEL_STALLED, reasons)
 
         # 4. no resources left: the exhaustion decides nothing by itself, and
         #    an unresolved conflict is recorded rather than hidden behind it
@@ -285,17 +300,17 @@ class HaltingPolicyV2:
                 return cls._halt(decision, label, posterior, cls.BUDGET_EXHAUSTED, reasons)
             if conflict_open:
                 reasons = reasons + [cls.CONFLICT_UNRESOLVED]
-            return cls._halt(decision, "Uncertain", 0.5, cls.BUDGET_EXHAUSTED, reasons)
+            return cls._halt(decision, "Uncertain", posterior, cls.BUDGET_EXHAUSTED, reasons)
 
         # 5. further evidence cannot pay for itself
         if best_utility <= 0.0:
             reasons = decision.all_reasons + [cls.NO_EXPECTED_GAIN]
             if conflict_open:
                 reasons.append(cls.CONFLICT_UNRESOLVED)
-                return cls._halt(decision, "Uncertain", 0.5, cls.NO_EXPECTED_GAIN, reasons)
+                return cls._halt(decision, "Uncertain", posterior, cls.NO_EXPECTED_GAIN, reasons)
             if confident:
                 return cls._halt(decision, label, posterior, cls.NO_EXPECTED_GAIN, reasons)
-            return cls._halt(decision, "Uncertain", 0.5, cls.NO_EXPECTED_GAIN, reasons)
+            return cls._halt(decision, "Uncertain", posterior, cls.NO_EXPECTED_GAIN, reasons)
 
         # 6. keep going; say which tool is worth the next call
         if not decision.all_reasons:
@@ -312,11 +327,26 @@ class HaltingPolicyV2:
         return expert_calls >= MAX_EXPERT_CALLS or model_turns >= MAX_MODEL_TURNS
 
     @staticmethod
-    def _halt(decision: HaltingDecision, verdict: str, confidence: float,
+    def _label_confidence(verdict: str, posterior: float) -> float:
+        """P(the label we are about to report), derived from P(Fake)."""
+        if verdict == "Fake":
+            return float(posterior)
+        if verdict == "Real":
+            return 1.0 - float(posterior)
+        return UNRESOLVED_CONFIDENCE
+
+    @staticmethod
+    def _halt(decision: HaltingDecision, verdict: str, posterior: float,
               reason: str, reasons: List[str]) -> HaltingDecision:
+        """
+        Halt with a verdict; the caller passes the *posterior*, never a
+        pre-cooked confidence, so the two can no longer be mixed up.
+        """
         decision.action = "halt"
         decision.verdict = verdict
-        decision.confidence = round(float(confidence), 4)
+        decision.posterior = round(float(posterior), 4)
+        decision.confidence = round(
+            HaltingPolicyV2._label_confidence(verdict, posterior), 4)
         decision.primary_reason = reason
         decision.all_reasons = reasons
         return decision

@@ -105,6 +105,21 @@ class TestRendering:
         answer = render_answer(_record(policy="no-tool", tools_served=[], evidence=[]))
         assert "本轨迹未调用工具" in parse_sections(answer)["forensic_evidence"]
 
+    def test_a_tool_free_reasoning_does_not_claim_a_posterior(self):
+        """
+        The 0.5 in a tool-free record is the prior the session started from;
+        writing it as "后验 P(Fake)=0.5" claims a measurement that never ran.
+        """
+        answer = render_answer(_record(policy="no-tool", tools_served=[], evidence=[]))
+        reasoning = parse_sections(answer)["reasoning"]
+        assert "未获得工具证据" in reasoning
+        assert "后验 P(Fake)" not in reasoning      # no posterior is claimed
+        assert "P(Fake)=0.5" not in reasoning
+
+    def test_a_tool_record_still_reports_its_posterior(self):
+        reasoning = parse_sections(render_answer(_record()))["reasoning"]
+        assert "后验 P(Fake)" in reasoning
+
     def test_verdict_section_is_json(self):
         verdict = json.loads(parse_sections(render_answer(_record()))["verdict"])
         assert verdict == {"verdict": "Fake", "confidence": 0.9, "posterior": 0.9,

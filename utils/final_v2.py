@@ -113,10 +113,19 @@ def render_reasoning(record: dict) -> str:
     if caveats:
         lines.append("专家失效条件：")
         lines += [f"- {text}" for text in caveats[:3]]
-    lines.append(
-        f"剩余不确定性：后验 P(Fake)={record.get('posterior')}，"
-        f"冲突度={record.get('conflict_score')}，停止原因={'/'.join(record.get('policy_reasons') or [])}"
-    )
+    if tokens:
+        lines.append(
+            f"剩余不确定性：后验 P(Fake)={record.get('posterior')}，"
+            f"冲突度={record.get('conflict_score')}，停止原因={'/'.join(record.get('policy_reasons') or [])}"
+        )
+    else:
+        # No tools ran, so there is no posterior to report: the 0.5 in the
+        # record is the prior the session started from, and writing it as
+        # "后验 P(Fake)=0.5" claims a measurement that never happened.
+        lines.append(
+            "剩余不确定性：本轨迹未获得工具证据（无工具协议），结论来自模型的直接视觉判断，"
+            "没有测量后验可引用。"
+        )
     return "\n".join(lines)
 
 

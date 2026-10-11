@@ -9,7 +9,11 @@ from config import (
     MAX_MODEL_TURNS,
     POLICY_CONFIDENT_POSTERIOR,
 )
-from state_machine.halting_v2 import HaltingDecision, HaltingPolicyV2
+from state_machine.halting_v2 import (
+    UNRESOLVED_CONFIDENCE,
+    HaltingDecision,
+    HaltingPolicyV2,
+)
 
 EXPERTS = {"frequency_expert_v2": 0.112, "noise_expert": 0.691, "jpeg_expert": 0.944}
 
@@ -98,6 +102,51 @@ def _decide(chain, candidate=None, turns=1, calls=0, called=None):
         model_turns=turns, expert_calls=calls, evidence_chain=chain,
         candidate_verdict=candidate, available_experts=EXPERTS,
         called_experts=called or set())
+
+
+class TestLabelConfidence:
+    """
+    `confidence` is P(the label we report), never the posterior relabelled.
+
+    Reported P(Fake)=0.31 for a Real verdict used to be copied into
+    `confidence` as well — "31% sure it is Real" — which the human review
+    found in 12 samples and the four-arm evaluation then read backwards.
+    """
+
+    def test_a_fake_verdict_carries_p_fake(self):
+        decision = HaltingPolicyV2._halt(HaltingDecision(action="continue"),
+                                         "Fake", 0.83, "r", ["r"])
+        assert decision.confidence == 0.83
+
+    def test_a_real_verdict_carries_one_minus_p_fake(self):
+        decision = HaltingPolicyV2._halt(HaltingDecision(action="continue"),
+                                         "Real", 0.31, "r", ["r"])
+        assert decision.confidence == 0.69
+
+    def test_an_uncertain_verdict_carries_the_unresolved_marker(self):
+        decision = HaltingPolicyV2._halt(HaltingDecision(action="continue"),
+                                         "Uncertain", 0.44, "r", ["r"])
+        assert decision.confidence == UNRESOLVED_CONFIDENCE
+        assert decision.posterior == 0.44        # the posterior is still recorded
+
+    def test_the_marker_is_not_a_third_calibrated_probability(self):
+        """0.5 here means "I did not conclude", not "P(Fake)=0.5"."""
+        assert UNRESOLVED_CONFIDENCE == 0.5
+        assert HaltingPolicyV2._label_confidence("Uncertain", 0.99) == 0.5
+        assert HaltingPolicyV2._label_confidence("Uncertain", 0.01) == 0.5
+
+    def test_a_real_verdict_from_a_session_reports_p_real(self):
+        decision = _decide([_token(0.02, 0.99, source="noise_expert")],
+                           candidate={"verdict": "Real"})
+        assert decision.verdict == "Real"
+        assert decision.posterior < 0.5
+        assert decision.confidence == pytest.approx(1 - decision.posterior, abs=1e-4)
+
+    def test_a_fake_verdict_from_a_session_reports_p_fake(self):
+        decision = _decide([_token(0.95, 0.99, source="noise_expert"),
+                            _token(0.95, 0.99)])
+        assert decision.verdict == "Fake"
+        assert decision.confidence == pytest.approx(decision.posterior, abs=1e-4)
 
 
 class TestDecisions:

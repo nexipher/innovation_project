@@ -120,7 +120,14 @@ def select_samples(manifest: dict, per_class_per_cell: int) -> List[dict]:
 # ---------------------------------------------------------------------------
 
 def _pseudo_probability(record: dict) -> float:
-    """P(Fake) estimate from the verdict and its confidence."""
+    """
+    P(Fake) estimate from the verdict and its confidence.
+
+    This assumes `confidence` is P(the label that was reported), which is what
+    `halting_v2._label_confidence` now guarantees: Real carries 1 - P(Fake)
+    and not the posterior itself.  When it did not, this function turned every
+    Real verdict around, and the tool arms' AUROC was read backwards.
+    """
     verdict = record.get("verdict")
     confidence = float(record.get("confidence") or 0.0)
     if verdict == "Fake":
