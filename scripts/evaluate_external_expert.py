@@ -168,7 +168,9 @@ def to_row(entry: dict, result) -> dict:
         "label": entry["label"], "treatment": entry["treatment"],
         "cell": entry["cell"], "score": float(result.raw_metric),
     }
-    stats = (result.metadata or {}).get("stats") or {}
+    metadata = result.metadata or {}
+    stats = metadata.get("stats") or {}
+    row["preprocess"] = metadata.get("preprocess", "")
     row.update({f"map_{k}": v for k, v in stats.items() if isinstance(v, (int, float))})
     return row
 
@@ -279,6 +281,10 @@ def main() -> None:
     parser.add_argument("--image-size", type=int, default=None)
     parser.add_argument("--device", default=None)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--scores-only", action="store_true",
+                        help="collect and store scores without computing or printing "
+                             "any metric — for the validation group, whose result must "
+                             "stay sealed until the scheme is frozen")
     parser.add_argument("--output", default=None)
     args = parser.parse_args()
 
@@ -295,6 +301,31 @@ def main() -> None:
         raise SystemExit(f"专家不可用：{reason}")
 
     rows = evaluate(expert, samples, args.image_size)
+
+    if args.scores_only:
+        # The validation group is scored now and read later: no summary, no
+        # correlation, nothing on screen that could steer the next decision.
+        report = {
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "expert": args.expert, "expert_name": expert_name,
+            "dry_run": args.dry_run, "device": device,
+            "split_hash": split["hash"], "group": args.group,
+            "sealed": True,
+            "note": ("仅收集分数；成绩在方案冻结（calibration/g7_frozen_scheme.json）"
+                     "之前不得查看或用于任何选择"),
+            "weights": expert.provenance().as_dict(),
+            "preprocessing": sorted({row.get("preprocess", "") for row in rows} | set()) or None,
+            "rows": rows,
+        }
+        output = args.output or os.path.join(
+            OUTPUT_DIR, f"g7_external_{args.expert}_{args.group}_sealed.json")
+        with open(output, "w", encoding="utf-8") as handle:
+            json.dump(_finite_tree(report), handle, ensure_ascii=False, indent=1,
+                      allow_nan=False)
+        print(f"已封存 {len(rows)} 条分数（未计算任何指标）")
+        print(f"Report: {os.path.relpath(output, PROJECT_ROOT)}")
+        return
+
     report = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "expert": args.expert, "expert_name": expert_name,

@@ -1,0 +1,1094 @@
+{
+ "generated_at": "2026-10-11T13:18:12",
+ "expert": "probe_dino",
+ "expert_name": "ProbeDinoExpert",
+ "dry_run": false,
+ "device": "cuda",
+ "split_hash": "37bf2f1db22ccdef",
+ "group": "C",
+ "sealed": true,
+ "note": "仅收集分数；成绩在方案冻结（calibration/g7_frozen_scheme.json）之前不得查看或用于任何选择",
+ "weights": {
+  "path": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+  "source": "ModelScope shuinishaojiu/PROBE-AIGI-Detection · DINOv2_best_model_step_34999.pth（ICML 2026, arXiv 2605.24906）",
+  "licence": "许可待确认：上游仓库无 LICENSE 文件；本项目不附带、不再分发其代码与权重，论文引用仅为学术归属，不构成使用授权",
+  "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+  "size_bytes": 1217679947
+ },
+ "preprocessing": [
+  "1000×666 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "1000×668 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "1024×1024 → pad to ≥336 → 16 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "500×625 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "500×667 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid",
+  "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+ ],
+ "rows": [
+  {
+   "sample_id": "real_0007_native",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.6486067771911621,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_png",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.47852814197540283,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_jpeg_q95",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.6486067771911621,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_jpeg_q85",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.5761634707450867,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_jpeg_q70",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.18926523625850677,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_native",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.002919469028711319,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_png",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.001464317785575986,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_jpeg_q95",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.002919469028711319,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_jpeg_q85",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.0012360975379124284,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_jpeg_q70",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.0029875137843191624,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0017_native",
+   "source_id": "real_0017",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.011248616501688957,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0017_png",
+   "source_id": "real_0017",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.00643157260492444,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0017_jpeg_q95",
+   "source_id": "real_0017",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.011248616501688957,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0017_jpeg_q85",
+   "source_id": "real_0017",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.008085286244750023,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0017_jpeg_q70",
+   "source_id": "real_0017",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.013579033315181732,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0018_native",
+   "source_id": "real_0018",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.0005867555737495422,
+   "preprocess": "500×625 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0018_png",
+   "source_id": "real_0018",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.0005839315126650035,
+   "preprocess": "500×625 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0018_jpeg_q95",
+   "source_id": "real_0018",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.0005867555737495422,
+   "preprocess": "500×625 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0018_jpeg_q85",
+   "source_id": "real_0018",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.0010848044184967875,
+   "preprocess": "500×625 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0018_jpeg_q70",
+   "source_id": "real_0018",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.0008007361320778728,
+   "preprocess": "500×625 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0029_native",
+   "source_id": "real_0029",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.12638232111930847,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0029_png",
+   "source_id": "real_0029",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.13844600319862366,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0029_jpeg_q95",
+   "source_id": "real_0029",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.12638232111930847,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0029_jpeg_q85",
+   "source_id": "real_0029",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.20223648846149445,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0029_jpeg_q70",
+   "source_id": "real_0029",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.21229788661003113,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0030_native",
+   "source_id": "real_0030",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.00043800464482046664,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0030_png",
+   "source_id": "real_0030",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.00033900560811161995,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0030_jpeg_q95",
+   "source_id": "real_0030",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.00043800464482046664,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0030_jpeg_q85",
+   "source_id": "real_0030",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.00043912907131016254,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0030_jpeg_q70",
+   "source_id": "real_0030",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.0003850495268125087,
+   "preprocess": "500×750 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0036_native",
+   "source_id": "real_0036",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.001174877630546689,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0036_png",
+   "source_id": "real_0036",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.0012862159637734294,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0036_jpeg_q95",
+   "source_id": "real_0036",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.001174877630546689,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0036_jpeg_q85",
+   "source_id": "real_0036",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.0012683958048000932,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0036_jpeg_q70",
+   "source_id": "real_0036",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.0020085673313587904,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0040_native",
+   "source_id": "real_0040",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.1267412006855011,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0040_png",
+   "source_id": "real_0040",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.10388220846652985,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0040_jpeg_q95",
+   "source_id": "real_0040",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.1267412006855011,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0040_jpeg_q85",
+   "source_id": "real_0040",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.16856828331947327,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0040_jpeg_q70",
+   "source_id": "real_0040",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.22496822476387024,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0044_native",
+   "source_id": "real_0044",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.009708095341920853,
+   "preprocess": "500×667 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0044_png",
+   "source_id": "real_0044",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.009067012928426266,
+   "preprocess": "500×667 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0044_jpeg_q95",
+   "source_id": "real_0044",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.009708095341920853,
+   "preprocess": "500×667 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0044_jpeg_q85",
+   "source_id": "real_0044",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.011490127071738243,
+   "preprocess": "500×667 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0044_jpeg_q70",
+   "source_id": "real_0044",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.008738694712519646,
+   "preprocess": "500×667 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0045_native",
+   "source_id": "real_0045",
+   "label": "Real",
+   "treatment": "native",
+   "cell": "real_native",
+   "score": 0.0006506472127512097,
+   "preprocess": "500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0045_png",
+   "source_id": "real_0045",
+   "label": "Real",
+   "treatment": "png",
+   "cell": "real_png",
+   "score": 0.00048350123688578606,
+   "preprocess": "500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0045_jpeg_q95",
+   "source_id": "real_0045",
+   "label": "Real",
+   "treatment": "jpeg_q95",
+   "cell": "real_jpeg_q95",
+   "score": 0.0006506472127512097,
+   "preprocess": "500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0045_jpeg_q85",
+   "source_id": "real_0045",
+   "label": "Real",
+   "treatment": "jpeg_q85",
+   "cell": "real_jpeg_q85",
+   "score": 0.0007490094867534935,
+   "preprocess": "500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0045_jpeg_q70",
+   "source_id": "real_0045",
+   "label": "Real",
+   "treatment": "jpeg_q70",
+   "cell": "real_jpeg_q70",
+   "score": 0.0005214406992308795,
+   "preprocess": "500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_native",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.990284264087677,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_png",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.990284264087677,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_jpeg_q95",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.9980384707450867,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_jpeg_q85",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9961073994636536,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_jpeg_q70",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.9968881011009216,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_native",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.8585522174835205,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_png",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.8585522174835205,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_jpeg_q95",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.8432804942131042,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_jpeg_q85",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9603850245475769,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_jpeg_q70",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.8863252997398376,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_glide_0015_native",
+   "source_id": "fake_glide_0015",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.9990515112876892,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_glide_0015_png",
+   "source_id": "fake_glide_0015",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.9990515112876892,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_glide_0015_jpeg_q95",
+   "source_id": "fake_glide_0015",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.9998767375946045,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_glide_0015_jpeg_q85",
+   "source_id": "fake_glide_0015",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9999340772628784,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_glide_0015_jpeg_q70",
+   "source_id": "fake_glide_0015",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.9995239973068237,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_midjourney_0022_native",
+   "source_id": "fake_midjourney_0022",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.9999638795852661,
+   "preprocess": "1024×1024 → pad to ≥336 → 16 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_midjourney_0022_png",
+   "source_id": "fake_midjourney_0022",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.9999638795852661,
+   "preprocess": "1024×1024 → pad to ≥336 → 16 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_midjourney_0022_jpeg_q95",
+   "source_id": "fake_midjourney_0022",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.9999345541000366,
+   "preprocess": "1024×1024 → pad to ≥336 → 16 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_midjourney_0022_jpeg_q85",
+   "source_id": "fake_midjourney_0022",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9998863935470581,
+   "preprocess": "1024×1024 → pad to ≥336 → 16 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_midjourney_0022_jpeg_q70",
+   "source_id": "fake_midjourney_0022",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.9994139671325684,
+   "preprocess": "1024×1024 → pad to ≥336 → 16 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd14_0028_native",
+   "source_id": "fake_sd14_0028",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.9999544620513916,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd14_0028_png",
+   "source_id": "fake_sd14_0028",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.9999544620513916,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd14_0028_jpeg_q95",
+   "source_id": "fake_sd14_0028",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.9999556541442871,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd14_0028_jpeg_q85",
+   "source_id": "fake_sd14_0028",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9999442100524902,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd14_0028_jpeg_q70",
+   "source_id": "fake_sd14_0028",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.9999470710754395,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd15_0034_native",
+   "source_id": "fake_sd15_0034",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.999940037727356,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd15_0034_png",
+   "source_id": "fake_sd15_0034",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.999940037727356,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd15_0034_jpeg_q95",
+   "source_id": "fake_sd15_0034",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.9999569654464722,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd15_0034_jpeg_q85",
+   "source_id": "fake_sd15_0034",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9999512434005737,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_sd15_0034_jpeg_q70",
+   "source_id": "fake_sd15_0034",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.9999192953109741,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_vqdm_0039_native",
+   "source_id": "fake_vqdm_0039",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.9998999834060669,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_vqdm_0039_png",
+   "source_id": "fake_vqdm_0039",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.9998999834060669,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_vqdm_0039_jpeg_q95",
+   "source_id": "fake_vqdm_0039",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.999933123588562,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_vqdm_0039_jpeg_q85",
+   "source_id": "fake_vqdm_0039",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.999749481678009,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_vqdm_0039_jpeg_q70",
+   "source_id": "fake_vqdm_0039",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.999636173248291,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_wukong_0046_native",
+   "source_id": "fake_wukong_0046",
+   "label": "Fake",
+   "treatment": "native",
+   "cell": "fake_native",
+   "score": 0.9999699592590332,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_wukong_0046_png",
+   "source_id": "fake_wukong_0046",
+   "label": "Fake",
+   "treatment": "png",
+   "cell": "fake_png",
+   "score": 0.9999699592590332,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_wukong_0046_jpeg_q95",
+   "source_id": "fake_wukong_0046",
+   "label": "Fake",
+   "treatment": "jpeg_q95",
+   "cell": "fake_jpeg_q95",
+   "score": 0.9999711513519287,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_wukong_0046_jpeg_q85",
+   "source_id": "fake_wukong_0046",
+   "label": "Fake",
+   "treatment": "jpeg_q85",
+   "cell": "fake_jpeg_q85",
+   "score": 0.9999663829803467,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_wukong_0046_jpeg_q70",
+   "source_id": "fake_wukong_0046",
+   "label": "Fake",
+   "treatment": "jpeg_q70",
+   "cell": "fake_jpeg_q70",
+   "score": 0.9999630451202393,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_blur",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "blur",
+   "cell": "real_blur",
+   "score": 0.218644380569458,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_noise",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "noise",
+   "cell": "real_noise",
+   "score": 0.49064093828201294,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_resize_0.5x",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "resize_0.5x",
+   "cell": "real_resize_0.5x",
+   "score": 0.7660767436027527,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_resize_2x",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "resize_2x",
+   "cell": "real_resize_2x",
+   "score": 0.23636403679847717,
+   "preprocess": "1000×666 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_sharpen",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "sharpen",
+   "cell": "real_sharpen",
+   "score": 0.017703723162412643,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_brightness",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "brightness",
+   "cell": "real_brightness",
+   "score": 0.5310015082359314,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0007_screenshot",
+   "source_id": "real_0007",
+   "label": "Real",
+   "treatment": "screenshot",
+   "cell": "real_screenshot",
+   "score": 0.18926523625850677,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_blur",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "blur",
+   "cell": "real_blur",
+   "score": 0.004582587163895369,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_noise",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "noise",
+   "cell": "real_noise",
+   "score": 0.0016114740865305066,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_resize_0.5x",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "resize_0.5x",
+   "cell": "real_resize_0.5x",
+   "score": 0.10100262612104416,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_resize_2x",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "resize_2x",
+   "cell": "real_resize_2x",
+   "score": 0.0534488707780838,
+   "preprocess": "1000×668 → pad to ≥336 → 6 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_sharpen",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "sharpen",
+   "cell": "real_sharpen",
+   "score": 7.814053242327645e-05,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_brightness",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "brightness",
+   "cell": "real_brightness",
+   "score": 0.001502513769082725,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "real_0011_screenshot",
+   "source_id": "real_0011",
+   "label": "Real",
+   "treatment": "screenshot",
+   "cell": "real_screenshot",
+   "score": 0.0029875137843191624,
+   "preprocess": "500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_blur",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "blur",
+   "cell": "fake_blur",
+   "score": 0.15894149243831635,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_noise",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "noise",
+   "cell": "fake_noise",
+   "score": 0.9751632809638977,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_resize_0.5x",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "resize_0.5x",
+   "cell": "fake_resize_0.5x",
+   "score": 0.8449722528457642,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_resize_2x",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "resize_2x",
+   "cell": "fake_resize_2x",
+   "score": 0.9686449766159058,
+   "preprocess": "512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_sharpen",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "sharpen",
+   "cell": "fake_sharpen",
+   "score": 0.14701832830905914,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_brightness",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "brightness",
+   "cell": "fake_brightness",
+   "score": 0.9911544322967529,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_adm_0004_screenshot",
+   "source_id": "fake_adm_0004",
+   "label": "Fake",
+   "treatment": "screenshot",
+   "cell": "fake_screenshot",
+   "score": 0.9968881011009216,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_blur",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "blur",
+   "cell": "fake_blur",
+   "score": 0.9923000335693359,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_noise",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "noise",
+   "cell": "fake_noise",
+   "score": 0.6936265230178833,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_resize_0.5x",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "resize_0.5x",
+   "cell": "fake_resize_0.5x",
+   "score": 0.8818594813346863,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_resize_2x",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "resize_2x",
+   "cell": "fake_resize_2x",
+   "score": 0.31966719031333923,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_sharpen",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "sharpen",
+   "cell": "fake_sharpen",
+   "score": 0.20338007807731628,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_brightness",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "brightness",
+   "cell": "fake_brightness",
+   "score": 0.9282217025756836,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  },
+  {
+   "sample_id": "fake_biggan_0011_screenshot",
+   "source_id": "fake_biggan_0011",
+   "label": "Fake",
+   "treatment": "screenshot",
+   "cell": "fake_screenshot",
+   "score": 0.8863252997398376,
+   "preprocess": "336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid"
+  }
+ ]
+}
