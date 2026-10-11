@@ -35,6 +35,41 @@ def _text_of(message):
     )
 
 
+class TestAskAttachesTheImage:
+    """
+    `build_messages` attaches the primary image only when the turn carries the
+    `<image>` marker.  The visual-grounding screen asked a custom question
+    without it, so three GPU rounds judged samples from text alone — and the
+    judge obligingly described a crocodile as "a cat".
+    """
+
+    def test_the_marker_is_added_when_missing(self):
+        from mllm.qwen_client import with_image_marker
+
+        marked = with_image_marker([{"from": "user", "value": "这张图里有什么？"}])
+        assert marked[0]["value"].startswith("<image>\n")
+        assert "这张图里有什么？" in marked[0]["value"]
+
+    def test_an_existing_marker_is_left_alone(self):
+        from mllm.qwen_client import with_image_marker
+
+        history = [{"from": "user", "value": "<image>\n看图"}]
+        assert with_image_marker(history) == history
+
+    def test_the_message_builder_attaches_the_image_for_a_marked_turn(self, tmp_path):
+        image = _make_png(tmp_path / "orig.png")
+        messages = build_messages(image, [{"from": "user", "value": "<image>\n看图"}])
+        blocks = messages[-1]["content"]
+        assert any(block.get("type") == "image" for block in blocks)
+
+    def test_without_the_marker_the_image_is_not_attached(self, tmp_path):
+        """The behaviour that made the marker mandatory, stated as a test."""
+        image = _make_png(tmp_path / "orig.png")
+        messages = build_messages(image, [{"from": "user", "value": "看图"}])
+        blocks = messages[-1]["content"]
+        assert not any(block.get("type") == "image" for block in blocks)
+
+
 class TestBuildMessages:
     def test_no_history_attaches_original_image(self, tmp_path):
         original = _make_png(tmp_path / "orig.png")

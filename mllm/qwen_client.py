@@ -26,6 +26,16 @@ from config import QWEN_MODEL_PATH
 from utils.parser import Parser
 
 
+def with_image_marker(history: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Guarantee the `<image>` marker the message builder keys on."""
+    if not history:
+        return history
+    first = history[0]
+    if "<image>" in (first.get("value") or ""):
+        return history
+    return [{**first, "value": "<image>\n" + (first.get("value") or "")}] + list(history[1:])
+
+
 class QwenVLClient(BaseMLLMClient):
     """
     Real Qwen2.5-VL-7B-Instruct client.
@@ -87,6 +97,23 @@ class QwenVLClient(BaseMLLMClient):
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+    def ask(self, image_path: str, history: List[Dict[str, str]]) -> str:
+        """
+        One plain call: no forensic protocol, no format-correction loop.
+
+        For tooling that needs the model as a reader rather than as the agent —
+        the G4-f visual-grounding screen asks it to compare a description with
+        an image, and a retry loop that demands `<verdict>` tags would waste
+        two calls per sample answering a question it was not asked.
+
+        The primary image is attached whether or not the caller remembered the
+        `<image>` marker: `build_messages` only attaches it when the marker is
+        present, and a caller that does not know that — as the screen's first
+        three rounds did not — gets a text-only call and an invented answer.
+        """
+        self._ensure_loaded()
+        return self._inference(self._build_messages(image_path, with_image_marker(history)))
 
     def generate(
         self,

@@ -425,8 +425,12 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         problems.append("evidence: the same evidence_id is referenced twice")
 
     # 4. measurement scope and region bounds
-    height, width = (record["resolution"] or [None, None])[:2] if isinstance(
-        record["resolution"], list) else (None, None)
+    # A sample without a usable resolution skips the bounds check rather than
+    # taking the whole validation run down with it.
+    height = width = None
+    resolution = record.get("resolution")
+    if isinstance(resolution, (list, tuple)) and len(resolution) >= 2:
+        height, width = resolution[0], resolution[1]
     for token in record["evidence"]:
         if token.get("measurement_scope") != "global":
             problems.append(f"scope: {token.get('evidence_id')} is not a global measurement")
