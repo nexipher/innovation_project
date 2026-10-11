@@ -1117,3 +1117,32 @@
 * **执行结果与验证状态**：610 测试通过（新增 27）；工作台重建成功（237 页、0 张图缺失、6.5 MB）；页面内嵌 JS 通过 `node --check`；抽样核对 tool/no-tool/abstention 三类页面各含对应清单与语义字段
 * **置信度或遗留待办（TODO）**：①审核者需在浏览器内完成 237 条并导出，再 `--import` 写回仓库（`--summary` 查进度）②`file://` 下若浏览器禁用本地存储，需用 `python3 -m http.server` 打开（页面会自动提示）③标签成分偏斜仍待人工裁决（配平 / 接受 / 补样本）
 ---
+### 2026-10-11 10:30:00 - G4-f 审核结论与 A–E 修订（训练对话 / 概率字段 / 接地检查 / 专家语义 / 停止可解释性）
+
+* **当前操作动作**：导入人工审核结果（237/237），定位审核发现的三处根因，并按计划实施 A–E（CPU）＋在现有数据上离线预演
+* **对应计划锚点**：plan.md §4.11「G4-f 审核结论与修订计划（2026-10-11）」及其「A–E 实施结果与离线预演」；agent.md §1.2 / §2.1 / §3.2
+* **核心变更说明**：
+  1. **审核结果入库**: `review_decisions.json` 由 `record_review.py --import` 写入 `dispositions.jsonl`，**237/237 complete**：accept **1** / revise **195** / reject **41**（工具桶 0A·35R·25X；无工具桶 0A·34R·3X；弃权桶 1A·126R·13X）→ `apply_review.py` 只能产出 1 条 accepted，**G4-g 暂停**
+  2. **三条根因（代码级，均已验证）**: ①`utils/final_v2.py:170` 用字符串 `<call_` 判定调用轮并保留全部助手轮 → 87 处相邻助手轮、51 条含两个结论；②`halting_v2._halt` 四处把 `posterior`(=P(Fake)) 当 `confidence` 传出 → G3 工具臂 Real 判决 confidence 全在 0.20–0.32，**按存储实义重算 AUROC：text 0.502→0.677、image 0.543→0.684、both 0.539→0.659**（rgb 0.654 不受影响；G2 报告不受影响）→ `check_acceptance_g5.py` 对 G3 的裁决作废；③`extract_observation()` 只搜 planning 的 Visual Anomalies，无工具样本没有 planning → 39 条观察只有格式/尺寸
+  3. **A 概率字段**: 1) `_halt` 改由 `_label_confidence(verdict, posterior)` 推导，调用方一律传后验，结构上杜绝混用；Uncertain 的 confidence 定义为"未结案"标记常量并在模块头写明字段表；Uncertain 调用点改传真实后验；2) 无工具样本的 reasoning 不再写"后验 P(Fake)=0.5"；3) `_pseudo_probability` 补上它所依赖的契约；4) 影响面实测 **12 条**（与审核的 12 条备注一一对应）
+  4. **B 对话忠实回放（O2）**: 保留全部轮次含 `[System]` 纠正轮；调用轮判定改为"标签形式调用 + 其后匹配交付"（正文提及不算）；只替换**一个**结案轮为渲染答案，其后轮次丢弃；校验器新增"相邻结案轮"检查。预演：`[System]` 轮保留 0→**189** 条，相邻助手轮 87→**39**
+  5. **C 接地四项**: C1 散文级虚构工具引用（"提到某专家结果但该专家从未被调用"，实测命中 7 条，含审核点名的 `f2_noise+frequency__ADM_49_adm_153_jpeg_q95`）；C2 Real⇒confidence=1−posterior（命中 12 条）；C3 全局测量被写成局部（命中 106 条，全部来自 noise 专家的 "Localised noise variance" 模板）；C4 观察只有格式/尺寸（命中 39 条）。**1 条 accept 全部通过，零误报**
+  6. **D1 专家语义三层**: noise 专家的 phenomenon/reasoning 改为「整图实测值 → 校准带关联 → 不能证明什么」，删除 "Localised"、"the region is smooth"、PRNU 断言；jpeg 专家不再断言"校准接近随机"，改为描述校准带与失效区；**整流器新增守卫**：校准超出中性带而专家文本仍称"接近随机"时，该句被替换为规范校准句、原文留 `reasoning_raw`（实测 P(Fake)=0.861 被替换、P(Fake)=0.52 保留）
+  7. **D3 复算（校准集 700 条）**: 复现项目既有结论并补两张表——noise 全格式存活（0.153→0.228）保留为主力；jpeg png 0.028 强、q95/q85 0.283/0.266 已弱、**q70 0.569 死亡**；frequency_v2 弱而稳定（0.556–0.634）；**ela 0.948→0.504 确认是压缩历史捷径**（分分辨率层 mid 0.972 / large 0.774 仍在）→ 维持停用。内容分层（Laplacian 十分位）：noise 在**最平滑内容上分离最强**（0.087/0.146/0.279），但内容与标签在数据集内相关（最平滑两个十分位 78% 是 Real）→ "内容先验"旁路真实存在，故专家文本必须写明不能证明什么
+  8. **D4 重复调用回应**: `controller.py:254` 命中重复 evidence_id 后原本直接 `continue`，会话里不留任何痕迹 → 模型学到"调用后无返回也能下结论"（39 条相邻轮里 29 条是这个成因）。现注入"该调用与已有证据重复、已忽略，请勿重复调用同一工具与同一区域"
+  9. **E 停止可解释性**: 轨迹新增 `available_experts`（策略当时能调用的集合——**旧 Trace 0/3237 记录过**，这正是"no_expected_gain 无法审计"的根因）与 `tool_utilities`（逐专家 gain/cost/net）；`HaltingPolicyV2.utility_report` 收敛为一处计算；对模型的措辞改为"**当前策略估计**继续调用收益不足"；`replay_halting_g3.py` 新增"停止时是否仍有工具净值为正"，并对无允许集合记录的旧 Trace 返回 `not_auditable`（不得当成"干净"）
+ 10. **离线预演总账（237 条，自动判定 × 人工处置）**: accept 1 条 **PASS**（0 误报）；reject 32 FAIL / 9 PASS；revise 126 FAIL / 69 PASS → 自动接地把可判定缺陷从 0 提到 **158/237**；仍 PASS 的 79 条中 **78 条人工仍判 revise/reject**，备注几乎全是"裁剪区域与所述内容不符""压缩痕迹在实际输入上不可核验" → 即 **D2 视觉接地**（模型预筛 + 人工复核可疑项，待 GPU）
+* **涉及/修改的文件清单**：
+  - `sft_data/review/dispositions.jsonl (Created — 237 条处置，来自浏览器导出)`
+  - `utils/final_v2.py (Modified — 忠实回放 + 相邻结案轮 + 接地四项)`
+  - `state_machine/halting_v2.py (Modified — _label_confidence / 字段表 / tool_utilities / utility_report)`
+  - `state_machine/controller.py (Modified — 重复调用回应 / available_experts 落盘 / 停止措辞)`
+  - `state_machine/evidence_rectifier.py (Modified — 校准断言守卫)`
+  - `experts/noise.py, experts/jpeg.py (Modified — 三层语义文本)`
+  - `scripts/qwen_gain_baseline.py (Modified — 提取契约注释)`
+  - `scripts/replay_halting_g3.py (Modified — leftover utility / not_auditable)`
+  - `tests/test_final_v2.py, tests/test_halting_v2.py, tests/test_controller.py, tests/test_evidence_rectifier.py, tests/test_replay_halting_g3.py (Modified — 新增 29 项)`
+  - `plan.md (Modified — 审核结论与修订计划、A–E 结果、D3 表、预演总账)`
+* **执行结果与验证状态**：**639 测试通过**；预演在真实 237 条上运行（注入的坏样本均被捕获，accept 样本零误报）；`calibration/g4f_halting_replay.json` 为本次回放（原 `g3_halting_replay.json` 已还原未被覆盖）
+* **置信度或遗留待办（TODO）**：①**D2 未做**（视觉描述 ↔ bbox 的模型预筛 + 人工复核，需 GPU）：预演显示它正是剩余 78 条的主因，**F 重新生成前应补上**，否则新数据仍带同一类缺陷 ②D4 与 D1 的效果只能在 F 重新生成后验证 ③四臂重跑（G）必须用修正后的字段，旧 G3/LoRA 报告的 AUROC/ECE 不可再引用 ④标签成分偏斜（75/25、无工具 37R/0F）仍待人工裁决
+---
