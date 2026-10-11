@@ -1203,3 +1203,28 @@
   - `plan.md (Modified — G7-1 首批实测结果)`
 * **执行结果与验证状态**：**748 测试通过**；TruFor 权重 MD5 与官方一致（用户下载后校验）；两个专家均完成真实推理并产出可离线复算的原始产物
 * **置信度或遗留待办（TODO）**：①**互补性判据（G7-0 第 2 条）未做**：需在 B 组上比较"现有三专家的无 Qwen 融合"与"该融合 + PROBE"，报告 ΔAUROC 与按源 CI ②PROBE 的预训练重叠按**生成器分层**已给出证据（未见生成器 0.952），但源图级是否重叠仍**未确认**（其训练清单未逐图比对）③G7-c 控制链（调用标签/解析/Prompt/停止策略逐工具成本/校验器）尚未接线 ④TruFor 的 `np.int`（评估函数用）与推理路径无关，已记录
+---
+### 2026-10-11 13:27:00 - G7 入口 2：B/C 组补分（C 封存）、三条基线、冻结与 C 组独立验证（含时间戳更正）
+
+* **当前操作动作**：按用户三步指令执行 ——（1）补齐 B/C 组 PROBE 分数，（2）在 A 拟合 / B 选择 / C 验证的纪律下建立三条基线，（3）按预注册判据决定接线方式；同时修正四处文档旧表述
+* **对应计划锚点**：plan.md §4.16「G7-0 判据（互补性）」「G7-1 数据划分纪律」；本条对应落地顺序第 4 步（校准/选择/验收三段分离）
+* **核心变更说明**：
+  1. **文档四处修正（`eaf8638`）**：①日志曾写 TruFor「五格式 CI 全跨 0.5」，**不准确** —— q85 的 CI 为 (0.2094, 0.4823)，整段在 0.5 **以下**；已改为「4/5 跨过；q85 是**反向**迹象，反转是否可复现须**独立验证**，**不得现场翻符号后当作收益**」；②计划仍写 TruFor「必须 Python3.7 独立环境」，实际现环境 py3.12/torch 2.5 已跑通 —— 子进程是为了 CLI/npz 接口而非版本；③TruFor A 组报告的耗时是**逐图**统计，不能与新**批量**速度混用，`timing_summary()` 已改为批量感知（带 `mode`/`per_image_s`）；④PROBE 许可段落仍留「暂不下载运行」的旧表述，已重写为**分列**：用户研究授权（2026-10-11 已给，权重已下载）**≠ 上游许可**（仍未确认，本项目不附带、不再分发）
+  2. **B/C 组补分**：`evaluate_external_expert.py` 增加 `--scores-only`（只存分数、不计算不打印任何指标），B 组 118 条正常产出（AUROC 0.8458）；**C 组 118 条封存**于 `g7_external_probe_dino_C_sealed.json`（`sealed: True`，只含分数 + 权重 sha256 + 预处理串，**无任何指标**），冻结前不查看
+  3. **三条基线（`scripts/g7_baselines.py`，CPU、只用缓存分数）**：条件 = `existing`（noise/jpeg/frequency_v2）/ `probe` / `existing+probe`；**标准化后 logistic 回归**（四特征对 ~460 样本不支持更复杂的模型，且「写不进冻结文件的模型无法在 C 上验证」）；**极性由拟合决定而非预设** —— 拟合出的系数 noise −0.894、jpeg −0.193、frequency_v2 +0.204、probe +2.681，现有专家的方向反转是**被发现**的
+  4. **A 组（拟合）**：existing AUROC 0.769 / probe 0.960 / existing+probe 0.978
+  5. **B 组（选择）**：existing 0.885 / probe 0.846 / existing+probe 0.951；按源配对 ΔAUROC：`existing+probe − probe` = **+0.1050，CI [0.000, 0.314]** → **预注册规则（±0.02 边缘）触发「融合胜出」**；`existing − probe` = +0.039，CI [−0.196, 0.340]（跨 0）；`existing+probe − existing` = +0.066，CI [−0.067, 0.210]（跨 0）。据此写入冻结文件 `calibration/g7_frozen_scheme.json`（含系数、标准化参数、B 组选定阈值、判据与结论）
+  6. **C 组独立验证（冻结后才读）**：existing 0.764 / **probe 0.986** / existing+probe 0.990；**Δ `existing+probe − probe` = +0.0043，CI [−0.0038, +0.015] → 收益落在噪声范围内**；Δ `existing − probe` = **−0.2222，CI [−0.435, −0.051]**（整段在 0 以下 → 旧工具箱**显著弱于** PROBE）。**B 与 C 结论不一致，按纪律以 C 为准**
+  7. **Step 3 判定**：**PROBE 作为主检测器，旧专家降为辅助线索（解释/可验证性），不做全格式强塞**；TruFor 仍只作 L1 局部篡改的研究对照，不接入全局主链。该判定已作为字段写入 `g7_validation_C.json`（`verdict_on_b` 与 `verdict_on_c` 并置，分歧是产物里的字段而不是日志里的一句话）
+  8. **判据可测化（`3f69595`）**：`decide()` 原本内联在 `main()` 里，等于「唯一做决定的部分无法被测试」；已抽成函数并补 `tests/test_g7_baselines.py` **17 项**（指标、按源自助区间、判据四种出口、冻结门禁、三份已提交产物的形状——含「封存报告里仍然没有任何指标」）
+  9. **时间戳更正（append-only，不改历史条目）**：本条按 `date` 输出填写。今日多条日志再次是**估算**而非读时钟，以 git 提交时间为锚对照如下：G4-f 条目写 10:30、实际 ≈ **09:44**（提交 `43201e0`）；D2 条目写 12:40、实际 ≈ **11:15**（提交 `673c167`）；G7 立项条目写 14:10 与 G7-a 条目写 15:40、实际 ≈ **12:38–13:10**（提交 `6e4a479`…`316814c`；产物时间戳一致：TruFor A 12:47、PROBE A 12:58、B 13:17、封存 13:18、冻结 13:19、验证 13:20）。2026-09-24 已立「此后一律以 `date` 为准」的纪律，本次又犯，**再次记录并对照锚点**；历史条目时间戳保留原样
+* **涉及/修改的文件清单**：
+  - `scripts/g7_baselines.py (Created — 基线/判据/冻结/验证)`
+  - `scripts/g7_baselines.py (Modified — decide() 抽取为函数、verdict_on_c 写入报告)`
+  - `tests/test_g7_baselines.py (Created — 17 项)`
+  - `scripts/evaluate_external_expert.py (Modified — --scores-only 封存模式、to_row 增加 preprocess)`
+  - `calibration/g7_external_probe_dino_B.json (Created)、calibration/g7_external_probe_dino_C_sealed.json (Created — 封存)`
+  - `calibration/g7_frozen_scheme.json (Created — 冻结方案)、calibration/g7_validation_C.json (Created/Modified — C 组验证)`
+  - `plan.md (Modified — 四处旧表述修正 + 入口 2 结果)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**767 测试通过**（新增 17 项）；冻结文件在 C 组被读取**之前**生成且带 `split_hash`，`--validate-c` 以「冻结存在性 + 划分哈希一致」为门禁（两条门禁均有测试）；C 组分数在冻结前只落盘、不聚合（`load_feature_table` 只做表加载，不做统计）
+* **置信度或遗留待办（TODO）**：①**B 组的选择本身不牢**：Δ 的 CI 下界恰为 0.000，B 上 probe 的 AUROC（0.846）明显低于其在 A（0.960）与 C（0.986）上的值 —— B 组 18 源偏小，**单次选择不足为凭**，这正是 C 组存在的理由；②**阈值迁移是脆弱环节**：三条件在 B 上选出的阈值（0.329 / 0.251 / 0.084）都远离 0.5（A/B 组基率与截距所致），F1 最优阈值迁到 C 后退化（existing+probe Acc 0.8729 → 0.8644），而 Brier 反而更好（0.0506 vs probe 0.0617）→ 后续接线应**保留连续分数并按需重校准**，不要依赖某个写死的定点阈值；③G7-c 控制链（调用标签 / 解析 / Prompt / Evidence Bundle / 逐工具停止成本 / 轨迹生成器 / 校验器）尚未接线，小批端到端、重生成复核与五条件对照（含无 Qwen 融合基线）均未开始；④PROBE 源图级与预训练集是否重叠仍**未确认**（仅在生成器分层上给出证据）；⑤**A 组报告的 `rows` 缺 `preprocess` 字段**（该字段是在 A 之后加入 `to_row` 的），B/C 两组有；A 的配方可从图像尺寸与计划里写死的常数推得，故**不改写已生成的产物**，仅在此记录这一处 provenance 缺口

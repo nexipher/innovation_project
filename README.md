@@ -132,6 +132,27 @@ dataset/
 
 > ⚠️ 加载模型权重前必须获得用户 GPU 授权（见 `agent.md` §3.2）。
 
+### 3.4b 外部专家权重（PROBE-DINOv2 / TruFor）— 获取方式、哈希、不再分发
+
+这两个专家是 G7 引入的**外部依赖**：代码与权重都**不在本仓库内**，本项目**不附带、不再分发**，获取方式与许可见其原始页面。缺依赖时项目照常运行、测试照常通过（适配器是**可选惰性依赖**，只有显式启用时才导入）。
+
+| 专家 | 本项目中的路径 | 来源 | sha256 | 许可 |
+|------|---------------|------|--------|------|
+| **PROBE-DINOv2**（主检测器） | `/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth`（1217.7 MB）；主干 `facebook/dinov2-with-registers-large` 经 `hf-mirror.com` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection` | `c8caa9ba…a450156` | ⚠️ **上游未声明**（仓库无 LICENSE）。**用户授权**（2026-10-11，本地研究）≠ **上游许可**：仅本地研究可运行，不得再分发 |
+| **TruFor**（L1 研究对照，不接线） | `/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar`（281.5 MB） | GRIP-UNINA `TruFor_weights.zip`（MD5 `7bee48f3476c75616c3c5721ab256ff8`） | `ac1d90e3…578c7844` | ⚠️ **仅限信息性与非营利用途**；本项目不再分发 |
+
+- 运行时每个 Evidence Token 都会带上**来源 URL、权重的 sha256（带副文件缓存）、输入预处理描述**，见 `experts/external_base.py` 的 `WeightProvenance`。
+- 网络：本机 `raw.githubusercontent.com` 与 `huggingface.co` **不通**，获取走替代源（`ghfast.top` / `cdn.jsdelivr.net` / `hf-mirror.com` / ModelScope）。
+- **论文引用仅为学术归属，不构成使用授权。**
+
+```bash
+# 适配器与评测（CPU 可跑 Mock；真实推理需 GPU 授权）
+python scripts/g7_smoke_external.py --expert probe_dino        # 冒烟 + 显存/耗时采样
+python scripts/evaluate_external_expert.py --expert probe_dino --group A   # 分组评测
+python scripts/g7_baselines.py --fit-select                               # A 拟合 / B 选择 / 写冻结
+python scripts/g7_baselines.py --validate-c                               # 冻结后才可读 C
+```
+
 ### 3.5 单张图像分析
 
 ```bash
@@ -402,6 +423,15 @@ G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最�
 | **JPEG** (`jpeg`) | 8×8 块边界梯度比 + DCT 直方图挖空 | **反向**：高结构 = Real（JPEG 来源史） | png 0.972 / q95 0.717 / q85 0.734 / **q70 0.431** | **保留 + 限制**：q70 失效区禁止进入轨迹 |
 | **ELA** | 误差水平分析 | 压缩历史捷径 | png 0.948 → q70 0.504 | **不注册**（能力等同压缩历史，运行期不可知） |
 
+**外部专家（G7，非本仓库代码/权重，见 §3.4b）**：
+
+| 专家 | 方法 | 方向 | 实测判别力（按源 CI） | 处置 |
+|------|------|------|----------------------|------|
+| **PROBE-DINOv2** | DINOv2-L + 线性头；336 滑窗 → 均值 logit → sigmoid = P(AI-generated) | **正向**（无需校正） | A 组 0.960 [0.924, 0.986]：native 0.967 / png 0.973 / q95 0.977 / q85 0.987 / **q70 0.995**；**未见生成器 0.952**；C 组独立验证 **0.986** | **准入，主检测器**（入口 3 接线） |
+| **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | 弱且可疑（q85 CI 整段低于 0.5） | A 组 **0.426**（4/5 格式 CI 跨 0.5） | **不准入全局链**，留作 L1 局部篡改研究对照 |
+
+- PROBE 与现有专家的 Spearman 相关 |ρ| ≤ 0.23（不冗余，但融合后增益在 C 组仍落进噪声：见 §7.3）。
+
 > 专家的 `support`、`interpretation_text`、`reasoning` 与 `phenomenon` 已按实测方向改写（`BaseExpert.metric_polarity` + `inverted_text_map`）；进入证据链前由 `EvidenceRectifier` 统一方向权威（校准概率 > 专家声明 > 自由文本）。
 
 ### 6.2 终止策略 v2（后验驱动，`HALTING_POLICY="v2"`）
@@ -447,6 +477,8 @@ v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条�
 | **四** G4-a~f | final_v2 数据管线与审核工作台 | 源级防泄漏划分（9000 源）/ 六策略轨迹生成器 / 两级准入 / final_v2 Schema 与十项校验 / 20 源试生成（440 轨迹 → 237 样本，0 拒绝）/ 审核工作台 + 处置管线 |
 | **四** G4-f 修订 | 工作台可用性修订（2026-10-09） | **完整训练对话**（原页只显示第一个助手轮，198/237 条把调用轮、证据轮和最终四段答案全藏了）/ **逐 token 证据语义**（support vs support_raw vs direction 分离，158/200 个 `semantics_aligned=false` 现以红色告警显示）/ **按桶清单**（工具 / 无工具 / 弃权三套，弃权不再被要求 ΔBrier<0）/ **浏览器内保存决定 + 导出导入**（`record_review.py --import`）/ 置信度四分（原始模型 / 后验 / 自报 / ΔBrier）/ 取消双审，改单次全量审核 + `high_risk` 标记 |
 | **四** G4-g | LoRA 试训（临时集）与两处协议失配修复 | 24 GB 显存适配（掩码位置交叉熵，OOM 消除）/ 首轮四臂暴露"从不调用工具"（127 会话 1 次调用）→ 定位为**调用轮被掩进提示**（未监督）+ **训练用子集提示而推理用出厂提示**，两者已修并复训；冒烟显示工具调用恢复（每样本 1–2 次） |
+| **四** G7 入口 1 | 外部专家（PROBE-DINOv2 / TruFor）实测与准入 | 源级划分 A 62 / B 18 / C 18 源（hash `37bf2f1db22ccdef`）/ 通用外部专家适配器（未校准分数**不带方向**）/ 批量推理（TruFor 12.4 s → 0.3 s/图，峰值显存 2.27 GB）/ **TruFor A 组 AUROC 0.426 → 不纳入全局链**（留作 L1 研究对照）/ **PROBE A 组 0.960、未见生成器 0.952 → 满足判别力判据** |
+| **四** G7 入口 2 | 三条无 Qwen 基线与 C 组独立验证 | 逻辑回归融合，A 拟合 / B 选择 / **C 冻结后验证**（脚本门禁：无冻结文件或划分哈希不符即拒跑）/ B 组 Δ `融合−PROBE` = +0.105 判"融合胜出" → **C 组未复现（+0.0043，CI 跨 0）**，`现有−PROBE` 在 C 组为 −0.222（CI 整段为负）→ **判定：PROBE 为主检测器，现有专家降为辅助线索**；冻结方案与 17 项判据测试落盘 |
 
 ### 7.2 后续执行顺序
 
@@ -465,8 +497,11 @@ v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条�
 | 5 | G4-e ✅ | 20 源试生成：440 轨迹 → 准入 97 正样本 → `final_v2` **237 条、十项校验 0 拒绝**（已完成） | 是（约 2.5 小时） |
 | 5 | G4-f/g | 全量人工审核 → 以 accepted 集重训 → 重跑四臂验收。**当前停在人工审核**：工作台 `sft_data/review/index.html` 已就绪，需裁决标签成分偏斜（工具正样本 48F/12R、无工具 37R/0F）与是否投入全量四臂（约 10 GPU 小时） | 是 |
 | 5 | G4 | 重新生成并审核 `final_v2`，随后进行 LoRA | 是 |
-| 6 | G5/G6 | 统一评测；达标后可选 GRPO | 是 |
-| 7 | L1–L3 | 全局检测稳定后扩展局部篡改定位 | 是 |
+| 5.5 | G7 入口 1–2 ✅ | 外部专家实测与准入 / 三条无 Qwen 基线 / C 组独立验证（已完成：PROBE 为主检测器） | 是（已完成，约 1 小时） |
+| 5.6 | G7 入口 3 | Agent 接线（PROBE 主检测器 + 三专家辅助线索 + 逐工具成本）与小批端到端人工核对 | 是 |
+| 5.7 | G7 入口 4 | 新 `final_v2` 生成（含 PROBE 工具）与小批量人工验收，随后重训 | 是 |
+| 6 | G5/G6/G7 入口 6 | 统一评测（六条件配对，含无 Qwen 的 PROBE 基线）；达标后可选 GRPO | 是 |
+| 7 | L1–L3 | 全局检测稳定后扩展局部篡改定位（TruFor 适配器与原始产物管线为其现成基座） | 是 |
 
 ### 7.3 已知局限
 
@@ -482,6 +517,10 @@ v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条�
 - **final_v2 已生成（G4-e，20 源试生成）**：237 条过校验样本（工具正样本 60 / 无工具正样本 37 / 合理弃权 140），十项自动校验 0 拒绝。**类别成分 Fake 178 : Real 59（75/25）**，且各桶内部同样偏斜 —— 原因是任务结构：证据只在 no-tool 基线自信判错处产生增益，而该基线在 Fake 上正是高置信判 Real。风险是学出"调用工具 ⇒ Fake"的新捷径，故 metadata 记录了 `label_composition` 与 `training_weights`（Real ×3.02），**训练前须由人工审核环节裁决**（配平采样 / 接受 / 补充 Real 侧工具样本）。
 - **旧 SFT 尚未达到训练准入**：G0 审计后 509 条候选全部获得明确处置状态（regenerate / format_only），68 条结构失效样本进入拒绝集；correct 集 166 条全部生成于专家 reasoning 修复之前，必须用修复后的专家重新生成后才能投入 LoRA。
 - **停止逻辑不是真正信息增益**：当前实现比较相邻 strength，且 `<verdict>` 优先于冲突检查。G1 已通过证据去重消除虚假收敛路径，但后验校准与工具增益驱动的停止策略仍待 G3（依赖 G2 Expert 校准）。
+- **现有工具箱的判别力远弱于外部专家（G7 入口 2，C 组独立验证）**：同一 118 样本上，noise/jpeg/frequency_v2 的融合 AUROC **0.764**，PROBE 单独 **0.986**，二者之差 Δ = −0.222、CI [−0.435, −0.051]（整段为负）。**旧三专家对整图生成检测的贡献有限，这是实测结论，不是估计。**
+- **"多专家融合"没有兑现（G7 入口 2）**：PROBE + 旧三专家的融合在 B 组看起来更好（Δ +0.105，CI [0.000, 0.314]，预注册规则判"胜出"），但在**从未参与拟合/选择的 C 组上未复现**（Δ +0.0043，CI [−0.0038, +0.015]）。选择组只有 18 源是主因。**结论以 C 组为准：PROBE 作主检测器，旧专家降为解释性与可核验性线索。**
+- **定点阈值不可跨组迁移**：B 组选出的 F1 最优阈值（0.329 / 0.251 / 0.084）迁到 C 后指标退化（融合 Acc 0.873 → 0.864）。概率分布随组的基率漂移，**接线时保留连续分数并按组重校准**，不要依赖写死的阈值。
+- **主检测能力依赖一个不可再分发的外部权重**：PROBE 的上游许可未确认（仓库无 LICENSE），本项目**不附带、不再分发**其代码与权重，只有用户授权下的本地研究使用。这既是许可约束，也是**复现性风险**（他人无法仅凭本仓库复现检测层）。TruFor 同理（非营利研究用途，且实测对整图生成近乎无信号，A 组 AUROC 0.426）。
 - **仅支持静态图像**：无视频帧采样 / 时序一致性分析能力。
 
 ---
@@ -563,6 +602,12 @@ pytest tests/test_parser.py -v          # 单模块
 }
 ```
 
+本项目使用（但**不再分发**）的第三方工作，引用仅为学术归属：
+
+- **PROBE-DINOv2** — *Where Detectors Fail…*（ICML 2026，arXiv 2605.24906）；PROBE = Probing Robustness via Boundary Exploration。权重见 ModelScope `shuinishaojiu/PROBE-AIGI-Detection`。
+- **TruFor** — *TruFor: Leveraging all-round clues for trustworthy image forgery detection and localization*（CVPR 2023，GRIP-UNINA + Google）。
+- **DINOv2** — *DINOv2: Learning Robust Visual Features without Supervision*（TMLR 2024）；主干权重见 `facebook/dinov2-with-registers-large`。
+
 ## 11. 许可证
 
-MIT
+本项目为 MIT。**外部专家的代码与权重不在本许可证范围内、也不随本仓库分发**：PROBE-DINOv2 的上游许可未确认（仓库无 LICENSE），TruFor 限信息性与非营利用途 —— 二者的使用受其各自页面条款约束，见 §3.4b。
