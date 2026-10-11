@@ -75,6 +75,11 @@ class HaltingDecision:
     primary_reason: str = ""
     all_reasons: List[str] = field(default_factory=list)
     next_expert: Optional[str] = None
+    # Estimated net utility per remaining expert at the moment of the decision
+    # (plan.md §4.11 E).  Without it a stop reason like "no expected gain" is
+    # unauditable: the reviewer has no way to see what the policy thought was
+    # left on the table.
+    tool_utilities: Dict[str, float] = field(default_factory=dict)
     posterior: float = 0.5           # P(Fake)
     conflict_score: float = 0.0
     expected_tool_gain: float = 0.0
@@ -187,6 +192,21 @@ class HaltingPolicyV2:
             utilities[name] = cls.expected_gain(weight, posterior) - POLICY_CALL_COST
         return utilities
 
+    @classmethod
+    def utility_report(cls, evidence_chain: List[dict],
+                       available_experts: Dict[str, float],
+                       called_experts: set) -> Dict[str, dict]:
+        """Per expert: estimated gain, the call cost, and the net of the two."""
+        posterior = cls.posterior(evidence_chain)
+        report = {}
+        for name, weight in available_experts.items():
+            gain = 0.0 if name in called_experts else cls.expected_gain(weight, posterior)
+            report[name] = {"estimated_gain": round(gain, 4),
+                            "cost": POLICY_CALL_COST,
+                            "net": round(gain - POLICY_CALL_COST, 4),
+                            "already_called": name in called_experts}
+        return report
+
     # ------------------------------------------------------------------
     # Decision
     # ------------------------------------------------------------------
@@ -230,6 +250,7 @@ class HaltingPolicyV2:
         decision = HaltingDecision(
             action="continue",
             posterior=posterior,
+            tool_utilities=utilities,
             conflict_score=conflict,
             expected_tool_gain=best_utility + (POLICY_CALL_COST if best_expert else 0.0),
             expected_net_utility=best_utility,

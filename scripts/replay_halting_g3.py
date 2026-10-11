@@ -83,6 +83,32 @@ def expert_weights(table: Optional[ReliabilityTable], source_names) -> Dict[str,
     return HaltingPolicyV2.expert_weights(separations)
 
 
+# The toolkit inference can actually call, retired experts excluded.  The
+# replay already limits `decide()` to the experts a trace used (that is what
+# its v1/v2 comparison is about), but asking "did the stop leave something
+# worth calling" needs the full set — otherwise the question is vacuous.
+SHIPPED_EXPERTS = ("frequency_expert_v2", "noise_expert", "jpeg_expert")
+
+
+def leftover_utility(trace_chain, table, called, available=None):
+    """
+    Estimated gain still available at the recorded stop, per uncalled tool.
+
+    Priced against the set the session was *allowed* to call.  A "noise only"
+    generation policy stopping while jpeg would have paid is not a premature
+    stop — the policy was noise-only — so the trace's recorded
+    `available_experts` decides the set, and a trace that does not record one
+    (everything before 2026-10-11) returns None: unauditable, not clean.
+    """
+    allowed = available or []
+    if not allowed:
+        return None
+    weights = expert_weights(table, allowed)
+    report = HaltingPolicyV2.utility_report(trace_chain, weights, called)
+    return {name: entry for name, entry in report.items()
+            if entry["net"] > 0 and not entry["already_called"]}
+
+
 def model_candidate(trace: dict) -> Optional[str]:
     """The verdict the model itself proposed in its closing turn."""
     for turn in reversed(trace.get("conversations", [])):
@@ -165,6 +191,10 @@ def replay(traces: List[dict], table: Optional[ReliabilityTable]) -> dict:
             ),
             "recorded_calls": trace["metadata"].get("expert_call_count", 0),
             "recorded_turns": trace["metadata"].get("model_turn_count", 0),
+            # E (2026-10-11): the estimate the stop reason never showed.
+            "leftover_utility": leftover_utility(
+                chain, table, sources,
+                trace["metadata"].get("available_experts")),
         })
     return {"rows": rows}
 
@@ -213,6 +243,25 @@ def summarise(rows: List[dict]) -> dict:
             "candidate_would_be_accepted": sum(
                 1 for r in rows if r["model_candidate"] and r["v2_verdict"] == r["model_candidate"]
             ),
+        },
+        # E (2026-10-11): what the stop left on the table.  A session that
+        # stopped while an uncalled tool still had positive estimated net
+        # utility is a candidate premature stop — which is exactly what the
+        # reviewer could not check when the estimate was not recorded.
+        "stopped_with_gain_available": {
+            # Only sessions whose trace records what they were allowed to call
+            # can be audited; the rest are counted separately rather than
+            # reported as clean.
+            "auditable": sum(1 for r in rows if r.get("leftover_utility") is not None),
+            "not_auditable": sum(1 for r in rows if r.get("leftover_utility") is None),
+            "sessions": sum(1 for r in rows if r.get("leftover_utility")),
+            "by_expert": dict(Counter(
+                name for r in rows for name in (r.get("leftover_utility") or {})
+            )),
+            "max_leftover": round(max(
+                (entry["net"] for r in rows
+                 for entry in (r.get("leftover_utility") or {}).values()),
+                default=0.0), 4),
         },
         "conflict": {
             "sessions_with_conflict": sum(1 for r in rows if r["conflict_score"] > 0.5),

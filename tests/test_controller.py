@@ -174,6 +174,23 @@ class TestEvidenceDeduplication:
                    if t["from"] == "user" and "去重规则忽略" in t.get("value", "")]
         assert len(notices) == 1
 
+    def test_the_trace_records_what_the_policy_could_have_called(self):
+        """
+        E (2026-10-11): 0 of 3237 traces recorded this, so a stop reason like
+        "no expected gain" could not be audited after the fact.
+        """
+        import json as _json
+
+        mllm = ScriptedMLLM([self.CALL, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        with open(result["sft_data_path"], encoding="utf-8") as handle:
+            session = _json.load(handle)
+        counters = session["metadata"]
+        assert counters["available_experts"] == sorted(_build_experts())
+        assert isinstance(counters["tool_utilities"], dict)
+
     def test_different_experts_still_produce_two_unique_evidence(self):
         """Distinct instruments are distinct measurements, regions aside."""
         noise_call = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"

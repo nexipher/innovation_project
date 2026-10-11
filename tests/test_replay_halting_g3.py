@@ -4,10 +4,13 @@ import json
 
 import pytest
 
+from state_machine.halting_v2 import HaltingPolicyV2
+
 from scripts.replay_halting_g3 import (
     brier,
     ece,
     expert_weights,
+    leftover_utility,
     load_traces,
     model_candidate,
     summarise,
@@ -15,8 +18,9 @@ from scripts.replay_halting_g3 import (
 
 
 def _row(gt, recorded, v2, posterior=0.8, conflict=0.0, candidate="Fake",
-         overrides=False):
+         overrides=False, leftover=None):
     return {
+        "leftover_utility": leftover or {},
         "ground_truth": gt,
         "recorded_verdict": recorded,
         "v2_verdict": v2,
@@ -42,6 +46,48 @@ class TestModelCandidate:
 
     def test_none_when_the_model_never_concluded(self):
         assert model_candidate({"conversations": [{"from": "gpt", "value": "no tag"}]}) is None
+
+
+class TestLeftoverUtility:
+    """
+    E (2026-10-11): the stop reason used to be unauditable — "no expected
+    gain" without showing what the policy thought was left on the table.
+    """
+
+    def test_a_trace_without_its_allowed_set_is_unauditable(self):
+        """Everything before 2026-10-11 — unknown, not clean."""
+        chain = [{"source": "noise_expert", "reliability": 0.9,
+                  "calibrated_likelihood": {"Real": 0.5, "Fake": 0.5}}]
+        assert leftover_utility(chain, None, {"noise_expert"}) is None
+
+    def test_it_prices_the_uncalled_experts(self):
+        chain = [{"source": "noise_expert", "reliability": 0.9,
+                  "calibrated_likelihood": {"Real": 0.5, "Fake": 0.5}}]
+        leftover = leftover_utility(chain, None, {"noise_expert"},
+                                    available=["noise_expert", "jpeg_expert"])
+        # table=None means weight 0 for everyone: nothing can pay for a call.
+        assert leftover == {}
+
+    def test_an_already_called_expert_is_not_leftover(self):
+        chain = [{"source": "noise_expert", "reliability": 0.9,
+                  "calibrated_likelihood": {"Real": 0.5, "Fake": 0.5}}]
+        report = HaltingPolicyV2.utility_report(
+            chain, {"noise_expert": 0.9, "jpeg_expert": 0.9}, {"noise_expert"})
+        assert report["noise_expert"]["already_called"] is True
+        assert report["noise_expert"]["net"] < 0
+        assert report["jpeg_expert"]["already_called"] is False
+
+    def test_a_stop_with_gain_left_is_counted(self):
+        rows = [_row("Fake", "Fake", "Fake", leftover={"jpeg_expert": {"net": 0.12}}),
+                _row("Real", "Real", "Real", leftover={})]
+        summary = summarise(rows)
+        assert summary["stopped_with_gain_available"]["sessions"] == 1
+        assert summary["stopped_with_gain_available"]["by_expert"] == {"jpeg_expert": 1}
+        assert summary["stopped_with_gain_available"]["max_leftover"] == 0.12
+
+    def test_a_clean_stop_reports_nothing(self):
+        summary = summarise([_row("Fake", "Fake", "Fake")])
+        assert summary["stopped_with_gain_available"]["sessions"] == 0
 
 
 class TestSummarise:

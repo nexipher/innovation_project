@@ -406,6 +406,7 @@ class ForensicStateMachine:
                         else "基于校准后验与已获取证据的判定。"
                     ),
                     "posterior": round(decision.posterior, 4),
+                    "tool_utilities": dict(decision.tool_utilities or {}),
                     "conflict_score": round(decision.conflict_score, 4),
                     "policy_reason": decision.primary_reason,
                     "policy_reasons": list(decision.all_reasons),
@@ -470,6 +471,7 @@ class ForensicStateMachine:
             model_turn_count, expert_call_count,
             suppressed_duplicate_count, evidence_chain,
             policy_decision=policy_decision,
+            available_experts=list(self._experts),
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -548,8 +550,10 @@ class ForensicStateMachine:
                 "请进行双向反思，说明冲突双方的物理依据与不确定性。]"
             )
         return (
-            "[System: 继续取证已无预期收益（no_expected_gain）。请基于已获取的全部证据"
-            "撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+            # "no expected gain" is the policy's *estimate*, not a proof that no
+            # tool could help; the wording has to say so (plan.md §4.11 E).
+            "[System: 当前策略估计继续调用收益不足（no_expected_gain）。请基于已获取"
+            "的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
         )
 
     def _request_conclusion(
@@ -571,6 +575,7 @@ class ForensicStateMachine:
         suppressed_duplicate_count: int,
         evidence_chain: List[dict],
         policy_decision=None,
+        available_experts: Optional[List[str]] = None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -582,6 +587,12 @@ class ForensicStateMachine:
                 expert_call_count + TURN_COST_WEIGHT * model_turn_count, 4
             ),
             "policy_version": HALTING_POLICY,
+            # What this session was allowed to call.  Without it a stop reason
+            # like "no expected gain" cannot be audited after the fact: a
+            # restricted policy and a full toolkit can stop for opposite
+            # reasons and the trace looked identical (0 of 3237 traces
+            # recorded this before 2026-10-11).
+            "available_experts": sorted(available_experts or []),
         }
         if policy_decision is not None:
             # A replay must be able to explain the stop from the trace alone.
@@ -593,5 +604,7 @@ class ForensicStateMachine:
                 "candidate_overridden": (
                     HaltingPolicyV2.CANDIDATE_OVERRIDDEN in policy_decision.all_reasons
                 ),
+                # The estimate the reason rests on, per expert still uncalled.
+                "tool_utilities": dict(policy_decision.tool_utilities or {}),
             })
         return counters
