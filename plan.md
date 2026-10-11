@@ -2431,7 +2431,7 @@ flowchart LR
   - **强扰动**：为"专家分歧/合理弃权"留出席位（同源跨格式的 PROBE 读数天然不一致，如 glide 在 native/q95 与其余格式分歧）—— 注意**分歧与弃权是运行结果，不是选出来的**，选择只负责让这些情形**有机会出现**。
 - **不为凑数制造结论**：不给"每个策略必须产出 N 条"的配额；`admit_trajectories_g4.py` 的两级准入照旧，产出多少是多少（上一轮 20 源 → 440 轨迹 → 237 合格样本）。
 - **工具集**：本轮跑**全部策略**（`TOOL_POLICIES` 现含 `probe` / `probe+noise` / 老四组 / no-tool），以获得对照；若时间不允许，优先 `no-tool` / `probe` / `probe+noise` / `noise+jpeg`。
-- **产物落新批次目录**：`sft_data/train/batches/<batch_id>/`（生成 → `build_final_v2` → 校验 → `write_manifest` 写指纹），轨迹进 `sft_data/trajectories_<batch_id>/`，**不覆盖原 237 条的任何文件**。
+- **产物落新批次目录（生成全过程隔离，不只是审核与出集）**：`utils/batch.py` 的新批次路径表 = 变体 `sft_data/variants_<id>/`、轨迹 `sft_data/trajectories_<id>/`、准入报告 `sft_data/admission_report_<id>.json`、样本 `sft_data/train/batches/<id>/`、审核 `sft_data/review/<id>/`、出集 `.../<id>_reviewed/`；**四个生成脚本（build_variants / generate_trajectories / admit / build_final_v2）都接 `--batch`**，默认仍是旧批次。互斥性由测试断言（新批次路径与原批次**零重叠**），不靠文档承诺
 - **成本（据上一轮实测换算）**：上一轮 20 源 440 轨迹 ≈ 2.5 h GPU。本轮 60–100 变体 × 全策略 ≈ **1–1.5 h**；加候选池 PROBE 打分与校验，合计约 **1.5–2 h GPU**，Qwen 17.8 GB + PROBE 1.6 GB 常驻。**需用户授权**。
 - **生成后立即跑**：`final_v2` 十项校验 + `utils/weak_evidence.py` 批量扫描 + 泄漏检查，再建工作台（独立批次目录），才进入第三步。
 

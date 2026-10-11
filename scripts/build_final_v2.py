@@ -35,6 +35,7 @@ from typing import Dict, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
+from utils.batch import LEGACY_BATCH, batch_paths
 from scripts.generate_trajectories_g4 import load_applicability
 from utils.final_v2 import (
     RETIRED_EXPERTS,
@@ -215,10 +216,18 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trajectories-dir", default=TRAJECTORIES_DIR)
-    parser.add_argument("--admission-report", default=ADMISSION_REPORT)
-    parser.add_argument("--output-dir", default=OUTPUT_DIR)
+    parser.add_argument("--trajectories-dir", default=None)
+    parser.add_argument("--admission-report", default=None)
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--batch", default=LEGACY_BATCH)
     args = parser.parse_args()
+    paths = batch_paths(args.batch)
+    if args.trajectories_dir is None:
+        args.trajectories_dir = paths["trajectories"]
+    if args.admission_report is None:
+        args.admission_report = paths["admission"]
+    if args.output_dir is None:
+        args.output_dir = paths["samples"]
 
     metadata = build(args.trajectories_dir, args.admission_report, args.output_dir)
     print(f"counts: {metadata['counts']}")

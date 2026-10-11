@@ -45,6 +45,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
+from utils.batch import LEGACY_BATCH, batch_paths
 from mllm.message_builder import BASELINE_SYSTEM_PROMPT, build_forensic_prompt
 from mllm.mock_client import MockMLLMClient
 from scripts.qwen_gain_baseline import _pseudo_probability
@@ -316,14 +317,20 @@ def plan_trajectories(variants: Dict[str, dict], policies: List[str],
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", default=VARIANTS_MANIFEST)
+    parser.add_argument("--manifest", default=None)
     parser.add_argument("--policies", nargs="*", default=list(TOOL_POLICIES))
     parser.add_argument("--limit", type=int, default=None,
                         help="number of variants to process")
     parser.add_argument("--dry-run", action="store_true",
                         help="MockMLLMClient (CPU plumbing validation only)")
-    parser.add_argument("--output-dir", default=TRAJECTORIES_DIR)
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--batch", default=LEGACY_BATCH)
     args = parser.parse_args()
+    paths = batch_paths(args.batch)
+    if args.manifest is None:
+        args.manifest = paths["variants"]
+    if args.output_dir is None:
+        args.output_dir = paths["trajectories"]
 
     unknown = [p for p in args.policies if p not in TOOL_POLICIES]
     if unknown:

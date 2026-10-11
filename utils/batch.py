@@ -69,17 +69,39 @@ def batch_paths(batch_id: str = LEGACY_BATCH) -> Dict[str, str]:
             "reviewed": os.path.join(PROJECT_ROOT, "sft_data", "train",
                                      "final_v2_reviewed"),
             "trajectories": os.path.join(PROJECT_ROOT, "sft_data", "trajectories"),
+            "variants_dir": os.path.join(PROJECT_ROOT, "sft_data", "variants"),
             "variants": os.path.join(PROJECT_ROOT, "sft_data", "variants",
                                      "manifest.json"),
+            "admission": os.path.join(PROJECT_ROOT, "sft_data", "admission_report.json"),
         }
+    # Every stage of a new batch lives under its own name, generation included:
+    # variants, trajectories and the admission report are what the samples are
+    # built *from*, so sharing them would leave the new batch depending on the
+    # old batch's files — and overwriting them would rewrite the 237's inputs.
     root = os.path.join(PROJECT_ROOT, "sft_data", "train", "batches", batch_id)
     return {
         "samples": root,
         "review": os.path.join(PROJECT_ROOT, "sft_data", "review", batch_id),
         "reviewed": root + "_reviewed",
-        "trajectories": os.path.join(PROJECT_ROOT, "sft_data", "trajectories"),
-        "variants": os.path.join(PROJECT_ROOT, "sft_data", "variants", "manifest.json"),
+        "trajectories": os.path.join(PROJECT_ROOT, "sft_data",
+                                     f"trajectories_{batch_id}"),
+        "variants_dir": os.path.join(PROJECT_ROOT, "sft_data",
+                                     f"variants_{batch_id}"),
+        "variants": os.path.join(PROJECT_ROOT, "sft_data",
+                                 f"variants_{batch_id}", "manifest.json"),
+        "admission": os.path.join(PROJECT_ROOT, "sft_data",
+                                  f"admission_report_{batch_id}.json"),
     }
+
+
+def isolated_paths(batch_id: str) -> List[str]:
+    """
+    Every path a batch writes to — used to prove two batches cannot collide.
+
+    The isolation claim is only worth making if it is checkable, and the place
+    to check it is here rather than in a paragraph of the plan.
+    """
+    return list(batch_paths(batch_id).values())
 
 
 def load_samples(batch_id: str = LEGACY_BATCH,

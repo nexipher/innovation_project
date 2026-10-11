@@ -44,6 +44,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
+from utils.batch import LEGACY_BATCH, batch_paths
 from scripts.generate_trajectories_g4 import (
     APPLICABILITY_THRESHOLD,
     load_applicability,
@@ -291,10 +292,16 @@ def run(records: List[dict], applicability: Dict[str, Dict[str, float]],
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trajectories-dir", default=TRAJECTORIES_DIR)
-    parser.add_argument("--output", default=REPORT_PATH)
+    parser.add_argument("--trajectories-dir", default=None)
+    parser.add_argument("--output", default=None)
+    parser.add_argument("--batch", default=LEGACY_BATCH)
     parser.add_argument("--threshold", type=float, default=APPLICABILITY_THRESHOLD)
     args = parser.parse_args()
+    paths = batch_paths(args.batch)
+    if args.trajectories_dir is None:
+        args.trajectories_dir = paths["trajectories"]
+    if args.output is None:
+        args.output = paths["admission"]
 
     records = load_trajectories(args.trajectories_dir)
     if not records:

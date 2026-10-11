@@ -11,6 +11,8 @@ reviewed under.
 import json
 import os
 
+import sys
+
 import pytest
 
 from config import PROJECT_ROOT
@@ -134,3 +136,40 @@ class TestTheWorkstationCarriesTheBatch:
         _, out = self._build(tmp_path)
         page = (out / "index.html").read_text(encoding="utf-8")
         assert "batch_fingerprint: BATCH.fingerprint" in page
+
+
+class TestGenerationIsolation:
+    """
+    A batch's whole pipeline is distinct, not just its reviews.
+
+    The first version of `batch_paths` returned the *public* trajectories and
+    variants directories for new batches, so a "new" batch would have read the
+    237's inputs and written into them.  The plan asks for the generation to be
+    isolated too, so the check belongs in a test rather than in a paragraph.
+    """
+
+    def test_no_new_batch_path_overlaps_a_legacy_one(self):
+        legacy = set(batch_paths(LEGACY_BATCH).values())
+        for batch_id in ("g7_small", "g7_small_2"):
+            assert not (set(batch_paths(batch_id).values()) & legacy)
+
+    def test_two_new_batches_do_not_share_anything(self):
+        first = set(batch_paths("alpha").values())
+        second = set(batch_paths("beta").values())
+        assert not (first & second)
+
+    def test_every_generation_input_is_inside_the_batch(self):
+        paths = batch_paths("g7_small")
+        for key in ("variants", "variants_dir", "trajectories", "admission", "samples"):
+            assert "g7_small" in paths[key], key
+
+    def test_the_generation_scripts_take_the_batch_id(self):
+        """The id has to reach the scripts, or the paths are theory."""
+        import subprocess
+
+        for script in ("build_variants_g4.py", "generate_trajectories_g4.py",
+                       "admit_trajectories_g4.py", "build_final_v2.py"):
+            output = subprocess.run(
+                [sys.executable, os.path.join(PROJECT_ROOT, "scripts", script), "--help"],
+                capture_output=True, text=True, timeout=120).stdout
+            assert "--batch" in output, script
