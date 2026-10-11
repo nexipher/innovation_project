@@ -375,7 +375,7 @@ class TestTrainingConversation:
         {"from": "user", "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱。"},
         {"from": "gpt", "value": "<planning>Suspected Region: [1, 2, 3, 4]\n</planning>\n"
                                   "<call_noise>[1, 2, 3, 4]</call_noise>"},
-        {"from": "user", "value": '{"evidence_name": "raw"}'},
+        {"from": "user", "value": '{"evidence_id": "E-raw", "evidence_name": "raw"}'},
         {"from": "user", "value": "[System: 预算已耗尽，请立即输出 <verdict>。]"},
         {"from": "gpt", "value": "旧结案文本"},
     ]}
@@ -398,10 +398,70 @@ class TestTrainingConversation:
         assert payload["evidence_id"] == "E-1"
         assert payload["measurement_scope"] == "global"
 
-    def test_scaffolding_and_the_old_conclusion_are_dropped(self):
+    def test_the_correction_turn_is_replayed_and_the_old_conclusion_replaced(self):
+        """
+        The "[System: ...]" correction stays: without it the two conclusions
+        sit next to each other with nothing to explain the revision.
+        """
         values = " ".join(t["value"] for t in self._sample()["conversations"])
-        assert "[System:" not in values
+        assert "[System:" in values
         assert "旧结案文本" not in values
+
+    def test_a_rejected_conclusion_keeps_the_correction_that_followed_it(self):
+        trace = {"conversations": [
+            {"from": "user", "value": "<image>\n看图。"},
+            {"from": "gpt", "value": "<planning>…</planning><call_noise>[1, 2, 3, 4]</call_noise>"},
+            {"from": "user", "value": '{"evidence_id": "E-raw"}'},
+            {"from": "gpt", "value": "<reasoning>我先判 Uncertain。</reasoning>\n<verdict>{}</verdict>"},
+            {"from": "user", "value": "[System: 你的结论与后验不一致，请继续取证。]"},
+            {"from": "gpt", "value": "<observation>o</observation>\n<verdict>{}</verdict>"},
+        ]}
+        sample = render_sample(_record(), "positive", trace=trace,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+        turns = sample["conversations"]
+        roles = [t["from"] for t in turns]
+        # 中间结论 → 纠正 → 结案，三者都在且顺序不变
+        assert "[System:" in turns[4]["value"]
+        assert roles == ["user", "gpt", "user", "gpt", "user", "gpt"]
+        assert turns[-1]["value"].startswith("<observation>")
+        assert _validate(sample) == [] or all("never given" not in p for p in _validate(sample))
+
+    def test_turns_after_the_closing_answer_are_dropped(self):
+        """The sample's verdict is the one derived from the *last* answer."""
+        trace = {"conversations": [
+            {"from": "user", "value": "<image>\n看图。"},
+            {"from": "gpt", "value": "<observation>o</observation>\n<verdict>{}</verdict>"},
+            {"from": "user", "value": "[System: 再说一次。]"},
+            {"from": "gpt", "value": "<observation>o2</observation>\n<verdict>{}</verdict>"},
+            {"from": "user", "value": "[System: 尾巴。]"},
+            {"from": "gpt", "value": "这是结案之后的杂音"},
+        ]}
+        sample = render_sample(_record(), "positive", trace=trace,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+        values = " ".join(t["value"] for t in sample["conversations"])
+        assert "杂音" not in values
+        assert sample["conversations"][-1]["value"].startswith("<observation>")
+
+    def test_a_trailing_reasoning_turn_is_replaced_by_the_rendered_answer(self):
+        """
+        Real traces never record the four-section answer — the pipeline
+        synthesises it — so the last assistant turn is the one it replaces.
+        """
+        trace = {"conversations": [
+            {"from": "user", "value": "<image>\n看图。"},
+            {"from": "gpt", "value": "<planning>…</planning><call_noise>[1, 2, 3, 4]</call_noise>"},
+            {"from": "user", "value": '{"evidence_id": "E-raw"}'},
+            {"from": "user", "value": "[System: 请撰写最终报告。]"},
+            {"from": "gpt", "value": "<reasoning>我倾向 Uncertain，<call_noise> 的结果说明…</reasoning>\n<verdict>{\"verdict\": \"Uncertain\"}</verdict>"},
+        ]}
+        sample = render_sample(_record(), "positive", trace=trace,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+        turns = sample["conversations"]
+        assert [t["from"] for t in turns] == ["user", "gpt", "user", "user", "gpt"]
+        assert turns[-1]["value"].startswith("<observation>")
+        # 中间那个结案轮（正文提到 <call_noise>）不再被当成调用轮留下
+        assert sum(1 for t in turns if t["from"] == "gpt") == 2
+        assert _validate(sample) == []
 
     def test_the_answer_is_the_final_turn(self):
         turns = self._sample()["conversations"]

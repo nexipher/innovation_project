@@ -150,21 +150,51 @@ def render_answer(record: dict, observation_text: str = "") -> str:
     )
 
 
+def _is_evidence_turn(value: str) -> bool:
+    """A delivery turn *is* the token JSON — a message that mentions one is not."""
+    stripped = (value or "").lstrip()
+    return stripped.startswith("{") and '"evidence_id"' in stripped[:400]
+
+
+def _closing_index(trace_turns: List[dict]) -> int:
+    """
+    The assistant turn that ends the session.
+
+    Normally the structured four-section answer; when a trace recorded only an
+    older, unstructured conclusion, that last assistant turn is the one the
+    rendered answer replaces.
+    """
+    structured = [index for index, turn in enumerate(trace_turns)
+                  if turn.get("from") == "gpt"
+                  and "<observation>" in (turn.get("value") or "")
+                  and "<verdict>" in (turn.get("value") or "")]
+    if structured:
+        return structured[-1]
+    assistant = [index for index, turn in enumerate(trace_turns)
+                 if turn.get("from") == "gpt"]
+    return assistant[-1] if assistant else -1
+
+
 def render_conversation(record: dict, trace: Optional[dict] = None,
                         observation_text: str = "") -> List[dict]:
     """
-    Rebuild the training conversation from the session that produced it.
+    Rebuild the training conversation the way the session actually ran.
+
+    Faithful replay (plan.md §4.11, 2026-10-11).  The pipeline injects a
+    "[System: ...]" correction whenever it refuses a conclusion and the model
+    revises.  Dropping those corrections while keeping both answers left two
+    conclusions sitting next to each other with nothing to explain the change
+    — 51 of 237 samples — which trains the model to reverse itself for no
+    reason.  Every turn is kept, in order; only the closing answer is replaced
+    by the rendered four-section answer, and everything before it is what the
+    model actually said.
 
     A tool sample's answer cites evidence ids, so the conversation has to
-    contain the turns that delivered them — the model's tool call and the
-    evidence message — exactly as inference does.  Rendering only
-    "<image> question -> structured answer" would train the model to cite
-    evidence it never received, which is indistinguishable from fabricating it.
-
-    The evidence turns are rebuilt from the record's (rectified) tokens rather
-    than copied from the trace, so the text the model trains on is the text the
-    pipeline actually injects.  Session scaffolding ("[System: ...]" notes) is
-    dropped: it manages the loop, it is not behaviour to imitate.
+    contain the turns that delivered them.  Those turns are rebuilt from the
+    record's (rectified) tokens rather than copied from the trace, so the text
+    the model trains on is the text the pipeline actually injects.  Turns after
+    the closing answer are dropped: the sample's verdict is the one derived
+    from that last answer.
     """
     from state_machine.evidence_tokenizer import EvidenceTokenizer
 
@@ -173,24 +203,38 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
     task_prompt = next((t["value"] for t in trace_turns
                         if t.get("from") == "user"), "<image>\n请分析这张图像的真实性。")
 
+    closing = _closing_index(trace_turns)
     turns: List[dict] = [{"from": "user", "value": task_prompt}]
     delivered = 0
-    for turn in trace_turns:
-        if turn.get("from") != "gpt" or "<call_" not in turn.get("value", ""):
+    for index, turn in enumerate(trace_turns):
+        if index == 0 and turn.get("from") == "user":
+            continue                       # the task prompt is already in place
+        value = (turn.get("value") or "").strip()
+        if not value:
             continue
-        turns.append({"from": "gpt", "value": turn["value"].strip()})
-        if delivered < len(evidence):
-            token = evidence[delivered]
-            delivered += 1
-            entry = {"from": "user", "value": EvidenceTokenizer.to_json(token)}
-            paths = [path for path in
-                     ([token.get("diagnostic_region_image")]
-                      + list(token.get("visual_artifacts") or [])) if path]
-            if paths:
-                # Inference attaches at most two images per turn; mirror it.
-                entry["image_paths"] = paths[:2]
-            turns.append(entry)
-    turns.append({"from": "gpt", "value": render_answer(record, observation_text)})
+        if index == closing:
+            turns.append({"from": "gpt", "value": render_answer(record, observation_text)})
+            break
+        if turn.get("from") == "gpt":
+            turns.append({"from": "gpt", "value": value})
+            continue
+        if _is_evidence_turn(value):
+            if delivered < len(evidence):
+                token = evidence[delivered]
+                delivered += 1
+                entry = {"from": "user", "value": EvidenceTokenizer.to_json(token)}
+                paths = [path for path in
+                         ([token.get("diagnostic_region_image")]
+                          + list(token.get("visual_artifacts") or [])) if path]
+                if paths:
+                    # Inference attaches at most two images per turn; mirror it.
+                    entry["image_paths"] = paths[:2]
+                turns.append(entry)
+            continue
+        turns.append({"from": "user", "value": value})   # question or correction
+    else:
+        # No closing turn in the trace: end the conversation with the answer.
+        turns.append({"from": "gpt", "value": render_answer(record, observation_text)})
     return turns
 
 
@@ -296,6 +340,18 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
             problems.append("leakage: sample source not found in the split")
         elif entry["split"] != "train":
             problems.append(f"leakage: source belongs to partition {entry['split']}")
+
+    # 1b. no two conclusions in a row — the correction that separated them
+    #     would have been dropped, and the model would be trained to reverse
+    #     itself with nothing in between saying why.
+    conversation = sample.get("conversations") or []
+    for index, turn in enumerate(conversation[:-1]):
+        if (turn.get("from") == "gpt" and "<verdict>" in (turn.get("value") or "")
+                and conversation[index + 1].get("from") == "gpt"):
+            problems.append(
+                f"structure: assistant turn {index} states a conclusion and is "
+                f"followed by another assistant turn — the correction that the "
+                f"model was answering is missing")
 
     # 2. structure
     # The training target is the *last* assistant turn: earlier ones are the
