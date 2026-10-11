@@ -2120,3 +2120,94 @@ flowchart LR
 | 5 | G4 SFT v2 | `final_v2` 完成自动校验与人工准入 | 是 |
 | 6 | G5 统一评测 | 泛化、鲁棒性、校准和工具成本均有基线 | 是 |
 | 7 | G6/L1–L3 | 仅在前述门槛满足后启动 | 是 |
+| 8 | **G7 专家扩展**（§4.16） | 新专家完成校准准入、控制链贯通、五条件对照（含无 Qwen 的简单融合基线） | G7-a 冒烟起需要 |
+
+## 4.16 G7：专家扩展（PROBE-DINOv2 / TruFor）与基线对照
+
+**目标**：把两个外部专家接入工具箱 —— PROBE-DINOv2 作**全局 AI 生成检测**（黑箱分数），TruFor 作**篡改异常与空间线索**（整图分 + 异常图 + 置信图，可选 Noiseprint++）—— 并回答一个科学问题：**Qwen 的调度与解释，究竟增加了检测能力、可靠性，还是只增加了运行成本**。
+
+**来源与许可（已核实 2026-10-11）**：
+
+| 专家 | 论文 | 权重 | 接口 | 许可 |
+|------|------|------|------|------|
+| PROBE-DINOv2 | *Where Detectors Fail…*（ICML 2026，arXiv 2605.24906）；**PROBE = Probing Robustness via Boundary Exploration** | ModelScope `shuinishaojiu/PROBE-AIGI-Detection` → `DINOv2_best_model_step_34999.pth`（1217.7 MB）；主干 `facebook/dinov2-with-registers-large`（须走 `HF_ENDPOINT=https://hf-mirror.com`，直连 huggingface 在本机不通） | `dinov2-with-registers-large` + CLS 线性头；336×336 滑窗 → 逐块 logit → **均值 sigmoid = P(AI-generated)** | ⚠️ **仓库无 LICENSE 文件**，按研究用途 + 引用论文使用 |
+| TruFor | CVPR 2023（GRIP-UNINA + Google） | `TruFor_weights.zip`（249 MB，MD5 `7bee48f3476c75616c3c5721ab256ff8`）→ `pretrained_models/trufor.pth.tar`；Noiseprint++ 与 SegFormer-B2 权重随仓库提供 | `test.py -in -out -exp trufor_ph3 TEST.MODEL_FILE …` → `.npz`：`map`（异常定位）、`conf`（置信图）、`score`∈[0,1]、`np++`（`--save_np`）、`imgsize`；`-g -1` 可 CPU；68.7M 参数 / ~1.17 s@3.2MP | ⚠️ **仅限非营利研究用途** |
+
+**前置事实（本机实测）**：GitHub 直连不通（镜像 `ghfast.top` / `cdn.jsdelivr.net` 可用）；`grip.unina.it`、ModelScope 可达；huggingface 不通、`hf-mirror.com` 通。
+
+### G7-a 适配器与单机跑通（CPU 可测）
+
+- 新增 `experts/probe_dino.py`、`experts/trufor.py`，实现既有 `ExpertResult` 契约（`raw_metric` / `strength` / `support` / `phenomenon` / `reasoning` / `counter_explanation` / `artifact`）。
+- **TruFor 走独立进程/独立环境**（官方 conda 为 py3.7 / torch 1.11 / opencv 4.4，与本机 3.12 / torch 2.5 冲突）：适配器只负责**调用 + 读 npz**，不重复前向；`map` / `conf` / `score` / `np++` **分别落盘**并在 token 里分别引用。
+- PROBE 适配器同样一次性前向产出 `score`（336 滑窗），**不重复计算**。
+- 每个产物记录：权重来源 URL、文件 MD5、版本号、**耗时**、输入尺寸。
+- **显存实测后再定常驻方式**：Qwen 常驻已占 16.6 GB，若两专家新增峰值 < 2 GB 则同进程常驻；否则分阶段（先跑专家族、再起 Qwen）。
+- 验收：CPU 单图冒烟（Mock 隔离，符合 agent.md §3.2.2）+ GPU 显存/耗时实测表 + 单图四件产物落盘可复算。
+
+### G7-b 校准与准入（G2-b 协议，不可跳）
+
+- **原始分数不得复用旧专家的 strength 阈值**：新专家在 700 条校准集上按 png / q95 / q85 / q70 × 内容分层重算分离度、极性、适用条件，产出自己的可靠性表条目。
+- **与现有三专家的相关性检查**：token 级相关与同源重复放大分析，避免"同一类证据被计两次"（尤其 PROBE 与 frequency、TruFor 与 jpeg 的压缩历史线索可能高度重叠）。
+- **未校准前的处置**：可以记录与展示，但**不进入后验**（现有机制天然支持 —— 可靠性表无条目即权重为 0）。
+- 验收：可靠性表新增条目（或给出"不准入"的书面结论）+ 相关性报告 + 逐格适用条件。
+
+### G7-c 完整控制链接线（防止"专家能跑、模型不能调"）
+
+逐项同时改动，缺一不可：
+
+| 环节 | 位置 |
+|------|------|
+| 调用标签与说明 | `mllm/message_builder.py`：`TOOL_ACTIONS` / `TOOL_MEASURES` / `TOOL_ORDER` |
+| 调用解析 | `utils/parser.py`：`<call_probe>` / `<call_trufor>` 的坐标参数语义（全图专家不需要 bbox） |
+| Evidence Token 字段 | `state_machine/evidence_tokenizer.py` + 新专家的 `condition_metadata`（分数区间、热图统计） |
+| 注入与整流 | `state_machine/controller.py`（整流链、去重、`measurement_scope`）+ `evidence_rectifier.py` 的规范句 |
+| 停止策略 | `halting_v2.py` 的可用工具集合、`expert_weights`、`POLICY_CALL_COST` 需按新专家耗时重估 |
+| 轨迹生成 | `scripts/generate_trajectories_g4.py` 的工具策略矩阵扩展 |
+| 校验器 | `utils/final_v2.py`：新增字段的接地检查（分数与落盘产物一致、热图不得被当确证） |
+| 指纹 | 上述任一变更 → 配置指纹变化 → 冷启动重跑（既有机制，防静默复用） |
+
+验收：Mock 客户端下 CPU 干跑一条含新工具的完整轨迹，校验 0 拒绝。
+
+### G7-d 小规模端到端验证（GPU + 人工）
+
+- 20–40 源、覆盖代表性格式，真实调用两专家；人工逐条核对：
+  1. **是否编造 PROBE 的物理解释**（它是黑箱分数，不得写"因为它检测到 GAN 指纹"之类）；
+  2. **是否把 TruFor 热图当确证**（热图只能作为候选区域线索，且需遵守"非测量范围、非定位真值"话术）；
+  3. `measurement_scope` 与局部/全局话术是否一致；
+  4. 概率字段、停止原因、痕迹可复算。
+- **视觉自动预筛不可用（D2 结论）**，本阶段继续人工把关。
+
+### G7-e 重新生成 → 复审 → 训练
+
+- 原 237 条的审核结果**保留**；新样本**单独版本化**（新目录 + 新指纹），不与旧集混用。
+- 偏斜处理：**"无工具 ⇒ Real"必须结构性修正**（补 Real 侧工具样本 / 无工具桶配平 / 明确不进入某桶），不能只靠类别权重。
+- 验收：新集合过 A–E 全部检查 + 人工复审完成 + 组成报告（逐桶 × 标签 × 工具）。
+
+### G7-f 对照实验（本阶段的核心科学问题）
+
+在同一样本集、同一提示词指纹下，做**五个条件**的配对比较：
+
+| # | 条件 | 说明 |
+|---|------|------|
+| 1 | PROBE 单独 | 原始分数，无校准 |
+| 2 | PROBE + 条件校准 | G7-b 得出的最优单专家配置 |
+| 3 | TruFor 单独 | `score`（可选 `conf` 加权） |
+| 4 | **简单融合（无 Qwen）** | 分数级融合（如逻辑回归 / 加权平均），**只在训练分区拟合** |
+| 5 | Agent | Qwen 调度 + 工具 + Rectifier + Halting v2 |
+
+- 报告：检测能力（AUROC / 准确率 / 覆盖率—风险曲线）、可靠性（ECE / 弃权行为）、**成本（调用数、latency、显存）** 三者分开陈述。
+- **结论必须能回答**：Qwen 的调度与解释带来的是检测增益、可靠性增益，还是仅成本。
+- 验收：五条件配对报告 + 明确的结论表述（"解释增益"与"检测增益"分离陈述）。
+
+### 风险与开放决策
+
+1. **TruFor 面向篡改检测**（tampCOCO / compRAISE / FantasticReality 训练），对 GenImage 这类"整图生成"可能近乎无信号 —— 必须由 G7-b 实测决定准入（ELA 的教训：png 分离度 0.96 却在 q70 归零）。
+2. PROBE 无许可证；TruFor 限非营利 —— 许可与用途须写入 README 与报告。
+3. **语义边界待定**：TruFor 的 `map` / `conf` 是局部线索。要么只用其全局 `score` 与 conf 摘要（保持 `measurement_scope=global`），要么提前启动 L1–L3（`region_semantics=candidate_manipulation_region`）—— **需人工决定**。
+4. 环境隔离（TruFor py3.7）与镜像依赖（hf-mirror）会成为复现前提，须写入 README 的运行环境章节。
+5. GPU 预算：G7-a 冒烟 < 10 min；G7-b 校准 ~20 min；G7-d 小规模生成 ~1–2 h；G7-f 五条件对照 ~2–3 h。**均需 GPU 授权。**
+
+### 与既有阶段的关系
+
+- 不改 G4 / G5 的判据，但 G5「工具与解释」一节扩展为含新专家的对照；G7-f 的结论回填到 §4.15 阶段门槛。
+- 依赖顺序：G7-a → G7-b →（准入结论）→ G7-c → G7-d → G7-e → G7-f。G7-a/b/c 大部分为 CPU，可与 G4-f 的人工审核并行。
