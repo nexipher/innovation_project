@@ -125,6 +125,16 @@ class TestProbeScoring:
         assert result.metadata["calibrated"] is False
         assert "preprocess" in result.metadata
 
+    def test_a_cached_backbone_counts_as_available(self, tmp_path, monkeypatch):
+        """Once downloaded, the mirror setting is no longer needed."""
+        from experts import probe_dino
+
+        cache = tmp_path / "hub" / "models--facebook--dinov2-with-registers-large"
+        cache.mkdir(parents=True)
+        monkeypatch.setattr(probe_dino, "_HF_CACHE", str(tmp_path / "hub"))
+        expert = ProbeDinoExpert(weights_path=str(tmp_path / "w.pth"))
+        assert expert.backbone_cached() is True
+
     def test_a_missing_hf_endpoint_is_explained_before_transformers_fails(self, tmp_path):
         weights = tmp_path / "model.pth"
         weights.write_bytes(b"x")

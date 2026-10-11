@@ -49,6 +49,8 @@ from experts.external_base import (
 )
 
 DEFAULT_BACKBONE = "facebook/dinov2-with-registers-large"
+_HF_CACHE = os.environ.get("HF_HOME") or os.path.expanduser("~/.cache/huggingface")
+_HF_CACHE = os.path.join(_HF_CACHE, "hub")
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
@@ -87,16 +89,23 @@ class ProbeDinoExpert(ExternalScoreExpert):
             return f"torch/transformers（{exc}）"
         return ""
 
+    def backbone_cached(self) -> bool:
+        """A local directory, or an entry in the HuggingFace cache."""
+        if os.path.exists(self.backbone):
+            return True
+        slug = "models--" + self.backbone.replace("/", "--")
+        return os.path.isdir(os.path.join(_HF_CACHE, slug))
+
     def unavailable_reason(self) -> str:
         reason = super().unavailable_reason()
         if reason:
             return reason
-        if not os.environ.get("HF_ENDPOINT") and not os.path.exists(self.backbone):
+        if not self.backbone_cached() and not os.environ.get("HF_ENDPOINT"):
             # The backbone is a second download (≈1.2 GB).  On this network
             # huggingface.co is unreachable, so say what to set rather than
             # failing inside transformers with a connection error.
-            return (f"{self.source_name}：主干 {self.backbone} 需先获取；"
-                    f"本机需设置 HF_ENDPOINT=https://hf-mirror.com")
+            return (f"{self.source_name}：主干 {self.backbone} 尚未缓存；"
+                    f"本机需设置 HF_ENDPOINT=https://hf-mirror.com 后获取一次")
         return ""
 
     # ------------------------------------------------------------------
@@ -113,7 +122,14 @@ class ProbeDinoExpert(ExternalScoreExpert):
         model.backbone = backbone
         model.fc = head
 
-        checkpoint = torch.load(self.weights_path, map_location="cpu")
+        try:
+            # Their checkpoint is a plain tensor dict; loading it with
+            # weights_only=True is both safer and warning-free, and the
+            # fallback keeps older checkpoints working.
+            checkpoint = torch.load(self.weights_path, map_location="cpu",
+                                    weights_only=True)
+        except Exception:
+            checkpoint = torch.load(self.weights_path, map_location="cpu")
         state = checkpoint.get("model_state_dict", checkpoint)
         missing, unexpected = model.load_state_dict(state, strict=False)
         self._load_report = {"missing": list(missing), "unexpected": list(unexpected)}
@@ -141,7 +157,9 @@ class ProbeDinoExpert(ExternalScoreExpert):
                                        max(height, self.crop_size)))
             padded.paste(rgb, (0, 0))
             rgb = padded
-        tensor = torch.from_numpy(np.asarray(rgb)).permute(2, 0, 1).float() / 255.0
+        # np.array copies: a read-only view makes torch warn and the tensor
+        # undefined to write to.
+        tensor = torch.from_numpy(np.array(rgb)).permute(2, 0, 1).float() / 255.0
         mean = torch.tensor(IMAGENET_MEAN).view(3, 1, 1)
         std = torch.tensor(IMAGENET_STD).view(3, 1, 1)
         return (tensor - mean) / std
