@@ -115,7 +115,8 @@ class TestTheRuleItself:
             [dict(entry, generator=gen) for gen in generators
              for entry in self._summary("Fake", 3, generator=gen)]
         chosen = [entry for entry in choose(summary) if entry["label"] == "Fake"]
-        assert len({entry["generator"] for entry in chosen}) == 7
+        # eight slots, eight generators: the amendment's whole point
+        assert len({entry["generator"] for entry in chosen}) == 8
 
     def test_a_source_covering_both_readings_is_preferred(self):
         from scripts.g7_select_sources import choose
@@ -129,3 +130,63 @@ class TestTheRuleItself:
         real = self._summary("Real", 5)
         chosen = choose([flat] + real + [spread])
         assert spread in chosen
+
+
+class TestTheAmendment:
+    """G7 entry 4: the user approved widening to 14, on the record."""
+
+    def test_the_quota_is_now_six_and_eight(self):
+        assert SELECTION == {"Real": 6, "Fake": 8}
+
+    def test_the_revision_says_what_it_saw_and_that_it_is_post_hoc(self):
+        from scripts.g7_select_sources import AMENDMENT
+
+        assert AMENDMENT["from"] == {"Real": 5, "Fake": 7}
+        assert AMENDMENT["to"] == {"Real": 6, "Fake": 8}
+        assert "Wukong" in AMENDMENT["seen"]
+        assert "修订" in AMENDMENT["reason"]
+
+    def test_every_generator_gets_a_fake_when_eight_slots_exist(self):
+        from scripts.g7_select_sources import choose
+
+        generators = ("ADM", "BigGAN", "Glide", "Midjourney", "SD14", "SD15",
+                      "VQDM", "Wukong")
+        summary = [{"source_id": f"Real_{i}", "label": "Real", "generator": "Real",
+                    "bands": {}, "band_set": [], "n_strong": 1, "n_mid": 1,
+                    "spread": True} for i in range(10)]
+        summary += [{"source_id": f"{gen}_{i}", "label": "Fake", "generator": gen,
+                     "bands": {}, "band_set": [], "n_strong": 0, "n_mid": 0,
+                     "spread": False} for gen in generators for i in range(3)]
+        chosen = choose(summary)
+        assert {entry["generator"] for entry in chosen if entry["label"] == "Fake"} \
+            == set(generators)
+
+
+class TestSignalLabelAssociation:
+    def _rows(self, label, bands):
+        return [{"source_id": "s", "label": label, "generator": "Real",
+                 "band": band} for band in bands]
+
+    def test_a_balanced_set_gives_no_gap(self):
+        from scripts.g7_select_sources import signal_label_association
+
+        rows = self._rows("Fake", ["strong_fake"] * 2 + ["mid"] * 2) + \
+            self._rows("Real", ["strong_real"] * 2 + ["mid"] * 2)
+        stats = signal_label_association(rows)
+        assert stats["strong_share_gap"] == 0.0
+        assert stats["Fake"]["mid_share"] == 0.5
+
+    def test_a_skewed_set_shows_a_positive_gap(self):
+        from scripts.g7_select_sources import signal_label_association
+
+        rows = self._rows("Fake", ["strong_fake"] * 4) + \
+            self._rows("Real", ["mid"] * 4)
+        stats = signal_label_association(rows)
+        assert stats["strong_share_gap"] == 1.0
+
+    def test_the_band_breakdown_is_reported(self):
+        from scripts.g7_select_sources import signal_label_association
+
+        stats = signal_label_association(self._rows("Fake", ["strong_fake", "mid"]))
+        assert stats["Fake"]["bands"]["strong_fake"] == 1
+        assert stats["Fake"]["bands"]["mid"] == 1

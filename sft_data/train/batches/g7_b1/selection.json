@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-11T15:53:55",
+ "generated_at": "2026-10-11T15:59:32",
  "batch": "g7_b1",
  "seed": 20261011,
  "pool": {
@@ -11,8 +11,8 @@
  },
  "selection_rule": {
   "quota": {
-   "Real": 5,
-   "Fake": 7
+   "Real": 6,
+   "Fake": 8
   },
   "prefer": "同一源的五个格式跨分带（既有强信号又有中位箱）→ 生成器分散 → 源 id",
   "bands": {
@@ -38,6 +38,77 @@
    ]
   }
  },
+ "amendment": {
+  "date": "2026-10-11",
+  "from": {
+   "Real": 5,
+   "Fake": 7
+  },
+  "to": {
+   "Real": 6,
+   "Fake": 8
+  },
+  "seen": "Wukong 全部候选强信号、池中存在全中位箱 Real",
+  "reason": "覆盖 8 个生成器 + 纳入一个全中位箱 Real；属于看过分数后的规则修订"
+ },
+ "association": {
+  "chosen": {
+   "Real": {
+    "n": 30,
+    "strong_share": 0.7,
+    "mid_share": 0.3,
+    "bands": {
+     "strong_fake": 0,
+     "lean_fake": 0,
+     "mid": 9,
+     "lean_real": 0,
+     "strong_real": 21
+    }
+   },
+   "Fake": {
+    "n": 40,
+    "strong_share": 0.7,
+    "mid_share": 0.3,
+    "bands": {
+     "strong_fake": 25,
+     "lean_fake": 0,
+     "mid": 12,
+     "lean_real": 0,
+     "strong_real": 3
+    }
+   },
+   "strong_share_gap": 0.0
+  },
+  "pool": {
+   "Real": {
+    "n": 200,
+    "strong_share": 0.855,
+    "mid_share": 0.145,
+    "bands": {
+     "strong_fake": 0,
+     "lean_fake": 0,
+     "mid": 29,
+     "lean_real": 0,
+     "strong_real": 171
+    }
+   },
+   "Fake": {
+    "n": 240,
+    "strong_share": 0.7708,
+    "mid_share": 0.2292,
+    "bands": {
+     "strong_fake": 180,
+     "lean_fake": 0,
+     "mid": 55,
+     "lean_real": 0,
+     "strong_real": 5
+    }
+   },
+   "strong_share_gap": -0.0842
+  },
+  "note": "选定集有意覆盖难例，其分布不等于自然分布；这里只把差异量化，不作'应当弃权'之类的预设"
+ },
+ "superseded": "selection_v1_12sources.json（5 Real + 7 Fake 的原方案）",
  "chosen": [
   "ADM/977_adm_174",
   "BigGAN/999_biggan_00020",
@@ -45,12 +116,14 @@
   "Midjourney/132_midjourney_198",
   "Real/072d34b7-a485-4ebe-aef7-ddc3e1780e25",
   "Real/09cf3516-d70a-44e8-afa8-49156ebcd194",
+  "Real/0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad",
   "Real/1309de72-d92d-4106-bce0-e833a411f3fa",
   "Real/4267f8b2-3c25-4920-913b-25696e99e3e3",
   "Real/e1d5eb10-29f2-4018-ad94-a0901e94bdf1",
   "SD14/616_sdv4_00035",
   "SD15/174_sdv5_00135",
-  "VQDM/VQDM_1000_200_04_495_vqdm_00035"
+  "VQDM/VQDM_1000_200_04_495_vqdm_00035",
+  "Wukong/479_wukong_image188"
  ],
  "chosen_detail": [
   {
@@ -162,6 +235,20 @@
    "spread": true
   },
   {
+   "source_id": "Wukong/479_wukong_image188",
+   "label": "Fake",
+   "generator": "Wukong",
+   "bands": {
+    "strong_fake": 5
+   },
+   "band_set": [
+    "strong_fake"
+   ],
+   "n_strong": 5,
+   "n_mid": 0,
+   "spread": false
+  },
+  {
    "source_id": "Real/072d34b7-a485-4ebe-aef7-ddc3e1780e25",
    "label": "Real",
    "generator": "Real",
@@ -177,6 +264,20 @@
   },
   {
    "source_id": "Real/09cf3516-d70a-44e8-afa8-49156ebcd194",
+   "label": "Real",
+   "generator": "Real",
+   "bands": {
+    "strong_real": 5
+   },
+   "band_set": [
+    "strong_real"
+   ],
+   "n_strong": 5,
+   "n_mid": 0,
+   "spread": false
+  },
+  {
+   "source_id": "Real/0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad",
    "label": "Real",
    "generator": "Real",
    "bands": {

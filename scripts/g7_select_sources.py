@@ -62,7 +62,32 @@ FAKE_PER_GENERATOR = 6
 BANDS = (("strong_fake", 0.9, 1.01), ("lean_fake", 0.6, 0.9),
          ("mid", 0.4, 0.6), ("lean_real", 0.1, 0.4), ("strong_real", -0.01, 0.1))
 
-SELECTION = {"Real": 5, "Fake": 7}
+SELECTION = {"Real": 6, "Fake": 8}
+
+# Rule amendment, 2026-10-11, *after* the first selection was scored.  Recorded
+# here rather than in a commit message because it is part of what this batch is.
+#
+#   seen        the 12-source rule (5 Real + 7 Fake) left Wukong out: all six of
+#               its candidates read strong_fake in every one of their five
+#               formats, so they lose the preference for band spread and the
+#               Fake quota was full.  The candidate pool also contained Real
+#               sources whose five formats all landed in the near-chance band.
+#   changed     quota 5+7 -> 6+8, so every generator is represented and a
+#               pure-mid-bin Real enters the batch.
+#   why allowed this is candidate *selection* for a training set, not an
+#               independent test; the user's words: hard cases may be covered
+#               on purpose.  It is a revision made with the scores in hand and
+#               is described as one — not as a rule that anticipated them.
+#   what it is  NOT a claim that the mid-bin source should be abstained on.
+#               The mid band says PROBE is unsure; whether the session ends in
+#               a verdict, a disagreement or an abstention is an outcome to
+#               observe, and the corroborating experts may well carry it.
+#
+# The 12-source selection is kept beside the new one
+# (`selection_v1_12sources.json`) so the revision stays visible.
+AMENDMENT = {"date": "2026-10-11", "from": {"Real": 5, "Fake": 7},
+             "to": dict(SELECTION), "seen": "Wukong 全部候选强信号、池中存在全中位箱 Real",
+             "reason": "覆盖 8 个生成器 + 纳入一个全中位箱 Real；属于看过分数后的规则修订"}
 
 
 def band_of(probability: float) -> str:
@@ -209,6 +234,37 @@ def summarise_per_source(rows: List[dict]) -> List[dict]:
     return summary
 
 
+def signal_label_association(rows: List[dict]) -> dict:
+    """
+    Does the selection make signal strength track the label?
+
+    A batch where every Fake reads strong and every Real reads weak would teach
+    "the tool is loud ⇒ Fake" — the shortcut G2-d spent its budget removing.
+    Hard cases are allowed on purpose here (the user said so), but the
+    *distribution* that results must not be mistaken for a natural one, so the
+    chosen set is reported next to the pool it came from.
+    """
+    bands_by_label: Dict[str, Counter] = defaultdict(Counter)
+    for row in rows:
+        bands_by_label[row["label"]][row["band"]] += 1
+
+    output = {}
+    for label in ("Real", "Fake"):
+        counts = bands_by_label[label]
+        total = sum(counts.values())
+        strong = counts["strong_fake"] + counts["strong_real"]
+        output[label] = {
+            "n": total,
+            "strong_share": round(strong / total, 4) if total else None,
+            "mid_share": round(counts["mid"] / total, 4) if total else None,
+            "bands": {name: counts[name] for name, _, _ in BANDS},
+        }
+    fake = output["Fake"]["strong_share"]
+    real = output["Real"]["strong_share"]
+    output["strong_share_gap"] = None if fake is None or real is None else round(fake - real, 4)
+    return output
+
+
 def choose(summary: List[dict]) -> List[dict]:
     """
     The pre-registered rule, in the order it was written down.
@@ -302,6 +358,15 @@ def main() -> None:
             "prefer": "同一源的五个格式跨分带（既有强信号又有中位箱）→ 生成器分散 → 源 id",
             "bands": {name: [low, high] for name, low, high in BANDS},
         },
+        "amendment": AMENDMENT,
+        "association": {
+            "chosen": signal_label_association(
+                [row for row in rows if row["source_id"] in chosen_ids]),
+            "pool": signal_label_association(rows),
+            "note": ("选定集有意覆盖难例，其分布不等于自然分布；这里只把差异量化，"
+                     "不作'应当弃权'之类的预设"),
+        },
+        "superseded": "selection_v1_12sources.json（5 Real + 7 Fake 的原方案）",
         "chosen": sorted(chosen_ids),
         "chosen_detail": sorted(chosen, key=lambda e: (e["label"], e["source_id"])),
         "per_source": sorted(summary, key=lambda e: e["source_id"]),
@@ -327,6 +392,16 @@ def main() -> None:
     for entry in sorted(chosen, key=lambda e: (e["label"], e["source_id"])):
         print(f"  {entry['label']:4s} {entry['generator']:12s} {entry['source_id']:40s} "
               f"分带 {entry['bands']}")
+    chosen_assoc = report["association"]["chosen"]
+    pool_assoc = report["association"]["pool"]
+    print(f"\n=== 信号-标签关联（强信号占比）===")
+    for name, stats in (("候选池", pool_assoc), ("选定 14 源", chosen_assoc)):
+        print(f"  {name:10s} Real {stats['Real']['strong_share']:.2f}"
+              f"（中位 {stats['Real']['mid_share']:.2f}）｜"
+              f"Fake {stats['Fake']['strong_share']:.2f}"
+              f"（中位 {stats['Fake']['mid_share']:.2f}）｜"
+              f"差 {stats['strong_share_gap']:+.2f}")
+    print("  注：选定集有意覆盖难例，分布不等同自然分布，仅作对照记录")
     print(f"\n清单：{os.path.relpath(output, PROJECT_ROOT)}")
     print("（本轮只选源；未生成任何轨迹）")
 
