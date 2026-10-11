@@ -284,9 +284,24 @@ class TestRawProductsAndCache:
         expert.analyze(np.zeros((16, 16, 3), dtype=np.uint8))
         expert.analyze(np.full((16, 16, 3), 3, dtype=np.uint8))
         summary = expert.timing_summary()
-        assert summary["runs"] == 2
+        assert summary["runs"] == 2 and summary["mode"] == "per_image"
         assert summary["cold_start_s"] is not None
         assert summary["warm_mean_s"] is not None
+
+    def test_a_batch_timing_is_reported_per_image_not_per_batch(self, tmp_path):
+        """
+        Reporting a batch's wall time in the per-image slot makes a fast
+        pipeline look slow — the review caught exactly that in the A-group
+        report, where whole-batch seconds sat next to per-image ones.
+        """
+        expert = self._expert(results_dir=str(tmp_path))
+        expert.analyze_many({f"i{i}": np.full((16, 16, 3), i, dtype=np.uint8)
+                             for i in range(6)})
+        summary = expert.timing_summary()
+        assert summary["mode"] == "batch"
+        assert summary["images_in_batches"] == 6
+        assert summary["per_image_mean_s"] < 1.0        # not the 6-image wall time
+        assert summary["total_s"] >= summary["per_image_mean_s"]
 
     def test_the_persisted_map_can_be_re_summarised_without_the_model(self, tmp_path):
         """The point of keeping the npz: a new threshold is an offline change."""

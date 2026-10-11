@@ -353,17 +353,40 @@ class TruForExpert(ExternalScoreExpert):
             outputs[0] if outputs else "")
 
     def timing_summary(self) -> dict:
-        """Cold vs warm, for the batch-vs-resident decision the review asked for."""
+        """
+        Cold vs warm, **per image**, for the batch-vs-resident decision.
+
+        A batch call's `elapsed_s` is the whole batch's wall time; reporting it
+        next to per-image numbers would make a 0.3 s/image pipeline look like a
+        20 s one (and vice versa).  Batch entries therefore report
+        `per_image_s`, and the mode is named.
+        """
         if not self.timings:
-            return {"runs": 0}
-        cold = [t["elapsed_s"] for t in self.timings if t["cold_start"] and not t["cached"]]
-        warm = [t["elapsed_s"] for t in self.timings if not t["cold_start"] and not t["cached"]]
+            return {"runs": 0, "mode": "none"}
+        batches = [t for t in self.timings if t.get("batch_size")]
+        singles = [t for t in self.timings if not t.get("batch_size") and not t["cached"]]
         cached = [t for t in self.timings if t["cached"]]
+        warm = [t for t in singles if not t["cold_start"]]
+
+        if batches:
+            per_image = [t["per_image_s"] for t in batches]
+            images = sum(t["batch_size"] for t in batches)
+            return {
+                "runs": self._runs, "mode": "batch",
+                "images_in_batches": images,
+                "batches": len(batches),
+                "cold_start_s": (batches[0]["elapsed_s"] if batches[0]["cold_start"]
+                                 else None),
+                "per_image_mean_s": round(sum(per_image) / len(per_image), 3),
+                "per_image_min_s": min(per_image),
+                "total_s": round(sum(t["elapsed_s"] for t in batches), 2),
+                "cache_hits": len(cached),
+            }
         return {
-            "runs": self._runs,
-            "cold_start_s": cold[0] if cold else None,
-            "warm_mean_s": round(sum(warm) / len(warm), 2) if warm else None,
-            "warm_min_s": min(warm) if warm else None,
+            "runs": self._runs, "mode": "per_image",
+            "cold_start_s": next((t["elapsed_s"] for t in singles if t["cold_start"]), None),
+            "warm_mean_s": round(sum(t["elapsed_s"] for t in warm) / len(warm), 2) if warm else None,
+            "warm_min_s": min(t["elapsed_s"] for t in warm) if warm else None,
             "cache_hits": len(cached),
         }
 
