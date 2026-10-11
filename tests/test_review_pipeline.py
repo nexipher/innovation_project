@@ -1,6 +1,7 @@
 """Tests for review recording and the reviewed training set (G4-f → G4-g)."""
 
 import json
+import os
 
 import pytest
 
@@ -106,10 +107,19 @@ class TestSummary:
 class TestImport:
     """The workstation saves in the browser; this is how it reaches the repo."""
 
-    def _export(self, tmp_path, decisions, reviewer="hj", name="export.json"):
+    def _export(self, tmp_path, decisions, reviewer="hj", name="export.json",
+                fingerprint=None, final_v2=None):
+        """A workstation export — which, since G7, carries the batch version."""
+        from scripts.record_review import batch_fingerprint_of
+
+        if fingerprint is None and final_v2 is not None:
+            fingerprint = batch_fingerprint_of(final_v2)
         path = tmp_path / name
-        path.write_text(json.dumps({"reviewer": reviewer, "exported_at": "2026-10-09T10:00:00",
-                                    "decisions": decisions}, ensure_ascii=False),
+        payload = {"reviewer": reviewer, "exported_at": "2026-10-09T10:00:00",
+                   "decisions": decisions}
+        if fingerprint is not None:
+            payload["batch_fingerprint"] = fingerprint
+        path.write_text(json.dumps(payload, ensure_ascii=False),
                         encoding="utf-8")
         return str(path)
 
@@ -117,7 +127,7 @@ class TestImport:
         source = self._export(tmp_path, {
             "s1": {"decision": "accept", "notes": "证据一致", "saved_at": "2026-10-09T09:00:00"},
             "s2": {"decision": "reject", "notes": "容器当理由"},
-        })
+        }, final_v2=final_v2)
         path = str(tmp_path / "d.jsonl")
         report = import_decisions(source, None, path, final_v2)
         assert report["imported"] == 2
@@ -129,25 +139,25 @@ class TestImport:
 
     def test_an_untouched_row_is_not_a_decision(self, tmp_path, final_v2):
         source = self._export(tmp_path, {"s1": {"decision": "", "notes": ""},
-                                         "s2": {"decision": "accept"}})
+                                         "s2": {"decision": "accept"}}, final_v2=final_v2)
         report = import_decisions(source, "hj", str(tmp_path / "d.jsonl"), final_v2)
         assert report["imported"] == 1
 
     def test_a_typo_costs_one_row_not_the_import(self, tmp_path, final_v2):
         source = self._export(tmp_path, {"s9": {"decision": "accept"},
-                                         "s1": {"decision": "accept"}})
+                                         "s1": {"decision": "accept"}}, final_v2=final_v2)
         report = import_decisions(source, "hj", str(tmp_path / "d.jsonl"), final_v2)
         assert report["imported"] == 1
         assert report["unknown"] == ["s9"]
 
     def test_an_unknown_decision_is_skipped_and_reported(self, tmp_path, final_v2):
-        source = self._export(tmp_path, {"s1": {"decision": "maybe"}})
+        source = self._export(tmp_path, {"s1": {"decision": "maybe"}}, final_v2=final_v2)
         report = import_decisions(source, "hj", str(tmp_path / "d.jsonl"), final_v2)
         assert report["imported"] == 0
         assert report["invalid"] == [("s1", "maybe")]
 
     def test_re_importing_the_same_export_changes_nothing(self, tmp_path, final_v2):
-        source = self._export(tmp_path, {"s1": {"decision": "accept", "notes": "n"}})
+        source = self._export(tmp_path, {"s1": {"decision": "accept", "notes": "n"}}, final_v2=final_v2)
         path = str(tmp_path / "d.jsonl")
         import_decisions(source, "hj", path, final_v2)
         report = import_decisions(source, "hj", path, final_v2)
@@ -156,21 +166,21 @@ class TestImport:
 
     def test_a_changed_decision_is_appended(self, tmp_path, final_v2):
         path = str(tmp_path / "d.jsonl")
-        import_decisions(self._export(tmp_path, {"s1": {"decision": "accept"}}, name="a.json"),
+        import_decisions(self._export(tmp_path, {"s1": {"decision": "accept"}}, name="a.json", final_v2=final_v2),
                          "hj", path, final_v2)
         import_decisions(self._export(tmp_path, {"s1": {"decision": "revise", "notes": "漏了反证"}},
-                                      name="b.json"), "hj", path, final_v2)
+                                      name="b.json", final_v2=final_v2), "hj", path, final_v2)
         assert load_dispositions(path)["s1"]["decision"] == "revise"
         assert len(open(path, encoding="utf-8").read().strip().split("\n")) == 2
 
     def test_the_reviewer_can_come_from_the_command_line_instead(self, tmp_path, final_v2):
-        source = self._export(tmp_path, {"s1": {"decision": "accept"}}, reviewer="")
+        source = self._export(tmp_path, {"s1": {"decision": "accept"}}, reviewer="", final_v2=final_v2)
         path = str(tmp_path / "d.jsonl")
         import_decisions(source, "hj", path, final_v2)
         assert load_dispositions(path)["s1"]["reviewer"] == "hj"
 
     def test_no_reviewer_anywhere_is_refused(self, tmp_path, final_v2):
-        source = self._export(tmp_path, {"s1": {"decision": "accept"}}, reviewer="")
+        source = self._export(tmp_path, {"s1": {"decision": "accept"}}, reviewer="", final_v2=final_v2)
         with pytest.raises(ValueError, match="reviewer"):
             import_decisions(source, None, str(tmp_path / "d.jsonl"), final_v2)
 
@@ -182,7 +192,12 @@ class TestImport:
             "s2,positive,Fake,,\n"
             "s3,no_tool_positive,Real,format_only,结论勉强,hj\n",
             encoding="utf-8")
-        report = import_decisions(str(path), None, str(tmp_path / "d.jsonl"), final_v2)
+        # A hand-filled worklist carries no batch fingerprint, so it goes
+        # through the explicit unversioned path (the legacy way of working).
+        with pytest.raises(SystemExit, match="批次指纹"):
+            import_decisions(str(path), None, str(tmp_path / "d.jsonl"), final_v2)
+        report = import_decisions(str(path), None, str(tmp_path / "d.jsonl"), final_v2,
+                                  allow_unversioned=True)
         assert report["imported"] == 2
         assert report["by_decision"] == {"accept": 1, "format_only": 1}
 
@@ -196,8 +211,9 @@ class TestImport:
         path = tmp_path / "bare.json"
         path.write_text(json.dumps({"s1": {"decision": "accept", "notes": "x"}}),
                         encoding="utf-8")
-        _, entries = parse_export(str(path))
+        _, entries, batch = parse_export(str(path))
         assert entries["s1"]["decision"] == "accept"
+        assert batch["batch_fingerprint"] == ""   # a pre-G7 export
 
 
 class TestApply:
@@ -262,3 +278,68 @@ class TestApply:
 
     def test_load_samples_reads_all_buckets(self, final_v2):
         assert len(load_samples(final_v2)) == 4
+
+
+class TestStaleDecisions:
+    """G7 entry 4: a decision is about content, not about an id."""
+
+    def _dispositions(self, tmp_path, final_v2, decisions):
+        path = str(tmp_path / "d.jsonl")
+        for sample_id, decision in decisions.items():
+            record(sample_id, "hj", decision, "", path, final_v2)
+        return load_dispositions(path)
+
+    def test_a_decision_records_what_it_was_about(self, tmp_path, final_v2):
+        entry = record("s1", "hj", "accept", "", str(tmp_path / "d.jsonl"), final_v2)
+        assert entry["content_sha256"]
+        assert entry["batch_fingerprint"]
+
+    def test_regenerated_content_invalidates_the_decision(self, tmp_path, final_v2):
+        dispositions = self._dispositions(tmp_path, final_v2,
+                                          {"s1": "accept", "s2": "accept",
+                                           "s3": "accept", "s4": "accept"})
+        # s1 is regenerated: same id, different content (a new conclusion).
+        path = os.path.join(final_v2, "sft_tool_positive.json")
+        with open(path, encoding="utf-8") as handle:
+            samples = json.load(handle)
+        samples[0]["final_verdict"] = {"verdict": "Real", "confidence": 0.6}
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(samples, handle, ensure_ascii=False)
+
+        metadata = apply(dispositions, final_v2, os.path.join(tmp_path, "out"),
+                         allow_partial=True)
+        assert [entry["sample_id"] for entry in metadata["stale_decisions"]] == ["s1"]
+        assert metadata["undecided"] == 1
+        assert metadata["counts"]["accept"] == 3
+
+    def test_a_stale_set_cannot_be_written_without_saying_so(self, tmp_path, final_v2):
+        dispositions = self._dispositions(tmp_path, final_v2,
+                                          {"s1": "accept", "s2": "accept"})
+        path = os.path.join(final_v2, "sft_tool_positive.json")
+        with open(path, encoding="utf-8") as handle:
+            samples = json.load(handle)
+        samples[0]["ground_truth"] = "Real"
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(samples, handle, ensure_ascii=False)
+        with pytest.raises(SystemExit, match="undecided"):
+            apply(dispositions, final_v2, os.path.join(tmp_path, "out"))
+
+    def test_a_decision_from_another_batch_is_not_applied(self, tmp_path, final_v2):
+        path = str(tmp_path / "d.jsonl")
+        record("s1", "hj", "accept", "", path, final_v2, batch="other_batch")
+        dispositions = load_dispositions(path)
+        metadata = apply(dispositions, final_v2, os.path.join(tmp_path, "out"),
+                         allow_partial=True)
+        assert metadata["stale_decisions"][0]["sample_id"] == "s1"
+        assert "另一个批次" in metadata["stale_decisions"][0]["why"]
+
+    def test_require_hashes_refuses_legacy_records(self, tmp_path, final_v2):
+        path = str(tmp_path / "d.jsonl")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps({"sample_id": "s1", "reviewer": "hj",
+                                     "decision": "accept", "notes": "",
+                                     "recorded_at": "2026-10-08T00:00:00"}) + "\n")
+        dispositions = load_dispositions(path)
+        with pytest.raises(SystemExit, match="内容哈希"):
+            apply(dispositions, final_v2, os.path.join(tmp_path, "out"),
+                  allow_partial=True, require_hashes=True)

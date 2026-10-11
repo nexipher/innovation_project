@@ -39,7 +39,8 @@ from typing import Dict, List
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from scripts.record_review import BUCKET_FILES, load_dispositions
+from scripts.record_review import load_dispositions
+from utils.batch import BUCKET_FILES, LEGACY_BATCH, batch_paths, content_sha256
 
 FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2_reviewed")
@@ -63,14 +64,34 @@ def assert_not_frozen(output_dir: str) -> None:
 
 
 def load_samples(final_v2_dir: str = FINAL_V2_DIR) -> List[dict]:
-    samples = []
-    for name in BUCKET_FILES:
-        path = os.path.join(final_v2_dir, name)
-        if not os.path.exists(path):
+    from utils.batch import load_samples as _load
+    return _load(samples_dir=final_v2_dir)
+
+
+def stale_decisions(samples: List[dict], dispositions: Dict[str, dict],
+                    batch: str = LEGACY_BATCH) -> List[dict]:
+    """
+    Decisions that no longer describe the sample they are filed under.
+
+    A sample regenerated under the same id — the normal case, since the id
+    names the variant and the policy — must not inherit the old verdict.  The
+    content digest recorded at review time is what makes that detectable; a
+    digest from a different batch is stale for the same reason.
+    """
+    stale = []
+    for sample in samples:
+        entry = dispositions.get(sample["id"])
+        if entry is None:
             continue
-        with open(path, encoding="utf-8") as handle:
-            samples.extend(json.load(handle))
-    return samples
+        recorded = entry.get("content_sha256")
+        if recorded and recorded != content_sha256(sample):
+            stale.append({"sample_id": sample["id"], "why": "内容已变（哈希不符）",
+                          "reviewed_at": entry.get("recorded_at")})
+        elif entry.get("batch") and entry["batch"] != batch:
+            stale.append({"sample_id": sample["id"],
+                          "why": f"决定来自另一个批次（{entry['batch']}，当前 {batch}）",
+                          "reviewed_at": entry.get("recorded_at")})
+    return stale
 
 
 def class_weights(labels: collections.Counter) -> Dict[str, float]:
@@ -82,15 +103,36 @@ def class_weights(labels: collections.Counter) -> Dict[str, float]:
 
 
 def apply(dispositions: Dict[str, dict], final_v2_dir: str = FINAL_V2_DIR,
-          output_dir: str = OUTPUT_DIR, allow_partial: bool = False) -> dict:
+          output_dir: str = OUTPUT_DIR, allow_partial: bool = False,
+          require_hashes: bool = False, batch: str = LEGACY_BATCH) -> dict:
     assert_not_frozen(output_dir)
     samples = load_samples(final_v2_dir)
+
+    # G7 entry 4: a decision whose sample has changed is not a decision about
+    # this sample.  It is dropped from the mapping — which makes the sample
+    # undecided, so the set cannot be written without --allow-partial and the
+    # reviewer is told exactly which ids to look at again.
+    stale = stale_decisions(samples, dispositions, batch)
+    stale_ids = {entry["sample_id"] for entry in stale}
+    if stale:
+        dispositions = {key: value for key, value in dispositions.items()
+                        if key not in stale_ids}
+
+    unversioned = [s["id"] for s in samples
+                   if s["id"] in dispositions
+                   and not dispositions[s["id"]].get("content_sha256")]
+    if require_hashes and unversioned:
+        raise SystemExit(
+            f"{len(unversioned)} 条决定没有内容哈希（旧格式），本批次要求哈希："
+            f"{unversioned[:3]}")
 
     undecided = [s["id"] for s in samples if s["id"] not in dispositions]
     if undecided and not allow_partial:
         raise SystemExit(
             f"{len(undecided)} samples are undecided, e.g. {undecided[:3]}; "
-            f"finish the review or pass --allow-partial to write a provisional set")
+            f"finish the review or pass --allow-partial to write a provisional set"
+            + (f"；其中 {len(stale_ids)} 条因内容变化需重审：{sorted(stale_ids)[:3]}"
+               if stale else ""))
 
     buckets: Dict[str, List[dict]] = {decision: [] for decision in OUTPUT_FILES}
     for sample in samples:
@@ -117,6 +159,8 @@ def apply(dispositions: Dict[str, dict], final_v2_dir: str = FINAL_V2_DIR,
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "provisional": bool(undecided),
         "undecided": len(undecided),
+        "stale_decisions": stale,
+        "unversioned_decisions": len(unversioned),
         "counts": {decision: len(rows) for decision, rows in buckets.items()},
         "accepted_labels": dict(labels),
         "accepted_training_weights": class_weights(labels),
@@ -131,17 +175,33 @@ def apply(dispositions: Dict[str, dict], final_v2_dir: str = FINAL_V2_DIR,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--final-v2-dir", default=FINAL_V2_DIR)
-    parser.add_argument("--output-dir", default=OUTPUT_DIR)
+    parser.add_argument("--final-v2-dir", default=None)
+    parser.add_argument("--output-dir", default=None)
     parser.add_argument("--dispositions", default=None)
+    parser.add_argument("--batch", default=LEGACY_BATCH)
+    parser.add_argument("--require-hashes", action="store_true",
+                        help="拒绝没有内容哈希的旧格式决定（新批次应当开启）")
     parser.add_argument("--allow-partial", action="store_true")
     args = parser.parse_args()
 
-    dispositions = load_dispositions(args.dispositions) if args.dispositions \
-        else load_dispositions()
-    metadata = apply(dispositions, args.final_v2_dir, args.output_dir, args.allow_partial)
+    if args.final_v2_dir is None:
+        args.final_v2_dir = batch_paths(args.batch)["samples"]
+    if args.output_dir is None:
+        args.output_dir = batch_paths(args.batch)["reviewed"]
+    if args.dispositions is None:
+        args.dispositions = os.path.join(batch_paths(args.batch)["review"],
+                                         "dispositions.jsonl")
+    dispositions = load_dispositions(args.dispositions)
+    metadata = apply(dispositions, args.final_v2_dir, args.output_dir,
+                     args.allow_partial, args.require_hashes, args.batch)
 
     print(f"counts: {metadata['counts']}")
+    if metadata["stale_decisions"]:
+        print(f"STALE: {len(metadata['stale_decisions'])} 条决定因内容变化作废（需重审）："
+              f"{[s['sample_id'] for s in metadata['stale_decisions']][:5]}")
+    if metadata["unversioned_decisions"]:
+        print(f"WARNING: {metadata['unversioned_decisions']} 条决定没有内容哈希（旧格式），"
+              f"无法验证其对应内容")
     if metadata["provisional"]:
         print(f"PROVISIONAL: {metadata['undecided']} samples undecided and excluded")
     print(f"accepted labels: {metadata['accepted_labels']}")

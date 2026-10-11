@@ -41,24 +41,29 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
+from utils.batch import (BUCKET_FILES, LEGACY_BATCH, batch_fingerprint,
+                         batch_paths, content_sha256, load_samples)
 
 DISPOSITIONS_PATH = os.path.join(PROJECT_ROOT, "sft_data", "review", "dispositions.jsonl")
 FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
-BUCKET_FILES = ("sft_tool_positive.json", "sft_no_tool_positive.json",
-                "sft_honest_abstention.json")
 
 DECISIONS = ("accept", "format_only", "revise", "reject")
 
 
 def known_sample_ids(final_v2_dir: str = FINAL_V2_DIR) -> List[str]:
-    identifiers = []
-    for name in BUCKET_FILES:
-        path = os.path.join(final_v2_dir, name)
-        if not os.path.exists(path):
-            continue
-        with open(path, encoding="utf-8") as handle:
-            identifiers.extend(sample["id"] for sample in json.load(handle))
-    return identifiers
+    return [sample["id"] for sample in load_samples(samples_dir=final_v2_dir)]
+
+
+def sample_by_id(sample_id: str, final_v2_dir: str = FINAL_V2_DIR) -> Optional[dict]:
+    """The sample a decision would be about — needed to digest its content."""
+    for sample in load_samples(samples_dir=final_v2_dir):
+        if sample["id"] == sample_id:
+            return sample
+    return None
+
+
+def batch_fingerprint_of(final_v2_dir: str = FINAL_V2_DIR) -> str:
+    return batch_fingerprint(load_samples(samples_dir=final_v2_dir))
 
 
 def load_dispositions(path: str = DISPOSITIONS_PATH) -> Dict[str, dict]:
@@ -80,8 +85,8 @@ def load_dispositions(path: str = DISPOSITIONS_PATH) -> Dict[str, dict]:
 
 
 def record(sample_id: str, reviewer: str, decision: str, notes: str = "",
-           path: str = DISPOSITIONS_PATH,
-           final_v2_dir: str = FINAL_V2_DIR) -> dict:
+           path: str = DISPOSITIONS_PATH, final_v2_dir: str = FINAL_V2_DIR,
+           batch: str = LEGACY_BATCH) -> dict:
     """
     Append one decision, after checking it refers to a real sample.
 
@@ -92,15 +97,23 @@ def record(sample_id: str, reviewer: str, decision: str, notes: str = "",
         raise ValueError(f"unknown decision {decision!r}; expected one of {DECISIONS}")
     if not reviewer:
         raise ValueError("a reviewer name is required")
-    if sample_id not in set(known_sample_ids(final_v2_dir)):
+    sample = sample_by_id(sample_id, final_v2_dir)
+    if sample is None:
         raise ValueError(f"unknown sample id {sample_id!r}")
 
+    # G7 entry 4: the decision records *which content* it is about.  Without
+    # this a sample regenerated under the same id inherits the verdict of a
+    # sample nobody reviewed — the id names the variant and the policy, so it
+    # is the same id by design.
     entry = {
         "sample_id": sample_id,
         "reviewer": reviewer,
         "decision": decision,
         "notes": notes,
         "recorded_at": datetime.now().isoformat(timespec="seconds"),
+        "content_sha256": content_sha256(sample),
+        "batch": batch,
+        "batch_fingerprint": batch_fingerprint_of(final_v2_dir),
     }
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as handle:
@@ -108,7 +121,7 @@ def record(sample_id: str, reviewer: str, decision: str, notes: str = "",
     return entry
 
 
-def parse_export(path: str) -> Tuple[str, Dict[str, dict]]:
+def parse_export(path: str) -> Tuple[str, Dict[str, dict], dict]:
     """
     Read a browser export or a filled worklist into {sample_id: entry}.
 
@@ -132,7 +145,7 @@ def parse_export(path: str) -> Tuple[str, Dict[str, dict]]:
                     "reviewer": (row.get("reviewer") or "").strip(),
                 }
                 reviewer = reviewer or (row.get("reviewer") or "").strip()
-            return reviewer, entries
+            return reviewer, entries, {}
 
         payload = json.load(handle)
     decisions = payload.get("decisions") if isinstance(payload, dict) else None
@@ -156,12 +169,16 @@ def parse_export(path: str) -> Tuple[str, Dict[str, dict]]:
             "saved_at": (entry.get("saved_at") or "").strip(),
             "reviewer": (entry.get("reviewer") or "").strip(),
         }
-    return (payload.get("reviewer") or "").strip(), entries
+    batch = {"batch_id": (payload.get("batch_id") or "").strip(),
+             "batch_fingerprint": (payload.get("batch_fingerprint") or "").strip()}
+    return (payload.get("reviewer") or "").strip(), entries, batch
 
 
 def import_decisions(path: str, reviewer: Optional[str] = None,
                      dispositions_path: str = DISPOSITIONS_PATH,
-                     final_v2_dir: str = FINAL_V2_DIR) -> dict:
+                     final_v2_dir: str = FINAL_V2_DIR,
+                     batch: str = LEGACY_BATCH,
+                     allow_unversioned: bool = False) -> dict:
     """
     Append every decided row of an export, skipping what cannot be imported.
 
@@ -170,10 +187,24 @@ def import_decisions(path: str, reviewer: Optional[str] = None,
     whose decision is already the latest with the same notes are counted as
     unchanged, which makes a re-import of the same file a no-op.
     """
-    exported_reviewer, entries = parse_export(path)
+    exported_reviewer, entries, exported_batch = parse_export(path)
     fallback_reviewer = reviewer or exported_reviewer
     latest = load_dispositions(dispositions_path)
     known = set(known_sample_ids(final_v2_dir))
+
+    # G7 entry 4: an export made against different content is refused whole,
+    # not row by row.  Importing half of it would leave the set looking
+    # reviewed while half the decisions describe samples that no longer exist.
+    current_fingerprint = batch_fingerprint_of(final_v2_dir)
+    declared = exported_batch.get("batch_fingerprint")
+    if declared and declared != current_fingerprint:
+        raise SystemExit(
+            f"{path}: 该导出对应批次指纹 {declared}，当前批次为 {current_fingerprint}"
+            f"（{len(entries)} 条决定全部拒绝）。样本内容已变，请重新审核。")
+    if not declared and not allow_unversioned:
+        raise SystemExit(
+            f"{path}: 导出中没有批次指纹，无法确认这些决定对应的是当前内容。"
+            f"如确认无风险（例如历史批次的旧导出），加 --allow-unversioned。")
 
     imported, unchanged, unknown, invalid, by_decision = 0, 0, [], [], Counter()
     for sample_id, entry in entries.items():
@@ -193,7 +224,7 @@ def import_decisions(path: str, reviewer: Optional[str] = None,
             raise ValueError("a reviewer name is required: pass --reviewer or "
                              "export from the page after filling it in")
         record(sample_id, who, entry["decision"], entry["notes"],
-               dispositions_path, final_v2_dir)
+               dispositions_path, final_v2_dir, batch)
         imported += 1
         by_decision[entry["decision"]] += 1
 
@@ -240,13 +271,22 @@ def main() -> None:
     parser.add_argument("--import", "--import-file", dest="import_file", default=None,
                         help="browser export (JSON) or filled worklist.csv")
     parser.add_argument("--summary", action="store_true")
-    parser.add_argument("--dispositions", default=DISPOSITIONS_PATH)
-    parser.add_argument("--final-v2-dir", default=FINAL_V2_DIR)
+    parser.add_argument("--dispositions", default=None)
+    parser.add_argument("--final-v2-dir", default=None)
+    parser.add_argument("--batch", default=LEGACY_BATCH)
+    parser.add_argument("--allow-unversioned", action="store_true",
+                        help="接受没有批次指纹的旧导出（默认拒绝）")
     args = parser.parse_args()
 
+    if args.dispositions is None:
+        args.dispositions = os.path.join(batch_paths(args.batch)["review"],
+                                         "dispositions.jsonl")
+    if args.final_v2_dir is None:
+        args.final_v2_dir = batch_paths(args.batch)["samples"]
     if args.import_file:
         report = import_decisions(args.import_file, args.reviewer,
-                                  args.dispositions, args.final_v2_dir)
+                                  args.dispositions, args.final_v2_dir, args.batch,
+                                  args.allow_unversioned)
         print(f"imported {report['imported']} decisions from {report['file']} "
               f"({report['unchanged']} unchanged, {report['rows']} rows)")
         print(f"by decision: {report['by_decision']}")
@@ -275,7 +315,7 @@ def main() -> None:
         parser.error("--sample, --reviewer and --decision are required "
                      "(or use --import-file / --summary)")
     entry = record(args.sample, args.reviewer, args.decision, args.notes,
-                   args.dispositions, args.final_v2_dir)
+                   args.dispositions, args.final_v2_dir, args.batch)
     print(f"recorded: {entry['sample_id']} -> {entry['decision']} by {entry['reviewer']}")
 
 

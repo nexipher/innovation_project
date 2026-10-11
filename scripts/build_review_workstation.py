@@ -45,6 +45,8 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
+from utils import weak_evidence
+from utils.batch import LEGACY_BATCH, batch_fingerprint
 
 FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
 BUCKET_FILES = ("sft_tool_positive.json", "sft_no_tool_positive.json",
@@ -187,6 +189,10 @@ def high_risk_reasons(sample: dict, trajectory: Optional[dict]) -> List[str]:
         reasons.append("high_confidence")
     if conflict > 0.5 or "conflict_unresolved" in ((trajectory or {}).get("policy_reasons") or []):
         reasons.append("conflict")
+    # G7 entry 4: near-chance evidence written up as though it settled something.
+    # The flag sorts the sample to the top of the pile; the reviewer decides.
+    if weak_evidence.flags(sample):
+        reasons.append("weak_evidence_promoted")
     return reasons
 
 
@@ -496,6 +502,8 @@ REVIEW_SCRIPT = r"""
     var payload = {
       reviewer: (document.getElementById('reviewer') || {}).value || state.reviewer || '',
       exported_at: new Date().toISOString(),
+      batch_id: BATCH.id,
+      batch_fingerprint: BATCH.fingerprint,
       decisions: state.decisions || {}
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -704,11 +712,13 @@ def render_sample_page(sample: dict, trajectory: Optional[dict],
                        high_risk: List[str],
                        prev_id: Optional[str] = None,
                        next_id: Optional[str] = None,
-                       total_samples: int = 0) -> str:
+                       total_samples: int = 0,
+                       batch: Optional[dict] = None) -> str:
     metadata = sample.get("metadata") or {}
     verdict = sample.get("final_verdict") or {}
     tokens = sample.get("evidence_chain") or []
     bucket = sample.get("_bucket_file", "")
+    batch = batch or {"id": LEGACY_BATCH, "fingerprint": ""}
 
     images = [_img(sample.get("image_path"), page_path,
                    f"模型实际输入的变体（{metadata.get('treatment')}）", missing),
@@ -754,13 +764,23 @@ def render_sample_page(sample: dict, trajectory: Optional[dict],
 <h2>本页的修改历史（浏览器本地）</h2>
 <ul id="history" class="note"></ul>
 <script>window.__review = {{sample: {json.dumps(sample['id'], ensure_ascii=False)}}};</script>
+{batch_script(batch["id"], batch["fingerprint"])}
 <script>{REVIEW_SCRIPT}</script>
 </body></html>
 """
 
 
+def batch_script(batch_id: str, fingerprint: str) -> str:
+    """The page carries which batch it is showing; the export repeats it."""
+    return ("<script>window.__batch = "
+            + json.dumps({"id": batch_id, "fingerprint": fingerprint},
+                         ensure_ascii=False)
+            + ";</script>")
+
+
 def render_index(samples: List[dict], sets: dict, page_path: str,
-                 missing_count: int) -> str:
+                 missing_count: int, batch: Optional[dict] = None) -> str:
+    batch = batch or {"id": LEGACY_BATCH, "fingerprint": ""}
     rows = []
     for sample in sorted(samples, key=lambda s: s["id"]):
         metadata = sample.get("metadata") or {}
@@ -810,6 +830,7 @@ def render_index(samples: List[dict], sets: dict, page_path: str,
 <table><thead><tr><th>样本</th><th>桶</th><th>真值</th><th>策略</th><th>处理</th><th>生成器</th>
 <th>模型判定</th><th>后验 P(Fake)</th><th>高风险</th><th>你的结论</th><th>备注</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table>
+<script>{batch_script(batch["id"], batch["fingerprint"])}</script>
 <script>{REVIEW_SCRIPT}</script>
 </body></html>
 """
@@ -822,10 +843,15 @@ def render_index(samples: List[dict], sets: dict, page_path: str,
 def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
           trajectories_dir: str = TRAJECTORIES_DIR,
           variants_manifest: str = VARIANTS_MANIFEST,
-          split_path: Optional[str] = None) -> dict:
+          split_path: Optional[str] = None,
+          batch_id: str = LEGACY_BATCH) -> dict:
     samples = load_samples(final_v2_dir)
     if not samples:
         raise SystemExit(f"no samples in {final_v2_dir}")
+    # G7 entry 4: the page says which batch (and which version of it) it is
+    # showing, and the export repeats it — an export made against different
+    # content is refused at import rather than applied to whatever is there.
+    batch = {"id": batch_id, "fingerprint": batch_fingerprint(samples)}
     trajectories = load_trajectories(trajectories_dir)
     variants = load_variant_entries(variants_manifest)
     split = load_split(split_path)
@@ -857,7 +883,7 @@ def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
         with open(page_path, "w", encoding="utf-8") as handle:
             handle.write(render_sample_page(sample, trajectory, baseline, source_path,
                                             index_path, page_path, missing, reasons,
-                                            previous, following, len(ordered)))
+                                            previous, following, len(ordered), batch))
 
     sets = {
         "protocol": "single_pass",
@@ -865,7 +891,7 @@ def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
         "high_risk": high_risk,
     }
     with open(index_path, "w", encoding="utf-8") as handle:
-        handle.write(render_index(samples, sets, index_path, len(missing)))
+        handle.write(render_index(samples, sets, index_path, len(missing), batch))
     with open(os.path.join(output_dir, "review_sets.json"), "w", encoding="utf-8") as handle:
         json.dump(sets, handle, ensure_ascii=False, indent=2)
 
@@ -887,6 +913,8 @@ def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
 
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "batch_id": batch["id"],
+        "batch_fingerprint": batch["fingerprint"],
         "samples": len(samples),
         "buckets": dict(Counter(s.get("_bucket_file") for s in samples)),
         "high_risk": len(high_risk),
@@ -899,15 +927,26 @@ def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--final-v2-dir", default=FINAL_V2_DIR)
-    parser.add_argument("--output-dir", default=OUTPUT_DIR)
-    parser.add_argument("--trajectories-dir", default=TRAJECTORIES_DIR)
-    parser.add_argument("--variants-manifest", default=VARIANTS_MANIFEST)
+    parser.add_argument("--final-v2-dir", default=None)
+    parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--trajectories-dir", default=None)
+    parser.add_argument("--variants-manifest", default=None)
     parser.add_argument("--split-path", default=None)
+    parser.add_argument("--batch", default=LEGACY_BATCH)
     args = parser.parse_args()
 
+    if args.final_v2_dir is None:
+        args.final_v2_dir = batch_paths(args.batch)["samples"]
+    if args.output_dir is None:
+        args.output_dir = batch_paths(args.batch)["review"]
+    if args.trajectories_dir is None:
+        args.trajectories_dir = batch_paths(args.batch)["trajectories"]
+    if args.variants_manifest is None:
+        args.variants_manifest = batch_paths(args.batch)["variants"]
+
     report = build(args.final_v2_dir, args.output_dir, args.trajectories_dir,
-                   args.variants_manifest, args.split_path)
+                   args.variants_manifest, args.split_path, args.batch)
+    print(f"batch: {report['batch_id']} ({report['batch_fingerprint']})")
     print(f"samples: {report['samples']}  buckets: {report['buckets']}")
     print(f"high risk: {report['high_risk']}  {report['high_risk_reasons']}")
     print(f"missing images: {report['missing_images']}")

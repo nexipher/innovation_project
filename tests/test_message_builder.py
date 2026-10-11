@@ -156,7 +156,8 @@ class TestPromptMeasurementContract:
 
     def test_repeat_calls_are_forbidden_by_expert_not_by_region(self):
         """A repeat call is a repeat measurement, wherever the bbox points."""
-        assert "Never call an expert you have already called" in FORENSIC_SYSTEM_PROMPT
+        assert "Call each expert AT MOST ONCE per session" in FORENSIC_SYSTEM_PROMPT
+        assert "hard rule, not advice" in FORENSIC_SYSTEM_PROMPT
         assert "Do not repeat a call for a region you already measured" not in FORENSIC_SYSTEM_PROMPT
 
     def test_the_read_contract_explains_the_global_scope_field(self):
@@ -176,8 +177,9 @@ class TestToolPolicies:
         artifact) — 09dd259ae0b130f6 → e9e2120587d8049d — and then the planning
         template stopped inviting the call tag inside its prose (the acceptance
         run showed the model writing the tag twice in one response), which
-        moved it to the value below.  Anything that moves it again has to say
-        so in a commit.
+        moved it to e9e2120587d8049d; entry 4 then made the once-per-session
+        rule explicit rather than advisory, and re-pinned it here.  Anything
+        that moves it again has to say so in a commit.
         """
         import hashlib
 
@@ -186,7 +188,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "1ef7af02773aa1c9"
+            "ec50468e31d57d44"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER
