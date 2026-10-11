@@ -372,6 +372,25 @@ def main() -> None:
         "per_source": sorted(summary, key=lambda e: e["source_id"]),
         "variants": rows,
     }
+    # The batch's generation input: only the chosen sources' variants.  The
+    # candidate manifest is kept beside it — the selection is evidence, and it
+    # has to stay checkable.
+    chosen_variants = {v["_path"]: {k: val for k, val in v.items() if k != "_path"}
+                       for v in variants if v["source_id"] in chosen_ids}
+    with open(os.path.join(paths["variants_dir"], "manifest_candidates.json"),
+              "w", encoding="utf-8") as handle:
+        json.dump({"generated_at": report["generated_at"], "pool": len(candidates),
+                   "counts": {"sources": len(candidates), "variants": len(variants)},
+                   "variants": {v["_path"]: {k: val for k, val in v.items()
+                                             if k != "_path"} for v in variants}},
+                  handle, ensure_ascii=False, indent=1)
+    with open(paths["variants"], "w", encoding="utf-8") as handle:
+        json.dump({"generated_at": report["generated_at"],
+                   "split_hash": json.load(open(SPLIT_PATH, encoding="utf-8"))["hash"],
+                   "partition": "train", "batch": args.batch,
+                   "counts": {"sources": len(chosen_ids), "variants": len(chosen_variants)},
+                   "variants": chosen_variants}, handle, ensure_ascii=False, indent=1)
+
     output = os.path.join(paths["samples"], "selection.json")
     os.makedirs(paths["samples"], exist_ok=True)
     with open(output, "w", encoding="utf-8") as handle:
