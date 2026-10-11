@@ -161,6 +161,8 @@ class ForensicStateMachine:
         model_turn_count = 0
         expert_call_count = 0
         suppressed_duplicate_count = 0
+        skipped_duplicate_calls = 0
+        measured_sources: Dict[str, str] = {}     # source_name → evidence_id
         seen_evidence_ids: set = set()
         evidence_chain: List[dict] = []
         final_verdict: Optional[dict] = None
@@ -195,19 +197,40 @@ class ForensicStateMachine:
             if calls:
                 # 4d. Execute each expert call
                 for expert_name, rel_bbox in calls:
-                    expert_call_count += 1
-
                     # Convert normalized [0,1000] → absolute pixel coordinates,
                     # keeping both spaces in the trace (plan.md §4.8 G1).
                     transform = CoordinateTransformer.transform(rel_bbox, w, h)
                     abs_bbox = transform["region_pixels"]
                     patch = ImageUtils.crop_bbox(img, abs_bbox)
 
-                    expert = self._experts.get(
-                        self._expert_by_call.get(expert_name, "")
-                    )
+                    source_name = self._expert_by_call.get(expert_name, "")
+                    expert = self._experts.get(source_name)
                     if expert is None:
                         continue
+
+                    # G7 entry 3 (measured in the acceptance run): every expert
+                    # measures the whole image deterministically, so a second
+                    # call to the same expert in one session *cannot* return
+                    # anything new.  The model does it anyway — 48.6% of all
+                    # executions in the 120-session batch were repeats — and
+                    # running the expert first and deduplicating on evidence_id
+                    # afterwards pays the GPU time and the call budget before
+                    # noticing.  So the check moves in front of the measurement:
+                    # an expensive call that cannot add information is not made,
+                    # and it is not charged to the budget either (the budget
+                    # buys measurements, not repetitions).
+                    if source_name in measured_sources:
+                        skipped_duplicate_calls += 1
+                        notice = (
+                            f"[System: {source_name} 已在本会话对整图测量过"
+                            f"（{measured_sources[source_name]}），整图测量与区域无关，"
+                            f"重复调用不会产生新的测量，已跳过执行。请基于现有证据继续。]"
+                        )
+                        self._logger.add_conversation_turn("user", notice)
+                        conversation.append({"from": "user", "value": notice})
+                        continue
+
+                    expert_call_count += 1
 
                     # G3-a: the measurement is taken on the whole image.  The
                     # reliability table is calibrated on full images (n=700),
@@ -275,6 +298,7 @@ class ForensicStateMachine:
                         continue
                     seen_evidence_ids.add(evidence_id)
                     called_experts.add(expert_result.source)
+                    measured_sources[expert_result.source] = evidence_id
                     turns_without_new_evidence = -1  # counted at the turn's end
 
                     # Persist the diagnostic region crop (G1) and the expert's
@@ -478,6 +502,7 @@ class ForensicStateMachine:
         counters = self._build_counters(
             model_turn_count, expert_call_count,
             suppressed_duplicate_count, evidence_chain,
+            skipped_duplicate_calls=skipped_duplicate_calls,
             policy_decision=policy_decision,
             available_experts=list(self._experts),
         )
@@ -496,6 +521,7 @@ class ForensicStateMachine:
             "expert_call_count": expert_call_count,
             "unique_evidence_count": len(evidence_chain),
             "suppressed_duplicate_count": suppressed_duplicate_count,
+            "skipped_duplicate_calls": skipped_duplicate_calls,
             "weighted_cost": counters["weighted_cost"],
             "halting_reason": halting_reason,
             "evidence_chain": evidence_chain,
@@ -605,6 +631,7 @@ class ForensicStateMachine:
         expert_call_count: int,
         suppressed_duplicate_count: int,
         evidence_chain: List[dict],
+        skipped_duplicate_calls: int = 0,
         policy_decision=None,
         available_experts: Optional[List[str]] = None,
     ) -> dict:
@@ -614,6 +641,11 @@ class ForensicStateMachine:
             "expert_call_count": expert_call_count,
             "unique_evidence_count": len(evidence_chain),
             "suppressed_duplicate_count": suppressed_duplicate_count,
+            # G7 entry 3: calls skipped *before* execution because the expert
+            # had already measured this image.  Counted separately from the
+            # post-hoc suppression so a reader can tell a wasted GPU call from
+            # a call that never happened.
+            "skipped_duplicate_calls": skipped_duplicate_calls,
             "weighted_cost": round(
                 expert_call_count + TURN_COST_WEIGHT * model_turn_count, 4
             ),

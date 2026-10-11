@@ -185,9 +185,13 @@ def review_session(record: dict, trace: Optional[dict]) -> dict:
                              "detail": f"报告 {record['probe_token_p_fake']} vs 会话 {probe_probability}"})
 
     # 5. repeats, drops, early stops
-    if metadata.get("suppressed_duplicate_count", 0) > 0:
-        findings.append({"kind": "duplicate_call",
-                         "detail": f"重复调用被抑制 {metadata['suppressed_duplicate_count']} 次"})
+    skipped = metadata.get("skipped_duplicate_calls", 0)
+    suppressed = metadata.get("suppressed_duplicate_count", 0)
+    if skipped or suppressed:
+        findings.append({
+            "kind": "duplicate_call",
+            "detail": f"重复调用：执行前跳过 {skipped} 次、执行后抑制 {suppressed} 次"
+                      f"（前者不耗预算，后者是兜底）"})
     if verdict.get("verdict") == "Uncertain" and metadata.get("halting_reason") == "no_expected_gain":
         utilities = metadata.get("tool_utilities") or {}
         positive = {k: round(v, 3) for k, v in utilities.items() if v > 0}

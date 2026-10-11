@@ -171,10 +171,13 @@ class TestToolPolicies:
         The default prompt is a contract: a hash change is a deliberate change
         and must be re-pinned here.
 
-        G7 entry 3 changed it — PROBE leads the tool list now and the reading
+        G7 entry 3 changed it twice: PROBE leads the tool list and the reading
         contract gained rule 6 (its score is a probability, not a located
-        artifact) — so the digest moved from 09dd259ae0b130f6 to the value
-        below.  Anything that moves it again has to say so in a commit.
+        artifact) — 09dd259ae0b130f6 → e9e2120587d8049d — and then the planning
+        template stopped inviting the call tag inside its prose (the acceptance
+        run showed the model writing the tag twice in one response), which
+        moved it to the value below.  Anything that moves it again has to say
+        so in a commit.
         """
         import hashlib
 
@@ -183,7 +186,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "e9e2120587d8049d"
+            "1ef7af02773aa1c9"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

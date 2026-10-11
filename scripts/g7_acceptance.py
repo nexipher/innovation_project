@@ -388,6 +388,7 @@ def run_agent(samples: List[dict], experts: Dict[str, Any],
                           for token in tokens],
             "expert_calls": result.get("expert_call_count", 0),
             "suppressed_duplicates": result.get("suppressed_duplicate_count", 0),
+            "skipped_duplicates": result.get("skipped_duplicate_calls", 0),
             "model_turns": result.get("model_turn_count", 0),
             "elapsed_s": round(elapsed, 2),
             "probe_token_p_fake": next(
@@ -469,6 +470,8 @@ def summarise(records: List[dict], reference: Dict[str, dict]) -> dict:
         "first_calls": dict(first_call),
         "landed_tokens_per_tag": dict(landed),
         "per_treatment": {t: dict(counter) for t, counter in sorted(per_treatment.items())},
+        "skipped_duplicate_calls": sum(r.get("skipped_duplicates", 0) for r in records),
+        "executed_calls": sum(r.get("expert_calls", 0) for r in records),
         "mean_seconds_per_sample": round(
             float(np.mean([r["elapsed_s"] for r in records])), 2) if records else None,
         "mean_model_turns": round(

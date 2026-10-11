@@ -117,14 +117,24 @@ class TestEvidenceDeduplication:
     VERDICT = ('<reasoning>正常。</reasoning>\n<verdict>'
                '{"verdict": "Real", "confidence": 0.7, "primary_evidence": [], "report": "ok"}</verdict>')
 
-    def test_identical_repeat_call_is_suppressed(self):
+    def test_identical_repeat_call_is_skipped_before_it_is_measured(self):
+        """
+        G7 entry 3: the repeat is not *executed* any more.
+
+        Every expert measures the whole image deterministically, so a second
+        call cannot return anything new — the acceptance run showed 48.6% of
+        all executions were such repeats.  The call is answered (the model's
+        turn must not dangle) but it costs nothing and is not charged to the
+        budget.
+        """
         mllm = ScriptedMLLM([self.CALL, self.CALL, self.VERDICT])
         fsm = ForensicStateMachine(mllm, _build_experts())
         result = fsm.run(FAKE_PATH, "Fake")
 
         assert result["unique_evidence_count"] == 1
-        assert result["expert_call_count"] == 2
-        assert result["suppressed_duplicate_count"] == 1
+        assert result["expert_call_count"] == 1, "重复调用不应再消耗一次执行"
+        assert result["skipped_duplicate_calls"] == 1
+        assert result["suppressed_duplicate_count"] == 0
         # Duplicate suppression must prevent the false convergence path v1 had
         # (its info-gain rule compared two adjacent strengths).
         assert result["halting_reason"] != "info_gain_converged"
@@ -151,15 +161,16 @@ class TestEvidenceDeduplication:
         fsm = ForensicStateMachine(mllm, _build_experts())
         result = fsm.run(FAKE_PATH, "Fake")
 
-        assert result["expert_call_count"] == 2
+        assert result["expert_call_count"] == 1
         assert result["unique_evidence_count"] == 1
-        assert result["suppressed_duplicate_count"] == 1
+        assert result["skipped_duplicate_calls"] == 1
 
-    def test_a_suppressed_duplicate_call_is_answered(self):
+    def test_a_skipped_duplicate_call_is_answered(self):
         """
         D4 (2026-10-11): the model asked again and got nothing back — silently
         dropping the result taught it that a call may be followed by a
-        conclusion with no answer in between.
+        conclusion with no answer in between.  G7 keeps the answer while
+        removing the execution.
         """
         import json as _json
 
@@ -171,7 +182,7 @@ class TestEvidenceDeduplication:
         with open(result["sft_data_path"], encoding="utf-8") as handle:
             session = _json.load(handle)
         notices = [t for t in session["conversations"]
-                   if t["from"] == "user" and "去重规则忽略" in t.get("value", "")]
+                   if t["from"] == "user" and "已跳过执行" in t.get("value", "")]
         assert len(notices) == 1
 
     def test_the_trace_records_what_the_policy_could_have_called(self):
@@ -253,8 +264,19 @@ class TestDiagnosticRegionArtifacts:
         fsm = ForensicStateMachine(mllm, _build_experts())
         result = fsm.run(FAKE_PATH, "Fake")
 
-        assert result["suppressed_duplicate_count"] == 1
+        # The repeat is skipped before it is measured (G7 entry 3), so there is
+        # no second execution to suppress and no second artifact to write.
+        assert result["skipped_duplicate_calls"] == 1
+        assert result["suppressed_duplicate_count"] == 0
         assert len(result["evidence_chain"]) == 1
+        session_dir = _os.path.join(PROJECT_ROOT, "traces", "evidence",
+                                    result["session_id"])
+        if _os.path.isdir(session_dir):
+            artifacts = _os.listdir(session_dir)
+            # Filenames are "<name>_<evidence_id>.png"; one measurement means
+            # one evidence id, whatever the crop was saved as.
+            ids = {name.rsplit("_", 1)[-1].removesuffix(".png") for name in artifacts}
+            assert len(ids) <= 1
 
 
 class TestEvidenceBundleWiring:
