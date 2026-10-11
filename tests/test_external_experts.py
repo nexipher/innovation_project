@@ -287,6 +287,66 @@ class TestRawProductsAndCache:
         assert TruForExpert.summarise(stored)["score"] == pytest.approx(0.42)
 
 
+class TestBatchInvocation:
+    """
+    The measured reason batch exists: 12.4 s cold and 12.2 s warm for one
+    image means almost all of it is the interpreter, the imports and the
+    checkpoint.  One process for many images pays that once.
+    """
+
+    def test_many_images_cost_one_tool_call(self, tmp_path):
+        expert = MockTruForExpert(score=0.4, results_dir=str(tmp_path))
+        images = {f"img_{i}": np.full((16, 16, 3), i, dtype=np.uint8) for i in range(5)}
+        results = expert.analyze_many(images)
+        assert len(results) == 5
+        assert expert.tool_calls == 1                 # one process, five images
+
+    def test_every_batch_result_is_persisted_individually(self, tmp_path):
+        expert = MockTruForExpert(score=0.4, results_dir=str(tmp_path))
+        images = {f"img_{i}": np.full((16, 16, 3), i, dtype=np.uint8) for i in range(3)}
+        results = expert.analyze_many(images)
+        for image_id, image in images.items():
+            key = expert.cache_key(image)
+            assert os.path.exists(expert.result_path(key))
+            assert results[image_id].raw_metric == pytest.approx(0.4)
+
+    def test_the_batch_timing_is_reported_per_image(self, tmp_path):
+        expert = MockTruForExpert(score=0.4, results_dir=str(tmp_path))
+        expert.analyze_many({f"i{i}": np.full((16, 16, 3), i, dtype=np.uint8)
+                             for i in range(4)})
+        summary = expert.timing_summary()
+        assert summary["runs"] == 4
+        assert expert.timings[-1]["batch_size"] == 4
+        assert expert.timings[-1]["per_image_s"] >= 0
+
+    def test_a_second_batch_is_served_from_the_cache(self, tmp_path):
+        expert = MockTruForExpert(score=0.4, results_dir=str(tmp_path))
+        images = {"a": np.zeros((16, 16, 3), dtype=np.uint8)}
+        expert.analyze_many(images)
+        expert.analyze_many(images)
+        assert expert.tool_calls == 1
+        assert expert.timing_summary()["cache_hits"] == 1
+
+    def test_a_batch_mixed_with_cached_images_only_runs_the_missing_ones(self, tmp_path):
+        expert = MockTruForExpert(score=0.4, results_dir=str(tmp_path))
+        expert.analyze_many({"a": np.zeros((16, 16, 3), dtype=np.uint8)})
+        results = expert.analyze_many({
+            "a": np.zeros((16, 16, 3), dtype=np.uint8),
+            "b": np.full((16, 16, 3), 9, dtype=np.uint8)})
+        assert expert.tool_calls == 2                 # second call was the batch
+        assert len(results) == 2
+        assert expert.timings[-1]["batch_size"] == 1  # only "b" was missing
+
+    def test_a_missing_result_is_reported_rather_than_silently_dropped(self, tmp_path):
+        class ForgetfulMock(MockTruForExpert):
+            def _run_tool_directory(self, in_dir, out_dir):
+                return 0, "", ""                      # writes nothing
+
+        expert = ForgetfulMock(score=0.4, results_dir=str(tmp_path))
+        with pytest.raises(RuntimeError, match="批量运行缺少"):
+            expert.analyze_many({"a": np.zeros((16, 16, 3), dtype=np.uint8)})
+
+
 class TestTruForCommand:
     def test_the_cli_matches_the_upstream_entry_point(self, tmp_path):
         home = tmp_path / "TruFor"

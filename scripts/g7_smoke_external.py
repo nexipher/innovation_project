@@ -24,7 +24,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from typing import List, Optional
@@ -71,7 +74,49 @@ def load_expert(name: str, dry_run: bool, device: str):
     return getattr(module, real_name)(device=device), real_name
 
 
-def run(expert, images: List[dict], image_size: Optional[int] = None) -> dict:
+class GpuSampler:
+    """
+    Peak GPU memory during a run, sampled from outside the process.
+
+    TruFor runs in its own subprocess, so `torch.cuda.max_memory_allocated()`
+    in our process reports zero — the deployment question (co-resident with
+    Qwen, or staged) needs the number the *card* saw.
+    """
+
+    def __init__(self, interval_s: float = 0.5):
+        self.interval_s = interval_s
+        self.peak_mb = 0
+        self._stop = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+    def _poll(self):
+        while not self._stop.is_set():
+            try:
+                out = subprocess.run(
+                    ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
+                    capture_output=True, text=True, timeout=5).stdout.strip()
+                self.peak_mb = max(self.peak_mb, int(out.splitlines()[0]))
+            except Exception:
+                pass
+            self._stop.wait(self.interval_s)
+
+    def __enter__(self):
+        if shutil.which("nvidia-smi"):
+            self._thread = threading.Thread(target=self._poll, daemon=True)
+            self._thread.start()
+        return self
+
+    def __exit__(self, *exc):
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=2)
+        return False
+
+
+def run(expert, images: List[dict], image_size: Optional[int] = None,
+        batch: bool = False) -> dict:
+    if batch and hasattr(expert, "analyze_many"):
+        return _run_batch(expert, images, image_size)
     records = []
     for entry in images:
         path = os.path.join(PROJECT_ROOT, entry["path"])
@@ -105,6 +150,49 @@ def run(expert, images: List[dict], image_size: Optional[int] = None) -> dict:
     return {"records": records}
 
 
+def _load(path: str, image_size: Optional[int] = None):
+    image = cv2.imread(path, cv2.IMREAD_COLOR)
+    if image is not None and image_size and max(image.shape[:2]) > image_size:
+        scale = image_size / max(image.shape[:2])
+        image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    return image
+
+
+def _run_batch(expert, images: List[dict], image_size: Optional[int]) -> dict:
+    payload, shapes = {}, {}
+    for entry in images:
+        image = _load(os.path.join(PROJECT_ROOT, entry["path"]), image_size)
+        if image is None:
+            continue
+        payload[entry["sample_id"]] = image
+        shapes[entry["sample_id"]] = list(image.shape[:2])
+    started = time.perf_counter()
+    results = expert.analyze_many(payload, progress=True)
+    elapsed = time.perf_counter() - started
+    records = []
+    for entry in images:
+        image_id = entry["sample_id"]
+        if image_id not in results:
+            records.append({"sample_id": image_id, "error": "unreadable"})
+            continue
+        result = results[image_id]
+        artifacts = expert.render_artifacts(payload[image_id])
+        records.append({
+            "sample_id": image_id, "label": entry["label"],
+            "treatment": entry["treatment"], "shape": shapes[image_id],
+            "score": round(float(result.raw_metric), 4),
+            "strength": round(float(result.strength), 4),
+            "support": result.support, "region": result.region,
+            "elapsed_s": round(elapsed / max(len(results), 1), 2),
+            "artifacts": {name: list(array.shape) for name, array in artifacts.items()},
+            "metadata": {k: v for k, v in result.metadata.items()
+                         if k in ("preprocess", "high_response_threshold",
+                                  "weights_sha256", "stats", "tiles")},
+        })
+    return {"records": records, "batch": True, "batch_size": len(results),
+            "batch_wall_s": round(elapsed, 2)}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expert", choices=sorted(EXPERTS), default="trufor")
@@ -113,6 +201,8 @@ def main() -> None:
     parser.add_argument("--device", default=None)
     parser.add_argument("--image-size", type=int, default=None,
                         help="downscale longer side to this before the expert")
+    parser.add_argument("--batch", action="store_true",
+                        help="one external process for all images (measures the real per-image cost)")
     parser.add_argument("--dry-run", action="store_true",
                         help="use the Mock expert (CPU plumbing only)")
     parser.add_argument("--output", default=None)
@@ -131,9 +221,12 @@ def main() -> None:
     images = pick_images(args.limit, args.treatment)
     print(f"样本：{[i['sample_id'] for i in images]}")
 
-    started = time.perf_counter()
-    report = run(expert, images, args.image_size)
-    wall = time.perf_counter() - started
+    with GpuSampler() as sampler:
+        started = time.perf_counter()
+        partial = run(expert, images, args.image_size, batch=args.batch)
+        wall = time.perf_counter() - started
+    peak_vram = sampler.peak_mb / 1024 if sampler.peak_mb else None
+    report = partial
 
     timing = expert.timing_summary() if hasattr(expert, "timing_summary") else {}
     report.update({
@@ -145,7 +238,9 @@ def main() -> None:
         "weights": provenance.as_dict(),
         "timing": timing,
         "wall_s": round(wall, 2),
-        "peak_vram_gb": _peak_vram() if device.startswith("cuda") else None,
+        # Peak as the *card* saw it: the model runs in a subprocess.
+        "peak_vram_gb": round(peak_vram, 2) if peak_vram else None,
+        "gpu_alloc_this_process_gb": _peak_vram() if device.startswith("cuda") else None,
     })
 
     output = args.output or os.path.join(
