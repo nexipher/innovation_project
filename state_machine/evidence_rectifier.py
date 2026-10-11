@@ -39,6 +39,12 @@ from utils.evidence_consistency import EvidenceConsistencyChecker
 NEUTRAL_LOW = 0.4
 NEUTRAL_HIGH = 0.6
 
+# An explicit claim about what the calibration says; a correct band caveat
+# ("this is the band where the two classes separate least") never matches it.
+_NEAR_CHANCE_CLAIM = re.compile(
+    r"(calibrated likelihood is near chance|near the calibrated chance|"
+    r"校准似然[^。.;\n]{0,6}(接近随机|随机水平)|(?:后验|校准)[^。.;\n]{0,4}位于随机水平)", re.I)
+
 SOURCE_CALIBRATED = "calibrated_likelihood"
 SOURCE_EXPERT = "expert_claim_uncalibrated"
 
@@ -107,6 +113,23 @@ class EvidenceRectifier:
             token["interpretation_text_raw"] = original_text
         token["interpretation_text"] = canonical
 
+        # A sentence may not *assert* what the calibration says unless it says
+        # it correctly: the review found "the calibrated likelihood is near
+        # chance" sitting next to P(Fake)=0.861 in the same token, and the
+        # claim-direction rewrite above cannot see it (near-chance wording
+        # contradicts neither direction).
+        likelihood = (token.get("calibrated_likelihood") or {}).get("Fake")
+        if likelihood is not None and not (NEUTRAL_LOW < float(likelihood) < NEUTRAL_HIGH):
+            for field in ("reasoning", "phenomenon"):
+                text = token.get(field)
+                if not text or not _NEAR_CHANCE_CLAIM.search(str(text)):
+                    continue
+                rewritten = cls._replace_matching_sentences(
+                    str(text), _NEAR_CHANCE_CLAIM, canonical)
+                if rewritten != text:
+                    token[f"{field}_raw"] = text
+                    token[field] = rewritten
+
         contradictory = cls._contradicting_claims(direction)
         for field in ("reasoning", "phenomenon"):
             text = token.get(field)
@@ -133,6 +156,22 @@ class EvidenceRectifier:
         if direction == "AI-generated":
             return {"normal"}
         return {"generative", "normal"}
+
+    @staticmethod
+    def _replace_matching_sentences(text: str, pattern, replacement: str) -> str:
+        """Swap the sentences that match `pattern` for one canonical sentence."""
+        sentences = _SENTENCE_SPLIT.split(text)
+        if len(sentences) < 2:
+            return text
+        kept, replaced = [], False
+        for sentence in sentences:
+            if pattern.search(sentence):
+                if not replaced:
+                    kept.append(replacement)
+                    replaced = True
+                continue
+            kept.append(sentence)
+        return " ".join(kept)
 
     @classmethod
     def _rewrite_sentences(cls, text: str, contradictory, replacement: str) -> str:

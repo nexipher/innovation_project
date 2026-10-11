@@ -122,10 +122,13 @@ class NoiseExpert(BaseExpert):
                 # G2-e inversion: a high residual is the camera end of this
                 # metric, a low one the generative end, so the description
                 # follows the measured direction rather than the old reading.
-                f"Localised noise variance at the level the calibration set associates with "
-                f"{'camera capture (spatially rich sensor noise)' if strength > 0.5 else 'generated imagery (variance collapse)'} "
-                f"(inconsistency ratio: {inconsistency:.4f}). "
-                f"{'Residual consistent with a camera sensor' if strength > 0.5 else 'Variance collapse detected'}."
+                # It is one statistic of the whole image: "localised" described
+                # a measurement that was never taken, and the review flagged
+                # every token that said it.
+                f"Whole-image noise-residual level {inconsistency:.4f}: "
+                f"{'the camera end of the G2 calibration band' if strength > 0.5 else 'the generated-imagery end of the G2 calibration band'}. "
+                f"{'Residual consistent with a camera sensor' if strength > 0.5 else 'Variance collapse detected'}; "
+                f"a band is an association measured on the calibration set, not a physical proof of origin."
             ),
             reasoning=self._get_reasoning(strength, inconsistency),
             strength=strength,
@@ -220,29 +223,40 @@ class NoiseExpert(BaseExpert):
 
     @staticmethod
     def _get_reasoning(strength: float, inconsistency: float) -> str:
+        """
+        Three layers, in this order: what was measured, what the calibration
+        associates it with, and what it cannot show.
+
+        The review found both failure modes here — a whole-image statistic
+        described as a local one ("the region is smooth at the sensor-noise
+        scale") and the metric read as physical evidence of a sensor ("PRNU"),
+        which this filter cannot establish.
+        """
         if strength < 0.3:
             return (
-                f"Low residual micro-noise level (metric={inconsistency:.4f}). "
-                "The region is smooth at the sensor-noise scale — the condition "
-                "under which the G2 calibration set identifies generated imagery "
-                "(fake median 2.0 vs real median 3.6). Denoising or heavy "
-                "recompression produces the same signature, so this is a weak "
-                "signal on its own."
+                f"Whole-image residual micro-noise level {inconsistency:.4f} (low). "
+                "The G2 calibration set associates this band with generated imagery "
+                "(fake median 2.0 vs real median 3.6). The number is one statistic of "
+                "the whole image and says nothing about where in the image anything "
+                "is. Denoising, sharpening and re-compression move it the same way, "
+                "so on its own it is a weak signal, not proof of origin."
             )
         elif strength < 0.7:
             return (
-                f"Intermediate residual micro-noise level (metric={inconsistency:.4f}). "
-                "This band sits near the calibrated chance level; the measurement "
-                "carries little directional information."
+                f"Whole-image residual micro-noise level {inconsistency:.4f} "
+                "(intermediate). This is the band where the calibration set "
+                "separates the two classes least, so the measurement carries "
+                "little directional information; what produced the image, and "
+                "how it was processed, is not recoverable from it."
             )
         else:
             return (
-                f"High residual micro-noise level (metric={inconsistency:.4f}). "
-                "Camera sensors leave spatially rich micro-noise (shot noise + PRNU) "
-                "that survives re-encoding, which is the condition the G2 calibration "
-                "set associates with real capture. Note this is the opposite of the "
-                "original manipulation reading: high residual does NOT indicate "
-                "forgery. Sharpening can also inflate this metric."
+                f"Whole-image residual micro-noise level {inconsistency:.4f} (high). "
+                "The G2 calibration set associates this band with camera capture: "
+                "sensor noise that survives re-encoding. High residual does NOT "
+                "indicate forgery — that is the original reading this expert was "
+                "calibrated against — and sharpening inflates the metric with no "
+                "sensor involved."
             )
 
     @staticmethod

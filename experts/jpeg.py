@@ -293,9 +293,13 @@ class JPEGExpert(BaseExpert):
         elif strength < 0.7:
             return (
                 f"Moderate JPEG structure found (blockiness={blockiness:.4f}, "
-                f"DCT anomaly={dct_anomaly:.4f}). At this level the calibrated "
-                "likelihood is near chance; re-compression weakens the signal "
-                "further, so this band should not drive a verdict."
+                f"DCT anomaly={dct_anomaly:.4f}). This is the weaker end of the "
+                "calibration band: the same structure appears when an "
+                "already-compressed image is re-saved, and at low quality (≤ 70) "
+                "the band loses its discriminative power almost entirely, so it "
+                "should not drive a verdict on its own. Whether the band is "
+                "decisive here depends on the cell the calibration table "
+                "records for this input, which is attached to the token."
             )
         else:
             return (

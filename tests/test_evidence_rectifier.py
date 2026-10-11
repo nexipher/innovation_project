@@ -126,6 +126,44 @@ class TestRectify:
         assert token["applicability_conditions"] == "高 strength 统计上对应 Real。"
 
 
+class TestCalibrationClaimGuard:
+    """
+    A sentence that asserts what the calibration says must say it correctly.
+
+    The review found "the calibrated likelihood is near chance" in the same
+    token as P(Fake)=0.861 — a claim-direction rewrite cannot see it, because
+    near-chance wording contradicts neither direction.
+    """
+
+    def _token(self, fake, reasoning):
+        return {"evidence_id": "E-1", "source": "jpeg_expert",
+                "support": "camera capture", "strength": 0.45,
+                "calibrated_likelihood": {"Real": round(1 - fake, 3), "Fake": fake},
+                "reasoning": reasoning}
+
+    NEAR_CHANCE = ("Moderate JPEG structure found (blockiness=0.9908). At this level "
+                   "the calibrated likelihood is near chance; re-compression weakens "
+                   "the signal further, so this band should not drive a verdict.")
+
+    def test_a_false_near_chance_claim_is_replaced(self):
+        token = self._token(0.861, self.NEAR_CHANCE)
+        EvidenceRectifier.rectify(token)
+        assert "near chance" not in token["reasoning"]
+        assert "P(Fake)=0.86" in token["reasoning"]
+        assert token["reasoning_raw"] == self.NEAR_CHANCE   # the original is kept
+
+    def test_a_true_near_chance_claim_survives(self):
+        token = self._token(0.52, self.NEAR_CHANCE)
+        EvidenceRectifier.rectify(token)
+        assert "near chance" in token["reasoning"]
+        assert "reasoning_raw" not in token
+
+    def test_the_measurement_itself_is_never_dropped(self):
+        token = self._token(0.861, self.NEAR_CHANCE)
+        EvidenceRectifier.rectify(token)
+        assert "blockiness=0.9908" in token["reasoning"]
+
+
 class TestRectifiedTokensPassTheGate:
     """After rectification the consistency gate is a verification, not a filter."""
 
