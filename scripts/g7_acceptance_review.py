@@ -61,7 +61,12 @@ PHYSICAL_WORDS = ("纹理", "噪声", "残差", "频域", "边缘", "像素级",
 DISCLAIMERS = ("仅表示", "仅反映", "不提供", "不指出", "不代表", "无法确定", "没有提供",
                "不能说明", "并非", "而不是", "而非", "不涉及", "与区域无关")
 OTHER_EXPERTS = ("噪声残留专家", "噪声专家", "jpeg", "压缩专家", "频率专家", "频域专家",
-                 "noise_expert", "jpeg_expert", "frequency_expert")
+                 "noise_expert", "jpeg_expert", "frequency_expert",
+                 # The measurements, not just the experts, are named in prose:
+                 # "鉴别器的分数和噪声残留水平都指向…" lists two experts'
+                 # evidence, it does not dress the score up as a residual.
+                 "噪声残留水平", "噪声残差水平", "残差微噪声", "微噪声",
+                 "频率域分析", "频率分析", "频谱分析")
 
 # How each expert gets named in Chinese prose.  Matching on the English source
 # name alone flagged sessions that mention "频率域专家" — the expert was read

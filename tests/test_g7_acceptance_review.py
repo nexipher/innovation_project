@@ -65,6 +65,10 @@ class TestScoreAsArtifact:
         text = "噪声残留专家的分析结果也表明存在噪声差异。"
         assert probe_artifact_sentences(text) == []
 
+    def test_listing_two_experts_evidence_is_not_an_attribution(self):
+        text = "AI生成鉴别器的分数和噪声残留水平的测量结果都指向图像可能是真实的。"
+        assert probe_artifact_sentences(text) == []
+
     def test_a_score_cited_as_a_probability_is_not_flagged(self):
         text = "PROBE 判别分数的校准概率为 0.97，指向 AI 生成。"
         assert probe_artifact_sentences(text) == []

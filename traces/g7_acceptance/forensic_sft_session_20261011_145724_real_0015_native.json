@@ -1,0 +1,330 @@
+{
+  "id": "session_20261011_145724_real_0015_native",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images_acceptance/real_0015_native.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，JPEG压缩历史专家（jpeg_expert）的测量结果显示，图像存在强烈的JPEG压缩结构，表明图像来源于一张保存或重新保存的JPEG照片。这种结构通常与真实拍摄的照片相关联，而不是伪造的标记。综合考虑以上信息，最终的判断为“Real”，但存在一定的不确定性。",
+    "posterior": 0.4273,
+    "tool_utilities": {
+      "frequency_expert_v2": -0.15,
+      "noise_expert": 0.14519224426106134,
+      "jpeg_expert": -0.15,
+      "probe_dino_expert": -0.25
+    },
+    "conflict_score": 0.284,
+    "redundancy_discounts": [
+      {
+        "evidence_id": "E-e9cb82cab1",
+        "source": "frequency_expert_v2",
+        "discount": 0.836,
+        "after": [
+          "probe_dino_expert"
+        ]
+      }
+    ],
+    "policy_reason": "budget_exhausted",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "budget_exhausted"
+    ],
+    "model_candidate": "Real"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 400, 200]\nVisual Anomalies: 在这个区域，湖水的颜色异常鲜艳，与周围环境的自然色调不符。\nExpert Target & Hypothesis: <call_probe>[100, 100, 400, 200]</call_probe> — 这个区域可能存在AI生成的痕迹。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-cbebe50e9a\", \"evidence_name\": \"aigi_discriminator_score\", \"region\": \"patch_coordinates_[28, 50, 112, 100]\", \"region_pixels\": [28, 50, 112, 100], \"region_normalized_1000\": [100, 100, 400, 200], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"整图判别分数 0.7061（外部判别器的原始输出，未经本地校准）。输入预处理：500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。\", \"reasoning\": \"该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。\", \"strength\": 0.7061, \"raw_metric\": 0.706141, \"source\": \"probe_dino_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.52) and does not determine a direction.\", \"counter_explanation\": \"外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。\", \"reliability\": 0.984, \"calibrated_likelihood\": {\"Real\": 0.48, \"Fake\": 0.52}, \"condition_metadata\": {\"bin_samples\": 50, \"confound_drop_png_to_q70\": 0.021874999999999978, \"separation_polarity_corrected\": 0.98359375, \"region_area_ratio\": 0.029893}, \"semantics_aligned\": true, \"applicability\": \"strong\", \"applicability_conditions\": \"五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": \"A\", \"mapping\": \"quantile_bins\", \"sources\": 62, \"samples\": 248, \"split_hash\": \"37bf2f1db22ccdef\", \"weights_sha256\": \"c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156\"}, \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_145724_real_0015_native/region_E-cbebe50e9a.png\"}",
+      "image_paths": [
+        "traces/evidence/session_20261011_145724_real_0015_native/region_E-cbebe50e9a.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [28, 50, 112, 100]\nVisual Anomalies: 在这个区域，湖水的颜色异常鲜艳，与周围环境的自然色调不符。\nExpert Target & Hypothesis: <call_probe>[28, 50, 112, 100]</call_probe> — 这个区域可能存在AI生成的痕迹。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[System: probe_dino_expert 已在本会话对整图测量过（E-cbebe50e9a），整图测量与区域无关，重复调用不会产生新的测量，已跳过执行。请基于现有证据继续。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，由于该分数仅表示图像作为一个整体的AI生成可能性，并没有提供具体的区域信息，我们无法确定是否存在特定的物理缺陷或伪造痕迹。因此，需要进一步使用其他专家来确认是否存在伪造痕迹。\n</reasoning>\n<call_freq>[28, 50, 112, 100]</call_freq>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-e9cb82cab1\", \"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[8, 25, 31, 50]\", \"region_pixels\": [8, 25, 31, 50], \"region_normalized_1000\": [28, 50, 112, 100], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Calibration: this measurement band is near chance (P(Fake)=0.41) and does not determine a direction. (raw peak ratio: 0.0008, full=0.0006, half=0.0011)\", \"reasoning\": \"Calibration: this measurement band is near chance (P(Fake)=0.41) and does not determine a direction.\", \"strength\": 0.2431, \"raw_metric\": 0.000802, \"source\": \"frequency_expert_v2\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.41) and does not determine a direction.\", \"counter_explanation\": \"自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。\", \"reliability\": 0.556, \"calibrated_likelihood\": {\"Real\": 0.59, \"Fake\": 0.41}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07833333333333337, \"separation_polarity_corrected\": 0.5558333333333333, \"region_area_ratio\": 0.004093}, \"semantics_aligned\": true, \"applicability\": \"weak:marginally-above-chance\", \"applicability_conditions\": \"弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": null, \"mapping\": null, \"sources\": null, \"samples\": null, \"split_hash\": null, \"weights_sha256\": null}, \"support_raw\": \"Real\", \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Statistical patterns align with normal hardware camera capture.\", \"reasoning_raw\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"phenomenon_raw\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0006, half=0.0011)\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_145724_real_0015_native/region_E-e9cb82cab1.png\", \"visual_artifacts\": [\"traces/evidence/session_20261011_145724_real_0015_native/frequency_spectrum_v2_E-e9cb82cab1.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261011_145724_real_0015_native/region_E-e9cb82cab1.png",
+        "traces/evidence/session_20261011_145724_real_0015_native/frequency_spectrum_v2_E-e9cb82cab1.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，由于该分数仅表示图像作为一个整体的AI生成可能性，并没有提供具体的区域信息，我们无法确定是否存在特定的物理缺陷或伪造痕迹。\n\n频率域专家（frequency_expert_v2）的测量结果表明，图像中没有显著的周期结构，频谱衰减模式与自然图像内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。然而，该测量结果的可信度较低（0.556），且仅作为辅助线索，不得单独支撑判定。\n\n综合考虑以上信息，虽然存在一些疑点，但不足以得出明确的结论。因此，最终的判断为“Uncertain”。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"frequency_grid_artifact_v2\"], \"report\": \"尽管AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的，但频率域专家（frequency_expert_v2）的测量结果表明图像中没有显著的周期结构，频谱衰减模式与自然图像内容一致。然而，该测量结果的可信度较低（0.556），且仅作为辅助线索，不得单独支撑判定。因此，最终的判断为“Uncertain”。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 你的结论与当前校准后验不一致（P(Fake)=0.51，冲突度=0.61），暂不能结案。请继续取证：建议调用 jpeg_expert，或说明为何现有证据足以支持你的结论。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，由于该分数仅表示图像作为一个整体的AI生成可能性，并没有提供具体的区域信息，我们无法确定是否存在特定的物理缺陷或伪造痕迹。\n\n频率域专家（frequency_expert_v2）的测量结果表明，图像中没有显著的周期结构，频谱衰减模式与自然图像内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。然而，该测量结果的可信度较低（0.556），且仅作为辅助线索，不得单独支撑判定。\n\n综合考虑以上信息，虽然存在一些疑点，但不足以得出明确的结论。因此，最终的判断为“Uncertain”。\n\n鉴于当前校准后验不一致的情况，建议调用JPEG压缩历史专家（jpeg_expert），以进一步评估图像是否经过JPEG压缩，这可能有助于确认图像的真实性和伪造性。\n</reasoning>\n<call_jpeg>[28, 50, 112, 100]</call_jpeg>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-0caa139017\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[8, 25, 31, 50]\", \"region_pixels\": [8, 25, 31, 50], \"region_normalized_1000\": [28, 50, 112, 100], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.5152, DCT anomaly: 4.2134)\", \"reasoning\": \"Strong JPEG compression structure found (blockiness=1.5152, DCT anomaly=4.2134). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.\", \"strength\": 0.7666, \"raw_metric\": 2.594508, \"source\": \"jpeg_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.39); the benign reading applies.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.615, \"Fake\": 0.385}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.004093}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": null, \"mapping\": null, \"sources\": null, \"samples\": null, \"split_hash\": null, \"weights_sha256\": null}, \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_145724_real_0015_native/region_E-0caa139017.png\", \"visual_artifacts\": [\"traces/evidence/session_20261011_145724_real_0015_native/jpeg_blockiness_map_E-0caa139017.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261011_145724_real_0015_native/region_E-0caa139017.png",
+        "traces/evidence/session_20261011_145724_real_0015_native/jpeg_blockiness_map_E-0caa139017.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，由于该分数仅表示图像作为一个整体的AI生成可能性，并没有提供具体的区域信息，我们无法确定是否存在特定的物理缺陷或伪造痕迹。\n\n频率域专家（frequency_expert_v2）的测量结果表明，图像中没有显著的周期结构，频谱衰减模式与自然图像内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。然而，该测量结果的可信度较低（0.556），且仅作为辅助线索，不得单独支撑判定。\n\nJPEG压缩历史专家（jpeg_expert）的测量结果显示，图像存在强烈的JPEG压缩结构（块性：1.5152，DCT异常：4.2134），表明图像来源于一张保存或重新保存的JPEG照片。这种结构通常与真实拍摄的照片相关联，而不是伪造的标记。高值并不表示篡改，且统一重压缩（质量≤70）会去除大部分这种信号的辨别能力。\n\n综合考虑以上信息，虽然存在一些疑点，但AI生成鉴别器和JPEG压缩历史专家的测量结果都指向图像的真实性。因此，最终的判断为“Real”。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.615, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，JPEG压缩历史专家（jpeg_expert）的测量结果显示，图像存在强烈的JPEG压缩结构，表明图像来源于一张保存或重新保存的JPEG照片。这种结构通常与真实拍摄的照片相关联，而不是伪造的标记。综合考虑以上信息，最终的判断为“Real”。\"}\n</verdict>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证资源（Budget）已耗尽。请基于已获取的全部证据撰写最终报告；结论标签由系统按校准后验给出，你只需如实描述证据与不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，由于该分数仅表示图像作为一个整体的AI生成可能性，并没有提供具体的区域信息，我们无法确定是否存在特定的物理缺陷或伪造痕迹。\n\n频率域专家（frequency_expert_v2）的测量结果表明，图像中没有显著的周期结构，频谱衰减模式与自然图像内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。然而，该测量结果的可信度较低（0.556），且仅作为辅助线索，不得单独支撑判定。\n\nJPEG压缩历史专家（jpeg_expert）的测量结果显示，图像存在强烈的JPEG压缩结构（块性：1.5152，DCT异常：4.2134），表明图像来源于一张保存或重新保存的JPEG照片。这种结构通常与真实拍摄的照片相关联，而不是伪造的标记。高值并不表示篡改，且统一重压缩（质量≤70）会去除大部分这种信号的辨别能力。\n\n综合考虑以上信息，虽然存在一些疑点，但AI生成鉴别器和JPEG压缩历史专家的测量结果都指向图像的真实性。然而，由于频率域专家的测量结果较为模糊，且不足以单独支撑判定，因此最终的判断为“Real”，但存在一定的不确定性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.615, \"primary_evidence\": [\"double_jpeg_quantization\"], \"report\": \"AI生成鉴别器（PROBE-DINOv2）对整图的判别分数为0.7061，表明图像可能是伪造的。然而，JPEG压缩历史专家（jpeg_expert）的测量结果显示，图像存在强烈的JPEG压缩结构，表明图像来源于一张保存或重新保存的JPEG照片。这种结构通常与真实拍摄的照片相关联，而不是伪造的标记。综合考虑以上信息，最终的判断为“Real”，但存在一定的不确定性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-cbebe50e9a",
+      "evidence_name": "aigi_discriminator_score",
+      "region": "patch_coordinates_[28, 50, 112, 100]",
+      "region_pixels": [
+        28,
+        50,
+        112,
+        100
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        400,
+        200
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "整图判别分数 0.7061（外部判别器的原始输出，未经本地校准）。输入预处理：500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。",
+      "reasoning": "该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。",
+      "strength": 0.7061,
+      "raw_metric": 0.706141,
+      "source": "probe_dino_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.52) and does not determine a direction.",
+      "counter_explanation": "外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。",
+      "reliability": 0.984,
+      "calibrated_likelihood": {
+        "Real": 0.48,
+        "Fake": 0.52
+      },
+      "condition_metadata": {
+        "bin_samples": 50,
+        "confound_drop_png_to_q70": 0.021874999999999978,
+        "separation_polarity_corrected": 0.98359375,
+        "region_area_ratio": 0.029893
+      },
+      "semantics_aligned": true,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156"
+      },
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。",
+      "diagnostic_region_image": "traces/evidence/session_20261011_145724_real_0015_native/region_E-cbebe50e9a.png"
+    },
+    {
+      "evidence_id": "E-e9cb82cab1",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[8, 25, 31, 50]",
+      "region_pixels": [
+        8,
+        25,
+        31,
+        50
+      ],
+      "region_normalized_1000": [
+        28,
+        50,
+        112,
+        100
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Calibration: this measurement band is near chance (P(Fake)=0.41) and does not determine a direction. (raw peak ratio: 0.0008, full=0.0006, half=0.0011)",
+      "reasoning": "Calibration: this measurement band is near chance (P(Fake)=0.41) and does not determine a direction.",
+      "strength": 0.2431,
+      "raw_metric": 0.000802,
+      "source": "frequency_expert_v2",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.41) and does not determine a direction.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.556,
+      "calibrated_likelihood": {
+        "Real": 0.59,
+        "Fake": 0.41
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07833333333333337,
+        "separation_polarity_corrected": 0.5558333333333333,
+        "region_area_ratio": 0.004093
+      },
+      "semantics_aligned": true,
+      "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "support_raw": "Real",
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Statistical patterns align with normal hardware camera capture.",
+      "reasoning_raw": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "phenomenon_raw": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0008, full=0.0006, half=0.0011)",
+      "diagnostic_region_image": "traces/evidence/session_20261011_145724_real_0015_native/region_E-e9cb82cab1.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_145724_real_0015_native/frequency_spectrum_v2_E-e9cb82cab1.png"
+      ]
+    },
+    {
+      "evidence_id": "E-0caa139017",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[8, 25, 31, 50]",
+      "region_pixels": [
+        8,
+        25,
+        31,
+        50
+      ],
+      "region_normalized_1000": [
+        28,
+        50,
+        112,
+        100
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.5152, DCT anomaly: 4.2134)",
+      "reasoning": "Strong JPEG compression structure found (blockiness=1.5152, DCT anomaly=4.2134). Gradient energy at 8×8 block boundaries and DCT histogram structure indicate the image originates from a JPEG photograph that was saved or re-saved — the direction the G2 calibration set associates with real capture. This is NOT a forgery marker: high values do not indicate tampering, and uniform re-compression (quality ≤ 70) removes most of this signal's discriminative power.",
+      "strength": 0.7666,
+      "raw_metric": 2.594508,
+      "source": "jpeg_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.39); the benign reading applies.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.615,
+        "Fake": 0.385
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.004093
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "High JPEG structural level — blockiness and DCT structure of the kind the calibration set associates with a camera JPEG that was saved or re-saved (real capture), not with forgery.",
+      "diagnostic_region_image": "traces/evidence/session_20261011_145724_real_0015_native/region_E-0caa139017.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_145724_real_0015_native/jpeg_blockiness_map_E-0caa139017.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      281,
+      500
+    ],
+    "total_steps": 7,
+    "halting_reason": "budget_exhausted",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-11T14:57:24.810101",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 7,
+    "expert_call_count": 3,
+    "unique_evidence_count": 3,
+    "suppressed_duplicate_count": 0,
+    "skipped_duplicate_calls": 1,
+    "weighted_cost": 6.5,
+    "policy_version": "v2",
+    "available_experts": [
+      "frequency_expert_v2",
+      "jpeg_expert",
+      "noise_expert",
+      "probe_dino_expert"
+    ],
+    "policy_reason": "budget_exhausted",
+    "policy_reasons": [
+      "candidate_overridden_by_posterior",
+      "budget_exhausted"
+    ],
+    "posterior": 0.4273,
+    "conflict_score": 0.284,
+    "candidate_overridden": true,
+    "tool_utilities": {
+      "frequency_expert_v2": -0.15,
+      "noise_expert": 0.14519224426106134,
+      "jpeg_expert": -0.15,
+      "probe_dino_expert": -0.25
+    },
+    "redundancy_discounts": [
+      {
+        "evidence_id": "E-e9cb82cab1",
+        "source": "frequency_expert_v2",
+        "discount": 0.836,
+        "after": [
+          "probe_dino_expert"
+        ]
+      }
+    ]
+  }
+}
