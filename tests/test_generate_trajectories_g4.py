@@ -252,28 +252,45 @@ class TestDryRunEndToEnd:
 
 class TestClientReuse:
     """
-    G7 entry 4: a client is reused across sessions with the same prompt.
+    G7 entry 4: one model serves the whole run, re-prompted per policy.
 
-    The first GPU run of the batch rebuilt it per trajectory, paying a 12 s
-    model load for a 12 s session — the run took twice as long as it had to.
+    Both alternatives were tried on the real batch: a client per session pays a
+    12 s model load for a 12 s session, and a client per tool set keeps several
+    16.7 GB models resident and OOMs a 24 GB card.  What is pinned here is the
+    version that fits — the same object, with its prompt swapped.
     """
 
-    def test_one_client_per_protocol_and_tool_set(self):
-        from scripts.generate_trajectories_g4 import cached_client_factory
+    def test_the_same_client_is_returned_for_every_policy(self):
+        from scripts.generate_trajectories_g4 import prompt_switching_client
 
-        built = []
+        class FakeClient:
+            def __init__(self):
+                self.system_prompt = None
 
-        def build(protocol, tools):
-            built.append((protocol, tuple(tools)))
-            return {"protocol": protocol, "tools": tuple(tools)}
+        client = FakeClient()
+        factory = prompt_switching_client(client)
+        assert factory("baseline", ()) is client
+        assert factory("forensic", ("probe",)) is client
 
-        factory = cached_client_factory(build)
-        first = factory("forensic", ("probe",))
-        again = factory("forensic", ("probe",))
-        other_tools = factory("forensic", ("probe", "noise"))
-        other_protocol = factory("baseline", ())
+    def test_the_prompt_follows_the_policy(self):
+        from scripts.generate_trajectories_g4 import prompt_switching_client
+        from mllm.message_builder import BASELINE_SYSTEM_PROMPT, build_forensic_prompt
 
-        assert first is again
-        assert len(built) == 3
-        assert other_tools is not first and other_protocol is not first
-        assert len(built) == 3, "每种（协议, 工具集）只应构建一次"
+        class FakeClient:
+            def __init__(self):
+                self.system_prompt = None
+
+        client = FakeClient()
+        factory = prompt_switching_client(client)
+        factory("baseline", ())
+        assert client.system_prompt == BASELINE_SYSTEM_PROMPT
+        factory("forensic", ("probe",))
+        assert client.system_prompt == build_forensic_prompt(["probe"])
+
+    def test_the_prompt_is_read_again_on_every_generate(self):
+        """The swap only works because the client reads the attribute late."""
+        import inspect
+        from mllm.qwen_client import QwenVLClient
+
+        source = inspect.getsource(QwenVLClient)
+        assert "system_prompt=self._system_prompt" in source

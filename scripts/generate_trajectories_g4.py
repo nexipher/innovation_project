@@ -206,23 +206,20 @@ def build_experts(tools: Tuple[str, ...]) -> Dict[str, Any]:
     return {EXPERT_BY_TOOL[tool]: registry[tool]() for tool in tools}
 
 
-def cached_client_factory(build_client):
+def prompt_switching_client(client):
     """
-    One client per (protocol, tool set) instead of one per session.
+    One model for the whole run, with the system prompt swapped per policy.
 
-    A Qwen load is ~12 s and a session is ~12 s, so rebuilding the client per
-    trajectory doubled the run: 210 sessions spent ~40 minutes loading weights
-    they had already loaded.  A client carries only its system prompt, and
-    `run()` resets the session, so sharing it across sessions with the same
-    prompt is what it is for.
+    Both obvious alternatives were tried on this batch and both are wrong: a
+    client per session pays a 12 s load for a 12 s session, and a client per
+    tool set keeps several 16.7 GB models resident and runs the 24 GB card out
+    of memory.  The client reads its prompt only when it builds messages, so
+    one instance with the prompt changed underneath it is what fits both.
     """
-    cache = {}
-
     def factory(protocol: str, tools: Tuple[str, ...]):
-        key = (protocol, tuple(tools))
-        if key not in cache:
-            cache[key] = build_client(protocol, tools)
-        return cache[key]
+        client.system_prompt = (BASELINE_SYSTEM_PROMPT if protocol == "baseline"
+                                else build_forensic_prompt(tools))
+        return client
 
     return factory
 
@@ -380,12 +377,10 @@ def main() -> None:
     else:
         from mllm.qwen_client import QwenVLClient
 
-        def build_client(variant, tools):
-            prompt = (BASELINE_SYSTEM_PROMPT if variant == "baseline"
-                      else build_forensic_prompt(tools))
-            return QwenVLClient(system_prompt=prompt)
-
-        client_factory = cached_client_factory(build_client)
+        # One instance, built with the baseline prompt and re-prompted per
+        # policy by the factory below.
+        client_factory = prompt_switching_client(
+            QwenVLClient(system_prompt=BASELINE_SYSTEM_PROMPT))
         mode = "gpu"
         sft_dir = None
 

@@ -115,6 +115,20 @@ class QwenVLClient(BaseMLLMClient):
         self._ensure_loaded()
         return self._inference(self._build_messages(image_path, with_image_marker(history)))
 
+    @property
+    def system_prompt(self):
+        """The prompt this client builds messages with (G7 entry 4).
+
+        Read fresh on every `generate`, so a batch run can serve several tool
+        policies from one 16.7 GB model instead of either loading one model per
+        session (slow) or keeping one per policy (out of memory).
+        """
+        return self._system_prompt
+
+    @system_prompt.setter
+    def system_prompt(self, value) -> None:
+        self._system_prompt = value
+
     def generate(
         self,
         image_path: str,
