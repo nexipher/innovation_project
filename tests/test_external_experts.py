@@ -202,6 +202,91 @@ class TestTruForArtifacts:
         assert MockTruForExpert(score=0.5).render_artifacts(np.zeros((8, 8, 3), np.uint8)) == {}
 
 
+class TestRawProductsAndCache:
+    """G7-2: the raw products are the evidence; they are kept, not discarded."""
+
+    def _expert(self, **kwargs):
+        return MockTruForExpert(score=0.42, **kwargs)
+
+    def test_the_result_is_persisted_where_it_can_be_re_read(self, tmp_path):
+        expert = self._expert(results_dir=str(tmp_path))
+        image = np.zeros((32, 32, 3), dtype=np.uint8)
+        expert.analyze(image)
+        key = expert.cache_key(image)
+        assert os.path.exists(expert.result_path(key))
+        assert os.path.exists(expert.meta_path(key))
+
+    def test_the_metadata_carries_weights_source_licence_and_timings(self, tmp_path):
+        import json as _json
+
+        expert = self._expert(results_dir=str(tmp_path))
+        image = np.zeros((32, 32, 3), dtype=np.uint8)
+        expert.analyze(image)
+        with open(expert.meta_path(expert.cache_key(image)), encoding="utf-8") as handle:
+            meta = _json.load(handle)
+        assert meta["weights"]["source"] == "mock"
+        assert "mock" in meta["weights"]["licence"]
+        assert meta["cold_start"] is True and meta["elapsed_s"] >= 0
+        assert meta["stats"]["score"] == pytest.approx(0.42)
+        assert meta["npz_keys"] == ["conf", "imgsize", "map", "score"]
+        assert meta["recipe_version"]
+
+    def test_a_second_identical_image_is_served_from_the_cache(self, tmp_path):
+        expert = self._expert(results_dir=str(tmp_path))
+        image = np.zeros((32, 32, 3), dtype=np.uint8)
+        first = expert.analyze(image)
+        second = expert.analyze(image)
+        assert expert.tool_calls == 1                 # the model ran once
+        assert second.raw_metric == first.raw_metric
+        assert expert.timing_summary()["cache_hits"] == 1
+
+    def test_a_different_image_is_not_served_from_the_cache(self, tmp_path):
+        expert = self._expert(results_dir=str(tmp_path))
+        expert.analyze(np.zeros((32, 32, 3), dtype=np.uint8))
+        expert.analyze(np.full((32, 32, 3), 7, dtype=np.uint8))
+        assert expert.tool_calls == 2
+
+    def test_different_weights_invalidate_the_cache(self, tmp_path):
+        image = np.zeros((16, 16, 3), dtype=np.uint8)
+        first = self._expert(results_dir=str(tmp_path))
+        first.analyze(image)
+        other_weights = tmp_path / "other.pth"
+        other_weights.write_bytes(b"different")
+        second = self._expert(results_dir=str(tmp_path), weights_path=str(other_weights))
+        second.analyze(image)
+        assert second.tool_calls == 1                 # nothing was reused
+
+    def test_turning_the_cache_off_still_keeps_the_products(self, tmp_path):
+        """
+        Reusing a result and recording it are different decisions: the raw
+        products are the run's evidence and are always written; `cache=False`
+        only stops the adapter from serving a previous run.
+        """
+        expert = self._expert(results_dir=str(tmp_path), cache=False)
+        image = np.zeros((16, 16, 3), dtype=np.uint8)
+        expert.analyze(image)
+        expert.analyze(image)
+        assert expert.tool_calls == 2                 # recomputed, not reused
+        assert os.path.exists(expert.result_path(expert.cache_key(image)))
+
+    def test_timing_summary_separates_cold_from_warm(self, tmp_path):
+        expert = self._expert(results_dir=str(tmp_path))
+        expert.analyze(np.zeros((16, 16, 3), dtype=np.uint8))
+        expert.analyze(np.full((16, 16, 3), 3, dtype=np.uint8))
+        summary = expert.timing_summary()
+        assert summary["runs"] == 2
+        assert summary["cold_start_s"] is not None
+        assert summary["warm_mean_s"] is not None
+
+    def test_the_persisted_map_can_be_re_summarised_without_the_model(self, tmp_path):
+        """The point of keeping the npz: a new threshold is an offline change."""
+        expert = self._expert(results_dir=str(tmp_path))
+        image = np.zeros((16, 16, 3), dtype=np.uint8)
+        expert.analyze(image)
+        stored = dict(np.load(expert.result_path(expert.cache_key(image))))
+        assert TruForExpert.summarise(stored)["score"] == pytest.approx(0.42)
+
+
 class TestTruForCommand:
     def test_the_cli_matches_the_upstream_entry_point(self, tmp_path):
         home = tmp_path / "TruFor"

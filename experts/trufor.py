@@ -39,21 +39,33 @@ Usage
 from __future__ import annotations
 
 import glob
+import hashlib
+import json
 import os
 import shutil
 import subprocess
 import tempfile
+import time
+from datetime import datetime
 from typing import Dict, List, Optional
 
 import numpy as np
 
-from experts.external_base import ExternalScoreExpert, MockExternalScoreExpert
+from config import PROJECT_ROOT
+from experts.external_base import ExternalScoreExpert
 
 # Above this P(forged) a pixel counts towards the "high response" area
 # fraction.  TruFor's own camera-ready uses 0.5 for its localisation metrics;
 # the number is recorded in the metadata so a later re-analysis can re-derive
 # the statistic from the stored map without re-running the model.
 HIGH_RESPONSE_THRESHOLD = 0.5
+
+# Bumped when the way an image is fed to TruFor changes: the cache key
+# includes it, so an old cached result can never be mistaken for one produced
+# by the current recipe.
+RECIPE_VERSION = "trufor-v1"
+
+DEFAULT_RESULTS_DIR = os.path.join(PROJECT_ROOT, "calibration", "trufor_raw")
 
 
 class TruForExpert(ExternalScoreExpert):
@@ -72,12 +84,26 @@ class TruForExpert(ExternalScoreExpert):
 
     def __init__(self, weights_path: Optional[str] = None, device: str = "cpu",
                  python: Optional[str] = None, save_noiseprint: bool = False,
-                 enabled: bool = True):
+                 enabled: bool = True, results_dir: Optional[str] = None,
+                 cache: bool = True):
         super().__init__(weights_path, device, enabled)
         self.python = python or os.environ.get("TRUFOR_PYTHON", "python3")
         self.save_noiseprint = save_noiseprint
+        # Raw products are kept, not discarded with the temporary directory:
+        # the score, the maps and the run's metadata go to a fixed directory so
+        # a later threshold, calibration or fusion change can be re-derived
+        # offline instead of re-running the model (G7-2).
+        self.results_dir = (results_dir
+                            or os.environ.get("TRUFOR_RESULTS")
+                            or DEFAULT_RESULTS_DIR)
+        self.cache = cache
         #: arrays from the last analyze(), so render_artifacts costs nothing
         self._last: Optional[Dict[str, np.ndarray]] = None
+        #: cold start is the first call in this process: it pays for the
+        #: interpreter, the imports and the checkpoint.  The batch decision
+        #: (one subprocess per image vs. a resident worker) rests on these.
+        self._runs = 0
+        self.timings: List[dict] = []
 
     # ------------------------------------------------------------------
     # Availability
@@ -121,26 +147,119 @@ class TruForExpert(ExternalScoreExpert):
             command.append("--save_np")
         return command
 
+    # ------------------------------------------------------------------
+    # Raw-product cache (G7-2)
+    # ------------------------------------------------------------------
+
+    def cache_key(self, img_bgr: np.ndarray) -> str:
+        """
+        Key a result by everything that could change it.
+
+        Image bytes plus the weights hash plus the recipe version: pointing the
+        adapter at different weights, or changing how the image is fed, must
+        not silently reuse a number produced under the old setup.
+        """
+        digest = hashlib.sha256()
+        digest.update(np.ascontiguousarray(img_bgr).tobytes())
+        digest.update(b"|")
+        digest.update(self.provenance().sha256.encode("ascii"))
+        digest.update(f"|{RECIPE_VERSION}".encode("ascii"))
+        digest.update(f"|{self.experiment}|{HIGH_RESPONSE_THRESHOLD}".encode("ascii"))
+        return digest.hexdigest()[:24]
+
+    def result_path(self, key: str) -> str:
+        return os.path.join(self.results_dir, key, "result.npz")
+
+    def meta_path(self, key: str) -> str:
+        return os.path.join(self.results_dir, key, "meta.json")
+
+    def cached_result(self, key: str) -> Optional[Dict[str, np.ndarray]]:
+        path = self.result_path(key)
+        if not (self.cache and os.path.exists(path)):
+            return None
+        return dict(np.load(path, allow_pickle=True))
+
+    def persist(self, key: str, arrays: Dict[str, np.ndarray], meta: dict) -> str:
+        directory = os.path.join(self.results_dir, key)
+        os.makedirs(directory, exist_ok=True)
+        np.savez(self.result_path(key), **arrays)
+        with open(self.meta_path(key), "w", encoding="utf-8") as handle:
+            json.dump(meta, handle, ensure_ascii=False, indent=1)
+        return directory
+
     def _score(self, img_bgr: np.ndarray):  # pragma: no cover - subprocess path
         from PIL import Image
 
+        key = self.cache_key(img_bgr)
+        cached = self.cached_result(key)
+        if cached is not None:
+            self._last = cached
+            self.timings.append({"key": key, "cold_start": False,
+                                 "elapsed_s": 0.0, "cached": True})
+            return self.result_from_arrays(cached)
+
+        started = time.perf_counter()
+        cold_start = self._runs == 0
         with tempfile.TemporaryDirectory(prefix="trufor_") as work:
             image_path = os.path.join(work, "input.png")
             Image.fromarray(np.ascontiguousarray(img_bgr[:, :, ::-1])).save(image_path)
             out_dir = os.path.join(work, "out")
             os.makedirs(out_dir, exist_ok=True)
-            completed = subprocess.run(
-                self.command(image_path, out_dir),
-                cwd=os.path.join(self.home, "TruFor_train_test"),
-                capture_output=True, text=True, timeout=self.timeout_s,
-            )
-            outputs = sorted(glob.glob(os.path.join(out_dir, "**", "*.npz"), recursive=True))
-            if not outputs:
+            returncode, stdout, stderr, npz_path = self._run_tool(image_path, out_dir)
+            if not npz_path:
                 raise RuntimeError(
-                    f"{self.source_name}：未产出 npz（退出码 {completed.returncode}）\n"
-                    f"stdout 尾部：{completed.stdout[-500:]}\nstderr 尾部：{completed.stderr[-500:]}")
-            arrays = dict(np.load(outputs[0], allow_pickle=True))
+                    f"{self.source_name}：未产出 npz（退出码 {returncode}）\n"
+                    f"stdout 尾部：{stdout[-500:]}\nstderr 尾部：{stderr[-500:]}")
+            arrays = dict(np.load(npz_path, allow_pickle=True))
+
+        elapsed = time.perf_counter() - started
+        self._runs += 1
+        self.timings.append({"key": key, "cold_start": cold_start,
+                             "elapsed_s": round(elapsed, 2), "cached": False})
+        self.persist(key, arrays, {
+            "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "image_sha256": hashlib.sha256(
+                np.ascontiguousarray(img_bgr).tobytes()).hexdigest(),
+            "weights": self.provenance().as_dict(),
+            "experiment": self.experiment,
+            "recipe_version": RECIPE_VERSION,
+            "preprocess": "原图 PNG 落盘 → TruFor test.py 直接前向",
+            "high_response_threshold": HIGH_RESPONSE_THRESHOLD,
+            "cold_start": cold_start,
+            "elapsed_s": round(elapsed, 2),
+            "subprocess": {"returncode": returncode,
+                           "stdout_tail": stdout[-400:],
+                           "stderr_tail": stderr[-400:]},
+            "stats": self.summarise(arrays),
+            "npz_keys": sorted(arrays),
+        })
         return self.result_from_arrays(arrays)
+
+    def _run_tool(self, image_path: str, out_dir: str):  # pragma: no cover
+        """Run the external tool once; return (rc, stdout, stderr, npz path)."""
+        completed = subprocess.run(
+            self.command(image_path, out_dir),
+            cwd=os.path.join(self.home, "TruFor_train_test"),
+            capture_output=True, text=True, timeout=self.timeout_s,
+        )
+        outputs = sorted(glob.glob(os.path.join(out_dir, "**", "*.npz"), recursive=True))
+        return completed.returncode, completed.stdout, completed.stderr, (
+            outputs[0] if outputs else "")
+
+    def timing_summary(self) -> dict:
+        """Cold vs warm, for the batch-vs-resident decision the review asked for."""
+        if not self.timings:
+            return {"runs": 0}
+        cold = [t["elapsed_s"] for t in self.timings if t["cold_start"] and not t["cached"]]
+        warm = [t["elapsed_s"] for t in self.timings if not t["cold_start"] and not t["cached"]]
+        cached = [t for t in self.timings if t["cached"]]
+        return {
+            "runs": self._runs,
+            "cold_start_s": cold[0] if cold else None,
+            "warm_mean_s": round(sum(warm) / len(warm), 2) if warm else None,
+            "warm_min_s": min(warm) if warm else None,
+            "cache_hits": len(cached),
+        }
 
     # ------------------------------------------------------------------
     # Summaries and artifacts (pure numpy — CPU-testable)
@@ -244,12 +363,12 @@ def _entropy(array: np.ndarray, bins: int = 32) -> float:
 
 class MockTruForExpert(TruForExpert):
     """
-    Deterministic TruFor stand-in: same class as production, minus the model.
+    Deterministic TruFor stand-in: same class and the same `_score` path.
 
-    It subclasses the real adapter on purpose — `analyze` fabricates the
-    arrays a run would produce and hands them to the same `result_from_arrays`
-    and `render_artifacts` the GPU path uses, so a mock run cannot drift from
-    the code it stands in for.
+    Only `_run_tool` is replaced — it writes the npz the real tool would write
+    and returns its path — so the cache key, the persistence, the metadata and
+    the timing all run through production code.  A mock that took a shortcut
+    around them would not notice when they break.
     """
 
     weight_source = "mock"
@@ -258,10 +377,12 @@ class MockTruForExpert(TruForExpert):
 
     def __init__(self, score: Optional[float] = None, shape=(64, 64), **kwargs):
         kwargs.setdefault("weights_path", "/dev/null")
+        kwargs.setdefault("results_dir", tempfile.mkdtemp(prefix="trufor_mock_"))
         super().__init__(**kwargs)
         self._fixed_score = score
         self._shape = shape
         self._last = None
+        self.tool_calls = 0
 
     @classmethod
     def _resolve_weights_path(cls) -> str:
@@ -270,13 +391,16 @@ class MockTruForExpert(TruForExpert):
     def unavailable_reason(self) -> str:
         return "" if self.enabled else f"{self.source_name} 已停用"
 
-    def analyze(self, img_patch: np.ndarray):
+    def _run_tool(self, image_path: str, out_dir: str):
+        self.tool_calls += 1
         height, width = self._shape
         rows = np.linspace(0.0, 1.0, height).reshape(-1, 1)
         arrays = {
             "score": np.array(0.5 if self._fixed_score is None else self._fixed_score),
-            "map": np.repeat(rows, width, axis=1),
-            "conf": np.full((height, width), 0.8),
+            "map": np.repeat(rows, width, axis=1).astype(np.float32),
+            "conf": np.full((height, width), 0.8, dtype=np.float32),
             "imgsize": np.array([height, width]),
         }
-        return self.result_from_arrays(arrays)
+        path = os.path.join(out_dir, "mock.npz")
+        np.savez(path, **arrays)
+        return 0, "mock", "", path
