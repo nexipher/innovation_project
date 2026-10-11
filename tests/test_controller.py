@@ -155,6 +155,25 @@ class TestEvidenceDeduplication:
         assert result["unique_evidence_count"] == 1
         assert result["suppressed_duplicate_count"] == 1
 
+    def test_a_suppressed_duplicate_call_is_answered(self):
+        """
+        D4 (2026-10-11): the model asked again and got nothing back — silently
+        dropping the result taught it that a call may be followed by a
+        conclusion with no answer in between.
+        """
+        import json as _json
+
+        second_call = "<planning>\nSuspected Region: [400, 300, 700, 600]\n</planning>\n<call_noise>[400, 300, 700, 600]</call_noise>"
+        mllm = ScriptedMLLM([self.CALL, second_call, self.VERDICT])
+        fsm = ForensicStateMachine(mllm, _build_experts())
+        result = fsm.run(FAKE_PATH, "Fake")
+
+        with open(result["sft_data_path"], encoding="utf-8") as handle:
+            session = _json.load(handle)
+        notices = [t for t in session["conversations"]
+                   if t["from"] == "user" and "去重规则忽略" in t.get("value", "")]
+        assert len(notices) == 1
+
     def test_different_experts_still_produce_two_unique_evidence(self):
         """Distinct instruments are distinct measurements, regions aside."""
         noise_call = "<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n<call_noise>[200, 100, 300, 280]</call_noise>"

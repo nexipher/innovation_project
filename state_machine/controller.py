@@ -253,6 +253,18 @@ class ForensicStateMachine:
                     evidence_id = evidence_token["evidence_id"]
                     if evidence_id in seen_evidence_ids:
                         suppressed_duplicate_count += 1
+                        # The call still has to be answered.  Swallowing it
+                        # silently left the model's turn dangling in the
+                        # session log and taught it that a call may be
+                        # followed by a conclusion with nothing in between
+                        # (29 samples in the 2026-10-11 review).
+                        notice = (
+                            f"[System: 本次调用返回的证据与已有的 {evidence_id} 完全"
+                            f"相同，已按去重规则忽略，未产生新的测量。请基于现有证据"
+                            f"继续，不要重复调用同一工具与同一区域。]"
+                        )
+                        self._logger.add_conversation_turn("user", notice)
+                        conversation.append({"from": "user", "value": notice})
                         continue
                     seen_evidence_ids.add(evidence_id)
                     called_experts.add(expert_result.source)
