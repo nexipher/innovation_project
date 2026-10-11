@@ -148,26 +148,66 @@ def orientation_corrected(rows: List[dict]) -> dict:
 # Evaluation
 # ---------------------------------------------------------------------------
 
-def evaluate(expert, samples: List[dict], image_size: Optional[int] = None,
-             progress: bool = True) -> List[dict]:
-    rows: List[dict] = []
-    for index, entry in enumerate(samples, 1):
-        path = os.path.join(PROJECT_ROOT, entry["path"])
-        image = cv2.imread(path, cv2.IMREAD_COLOR)
+def load_images(samples: List[dict], image_size: Optional[int] = None) -> dict:
+    images = {}
+    for entry in samples:
+        image = cv2.imread(os.path.join(PROJECT_ROOT, entry["path"]), cv2.IMREAD_COLOR)
         if image is None:
             continue
         if image_size and max(image.shape[:2]) > image_size:
             scale = image_size / max(image.shape[:2])
-            image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        result = expert.analyze(image)
-        row = {
-            "sample_id": entry["sample_id"], "source_id": entry["source_id"],
-            "label": entry["label"], "treatment": entry["treatment"],
-            "cell": entry["cell"], "score": float(result.raw_metric),
-        }
-        stats = (result.metadata or {}).get("stats") or {}
-        row.update({f"map_{k}": v for k, v in stats.items() if isinstance(v, (int, float))})
-        rows.append(row)
+            image = cv2.resize(image, None, fx=scale, fy=scale,
+                               interpolation=cv2.INTER_AREA)
+        images[entry["sample_id"]] = image
+    return images
+
+
+def to_row(entry: dict, result) -> dict:
+    row = {
+        "sample_id": entry["sample_id"], "source_id": entry["source_id"],
+        "label": entry["label"], "treatment": entry["treatment"],
+        "cell": entry["cell"], "score": float(result.raw_metric),
+    }
+    stats = (result.metadata or {}).get("stats") or {}
+    row.update({f"map_{k}": v for k, v in stats.items() if isinstance(v, (int, float))})
+    return row
+
+
+def evaluate(expert, samples: List[dict], image_size: Optional[int] = None,
+             progress: bool = True, batch_size: int = 64) -> List[dict]:
+    """
+    Score the group, in batches when the expert supports it.
+
+    Per-image subprocess calls cost ~12 s each — the checkpoint is reloaded
+    every time — against ~1.75 s batched, and the GPU sits idle in between, so
+    an expert that offers `analyze_many` is always driven through it.
+    """
+    images = load_images(samples, image_size)
+    by_id = {entry["sample_id"]: entry for entry in samples}
+    rows: List[dict] = []
+
+    if hasattr(expert, "analyze_many"):
+        ids = [entry["sample_id"] for entry in samples if entry["sample_id"] in images]
+        for start in range(0, len(ids), batch_size):
+            chunk = ids[start:start + batch_size]
+            try:
+                results = expert.analyze_many({i: images[i] for i in chunk},
+                                              progress=progress)
+            except RuntimeError as exc:
+                print(f"    批处理失败，退回逐图：{exc}")
+                for image_id in chunk:
+                    rows.append(to_row(by_id[image_id], expert.analyze(images[image_id])))
+                continue
+            rows.extend(to_row(by_id[i], results[i]) for i in chunk if i in results)
+            if progress:
+                print(f"    [{min(start + batch_size, len(ids))}/{len(ids)}]")
+        return rows
+
+    for index, entry in enumerate(samples, 1):
+        image = images.get(entry["sample_id"])
+        if image is None:
+            continue
+        rows.append(to_row(entry, expert.analyze(image)))
         if progress and index % 25 == 0:
             print(f"    [{index}/{len(samples)}]")
     return rows

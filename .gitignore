@@ -45,6 +45,11 @@ wandb/
 # plus the tracked final_v2 set — the run's provenance is in the operation log)
 sft_data/lora_runs/
 
+# G7 raw expert products (npz per image; kept on disk for offline re-analysis
+# — a threshold or calibration change must not need the model again — but they
+# are megabytes per image and belong in a cache, not in git)
+calibration/trufor_raw/
+
 # Environment
 .env
 .env.local
