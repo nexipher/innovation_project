@@ -1283,3 +1283,25 @@
   - `tests/test_probe_wiring.py (Created — 17 项)、tests/test_g7_acceptance.py (Created — 18 项)、tests/test_g7_acceptance_review.py (Created — 13 项)；其余 7 个测试文件按新契约更新`
 * **执行结果与验证状态**：**837 项测试通过**（其中 31 项新增：接线 17 + 验收 18→其中 1 项为双读数，审阅 13）；提示词 sha256 有意变更（`09dd259ae0b130f6` → `e9e2120587d8049d`）并在测试中重钉；**配置指纹随之改变 → 所有可续跑评测会冷启动**（计划中已预告）。CPU 端 `--dry-run` 走通 120 样本全链路（13 秒）；真实验收已获用户授权并在跑
 * **置信度或遗留待办（TODO）**：①**后验规则变更**（重复计权折减）会影响任何与 G2-d/G3-e 的数字对比，需在入口 6 的对照里注明口径②`scripts/replay_halting_g3.py` 的 `SHIPPED_EXPERTS` 未加 PROBE（它重放的是 G3 的历史会话，加进去会改变历史口径）③提示词里 PROBE 的 measures 文案仍写"separation ≈0.98"，取自 A 组匹配格整体；若将来换拟合组需同步④`config.SYSTEM_PROMPT`（G1 遗留的三工具文本）已死但仍在文件里，未清理
+---
+### 2026-10-11 14:37:40 - G7 入口 3 小批真实验收：接线通过，但发现"重复调用吃掉一半预算"的执行层缺陷
+
+* **当前操作动作**：用户授权后在 GPU 上跑 24 源 / 120 样本的端到端验收（agent 臂 + PROBE 单独参考臂），生成审阅单并逐条人工核对，按四步指令收口
+* **对应计划锚点**：plan.md §4.16「入口 3」的 3) 小批真实运行 与 4) 人工审阅及验收标准
+* **核心变更说明**：
+  1. **运行成本与规模**：120 会话 **26 分钟**（11.66 s/样本、3.48 轮/会话），Qwen 17.8 GB + PROBE 1.6 GB 常驻（峰值约 21 GB）；参考臂 120 张 PROBE 前向另约 1.5 分钟。首次启动时误按默认 `device="cpu"` 跑 PROBE，已改 `cuda` 重跑（浪费约 1 分钟，无产物污染）
+  2. **结构判据全部通过**：①**调用记账恒等式 120/120 成立**（执行数 = 落地 token + 去重数）→ 没有任何调用被静默丢弃（这正是接线最该防的失败）；②probe token 全部带 `calibrated_likelihood` + `calibration` 块（拟合组 A、62 源、权重 sha256、划分 hash）；③PROBE 在 100/120 会话被调用，首次调用为 probe 的 97 个（jpeg 19、noise 4）；④自动标记的 4 处"分数当伪影"经人工复核**全部不成立**（视觉观察与分数并列陈述；其中一条是模型主动写"该分数仅表示整图生成性，不提供具体区域信息"）
+  3. **判定与对照**（准确率仅记录，不是本轮结论）：Agent 91/120 = 0.758（弃权 25，覆盖 0.792）；**PROBE 单独（同分箱映射）103/120 = 0.858**；PROBE 单独（冻结 LR 映射）101/120 = 0.842 —— **两个参考臂只在 4/120 上不同**，用户担心的"映射口径导致分歧"在本批上没有放大（真出现分歧的 4 例中，Agent 有 2 例判对、2 例是 PROBE 把中位箱当 Fake 而 Agent 用辅助线索改判为 Real 且判对）
+  4. **发现 1（真缺陷，必须修）**：**311 次执行里 151 次（48.6%）是同一专家对同一张图的重复测量**（跨轮 117 + 同轮 34），108/120 会话至少一次，`budget_exhausted` 的 14 个会话全部有重复。四个专家都是整图确定性测量，**这些执行按构造必然返回相同结果**；控制器却"先执行、后按 evidence_id 去重"，等于把 GPU 时间和调用预算白花。修法：**去重提前到执行前**（按"专家 + 图像"判重，整图口径下完全等价），跳过的调用不记账并单独计数；提示词 `Expert Target & Hypothesis` 一栏改为"只写专家名"以减少同轮重复诱因。**待用户批准后实施，再进入口 4**
+  5. **发现 2（要带进入口 4 的纪律）**：34 个"近随机"token（P(Fake)∈[0.4,0.6]）中有 30 个被写进结论并获得方向性表述（28 个会话）。标签不受影响（后验说了算），但**这样的轨迹直接进 SFT 会教出"过读弱证据"**
+  6. **发现 3（本轮不调参）**：25 例弃权中 23 例来自 `model_stalled`，集中在 PROBE 落在中位箱（P(Fake)=0.52）的样本；这些样本多为 Fake，PROBE 单独按 0.5 阈值直接猜 Fake 反而更准 —— Agent 是在用覆盖换可靠性。这个取舍（`POLICY_CONFIDENT_POSTERIOR=0.65`、中位箱按 0.52 计）应由入口 6 用数据定价，**本轮不动**
+  7. **审阅工具与两处自我更正**：新增 `scripts/g7_acceptance_review.py` 生成审阅单（自动标记四类问题，明确声明"标记不是结论"）。**首版判据过松，当场被数据打回**：`score_as_artifact` 一度标记 108/120，实为"分数"与"区域"共现——**包括模型正确的免责声明**；`call_without_token` 一度 82 例，实为模型在自己的 planning 里复述标签（解析器要坐标，我的计数器没要）。收紧后：伪影 4 例（人工全否）、杂项 0 例，**真正的信号是"重复调用 108 例"**
+* **涉及/修改的文件清单**：
+  - `scripts/g7_acceptance.py, scripts/g7_acceptance_review.py (Created/Modified — 双参考臂 + 审阅单)`
+  - `traces/g7_acceptance/ (Created — 120 条真实会话，1.8 MB，供人工审阅)`
+  - `calibration/g7_acceptance_report.json, calibration/g7_acceptance_review.md (Created)`
+  - `calibration/set/acceptance_batch.json, calibration/set/images_acceptance/ (Created — 批次预先固化，图像 gitignore)`
+  - `tests/test_g7_acceptance.py, tests/test_g7_acceptance_review.py (Created — 18 + 20 项)`
+  - `plan.md, claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**837 项测试通过**（新增 38 项）；四条结构判据全过；报告与审阅单落盘；120 条会话保留在 `traces/g7_acceptance/`（**不进入 SFT 语料**，`finalize_sft_data.py` 只扫 `traces/sft_sessions/`）
+* **置信度或遗留待办（TODO）**：①**执行前去重未实施**（发现 1），需用户批准；实施后建议重跑一次验收以量化预算节省（预计执行次数从 311 降到约 160）②发现 2 的"过读弱证据"需要在入口 4 的生成/审核里作为专门检查项（可加进审阅单）③本轮批次含 B 组全部 18 源，B 组参与过阈值选择，故**这里的准确率不能当作泛化结论**（入口 6 用 test 分区）④`traces/g7_acceptance/` 已提交，若将来重跑请先归档旧批次避免混淆

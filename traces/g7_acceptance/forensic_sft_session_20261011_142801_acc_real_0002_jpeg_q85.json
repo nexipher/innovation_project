@@ -1,0 +1,151 @@
+{
+  "id": "session_20261011_142801_acc_real_0002_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images_acceptance/acc_real_0002_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.7816,
+    "report": "图像的 AI 生成鉴别器得分为 0.0707，表明图像更可能是真实的。然而，缺乏其他专家的反馈使得我们无法得出明确的判断。",
+    "posterior": 0.2184,
+    "tool_utilities": {
+      "frequency_expert_v2": -0.12560897178900254,
+      "noise_expert": 0.0008967342307232007,
+      "jpeg_expert": 0.056231604201941315,
+      "probe_dino_expert": -0.25
+    },
+    "conflict_score": 0.0,
+    "redundancy_discounts": [],
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [145, 149, 403, 359]\nVisual Anomalies: 该图像显示一个人从后方观看风景，但没有明显的伪造迹象。\nExpert Target & Hypothesis: 首先调用 <call_probe> 来评估整个图像的生成性。\n</planning>\n<call_probe>[0, 0, 504, 364]</call_probe>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-d9efdecf4b\", \"evidence_name\": \"aigi_discriminator_score\", \"region\": \"patch_coordinates_[0, 0, 189, 182]\", \"region_pixels\": [0, 0, 189, 182], \"region_normalized_1000\": [0, 0, 504, 364], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"整图判别分数 0.0707（外部判别器的原始输出，未经本地校准）。输入预处理：500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。\", \"reasoning\": \"该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。\", \"strength\": 0.0707, \"raw_metric\": 0.070748, \"source\": \"probe_dino_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.06); the benign reading applies.\", \"counter_explanation\": \"外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。\", \"reliability\": 0.984, \"calibrated_likelihood\": {\"Real\": 0.939, \"Fake\": 0.061}, \"condition_metadata\": {\"bin_samples\": 49, \"confound_drop_png_to_q70\": 0.021874999999999978, \"separation_polarity_corrected\": 0.98359375, \"region_area_ratio\": 0.183456}, \"semantics_aligned\": true, \"applicability\": \"strong\", \"applicability_conditions\": \"五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": \"A\", \"mapping\": \"quantile_bins\", \"sources\": 62, \"samples\": 248, \"split_hash\": \"37bf2f1db22ccdef\", \"weights_sha256\": \"c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156\"}, \"support_raw\": \"Uncertain\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_142801_acc_real_0002_jpeg_q85/region_E-d9efdecf4b.png\"}",
+      "image_paths": [
+        "traces/evidence/session_20261011_142801_acc_real_0002_jpeg_q85/region_E-d9efdecf4b.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 189, 182]\nVisual Anomalies: 图像显示一个模糊的自然景观，没有明显的伪造迹象。\nExpert Target & Hypothesis: 首先调用 <call_probe> 来评估整个图像的生成性。\n</planning>\n<call_probe>[0, 0, 504, 364]</call_probe>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 本次调用返回的证据与已有的 E-d9efdecf4b 完全相同，已按去重规则忽略，未产生新的测量。请基于现有证据继续，不要重复调用同一工具与同一区域。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的证据，AI 生成鉴别器的得分（0.0707）表明图像更可能是真实的。然而，由于我们没有其他专家的反馈来进一步确认或反驳这一结论，因此无法得出明确的判断。鉴于当前证据的不确定性，我们应保持谨慎。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"aigi_discriminator_score\"], \"report\": \"图像的 AI 生成鉴别器得分为 0.0707，表明图像更可能是真实的。然而，缺乏其他专家的反馈使得我们无法得出明确的判断。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-d9efdecf4b",
+      "evidence_name": "aigi_discriminator_score",
+      "region": "patch_coordinates_[0, 0, 189, 182]",
+      "region_pixels": [
+        0,
+        0,
+        189,
+        182
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        504,
+        364
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "整图判别分数 0.0707（外部判别器的原始输出，未经本地校准）。输入预处理：500×375 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。",
+      "reasoning": "该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。",
+      "strength": 0.0707,
+      "raw_metric": 0.070748,
+      "source": "probe_dino_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.06); the benign reading applies.",
+      "counter_explanation": "外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。",
+      "reliability": 0.984,
+      "calibrated_likelihood": {
+        "Real": 0.939,
+        "Fake": 0.061
+      },
+      "condition_metadata": {
+        "bin_samples": 49,
+        "confound_drop_png_to_q70": 0.021874999999999978,
+        "separation_polarity_corrected": 0.98359375,
+        "region_area_ratio": 0.183456
+      },
+      "semantics_aligned": true,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156"
+      },
+      "support_raw": "Uncertain",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。",
+      "diagnostic_region_image": "traces/evidence/session_20261011_142801_acc_real_0002_jpeg_q85/region_E-d9efdecf4b.png"
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      375,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "candidate_matches_posterior",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-11T14:28:01.144349",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 1,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 3.5,
+    "policy_version": "v2",
+    "available_experts": [
+      "frequency_expert_v2",
+      "jpeg_expert",
+      "noise_expert",
+      "probe_dino_expert"
+    ],
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "posterior": 0.2184,
+    "conflict_score": 0.0,
+    "candidate_overridden": false,
+    "tool_utilities": {
+      "frequency_expert_v2": -0.12560897178900254,
+      "noise_expert": 0.0008967342307232007,
+      "jpeg_expert": 0.056231604201941315,
+      "probe_dino_expert": -0.25
+    },
+    "redundancy_discounts": []
+  }
+}

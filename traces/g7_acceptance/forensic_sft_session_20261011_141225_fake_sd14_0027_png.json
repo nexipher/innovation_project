@@ -1,0 +1,242 @@
+{
+  "id": "session_20261011_141225_fake_sd14_0027_png",
+  "image_path": "/root/autodl-tmp/innovation_project/calibration/set/images_acceptance/fake_sd14_0027_png.png",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Fake",
+    "confidence": 0.8192,
+    "report": "图像整体判别分数为0.9999，表明图像高度可能是伪造的。同时，频率域分析的证据显示图像的频谱没有显著的周期结构，这与自然图像的内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。综合考虑现有证据，图像更有可能是伪造的。",
+    "posterior": 0.8192,
+    "tool_utilities": {
+      "frequency_expert_v2": -0.15,
+      "noise_expert": -0.025073844780794954,
+      "jpeg_expert": 0.02073743529958902,
+      "probe_dino_expert": -0.25
+    },
+    "conflict_score": 0.0,
+    "redundancy_discounts": [
+      {
+        "evidence_id": "E-138baa090c",
+        "source": "frequency_expert_v2",
+        "discount": 0.836,
+        "after": [
+          "probe_dino_expert"
+        ]
+      }
+    ],
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "model_candidate": "Fake"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 468, 504]\nVisual Anomalies: 图像整体为黑白，没有明显的彩色元素。电车的线条清晰，但缺乏细节，可能暗示了图像处理或压缩。\nExpert Target & Hypothesis: <call_probe>[0, 0, 468, 504]</call_probe> → 使用AI生成检测器来评估整个图像是否为伪造。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-20d673f3be\", \"evidence_name\": \"aigi_discriminator_score\", \"region\": \"patch_coordinates_[0, 0, 240, 258]\", \"region_pixels\": [0, 0, 240, 258], \"region_normalized_1000\": [0, 0, 468, 504], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"整图判别分数 0.9999（外部判别器的原始输出，未经本地校准）。输入预处理：512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。\", \"reasoning\": \"该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。\", \"strength\": 0.9999, \"raw_metric\": 0.999946, \"source\": \"probe_dino_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=1.00); the generative reading applies.\", \"counter_explanation\": \"外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。\", \"reliability\": 0.984, \"calibrated_likelihood\": {\"Real\": 0.0, \"Fake\": 1.0}, \"condition_metadata\": {\"bin_samples\": 50, \"confound_drop_png_to_q70\": 0.021874999999999978, \"separation_polarity_corrected\": 0.98359375, \"region_area_ratio\": 0.236206}, \"semantics_aligned\": true, \"applicability\": \"strong\", \"applicability_conditions\": \"五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": \"A\", \"mapping\": \"quantile_bins\", \"sources\": 62, \"samples\": 248, \"split_hash\": \"37bf2f1db22ccdef\", \"weights_sha256\": \"c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156\"}, \"support_raw\": \"Uncertain\", \"direction\": \"AI-generated\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_141225_fake_sd14_0027_png/region_E-20d673f3be.png\"}",
+      "image_paths": [
+        "traces/evidence/session_20261011_141225_fake_sd14_0027_png/region_E-20d673f3be.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 240, 258]\nVisual Anomalies: 图像整体为黑白，没有明显的彩色元素。电车的线条清晰，但缺乏细节，可能暗示了图像处理或压缩。\nExpert Target & Hypothesis: <call_probe>[0, 0, 240, 258]</call_probe> → 使用AI生成检测器来评估局部图像是否为伪造。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 本次调用返回的证据与已有的 E-20d673f3be 完全相同，已按去重规则忽略，未产生新的测量。请基于现有证据继续，不要重复调用同一工具与同一区域。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据现有的AI生成检测器证据，图像整体判别分数为0.9999，表明图像高度可能是伪造的。然而，由于这是全局测量，无法确定具体区域是否存在伪造。为了进一步确认，可以使用其他专家进行分析，如频率域分析或噪声残差分析。\n</reasoning>\n<call_freq>[0, 0, 240, 258]</call_freq>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-138baa090c\", \"evidence_name\": \"frequency_grid_artifact_v2\", \"region\": \"patch_coordinates_[0, 0, 123, 132]\", \"region_pixels\": [0, 0, 123, 132], \"region_normalized_1000\": [0, 0, 240, 258], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies. (raw peak ratio: 0.0017, full=0.0017, half=0.0017)\", \"reasoning\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies.\", \"strength\": 0.2563, \"raw_metric\": 0.001681, \"source\": \"frequency_expert_v2\", \"support\": \"AI-generated\", \"interpretation_text\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies.\", \"counter_explanation\": \"自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。\", \"reliability\": 0.556, \"calibrated_likelihood\": {\"Real\": 0.291, \"Fake\": 0.709}, \"condition_metadata\": {\"bin_samples\": 79, \"confound_drop_png_to_q70\": -0.07833333333333337, \"separation_polarity_corrected\": 0.5558333333333333, \"region_area_ratio\": 0.061935}, \"semantics_aligned\": true, \"applicability\": \"weak:marginally-above-chance\", \"applicability_conditions\": \"弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": null, \"mapping\": null, \"sources\": null, \"samples\": null, \"split_hash\": null, \"weights_sha256\": null}, \"support_raw\": \"Real\", \"direction\": \"AI-generated\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Statistical patterns align with normal hardware camera capture.\", \"reasoning_raw\": \"Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.\", \"phenomenon_raw\": \"Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0017, half=0.0017)\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_141225_fake_sd14_0027_png/region_E-138baa090c.png\", \"visual_artifacts\": [\"traces/evidence/session_20261011_141225_fake_sd14_0027_png/frequency_spectrum_v2_E-138baa090c.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261011_141225_fake_sd14_0027_png/region_E-138baa090c.png",
+        "traces/evidence/session_20261011_141225_fake_sd14_0027_png/frequency_spectrum_v2_E-138baa090c.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n根据AI生成检测器的证据，图像整体判别分数为0.9999，表明图像高度可能是伪造的。同时，频率域分析的证据显示图像的频谱没有显著的周期结构，这与自然图像的内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。\n\n综合来看，AI生成检测器的证据强烈支持图像为伪造，而频率域分析的证据虽然显示图像的频谱没有显著的周期结构，但不足以否定图像为伪造的可能性。因此，综合考虑现有证据，图像更有可能是伪造的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.95, \"primary_evidence\": [\"aigi_discriminator_score\"], \"report\": \"图像整体判别分数为0.9999，表明图像高度可能是伪造的。同时，频率域分析的证据显示图像的频谱没有显著的周期结构，这与自然图像的内容一致，而不是GAN/Diffusion上采样操作特有的网格结构特征。综合考虑现有证据，图像更有可能是伪造的。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-20d673f3be",
+      "evidence_name": "aigi_discriminator_score",
+      "region": "patch_coordinates_[0, 0, 240, 258]",
+      "region_pixels": [
+        0,
+        0,
+        240,
+        258
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        468,
+        504
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "整图判别分数 0.9999（外部判别器的原始输出，未经本地校准）。输入预处理：512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。",
+      "reasoning": "该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。",
+      "strength": 0.9999,
+      "raw_metric": 0.999946,
+      "source": "probe_dino_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=1.00); the generative reading applies.",
+      "counter_explanation": "外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。",
+      "reliability": 0.984,
+      "calibrated_likelihood": {
+        "Real": 0.0,
+        "Fake": 1.0
+      },
+      "condition_metadata": {
+        "bin_samples": 50,
+        "confound_drop_png_to_q70": 0.021874999999999978,
+        "separation_polarity_corrected": 0.98359375,
+        "region_area_ratio": 0.236206
+      },
+      "semantics_aligned": true,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156"
+      },
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。",
+      "diagnostic_region_image": "traces/evidence/session_20261011_141225_fake_sd14_0027_png/region_E-20d673f3be.png"
+    },
+    {
+      "evidence_id": "E-138baa090c",
+      "evidence_name": "frequency_grid_artifact_v2",
+      "region": "patch_coordinates_[0, 0, 123, 132]",
+      "region_pixels": [
+        0,
+        0,
+        123,
+        132
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        240,
+        258
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies. (raw peak ratio: 0.0017, full=0.0017, half=0.0017)",
+      "reasoning": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies.",
+      "strength": 0.2563,
+      "raw_metric": 0.001681,
+      "source": "frequency_expert_v2",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.71); the generative reading applies.",
+      "counter_explanation": "自然规则纹理同样会在高频产生能量聚集；多尺度分析降低但未消除该混淆。G2 校准显示 v2 为弱信号（格式配平后 AUROC≈0.56-0.63），只应作为辅助证据。",
+      "reliability": 0.556,
+      "calibrated_likelihood": {
+        "Real": 0.291,
+        "Fake": 0.709
+      },
+      "condition_metadata": {
+        "bin_samples": 79,
+        "confound_drop_png_to_q70": -0.07833333333333337,
+        "separation_polarity_corrected": 0.5558333333333333,
+        "region_area_ratio": 0.061935
+      },
+      "semantics_aligned": true,
+      "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "support_raw": "Real",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Statistical patterns align with normal hardware camera capture.",
+      "reasoning_raw": "Multi-scale frequency analysis reveals no significant periodic structure in the high-frequency spectrum. The spectral decay pattern is consistent with natural image content, not the structured grid artifacts characteristic of GAN/Diffusion upsampling operations.",
+      "phenomenon_raw": "Multi-scale frequency analysis shows no significant periodic structure. (raw peak ratio: 0.0017, full=0.0017, half=0.0017)",
+      "diagnostic_region_image": "traces/evidence/session_20261011_141225_fake_sd14_0027_png/region_E-138baa090c.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_141225_fake_sd14_0027_png/frequency_spectrum_v2_E-138baa090c.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      512,
+      512
+    ],
+    "total_steps": 4,
+    "halting_reason": "candidate_matches_posterior",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-11T14:12:25.528988",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 3,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 1,
+    "weighted_cost": 5.0,
+    "policy_version": "v2",
+    "available_experts": [
+      "frequency_expert_v2",
+      "jpeg_expert",
+      "noise_expert",
+      "probe_dino_expert"
+    ],
+    "policy_reason": "candidate_matches_posterior",
+    "policy_reasons": [
+      "candidate_matches_posterior"
+    ],
+    "posterior": 0.8192,
+    "conflict_score": 0.0,
+    "candidate_overridden": false,
+    "tool_utilities": {
+      "frequency_expert_v2": -0.15,
+      "noise_expert": -0.025073844780794954,
+      "jpeg_expert": 0.02073743529958902,
+      "probe_dino_expert": -0.25
+    },
+    "redundancy_discounts": [
+      {
+        "evidence_id": "E-138baa090c",
+        "source": "frequency_expert_v2",
+        "discount": 0.836,
+        "after": [
+          "probe_dino_expert"
+        ]
+      }
+    ]
+  }
+}

@@ -52,18 +52,37 @@ class TestExtraction:
 
 
 class TestScoreAsArtifact:
-    def test_a_score_dressed_as_physics_is_flagged(self):
-        """The sentence is returned without its terminator — it is quoted, not parsed."""
-        text = "PROBE 判别分数显示图像右下区域的纹理噪声异常。"
+    def test_a_score_attributed_to_a_physical_finding_is_flagged(self):
+        text = "PROBE 判别分数检测到图像右下的纹理异常。"
         assert probe_artifact_sentences(text) == [text.rstrip("。")]
+
+    def test_the_models_own_disclaimer_is_not_flagged(self):
+        """This sentence is the behaviour we asked for, not the failure."""
+        text = "该分数仅表示图像作为一个整体的生成性，并没有提供具体的物理区域信息。"
+        assert probe_artifact_sentences(text) == []
+
+    def test_talking_about_another_expert_is_not_flagged(self):
+        text = "噪声残留专家的分析结果也表明存在噪声差异。"
+        assert probe_artifact_sentences(text) == []
 
     def test_a_score_cited_as_a_probability_is_not_flagged(self):
         text = "PROBE 判别分数的校准概率为 0.97，指向 AI 生成。"
         assert probe_artifact_sentences(text) == []
 
     def test_physics_alone_is_not_flagged(self):
-        """The flag is about the *pairing*, not about mentioning textures."""
+        """The flag is about the *attribution*, not about mentioning textures."""
         assert probe_artifact_sentences("画面右下区域的纹理较平滑。") == []
+
+    def test_a_prose_mention_of_the_tag_is_not_a_call(self):
+        """The controller's parser wants coordinates; so does this counter."""
+        trace = _trace([("assistant", "首先调用 <call_probe> 来评估整体真实性。")])
+        _, _, calls = session_text(trace)
+        assert calls == []
+
+    def test_a_call_with_coordinates_is_counted(self):
+        trace = _trace([("assistant", "<planning>…</planning><call_probe>[0, 0, 100, 100]</call_probe>")])
+        _, _, calls = session_text(trace)
+        assert calls == ["probe"]
 
 
 class TestReviewSession:
@@ -81,12 +100,25 @@ class TestReviewSession:
                        [_token()])
         assert review_session(self._record(), trace)["findings"] == []
 
-    def test_a_call_that_never_landed_is_flagged(self):
-        trace = _trace([("assistant", "<call_probe>[0,0,1,1]</call_probe> 然后 <call_noise>[0,0,1,1]</call_noise>")],
-                       [_token()])
+    def test_an_executed_call_that_never_landed_is_flagged(self):
+        """Two calls executed, one token: the identity is what catches a drop."""
+        trace = _trace([("assistant", "<call_probe>[0,0,1,1]</call_probe>")],
+                       [_token()], metadata={"expert_call_count": 2,
+                                             "suppressed_duplicate_count": 0})
         findings = review_session(self._record(), trace)["findings"]
-        assert any(f["kind"] == "call_without_token" and "noise" in f["detail"]
-                   for f in findings)
+        assert any(f["kind"] == "call_accounting_mismatch" for f in findings)
+
+    def test_a_suppressed_duplicate_keeps_the_identity(self):
+        trace = _trace([("assistant", "<call_probe>[0,0,1,1]</call_probe>")],
+                       [_token()], metadata={"expert_call_count": 2,
+                                             "suppressed_duplicate_count": 1})
+        kinds = {f["kind"] for f in review_session(self._record(), trace)["findings"]}
+        assert "call_accounting_mismatch" not in kinds
+
+    def test_a_tag_outside_the_toolkit_is_flagged(self):
+        trace = _trace([("assistant", "<call_oracle>[0,0,1,1]</call_oracle>")], [_token()])
+        findings = review_session(self._record(), trace)["findings"]
+        assert any(f["kind"] == "unknown_call_tag" for f in findings)
 
     def test_a_missing_trace_is_reported_rather_than_hidden(self):
         findings = review_session(self._record(), None)["findings"]
@@ -104,6 +136,13 @@ class TestReviewSession:
         findings = review_session(self._record(), trace)["findings"]
         assert any(f["kind"] == "aux_token_unread" and "noise" in f["detail"]
                    for f in findings)
+
+    def test_a_chinese_mention_counts_as_reading_it(self):
+        """The expert reported as 频率域专家 was read, whatever the language."""
+        trace = _trace([("assistant", "PROBE 的校准概率为 0.97；频率域专家的频谱分析无周期结构。")],
+                       [_token(), _token(source="frequency_expert_v2", p_fake=0.3)])
+        kinds = {f["kind"] for f in review_session(self._record(), trace)["findings"]}
+        assert "aux_token_unread" not in kinds
 
     def test_stopping_with_positive_utility_left_is_flagged(self):
         trace = _trace([("assistant", "结论")], [_token()],

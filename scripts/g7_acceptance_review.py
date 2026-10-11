@@ -39,16 +39,39 @@ TRACES_DIR = os.path.join(PROJECT_ROOT, "traces", "g7_acceptance")
 DRY_RUN_TRACES_DIR = os.path.join(PROJECT_ROOT, "traces", "dry_run_sessions")
 OUTPUT_PATH = os.path.join(PROJECT_ROOT, "calibration", "g7_acceptance_review.md")
 
-_CALL_TAG = re.compile(r"<call_(\w+)>", re.I)
+# Same shape the parser accepts: a call tag *with* coordinates.  A prose
+# mention — "首先调用 <call_probe> 来评估" — is not a call, and counting it as
+# one turned 82 clean sessions into apparent dropped calls.
+_CALL_TAG = re.compile(
+    r"<call_(\w+)>\s*\[?\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\]?\s*</call_\1>", re.I)
 _SENTENCE_SPLIT = re.compile(r"[。；;\n]")
 
-# Naming a score as if it were a physical trace is the failure mode this
-# project keeps meeting: the model is handed a number and writes the physics
-# itself.  The flag fires on co-occurrence inside one sentence, not on either
-# vocabulary alone.
-SCORE_WORDS = ("probe", "判别分数", "鉴别器", "分数", "概率", "p(fake)", "aigi")
-PHYSICAL_WORDS = ("纹理", "噪声", "残差", "频域", "频率", "边缘", "像素级",
-                  "pixel", "prnu", "传感器", "区域", "热图", "artifact", "伪影")
+# Dressing a score up as a physical trace is the failure this project keeps
+# meeting, and the first version of this check fired on 108 of 120 sessions —
+# because "分数" and "区域" co-occur in the model's own *correct* disclaimers
+# ("该分数仅表示整图生成性，不提供具体区域信息") and in legitimate mentions of
+# another expert ("噪声残留专家的分析也支持…").  A flag has to mean something,
+# so this one is narrow: the score being *attributed* to a physical cause or
+# location, with the disclaimers and other experts' names excluded.
+SCORE_WORDS = ("probe", "判别分数", "鉴别器", "鉴别分数", "aigi", "检测器")
+ATTRIBUTION = ("检测到", "发现了", "定位到", "对应于", "来自", "源于", "指向",
+               "表明存在", "说明存在", "显示存在")
+PHYSICAL_WORDS = ("纹理", "噪声", "残差", "频域", "边缘", "像素级", "prnu",
+                  "传感器", "热图", "伪影", "artifact")
+DISCLAIMERS = ("仅表示", "仅反映", "不提供", "不指出", "不代表", "无法确定", "没有提供",
+               "不能说明", "并非", "而不是", "而非", "不涉及", "与区域无关")
+OTHER_EXPERTS = ("噪声残留专家", "噪声专家", "jpeg", "压缩专家", "频率专家", "频域专家",
+                 "noise_expert", "jpeg_expert", "frequency_expert")
+
+# How each expert gets named in Chinese prose.  Matching on the English source
+# name alone flagged sessions that mention "频率域专家" — the expert was read
+# and reported, just not in the language the checker was looking for.
+EXPERT_MENTIONS = {
+    "noise_expert": ("噪声", "noise"),
+    "jpeg_expert": ("jpeg", "压缩"),
+    "frequency_expert_v2": ("频域", "频率", "频谱", "freq", "frequency"),
+    "probe_dino_expert": ("probe", "鉴别器", "判别分数", "检测器"),
+}
 
 
 def load_trace(path: str) -> Optional[dict]:
@@ -76,12 +99,28 @@ def session_text(trace: dict) -> Tuple[str, str, List[str]]:
 
 
 def probe_artifact_sentences(text: str) -> List[str]:
+    """
+    Sentences that turn the discriminator's number into a physical finding.
+
+    Narrow on purpose: the score must be *attributed* to something physical,
+    and the sentence must not be a disclaimer or a statement about a different
+    expert.  Anything this misses is caught by a person reading the sheet —
+    which is the point of the exercise, not a fallback.
+    """
     flagged = []
     for sentence in _SENTENCE_SPLIT.split(text):
         lowered = sentence.lower()
-        if any(word in lowered for word in SCORE_WORDS) and \
-                any(word in lowered for word in PHYSICAL_WORDS):
-            flagged.append(sentence.strip()[:160])
+        if not any(word in lowered for word in SCORE_WORDS):
+            continue
+        if not any(word in lowered for word in ATTRIBUTION):
+            continue
+        if not any(word in lowered for word in PHYSICAL_WORDS):
+            continue
+        if any(word in lowered for word in DISCLAIMERS):
+            continue
+        if any(word in lowered for word in OTHER_EXPERTS):
+            continue
+        flagged.append(sentence.strip()[:200])
     return flagged
 
 
@@ -98,21 +137,23 @@ def review_session(record: dict, trace: Optional[dict]) -> dict:
     metadata = trace.get("metadata", {})
     verdict = trace.get("final_verdict", {})
 
-    # 1. a call the model emitted that produced no token
+    # 1. calls: executed = landed + suppressed is the controller's own
+    #    accounting identity, and a call the parser dropped would break it.
+    #    (Counting the call *tags* in the text instead flags the model's habit
+    #    of restating its calls in the closing report — 16 "dropped calls"
+    #    that were nothing of the sort.)
     tag_to_source = {"probe": "probe_dino_expert", "freq": "frequency_expert_v2",
                      "noise": "noise_expert", "jpeg": "jpeg_expert"}
-    emitted_counts = Counter(emitted)
-    landed_sources = Counter(sources)
-    for tag, count in emitted_counts.items():
-        source = tag_to_source.get(tag)
-        if source is None:
-            findings.append({"kind": "call_without_token",
-                             "detail": f"<call_{tag}> 不在工具箱内，调用被丢弃"})
-            continue
-        if landed_sources[source] < count - metadata.get("suppressed_duplicate_count", 0):
-            findings.append({
-                "kind": "call_without_token",
-                "detail": f"发出 {count} 次 <call_{tag}>，只落地 {landed_sources[source]} 个 token"})
+    executed = metadata.get("expert_call_count")
+    suppressed = metadata.get("suppressed_duplicate_count", 0)
+    if executed is not None and executed != len(tokens) + suppressed:
+        findings.append({
+            "kind": "call_accounting_mismatch",
+            "detail": f"执行 {executed} 次，但落地 {len(tokens)} + 去重 {suppressed}"})
+    for tag in sorted(set(emitted)):
+        if tag_to_source.get(tag) is None:
+            findings.append({"kind": "unknown_call_tag",
+                             "detail": f"<call_{tag}> 不在工具箱内，调用会被静默丢弃"})
 
     # 2. a score written as physics
     for sentence in probe_artifact_sentences(assistant_text):
@@ -121,12 +162,13 @@ def review_session(record: dict, trace: Optional[dict]) -> dict:
     # 3. the corroborating experts: called, and then actually read
     probe_probability = next((t.get("calibrated_likelihood", {}).get("Fake")
                               for t in tokens if t.get("source") == "probe_dino_expert"), None)
+    lowered_text = assistant_text.lower()
     for token in tokens:
         source = token.get("source")
         if source == "probe_dino_expert":
             continue
-        name = (source or "").replace("_expert", "")
-        if name and name.split("_")[0] not in assistant_text.lower():
+        words = EXPERT_MENTIONS.get(source, ())
+        if words and not any(word in lowered_text for word in words):
             findings.append({"kind": "aux_token_unread",
                              "detail": f"{source} 的 token 在链上，但结论文本从未提到它"})
 
