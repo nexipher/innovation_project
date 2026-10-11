@@ -2132,7 +2132,7 @@ flowchart LR
 | 专家 | 论文 | 权重 | 接口 | 许可 |
 |------|------|------|------|------|
 | PROBE-DINOv2 | *Where Detectors Fail…*（ICML 2026，arXiv 2605.24906）；PROBE = Probing Robustness via Boundary Exploration | ModelScope `shuinishaojiu/PROBE-AIGI-Detection` → `DINOv2_best_model_step_34999.pth`（1217.7 MB）；主干 `facebook/dinov2-with-registers-large` | DINOv2-L + CLS 线性头；336×336 滑窗 → 逐块 logit → 均值 sigmoid = **P(AI-generated)** | ⚠️ 仓库**无 LICENSE 文件** —— 研究用途 + 引用 |
-| TruFor | CVPR 2023（GRIP-UNINA + Google） | `TruFor_weights.zip`（249 MB，MD5 `7bee48f3476c75616c3c5721ab256ff8`）→ `pretrained_models/trufor.pth.tar`；Noiseprint++ 与 SegFormer-B2 权重随仓库提供 | `test.py` → `.npz`：`map` / `conf` / `score`∈[0,1] / `np++`（可选）/ `imgsize`；68.7M 参数，~1.17 s@3.2MP | ⚠️ **仅限非营利研究用途** |
+| TruFor | CVPR 2023（GRIP-UNINA + Google） | `TruFor_weights.zip`（249 MB，MD5 `7bee48f3476c75616c3c5721ab256ff8`）→ `pretrained_models/trufor.pth.tar`；Noiseprint++ 与 SegFormer-B2 权重随仓库提供 | `test.py` → `.npz`：`map` / `conf` / `score`∈[0,1] / `np++`（可选）/ `imgsize`；68.7M 参数，~1.17 s@3.2MP | ⚠️ **仅限非营利研究用途**；本项目不分发（见 G7-5）。`map`/`conf` 用法见 G7-4 |
 
 **本机网络（实测）**：`github.com` 网页与 **git clone 可用**；`raw.githubusercontent.com` 与 `huggingface.co` **不通**；可用替代源：`ghfast.top` / `cdn.jsdelivr.net`（raw 文件）、`hf-mirror.com`（HF 主干）、ModelScope（PROBE 权重）、`grip.unina.it`（TruFor 权重）。**官方源不再重复测试，统一走替代源。**
 
@@ -2165,6 +2165,24 @@ flowchart LR
 - 停止策略记录**实际耗时**与**估计成本**两项；`POLICY_CALL_COST` 改为**逐工具**参数，取值由实测得出（PROBE ViT-L 与 TruFor 的耗时远高于统计型专家）。
 - 实验**分别报告**：冷启动（含模型加载）与模型已加载时的耗时；显存部署（与 Qwen 常驻 / 分阶段）由实测决定并在报告中写明。
 
+### G7-4 TruFor 的 `map` / `conf` 怎么用（守护全局协议）
+
+不开 L1–L3 不等于浪费空间线索。三条规定：
+
+1. **文本层只允许全局表述**：`measurement_scope=global` 不变；异常图不得被写成"某处被篡改"，只能写成"整图的异常分布统计"。
+2. **空间信息进两个非语义通道**：
+   - **统计量**入 `condition_metadata`：异常图的最大值/高分面积占比/熵、置信图的均值与低置信面积占比、以及**置信加权后的异常质量**；
+   - **图像**入 `visual_artifacts`（与既有专家的残差图、频谱图同等地位），供模型以视觉通道参考。
+3. **话术硬约束**（校验器检查）：热图必须被声明为**诊断可视化**，不得当作定位真值或篡改确证；与 A–E 的 C3（全局不得写成局部）同源，只是方向相反。
+
+### G7-5 许可姿态（已定，2026-10-11）
+
+- **PROBE-DINOv2 为候选外部依赖**：**许可证条件尚未确认**；本项目**不附带、不再分发**其代码与权重。
+- 仓库内**不落任何 PROBE 代码或权重**（克隆与权重下载都在项目目录之外，例如 `/root/autodl-tmp/third_party/`）。
+- 适配器写成**可选、惰性依赖**：缺依赖时项目照常运行、测试照常通过（`pytest.importorskip` / 显式 skip），只有显式启用时才导入。
+- 运行时记录**来源 URL、权重哈希、版本**；README 增加一节说明获取方式、不再分发、许可见其原始页面；**论文引用仅为学术归属，不构成使用授权**。
+- TruFor 同理：官方许可为**非营利研究用途**，不随本项目分发。
+
 ### 执行入口与顺序（按审核意见固定）
 
 **入口 1｜专家独立评测与校准（CPU/GPU，无 Agent）**
@@ -2194,7 +2212,7 @@ flowchart LR
 
 1. TruFor 面向篡改（tampCOCO/compRAISE/…），对整图生成可能近乎无信号 —— 由入口 1 实测判据决定；ELA 的教训（png 0.96 → q70 0.50）适用。
 2. PROBE 无许可证、TruFor 限非营利：许可与用途写入 README 与报告。
-3. **语义边界待定（需人工决定）**：TruFor 的 `map`/`conf` 是局部线索 —— 只用全局 `score`（保持 `measurement_scope=global`），还是提前启动 L1–L3（`region_semantics=candidate_manipulation_region`）。
+3. ~~语义边界待定~~ **已定（2026-10-11）**：**保持全局检测任务，暂不开 L1–L3**；但 TruFor 的 `map`/`conf` 不弃用，按 **G7-4** 以"全局统计 + 可视化产物"的方式使用，**不引入任何 bbox 与 `candidate_manipulation_region` 语义**。
 4. 环境隔离（TruFor py3.7）与替代源依赖（hg-mirror / 镜像）是复现前提，写入 README「运行环境」。
 5. GPU 预算：入口 1 冒烟 + 校准 ≈ 30 min；入口 3 小批 ≈ 1–2 h；入口 4 生成 ≈ 2.5 h；入口 6 对照 ≈ 2–3 h。**均需 GPU 授权。**
 
