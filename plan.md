@@ -2319,11 +2319,43 @@ flowchart LR
 - **判定**：**PROBE 作为主检测器；现有三专家降为辅助线索（解释性与可核验性），不做按格式强塞**。冻结方案（系数、标准化参数、阈值）与三段数字都留在 `g7_frozen_scheme.json` / `g7_validation_C.json`，判据本身有 17 项测试（`tests/test_g7_baselines.py`）。
 - 目的（保持不变）：先把"不用 Qwen 能做到什么程度"钉死，作为 Agent 的对照基线 —— 现在这个基线是 **PROBE 单独（C 组 AUROC 0.986）**，Agent 必须相对它给出检测或可靠性上的增益，否则只剩成本。
 
-**入口 3｜Agent 接线与小批验证（GPU + 人工）**
-- **工具集按入口 2 的判定接线**：`probe_dino` 为**主检测器**（其分数带方向与校准，来自 A 组拟合的映射；`support` 由校准后的概率给出，不再是"未校准 ⇒ Uncertain"）；noise/jpeg/frequency_v2 作为**辅助线索**，用于解释与可核验性，**不承诺按格式的检测增益**；TruFor **不接线**。
-- **阈值不写死**：入口 2 的 C 组显示 B 组最优阈值迁到 C 后 F1 退化（概率与截距随组漂移），接线时**保留连续分数**并按当前组重校准；报告里给出阈值与 Brier 两个口径。
-- 完整控制链：调用标签与说明（`TOOL_ACTIONS`/`TOOL_MEASURES`）、解析器、Evidence Token 字段、注入与整流、停止策略（可用工具 + **逐工具成本**）、轨迹生成器、校验器（热图不得当确证；分数须与落盘产物一致）、配置指纹（变更 → 冷启动重跑）。
-- 小批端到端（20–40 源）：人工核对四件事 —— 是否**编造 PROBE 的物理解释**、是否**把 TruFor 热图当确证**、`measurement_scope` 全局/局部话术、概率字段与停止原因可复算。视觉自动预筛不可用（D2 结论），**继续人工把关**。
+**入口 3｜Agent 接线与小批验收（2026-10-11 用户给定四步；暂不扩量生成 SFT、不训练）**
+
+**1) 决策规则（先固定，接线期间不得改）**
+- `probe_dino` = **主检测器**；`noise`/`jpeg`/`frequency_v2` = **辅助线索**，**不强制调用**；
+- TruFor **不接入**全局主链（D 组复测已确认其系统性反向，且不允许翻符号使用）；
+- 概率映射**只用 A 组拟合**（分位分箱，见下），**禁止用 B/C 或最终测试集重新调参**；B 组只提供操作阈值（0.251），不参与映射；
+- 交付验收只看"接线是否正确"，**不作检测能力结论**（那是入口 6 的事）。若验收通过与否都无法改变装箱决定，就不该在验收里做装箱决定。
+
+**2) 控制链接线（CPU；下面是逐点清单，每点都要有测试）**
+
+| # | 要动的地方 | 具体改动 |
+|---|-----------|---------|
+| a | **校准条目**（运行时概率映射） | `scripts/build_reliability_table.py` 增加"外部专家"来源：读 `calibration/g7_external_probe_dino_A.json`，**只取 A 组行、只取匹配格（png/q95/q85/q70，与既有专家同口径，排除 native 混杂格）**，写出 `probe_dino_expert` 条目：5 个分位分箱（A 组实测边界 0.00218 / 0.1355 / 0.9577 / 0.9998 → p_fake 0.000 / 0.061 / 0.520 / 1.000 / 1.000）、`separation_polarity_corrected`（A 组匹配格整体 AUROC）、`semantics_aligned=true`、`applicability="strong"`（最低格 0.967 ≥ 0.65 门）、`applicability_conditions`（逐格数字 + 未见生成器 0.952）、`n_samples=248`。**条目带 `provenance`**：拟合组 A、源数、权重 sha256、映射版本、冻结文件 hash |
+| b | **注册** | `state_machine/controller.py` `EXPERT_KEY_MAP`/`EXPERT_SOURCE_MAP` 加 `"probe" ↔ "probe_dino_expert"`；`main.py` `build_pipeline` 注册 `ProbeDinoExpert`（CPU/无权重时 `MockProbeExpert`）；`experts/__init__.py` 导出 |
+| c | **解析器** | `utils/parser.py`：`extract_all_calls` 的白名单加 `"probe"`；`_CALL_PATTERNS` 增 `probe`；`_TAG_NORMALIZE` 增别名（`call_probe`/`call_probe_dino`/`call_aigi`）。**注意**：控制器对未注册的调用是**静默跳过**，所以漏注册的表现是"没有证据、也不报错"，测试必须正面断言"出现了 probe token" |
+| d | **提示词** | `mllm/message_builder.py`：`TOOL_ACTIONS`/`TOOL_MEASURES`/`TOOL_ORDER` 增 `probe`，**排在首位**（主检测器）；measures 文案要写清"这是整图 AI 生成判别分数 ∈[0,1]，越高越像 AI；它不指出任何区域"；辅助线索的文案强调"用于解释与可核验，不单独定案"。改后 `FORENSIC_SYSTEM_PROMPT` 的 sha256 会变 → **重钉测试里的指纹**（设计使然） |
+| e | **Evidence Bundle 字段** | token 已带 `raw_metric` / `calibrated_likelihood` / `reliability` / `applicability(+_conditions)`；**新增 `calibration` 块**（来源文件、拟合组、映射类型、provenance）由控制器在校准命中时写入 —— 满足"保存原始分数、校准概率、适用条件、权重、校准版本"。适配器侧文案去状态化：外部适配器只声明"这是一个测量值"，**不再在 token 里声称"未校准"**（否则校准后 trace 里的话与实际字段自相矛盾） |
+| f | **整流器** | 无需新逻辑：校准命中即可（`calibrated_likelihood` 优先级最高），`support` 自动由概率给出、原文保留在 `support_raw`；但要有测试固定"probe 校准前后 `support` 的变化" |
+| g | **停止策略（逐工具成本）** | `config.POLICY_TOOL_COSTS`：统计型三专家保持 **0.15**（既有行为不变），`probe_dino_expert` = **0.25**（ViT-L 前向数十毫秒/图、常驻约 1.6 GB；同量纲下更高，但仍低于其不确定状态下的期望增益 ≈0.46，因此"该调用时仍值得调用"）；`halting_v2.expected_gain/tool_utilities` 改为按工具取成本；trace 记录每次实际耗时与所用成本 |
+| h | **重复计权防护** | 用 A 组实测的专家两两相关性（Spearman）：**只有正相关才折减**（负相关=互补，不折减）。A 组正值对只有两对：`noise↔jpeg +0.330`、`frequency_v2↔probe +0.164`；后调用者的权重乘 `1 − max(0, ρ)`，折减后的有效权重写进计数器/trace。默认生效，**在计划里写明它有副作用**：G2-d/G3-e 的历史数字是旧规则下得到的，跨规则不可直接比较 |
+| i | **校验器** | `utils/final_v2.py`：`TOOL_EXPERTS`、适用性键映射、接地检查的来源元组增 `probe_dino_expert`（否则校验器会把 probe token 标成"unknown expert"） |
+| j | **Mock（CPU 端到端）** | `mllm/mock_client.py` 增一个会发 `<call_probe>` 的模式（先 probe、再一个辅助线索），用于 CPU 全链路测试；控制器测试继续用 `ScriptedMLLM` |
+| k | **轨迹生成器（本轮只接线，不生成）** | `scripts/generate_trajectories_g4.py`：`EXPERT_BY_TOOL`/`build_experts`/`tool_applicable` 增 probe（适用性数据来自 a 的条目，逐格校正分离度全 ≥0.65），并把 probe 从"仅佐证"里排除（`admit_trajectories_g4.py` 的 `CORROBORATION_ONLY` 不加它）；**本轮不跑生成** |
+
+**3) 小批真实运行（GPU，需另行授权）**
+- **批次**：**24 源 = B 组（开发组）18 源 + val 分区补 6 源（3 Real + 3 Fake，与 D 组 64 源互斥）**；每源取 **5 个格式**（native/png/q95/q85/q70）→ **120 样本**（与 G3-e 同量级）。B 组源本来就有扰动样本，本轮不用，避免把"格式覆盖"和"扰动稳定性"混在一起。
+- **对照**：同一批样本上**同时给 PROBE 单独的结果** —— 用 A 组拟合的映射 + B 组选定阈值（0.251），报告口径与入口 2 一致。
+- **采集**：调用成功率（发出的 `<call_*>` 与落地 token 数）、判定变化（Agent vs PROBE 单独：同意/分歧/弃权）、弃权率、逐工具耗时与显存、停止原因分布、每会话调用序列。
+- **新脚本** `scripts/g7_acceptance.py`（CPU 可 `--dry-run`）：驱动完整协议跑批，产出 `calibration/g7_acceptance_report.json` + 可人工审阅的会话清单。
+
+**4) 人工审阅整条轨迹（沿用工作台，逐条对照）**
+1. 有没有把**分类分数编造成具体物理伪影**（"PROBE 检测到右下的纹理异常"这类）；
+2. **辅助专家是否真的被调用**、其结论是否被**忠实使用**（而不是被忽略或反向引用）；
+3. **概率与最终标签是否一致**（`calibrated_likelihood` ↔ verdict ↔ confidence 三处对得上）；
+4. **重复调用 / 遗漏返回 / 过早停止**；视觉自动预筛不可用（D2 结论），**继续人工把关**。
+
+**验收标准（先写后跑）**：接线正确的判据是**结构性**的 —— ①每个会话里如果模型发了 probe 调用，就必须出现对应的 probe token（不静默丢弃）；②probe token 必须带 `calibrated_likelihood` 与 `calibration` 版本块；③辅助线索的调用与不调用都不影响"能出结论"；④没有任何一条轨迹出现"把分数编成物理伪影"或"概率与标签矛盾"。**任一条不满足即回到 2) 修，不进入入口 4。**
 
 **入口 4｜新 SFT 生成与复审（小批量验收先行）**
 - **先生成少量、覆盖 Real/Fake × 各格式的轨迹**，人工确认旧问题（重复结案、虚构证据、区域错配、全局写局部、无工具模板）**没有复发**，再扩量。
