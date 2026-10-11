@@ -1167,3 +1167,39 @@
 * **执行结果与验证状态**：671 测试通过；四轮 GPU 实测（第 1–3 轮因送图 bug 作废，对应报告已删除，数字记录在本条）；最终结论有实测与逐条理由支撑
 * **置信度或遗留待办（TODO）**：①D2 不作为过滤器（默认③），若要用②只需在 F 之后加一个页面区块 ②**D1/D4 的效果仍待 F 验证** ③F（重新生成，约 2.5 GPU 小时）与 G（四臂重跑）尚未执行，需用户确认算力窗口 ④标签成分偏斜仍待人工裁决
 ---
+### 2026-10-11 14:10:00 - G7 立项：外部专家（PROBE-DINOv2 / TruFor）的调研、计划与许可姿态
+
+* **当前操作动作**：调研两个候选外部专家，写入 G7 计划（§4.16），并按审核意见修订两轮
+* **对应计划锚点**：plan.md §4.16「G7：专家扩展（PROBE-DINOv2 / TruFor）与基线对照」；§4.15 依赖表新增第 8 行
+* **核心变更说明**：
+  1. **调研（含网络实测）**：PROBE = ICML 2026《Where Detectors Fail…》（arXiv 2605.24906），DINOv2-L + 线性头，336 滑窗 → 均值 logit → sigmoid，权重在 **ModelScope**（1217.7 MB）；TruFor = CVPR 2023（GRIP-UNINA + Google），SegFormer-B2 + Noiseprint++，输出 `map`/`conf`/`score`/`np++`，权重 `TruFor_weights.zip`（249 MB，MD5 `7bee48f3476c75616c3c5721ab256ff8`）。网络：`raw.githubusercontent.com` 与 `huggingface.co` **不通**（用 `ghfast.top`/`cdn.jsdelivr.net`/`hf-mirror.com`），ModelScope 快（~11 MB/s），`grip.unina.it` 被限速 ~20 KB/s，`gitclone.com` 可克隆 GitHub 仓库
+  2. **许可姿态（G7-5）**：PROBE **许可待确认**（仓库无 LICENSE）→ 本项目**不附带、不再分发**其代码与权重，适配器写成**可选惰性依赖**；**不再分发 ≠ 已获运行授权**（初版计划把二者混为一谈，已修正）；TruFor 明确非营利研究用途，本项目同样不再分发。用户随后授权"本地研究、先行允许 PROBE 研究、可以下载"
+  3. **计划两轮修订**：初版按用户五点结构（适配器/校准准入/控制链/小样本验证/重生成）写成；审核后补 6 条（先定"接入是否值得"的判据、校准/选择/验收三段分离、保留连续分数、先建无 Qwen 基线、逐工具成本、小批量验收+审核绑定内容哈希）；再修 5 处（划分自相矛盾、许可表格与正文矛盾、准入过严改为**条件准入**、**图像重叠与生成器重叠分级**、TruFor 允许"预测性区域描述"但禁"已证实篡改"）
+  4. **语义边界已定**：保持全局检测任务、暂不开 L1–L3；TruFor 的 `map`/`conf` 以**统计量进 condition_metadata + 图像进 visual_artifacts** 的方式使用，不引入 bbox 与 `candidate_manipulation_region`（G7-4）
+* **涉及/修改的文件清单**：
+  - `plan.md (Modified — §4.16 两版、§4.15 第 8 行)`
+  - `claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：调研事实均有一手来源（仓库 README/评估脚本/权重清单/conda 依赖 已逐个读取核对）；计划两轮修订已提交（`47c4dc8`…`0e238e6`）
+* **置信度或遗留待办（TODO）**：①PROBE 的实际使用条件仍需用户最终确认（本条按"本地研究用途"记录）②G7 的判据与数据划分在实施中是否足够，取决于 G7-1 的实测结果
+---
+### 2026-10-11 15:40:00 - G7-a 适配器、源级划分、评测器与首批实测（TruFor 否决 / PROBE 通过判别力）
+
+* **当前操作动作**：实现两个外部专家适配器与配套工具链，落实 G7-1 的源级划分，完成两个专家的"独立跑通 + 校准评测"（入口 1）
+* **对应计划锚点**：plan.md §4.16「入口 1｜专家独立评测与校准」及其落地顺序第 1–4 步
+* **核心变更说明**：
+  1. **适配器（`experts/external_base.py` + `probe_dino.py` + `trufor.py`）**：统一契约；**未校准的外部分数不带方向**（`support=Uncertain` + 明文说明 + `calibrated: False`）；把**权重来源/sha256（带副文件缓存）、输入预处理、许可说明**写进 token metadata；PROBE 复刻其推理链（**pad 到 336 而非缩放**、ImageNet 归一化、336 非重叠滑窗、logits 均值 → sigmoid）；TruFor 走**子进程 + 独立环境**（实测其官方 py3.7 环境**不需要**，现环境 py3.12/torch 2.5 直接可跑），只调用一次并缓存数组供 `render_artifacts` 复用；**Mock 只替换 `_run_tool`**，缓存/落盘/计时全走生产代码
+  2. **原始产物持久化（G7-2）**：`calibration/trufor_raw/<key>/{result.npz,meta.json}`，key = 图像字节 + 权重哈希 + 配方版本 + 实验 + 阈值 —— 换权重或改预处理绝不会误用旧数字；`cache=False` 只禁复用、产物照旧落盘
+  3. **源级划分（G7-1）**：98 校准源 → **A 62 源/464 样本（拟合）、B 18/118（选择）、C 18/118（验收）**，按 (标签, 生成器) 分层、稳定哈希分配、每源保留全部格式、每组含 8 个生成器与两类标签；与 `split_v2` **零重叠**（测试有断言）；hash `37bf2f1db22ccdef`
+  4. **评测器**：每格式 AUROC + **按源重采样自助 CI**、**实测极性**（不假设方向）、与现有五专家 Spearman 相关性（防重复放大）、NaN→null 且 `allow_nan=False`（分数恒定时 Spearman 是 NaN，曾直接写进 JSON）
+  5. **TruFor 实测**：逐图子进程 12.4 s/图 → **批量目录调用 0.28–0.36 s/图（40×）**；**卡级峰值显存 2.27 GB**（子进程里跑，必须用 nvidia-smi 外部采样）；A 组 **AUROC 0.426**（五格式 CI 全跨 0.5、map 峰值 ~0.3、|ρ|≤0.19）→ **判定不纳入 Agent 全局工具**，保留为 L1 局部篡改研究对照（它检测局部篡改，而整图生成没有"被篡改的区域"）
+  6. **PROBE 实测**：权重 1217.7 MB 从 ModelScope 下载（~11 MB/s），DINOv2 主干经 hf-mirror；热态 **0.02–0.09 s/图**、峰值显存 1.62 GB；A 组 **AUROC 0.960**（native 0.967 / png 0.973 / q95 0.977 / q85 0.987 / **q70 0.995**，CI 全部远高于 0.5）；**分生成器**：未见过的 6 个生成器整体 **0.952**（最弱 ADM 0.914），SD 家族 1.000 → **不是记住训练生成器**；与现有专家 |ρ|≤0.23
+  7. **两个 harness 修正**：批量 npz 的发现路径（`test.py` 会按输入路径推导输出名，可能写回输入目录 → 改为在整个工作目录里找）；校准脚本原先逐图调用（GPU 因此空转），已接批量路径
+* **涉及/修改的文件清单**：
+  - `experts/external_base.py, experts/probe_dino.py, experts/trufor.py (Created)`
+  - `tests/test_external_experts.py, tests/test_g7_split.py, tests/test_evaluate_external.py (Created — 共 62 项)`
+  - `scripts/build_g7_split.py, scripts/g7_smoke_external.py, scripts/evaluate_external_expert.py (Created)`
+  - `scripts/evaluate_external_expert.py (Modified — 批量路径)`
+  - `calibration/set/g7_split.json, calibration/g7_smoke_{trufor,probe_dino}.json, calibration/g7_external_{trufor,probe_dino}_A.json (Created)`
+  - `plan.md (Modified — G7-1 首批实测结果)`
+* **执行结果与验证状态**：**748 测试通过**；TruFor 权重 MD5 与官方一致（用户下载后校验）；两个专家均完成真实推理并产出可离线复算的原始产物
+* **置信度或遗留待办（TODO）**：①**互补性判据（G7-0 第 2 条）未做**：需在 B 组上比较"现有三专家的无 Qwen 融合"与"该融合 + PROBE"，报告 ΔAUROC 与按源 CI ②PROBE 的预训练重叠按**生成器分层**已给出证据（未见生成器 0.952），但源图级是否重叠仍**未确认**（其训练清单未逐图比对）③G7-c 控制链（调用标签/解析/Prompt/停止策略逐工具成本/校验器）尚未接线 ④TruFor 的 `np.int`（评估函数用）与推理路径无关，已记录
