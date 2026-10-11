@@ -110,14 +110,35 @@ class TestSummary:
 
     def test_agreement_counts_each_outcome_once(self):
         records = [self._record("Fake"), self._record("Real"), self._record("Uncertain")]
-        reference = {"s": {"verdict": "Fake"}}
+        reference = {"s": {"verdict_bins": "Fake", "verdict_logistic": "Fake"}}
         summary = summarise(records, reference)
-        assert summary["agreement_with_probe_alone"] == {
+        assert summary["agreement_with_probe_bins_mapping"] == {
             "agree": 1, "disagree": 1, "agent_abstained": 1}
 
     def test_a_missing_reference_is_not_an_agreement(self):
         summary = summarise([self._record("Fake")], {})
-        assert summary["agreement_with_probe_alone"] == {"no_reference": 1}
+        assert summary["agreement_with_probe_bins_mapping"] == {"no_reference": 1}
+
+    def test_the_two_readings_of_one_score_are_reported_separately(self):
+        """
+        The point the review made: a disagreement between the agent and
+        entry 2's reference may be a disagreement about the *mapping*.
+
+        Sample b is one where the two A-fitted readings of the same score
+        differ; the agent matches the bins (what its tokens carry) and not the
+        frozen logistic — and the summary has to show both facts at once.
+        """
+        records = [self._record("Fake"), self._record("Real")]
+        records[0]["sample_id"] = "a"
+        records[1]["sample_id"] = "b"
+        reference = {
+            "a": {"verdict_bins": "Fake", "verdict_logistic": "Fake"},
+            "b": {"verdict_bins": "Real", "verdict_logistic": "Fake"},
+        }
+        summary = summarise(records, reference)
+        assert summary["agreement_with_probe_bins_mapping"] == {"agree": 2}
+        assert summary["agreement_with_probe_logistic"] == {"agree": 1, "disagree": 1}
+        assert summary["the_two_references_agree"] == {"same": 1, "different": 1}
 
     def test_the_probe_call_rate_is_counted_from_tokens(self):
         records = [self._record("Fake"),

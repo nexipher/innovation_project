@@ -255,8 +255,18 @@ def probe_probability(mapping: dict, score: float) -> float:
 
 
 def probe_reference(expert, samples: List[dict], mapping: dict,
-                    progress: bool = True) -> Dict[str, dict]:
-    """PROBE's raw score and standalone verdict for every sample in the batch."""
+                    table=None, progress: bool = True) -> Dict[str, dict]:
+    """
+    PROBE's raw score alone, read two ways.
+
+    The agent's tokens carry the A-fitted **quantile bins** — the mapping every
+    expert in the toolkit uses — while entry 2's frozen reference is a logistic
+    mapping at the B-selected threshold.  Both are fitted on A, and they do not
+    agree sample by sample, so a disagreement between the agent and the
+    reference could come from the mapping rather than from anything Qwen did.
+    Reading the same cached score through the *same bins the tokens use* (via
+    the runtime table, not a copy of it) separates the two.
+    """
     import cv2
 
     reference: Dict[str, dict] = {}
@@ -269,12 +279,21 @@ def probe_reference(expert, samples: List[dict], mapping: dict,
         elapsed = time.perf_counter() - started
         score = float(result.raw_metric)
         probability = probe_probability(mapping, score)
-        reference[sample["sample_id"]] = {
+
+        entry = {
             "raw_score": round(score, 6),
-            "p_fake": round(probability, 4),
-            "verdict": "Fake" if probability >= mapping["threshold"] else "Real",
+            # Entry 2's frozen reading: logistic mapping, threshold 0.251.
+            "p_fake_logistic": round(probability, 4),
+            "verdict_logistic": "Fake" if probability >= mapping["threshold"] else "Real",
             "elapsed_s": round(elapsed, 3),
         }
+        if table is not None:
+            lookup = table.lookup("probe_dino_expert", score)
+            bins_probability = (lookup or {}).get("calibrated_likelihood", {}).get("Fake")
+            entry["p_fake_bins"] = None if bins_probability is None else round(bins_probability, 4)
+            entry["verdict_bins"] = None if bins_probability is None else (
+                "Fake" if bins_probability >= 0.5 else "Real")
+        reference[sample["sample_id"]] = entry
         if progress and index % 40 == 0:
             print(f"    参考臂 [{index}/{len(samples)}]")
     return reference
@@ -315,19 +334,29 @@ def build_experts(dry_run: bool, probe_score: Optional[float] = None) -> Dict[st
         experts["probe_dino_expert"] = MockProbeExpert(score=probe_score)
     else:
         from experts.probe_dino import ProbeDinoExpert
-        probe = ProbeDinoExpert()
+        # On the card, with Qwen: measured 0.02-0.09 s/image warm and 1.6 GB
+        # resident, which is what makes it cheap enough to be the first call
+        # of every session.  (It defaults to CPU, which turned the reference
+        # arm into a minutes-per-batch job the first time this ran.)
+        probe = ProbeDinoExpert(device="cuda")
         if probe.unavailable_reason():
             raise SystemExit(f"PROBE 不可用：{probe.unavailable_reason()}")
         experts["probe_dino_expert"] = probe
     return experts
 
 
-def run_agent(samples: List[dict], client_factory: Callable[[], Any],
+def run_agent(samples: List[dict], experts: Dict[str, Any],
+              client_factory: Callable[[], Any],
               dry_run: bool, sft_dir: Optional[str],
               on_record: Optional[Callable[[dict], None]] = None,
               progress: bool = True) -> List[dict]:
-    """One session per sample, with PROBE served and the clues optional."""
-    experts = build_experts(dry_run)
+    """
+    One session per sample, with PROBE served and the clues optional.
+
+    `experts` is passed in rather than built here: PROBE's backbone is a
+    1.6 GB load, and the reference arm already built one — a second instance
+    would pay for the same weights twice.
+    """
     client = client_factory()
     records: List[dict] = []
 
@@ -381,6 +410,8 @@ def run_agent(samples: List[dict], client_factory: Callable[[], Any],
 
 def summarise(records: List[dict], reference: Dict[str, dict]) -> dict:
     agreement = Counter()
+    agreement_bins = Counter()
+    mapping_only = Counter()
     per_treatment: Dict[str, Counter] = defaultdict(Counter)
     halting = Counter()
     call_counts = Counter()
@@ -388,16 +419,31 @@ def summarise(records: List[dict], reference: Dict[str, dict]) -> dict:
 
     for record in records:
         reference_entry = reference.get(record["sample_id"], {})
-        probe_verdict = reference_entry.get("verdict")
+        probe_verdict = reference_entry.get("verdict_logistic")
+        probe_verdict_bins = reference_entry.get("verdict_bins")
         agent_verdict = record["verdict"]
+
+        # The headline comparison is agent vs the *same-mapping* reading: it is
+        # the one that isolates scheduling and interpretation from calibration.
         if agent_verdict == "Uncertain":
+            agreement_bins["agent_abstained"] += 1
             agreement["agent_abstained"] += 1
-        elif probe_verdict is None:
-            agreement["no_reference"] += 1
-        elif agent_verdict == probe_verdict:
-            agreement["agree"] += 1
+        elif probe_verdict_bins is None:
+            agreement_bins["no_reference"] += 1
+        elif agent_verdict == probe_verdict_bins:
+            agreement_bins["agree"] += 1
         else:
-            agreement["disagree"] += 1
+            agreement_bins["disagree"] += 1
+
+        if agent_verdict != "Uncertain" and probe_verdict is not None:
+            if agent_verdict == probe_verdict:
+                agreement["agree"] += 1
+            else:
+                agreement["disagree"] += 1
+
+        if probe_verdict is not None and probe_verdict_bins is not None:
+            mapping_only["same" if probe_verdict == probe_verdict_bins else "different"] += 1
+
         per_treatment[record["treatment"]][f"agent_{agent_verdict}"] += 1
         halting[record["halting_reason"]] += 1
         for tag in record["call_tags"] or ["<none>"]:
@@ -414,7 +460,9 @@ def summarise(records: List[dict], reference: Dict[str, dict]) -> dict:
         "samples": len(records),
         "probe_called_in": probe_sessions,
         "probe_token_rate": round(probe_sessions / len(records), 4) if records else None,
-        "agreement_with_probe_alone": dict(agreement),
+        "agreement_with_probe_bins_mapping": dict(agreement_bins),
+        "agreement_with_probe_logistic": dict(agreement),
+        "the_two_references_agree": dict(mapping_only),
         "agent_verdicts": dict(Counter(record["verdict"] for record in records)),
         "halting_reasons": dict(halting),
         "call_counts": dict(call_counts),
@@ -458,9 +506,13 @@ def main() -> None:
         return
 
     mapping = frozen_probe_mapping()
-    reference_expert = build_experts(args.dry_run)["probe_dino_expert"]
-    print(f"参考臂：PROBE 单独（A 组拟合映射，阈值 {mapping['threshold']}）")
-    reference = probe_reference(reference_expert, samples, mapping,
+    from utils.reliability import ReliabilityTable
+    table = ReliabilityTable.load()          # the same table the tokens read
+    experts = build_experts(args.dry_run)    # built once: PROBE's load is shared
+    reference_expert = experts["probe_dino_expert"]
+    print(f"参考臂：PROBE 单独，两种读数 —— 冻结 LR 映射（阈值 {mapping['threshold']}）"
+          f"与 token 同源的 A 组分位分箱")
+    reference = probe_reference(reference_expert, samples, mapping, table=table,
                                 progress=not args.dry_run)
 
     if args.dry_run:
@@ -475,8 +527,7 @@ def main() -> None:
         if not torch.cuda.is_available():
             raise SystemExit("CUDA 不可用。真实验收需要 GPU（agent.md §3.2：先取得授权）。")
         from mllm.qwen_client import QwenVLClient
-        tags = [ForensicStateMachine.EXPERT_SOURCE_MAP[name]
-                for name in build_experts(False)]
+        tags = [ForensicStateMachine.EXPERT_SOURCE_MAP[name] for name in experts]
         prompt = build_forensic_prompt(tags)
 
         def client_factory():
@@ -487,9 +538,9 @@ def main() -> None:
           f"（PROBE 主检测器 + 三专家辅助线索）")
 
     os.makedirs(sft_dir, exist_ok=True)
-    records = run_agent(samples, client_factory, args.dry_run, sft_dir)
+    records = run_agent(samples, experts, client_factory, args.dry_run, sft_dir)
 
-    fingerprint = config_fingerprint.compute(build_experts(args.dry_run), None)
+    fingerprint = config_fingerprint.compute(experts, None)
     report = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "mode": mode,
@@ -510,7 +561,9 @@ def main() -> None:
 
     summary = report["summary"]
     print(f"\nPROBE 被调用：{summary['probe_called_in']}/{summary['samples']}  "
-          f"｜与 PROBE 单独：{summary['agreement_with_probe_alone']}")
+          f"｜与同映射的 PROBE 单独：{summary['agreement_with_probe_bins_mapping']}")
+    print(f"与冻结 LR 读数：{summary['agreement_with_probe_logistic']}  "
+          f"｜两个参考臂之间：{summary['the_two_references_agree']}")
     print(f"判定分布：{summary['agent_verdicts']}  停止原因：{summary['halting_reasons']}")
     print(f"调用计数：{summary['call_counts']}  首次调用：{summary['first_calls']}")
     print(f"平均耗时 {summary['mean_seconds_per_sample']} s/样本，"
