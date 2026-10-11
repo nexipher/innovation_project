@@ -61,11 +61,23 @@ class Parser:
         re.DOTALL | re.IGNORECASE,
     )
 
+    _RE_CALL_PROBE = re.compile(
+        r"<call_probe>\s*\[?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]?\s*</call_probe>",
+        re.DOTALL | re.IGNORECASE,
+    )
+
     _CALL_PATTERNS = {
         "freq": _RE_CALL_FREQ,
         "noise": _RE_CALL_NOISE,
         "jpeg": _RE_CALL_JPEG,
+        "probe": _RE_CALL_PROBE,
     }
+
+    # The names `extract_all_calls` will hand to the controller.  A call tag
+    # outside this set is dropped silently — which is why adding a tool means
+    # adding it here, and why a test has to assert the token shows up rather
+    # than trusting the absence of an error.
+    CALLABLE_TOOLS = ("probe", "freq", "noise", "jpeg")
 
     # ------------------------------------------------------------------
     # Public API
@@ -139,6 +151,15 @@ class Parser:
         "call_frequency": "freq",
         "call_noise_residual": "noise",
         "call_jpeg_compression": "jpeg",
+        # G7 external detector: the model may reach for the paper's name, the
+        # expert's name or the model family.  Keys are what the regex
+        # *captures*: `<call_call_probe>` arrives as "call_probe" and
+        # `<call_probe_dino>` as "probe_dino".
+        "call_probe": "probe",
+        "probe_dino": "probe",
+        "dino": "probe",
+        "aigi": "probe",
+        "call_probe_dino": "probe",
     }
 
     @classmethod
@@ -159,7 +180,7 @@ class Parser:
         for m in cls._RE_CALL.finditer(text):
             raw_name = m.group(1)
             expert_name = cls._normalize_expert_name(raw_name)
-            if expert_name in ("freq", "noise", "jpeg"):
+            if expert_name in cls.CALLABLE_TOOLS:
                 bbox = [int(m.group(i)) for i in range(2, 6)]
                 results.append((expert_name, bbox))
         return results

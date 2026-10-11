@@ -248,7 +248,10 @@ class TestConditionSpec:
         """The comparison must measure the toolkit the controller can dispatch."""
         from scripts.qwen_gain_baseline import _build_experts
 
-        experts = _build_experts()
+        # The dry-run set carries the same source names as the real one
+        # (MockProbeExpert shares PROBE's), which is what this pins; the real
+        # one additionally depends on weights being present on the box.
+        experts = _build_experts(dry_run=True)
         dispatchable = set(ForensicStateMachine.EXPERT_KEY_MAP.values())
         assert dispatchable <= set(experts), dispatchable - set(experts)
 

@@ -50,6 +50,11 @@ class ForensicStateMachine:
     # v2 entry rather than v1's disabled:no-signal one.  v1 is never
     # registered; ELA stays out too (its G2-b skill is compression history).
     EXPERT_KEY_MAP = {
+        # G7 entry 3: PROBE is the main detector — C-group AUROC 0.986 against
+        # the old toolkit's 0.764, and the fusion that would have combined them
+        # showed no gain outside noise.  The three below stay as corroborating
+        # clues: they are offered, never required.
+        "probe": "probe_dino_expert",
         "freq": "frequency_expert_v2",
         "noise": "noise_expert",
         "jpeg": "jpeg_expert",
@@ -57,6 +62,7 @@ class ForensicStateMachine:
 
     # Expert registry — maps source_name to MLLM call tag
     EXPERT_SOURCE_MAP = {
+        "probe_dino_expert": "probe",
         "frequency_expert_v2": "freq",
         "frequency_expert": "freq",      # deprecated v1 (old traces only)
         "noise_expert": "noise",
@@ -235,6 +241,7 @@ class ForensicStateMachine:
                         semantics_aligned=calibration["semantics_aligned"] if calibration else None,
                         applicability=calibration["applicability"] if calibration else None,
                         applicability_conditions=calibration["applicability_conditions"] if calibration else None,
+                        calibration=self._calibration_block(calibration),
                     )
 
                     # G3-b: settle the token's direction before anything reads
@@ -408,6 +415,7 @@ class ForensicStateMachine:
                     "posterior": round(decision.posterior, 4),
                     "tool_utilities": dict(decision.tool_utilities or {}),
                     "conflict_score": round(decision.conflict_score, 4),
+                    "redundancy_discounts": HaltingPolicyV2.discount_report(evidence_chain),
                     "policy_reason": decision.primary_reason,
                     "policy_reasons": list(decision.all_reasons),
                     "model_candidate": model_candidate.get("verdict"),
@@ -517,6 +525,29 @@ class ForensicStateMachine:
             return rel_path.replace(os.sep, "/")
         return None
 
+    @staticmethod
+    def _calibration_block(calibration: Optional[dict]) -> Optional[dict]:
+        """
+        Which mapping produced this token's probability, and where it was fitted.
+
+        The numbers travel with their origin: a reader of the trace (or of the
+        SFT sample built from it) must be able to tell an A-group mapping from
+        something fitted on the group it is being judged on.  None when the
+        lookup returned nothing — absent means "no mapping", not "unknown".
+        """
+        if not calibration:
+            return None
+        provenance = calibration.get("provenance") or {}
+        return {
+            "table": "calibration/reliability_table.json",
+            "fitted_on": provenance.get("fitted_on"),
+            "mapping": provenance.get("mapping"),
+            "sources": provenance.get("sources"),
+            "samples": provenance.get("samples"),
+            "split_hash": provenance.get("split_hash"),
+            "weights_sha256": provenance.get("weights_sha256"),
+        }
+
     def _expert_weights(self) -> Dict[str, float]:
         """
         Measured decision weight per registered expert (G3-c).
@@ -606,5 +637,8 @@ class ForensicStateMachine:
                 ),
                 # The estimate the reason rests on, per expert still uncalled.
                 "tool_utilities": dict(policy_decision.tool_utilities or {}),
+                # Which tokens were read at less than full weight, and after whom.
+                "redundancy_discounts": HaltingPolicyV2.discount_report(
+                    evidence_chain or []),
             })
         return counters

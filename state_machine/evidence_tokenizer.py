@@ -78,6 +78,7 @@ class EvidenceTokenizer:
         applicability_conditions: Optional[str] = None,
         measurement_scope: Optional[str] = None,
         region_area_ratio: Optional[float] = None,
+        calibration: Optional[dict] = None,
     ) -> dict:
         """
         Build a complete Evidence Token / Evidence Bundle dict.
@@ -110,6 +111,10 @@ class EvidenceTokenizer:
             region_area_ratio: Diagnostic region area as a fraction of the
                 image, recorded so a future crop-scale calibration can be
                 conditioned on it (G3-a2).
+            calibration: Provenance of the mapping that produced the numbers
+                above — which group it was fitted on, on which data, with which
+                weights (G7).  "The probability came from somewhere" is part of
+                the evidence, not a footnote to it.
 
         Returns:
             Evidence Token dict matching the project schema (G2 bundle fields
@@ -170,6 +175,8 @@ class EvidenceTokenizer:
             token["applicability"] = applicability
         if applicability_conditions:
             token["applicability_conditions"] = applicability_conditions
+        if calibration:
+            token["calibration"] = dict(calibration)
 
         return token
 

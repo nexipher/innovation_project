@@ -92,7 +92,15 @@ class TestPolicies:
 
     def test_only_the_tool_policies_require_applicability(self):
         requiring = {name for name, p in TOOL_POLICIES.items() if p.get("requires")}
-        assert requiring == {"jpeg", "noise+jpeg"}
+        # G7 added the two PROBE policies, both gated on PROBE's own
+        # applicability: a treatment where the main detector does not separate
+        # must not produce a trajectory that leans on it.
+        assert requiring == {"jpeg", "noise+jpeg", "probe", "probe+noise"}
+
+    def test_probe_is_gated_on_its_own_measurement(self, applicability):
+        """The G7 report supplies PROBE's cells; the gate reads them like any other."""
+        assert tool_applicable("probe", "png", applicability)[0] is True
+        assert tool_applicable("probe", "unknown_treatment", applicability)[0] is False
 
     def test_build_experts_serves_only_the_requested_tools(self):
         experts = build_experts(("noise",))

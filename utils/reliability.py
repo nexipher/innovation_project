@@ -102,4 +102,9 @@ class ReliabilityTable:
                 "confound_drop_png_to_q70": entry.get("confound_drop_png_to_q70"),
                 "separation_polarity_corrected": entry.get("separation_polarity_corrected"),
             },
+            # G7: which group fitted this mapping, on what, with which weights.
+            # Absent for the G2 experts (they predate the discipline); present
+            # for the external ones, whose numbers have to say where they came
+            # from because the split is what makes them readable at all.
+            "provenance": entry.get("provenance"),
         }

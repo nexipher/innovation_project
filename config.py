@@ -46,7 +46,25 @@ HALTING_POLICY = "v2"
 POLICY_STEP_LOG_ODDS = 1.5          # log-odds one perfectly-weighted token contributes
 POLICY_CONFIDENT_POSTERIOR = 0.65   # |P(Fake)| needed to halt on a label
 POLICY_CONFLICT_TOLERANCE = 0.5     # weighted disagreement above which no label is safe
-POLICY_CALL_COST = 0.15             # expected-utility cost of one more expert call
+POLICY_CALL_COST = 0.15             # default expected-utility cost of one more expert call
+
+# G7-3: cost is per tool, not per call.  The three statistical experts are
+# milliseconds of arithmetic; PROBE is a ViT-L forward pass (tens of ms warm,
+# ~1.6 GB resident).  Values live in the same units as POLICY_CALL_COST, which
+# stays the default for anything unlisted.
+POLICY_TOOL_COSTS = {
+    "probe_dino_expert": 0.25,
+}
+
+# G7 entry 3: measured pairwise rank correlation between experts, on the
+# fitting group only (A, 464 samples) — see the operation log for the numbers.
+# Only *positive* correlation double-counts evidence; a negative one means the
+# two experts fail differently, and discounting it would throw information
+# away.  The discount lands on whichever expert is called later.
+POLICY_REDUNDANCY = {
+    "jpeg_expert|noise_expert": 0.330,
+    "frequency_expert_v2|probe_dino_expert": 0.164,
+}
 
 # ---------------------------------------------------------------------------
 # Coordinate system (Qwen2.5-VL convention)

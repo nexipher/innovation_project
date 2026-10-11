@@ -22,6 +22,7 @@ from config import (
     MOCK_MLLM_MODE,
 )
 import torch
+from mllm.message_builder import build_forensic_prompt
 from mllm.mock_client import MockMLLMClient
 from mllm.qwen_client import QwenVLClient
 from experts.frequency_v2 import FrequencyExpertV2
@@ -31,23 +32,55 @@ from state_machine.controller import ForensicStateMachine
 from utils.logger import SessionLogger, log_operation
 
 
+def build_probe_expert(mllm_type: str):
+    """
+    PROBE when it is usable, None when it is not (G7).
+
+    Its code and weights are not shipped with this project, so a box without
+    them must still start; the tool is simply absent from the registry and
+    from the prompt.  CPU sessions get the mock, which is what makes the
+    whole PROBE path testable without a GPU.
+    """
+    if mllm_type != "qwen":
+        from experts.probe_dino import MockProbeExpert
+        return MockProbeExpert()
+    from experts.probe_dino import ProbeDinoExpert
+    expert = ProbeDinoExpert()
+    reason = expert.unavailable_reason()
+    if reason:
+        print(f"Warning: PROBE 不可用（{reason}）——按旧工具箱运行。")
+        return None
+    return expert
+
+
 def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
     """Construct the full forensic pipeline."""
+    experts = {
+        "frequency_expert_v2": FrequencyExpertV2(),
+        "noise_expert": NoiseExpert(),
+        "jpeg_expert": JPEGExpert(),
+    }
+    probe = build_probe_expert(mllm_type)
+    if probe is not None:
+        experts["probe_dino_expert"] = probe
+
+    # The prompt may only promise what the session can serve: a model told
+    # about a tool that is not registered spends turns on calls that are
+    # dropped silently (controller dispatch is a no-op on an unknown name).
+    tags = [ForensicStateMachine.EXPERT_SOURCE_MAP[name]
+            for name in experts if name in ForensicStateMachine.EXPERT_SOURCE_MAP]
+    system_prompt = build_forensic_prompt(tags)
+
     if mllm_type == "qwen":
         if not torch.cuda.is_available():
             print("Warning: CUDA not available. Falling back to MockMLLMClient.")
             mllm = MockMLLMClient(mode=mode)
         else:
             print("Using Qwen2.5-VL-7B-Instruct (GPU)")
-            mllm = QwenVLClient()
+            mllm = QwenVLClient(system_prompt=system_prompt)
     else:
         mllm = MockMLLMClient(mode=mode)
 
-    experts = {
-        "frequency_expert_v2": FrequencyExpertV2(),
-        "noise_expert": NoiseExpert(),
-        "jpeg_expert": JPEGExpert(),
-    }
     return ForensicStateMachine(mllm, experts)
 
 

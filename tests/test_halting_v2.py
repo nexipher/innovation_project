@@ -51,9 +51,20 @@ class TestPosterior:
         strong = HaltingPolicyV2.posterior([_token(0.9, 0.972)])
         assert abs(weak - 0.5) < abs(strong - 0.5)
 
-    def test_conflicting_experts_cancel(self):
-        chain = [_token(0.95, 0.972), _token(0.05, 0.9, source="noise_expert")]
+    def test_conflicting_experts_without_a_measured_overlap_cancel(self):
+        """jpeg vs frequency_v2: nothing measured, so nothing is discounted."""
+        chain = [_token(0.95, 0.972), _token(0.05, 0.9, source="frequency_expert_v2")]
         assert HaltingPolicyV2.posterior(chain) == pytest.approx(0.5, abs=0.05)
+
+    def test_correlated_conflict_no_longer_cancels_exactly(self):
+        """
+        noise and jpeg move together (ρ=+0.33 on A), so the second one is read
+        at two thirds weight — a disagreement between them is not a coin flip,
+        and the old exact cancellation quietly assumed it was.
+        """
+        chain = [_token(0.95, 0.972), _token(0.05, 0.9, source="noise_expert")]
+        assert HaltingPolicyV2.posterior(chain) != pytest.approx(0.5, abs=0.02)
+        assert HaltingPolicyV2.posterior(chain) > 0.5     # the first voice is louder
 
 
 class TestConflictScore:
@@ -65,7 +76,7 @@ class TestConflictScore:
         assert HaltingPolicyV2.conflict_score(chain) == pytest.approx(0.0, abs=1e-9)
 
     def test_opposite_contributions_conflict_fully(self):
-        chain = [_token(0.99, 1.0), _token(0.01, 1.0, source="noise_expert")]
+        chain = [_token(0.99, 1.0), _token(0.01, 1.0, source="frequency_expert_v2")]
         assert HaltingPolicyV2.conflict_score(chain) == pytest.approx(1.0, abs=0.02)
 
     def test_uncertain_tokens_do_not_create_conflict(self):
@@ -76,6 +87,64 @@ class TestConflictScore:
         # A loud voice against a whisper is a lopsided disagreement, not a tie.
         chain = [_token(0.95, 0.99), _token(0.05, 0.505)]
         assert HaltingPolicyV2.conflict_score(chain) < 0.5
+
+
+class TestRedundancy:
+    """G7 entry 3: correlated experts must not spend the same evidence twice."""
+
+    def test_the_first_voice_on_a_subject_is_read_at_full_weight(self):
+        chain = [_token(0.9, 0.9, source="noise_expert")]
+        assert HaltingPolicyV2.discount_report(chain) == []
+
+    def test_a_correlated_second_voice_is_discounted(self):
+        chain = [_token(0.9, 0.9, source="noise_expert"), _token(0.9, 0.9)]
+        report = HaltingPolicyV2.discount_report(chain)
+        assert len(report) == 1 and report[0]["source"] == "jpeg_expert"
+        assert report[0]["discount"] == pytest.approx(1.0 - 0.330, abs=1e-6)
+        assert report[0]["after"] == ["noise_expert"]
+
+    def test_an_anti_correlated_pair_keeps_full_weight(self):
+        """ρ = −0.28 means they fail differently: that is information, not overlap."""
+        chain = [_token(0.9, 0.9, source="noise_expert"),
+                 _token(0.9, 0.9, source="frequency_expert_v2")]
+        assert HaltingPolicyV2.discount_report(chain) == []
+
+    def test_an_unmeasured_pair_is_not_discounted(self):
+        """No measurement is not evidence of overlap."""
+        chain = [_token(0.9, 0.9, source="jpeg_expert"),
+                 _token(0.9, 0.9, source="some_new_expert")]
+        assert HaltingPolicyV2.discount_report(chain) == []
+
+    def test_the_discount_follows_call_order(self):
+        """Whoever speaks second pays, whichever expert it happens to be."""
+        noise, jpeg = _token(0.9, 0.9, source="noise_expert"), _token(0.9, 0.9)
+        forward = HaltingPolicyV2.contributions([noise, jpeg])
+        backward = HaltingPolicyV2.contributions([jpeg, noise])
+        assert forward[0] > forward[1] and backward[0] > backward[1]
+        assert forward[1] == pytest.approx(backward[1], abs=1e-9)
+        assert forward[1] < forward[0]
+
+
+class TestPerToolCost:
+    """G7-3: PROBE is a network forward pass, the others are arithmetic."""
+
+    def test_probe_costs_more_than_a_statistical_expert(self):
+        from config import POLICY_CALL_COST, POLICY_TOOL_COSTS
+        assert POLICY_TOOL_COSTS["probe_dino_expert"] > POLICY_CALL_COST
+        assert HaltingPolicyV2.call_cost("probe_dino_expert") > \
+            HaltingPolicyV2.call_cost("noise_expert")
+
+    def test_an_unlisted_expert_falls_back_to_the_default(self):
+        from config import POLICY_CALL_COST
+        assert HaltingPolicyV2.call_cost("noise_expert") == POLICY_CALL_COST
+
+    def test_the_utility_report_carries_each_expert_s_own_cost(self):
+        experts = {"probe_dino_expert": 0.92, "noise_expert": 0.69}
+        report = HaltingPolicyV2.utility_report([], experts, set())
+        assert report["probe_dino_expert"]["cost"] > report["noise_expert"]["cost"]
+        assert report["probe_dino_expert"]["net"] == pytest.approx(
+            report["probe_dino_expert"]["estimated_gain"]
+            - report["probe_dino_expert"]["cost"], abs=1e-4)
 
 
 class TestToolUtilities:

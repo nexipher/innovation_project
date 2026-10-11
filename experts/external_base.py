@@ -34,11 +34,19 @@ from experts.base import BaseExpert, ExpertResult
 # A score we have not calibrated carries no direction.  Saying "Uncertain" is
 # not a placeholder: the pipeline's own rule is that an uncalibrated token may
 # not move the posterior (G2-e), and this is how that rule is expressed at the
-# expert boundary.
+# expert boundary.  Note that the *adapter* never states a direction even when
+# a mapping exists — it has no table to read.  The direction belongs to
+# `calibrated_likelihood`, which the pipeline attaches; the adapter only says
+# whether such a mapping exists at all.
 UNCALIBRATED_SUPPORT = "Uncertain"
 UNCALIBRATED_STANCE = (
-    "该分数尚未在本地校准集上建立条件可靠性与适用条件，因此不作为方向性证据："
-    "它只作为原始测量被记录，方向待 G7-1 校准后确定。"
+    "该分数尚未在本地拟合组上建立概率映射，因此不作为方向性证据："
+    "它只作为原始测量被记录，方向待校准后确定。"
+)
+MAPPED_STANCE = (
+    "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 "
+    "`calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。"
+    "若该字段缺失，则本分数不携带方向。"
 )
 
 
@@ -165,10 +173,15 @@ class ExternalScoreExpert(BaseExpert):
     score_reference = ""
 
     def __init__(self, weights_path: Optional[str] = None,
-                 device: str = "cpu", enabled: bool = True):
+                 device: str = "cpu", enabled: bool = True,
+                 calibrated: bool = False):
         self.weights_path = weights_path or self._resolve_weights_path()
         self.device = device
         self.enabled = enabled
+        # Whether a probability mapping for this score exists in the project's
+        # calibration table.  It is a statement about the project, not about
+        # this call: the mapping itself is applied downstream.
+        self.calibrated = calibrated
         self._model = None
         self._provenance: Optional[WeightProvenance] = None
 
@@ -250,7 +263,7 @@ class ExternalScoreExpert(BaseExpert):
             "weights_sha256": provenance.sha256,
             "weights_source": provenance.source,
             "licence": provenance.licence_note,
-            "calibrated": False,
+            "calibration_status": "mapped" if self.calibrated else "unmapped",
         }
         metadata.update(extra or {})
         self.counter_explanation = score_counter_explanation()
@@ -260,7 +273,7 @@ class ExternalScoreExpert(BaseExpert):
             reasoning=score_reasoning(score, self.score_reference),
             strength=float(np.clip(score, 0.0, 1.0)),
             support=UNCALIBRATED_SUPPORT,
-            interpretation_text=UNCALIBRATED_STANCE,
+            interpretation_text=MAPPED_STANCE if self.calibrated else UNCALIBRATED_STANCE,
             raw_metric=float(score),
             **metadata,
         )

@@ -104,10 +104,23 @@ class TestProbeScoring:
         assert first == second
         assert 0.0 <= first <= 1.0
 
-    def test_an_uncalibrated_score_claims_no_direction(self):
+    def test_the_adapter_still_claims_no_direction_of_its_own(self):
+        """Even with a mapping in place, the adapter is not the one reading it.
+
+        The mapping lives in the calibration table and is applied downstream;
+        the adapter's job is to report a measurement.  Its support label stays
+        `Uncertain` until the pipeline attaches `calibrated_likelihood` — the
+        rectifier is what turns a probability into a direction.
+        """
         result = MockProbeExpert(score=0.99).analyze(np.zeros((16, 16, 3), np.uint8))
         assert result.support == UNCALIBRATED_SUPPORT
-        assert "不作为方向性证据" in result.interpretation_text
+        assert "calibrated_likelihood" in result.interpretation_text
+
+    def test_an_unmapped_expert_says_so(self):
+        """TruFor has no mapping, and its text must not imply one."""
+        result = MockTruForExpert(score=0.9).analyze(np.zeros((16, 16, 3), np.uint8))
+        assert result.metadata["calibration_status"] == "unmapped"
+        assert "尚未在本地拟合组上建立概率映射" in result.interpretation_text
 
     def test_the_text_does_not_invent_physics(self):
         """A discriminator's number is not a measurement of a physical trace."""
@@ -122,7 +135,7 @@ class TestProbeScoring:
 
     def test_provenance_travels_with_the_token(self):
         result = MockProbeExpert(score=0.5).analyze(np.zeros((16, 16, 3), np.uint8))
-        assert result.metadata["calibrated"] is False
+        assert result.metadata["calibration_status"] == "mapped"
         assert "preprocess" in result.metadata
 
     def test_a_cached_backbone_counts_as_available(self, tmp_path, monkeypatch):

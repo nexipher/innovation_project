@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T12:15:58",
+  "generated_at": "2026-10-11T13:46:40",
   "source_raw_values": "calibration/set/raw_values.json",
   "cells_used": [
     "real_png",
@@ -205,6 +205,68 @@
           "p_fake": 0.9761904761904762
         }
       ]
+    },
+    "probe_dino_expert": {
+      "g2_name": null,
+      "semantics_aligned": true,
+      "separation_polarity_corrected": 0.98359375,
+      "confound_drop_png_to_q70": 0.021874999999999978,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "n_samples": 248,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 0.00218074475415051,
+          "n": 50,
+          "p_fake": 0.0
+        },
+        {
+          "lo": 0.00218074475415051,
+          "hi": 0.1354539424180985,
+          "n": 49,
+          "p_fake": 0.061224489795918366
+        },
+        {
+          "lo": 0.1354539424180985,
+          "hi": 0.9576619863510133,
+          "n": 50,
+          "p_fake": 0.52
+        },
+        {
+          "lo": 0.9576619863510133,
+          "hi": 0.9997815012931823,
+          "n": 49,
+          "p_fake": 1.0
+        },
+        {
+          "lo": 0.9997815012931823,
+          "hi": null,
+          "n": 50,
+          "p_fake": 1.0
+        }
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "treatments": [
+          "png",
+          "jpeg_q95",
+          "jpeg_q85",
+          "jpeg_q70"
+        ],
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g7_external_probe_dino_A.json",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "per_treatment_separation": {
+          "png": 0.9729,
+          "jpeg_q95": 0.9771,
+          "jpeg_q85": 0.9865,
+          "jpeg_q70": 0.9948
+        }
+      }
     }
   }
 }

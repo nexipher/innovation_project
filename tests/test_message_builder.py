@@ -168,17 +168,41 @@ class TestToolPolicies:
 
     def test_default_prompt_is_byte_identical_to_the_shipped_one(self):
         """
-        The refactor into a per-policy builder must not have moved a character
-        of the all-tools prompt the G3 runs were measured under.
+        The default prompt is a contract: a hash change is a deliberate change
+        and must be re-pinned here.
+
+        G7 entry 3 changed it — PROBE leads the tool list now and the reading
+        contract gained rule 6 (its score is a probability, not a located
+        artifact) — so the digest moved from 09dd259ae0b130f6 to the value
+        below.  Anything that moves it again has to say so in a commit.
         """
         import hashlib
 
-        from mllm.message_builder import build_forensic_prompt
+        from mllm.message_builder import TOOL_ORDER, build_forensic_prompt
 
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
-        assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(["freq", "noise", "jpeg"])
+        assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "09dd259ae0b130f6"
+            "e9e2120587d8049d"
+
+    def test_probe_leads_the_tool_list(self):
+        from mllm.message_builder import TOOL_ORDER
+
+        assert TOOL_ORDER[0] == "probe"
+        assert "<call_probe>" in FORENSIC_SYSTEM_PROMPT
+        assert "PRIMARY detector" in FORENSIC_SYSTEM_PROMPT
+
+    def test_a_policy_without_probe_never_advertises_it(self):
+        """The shared FORBIDDEN sentence names variants, not tools — but nothing
+        may offer probe as callable, and no reading rule may describe it."""
+        from mllm.message_builder import build_forensic_prompt
+
+        prompt = build_forensic_prompt(["freq", "noise", "jpeg"])
+        actions = prompt.split("variations):")[1].split("FORBIDDEN")[0]
+        measures = prompt.split("WHAT EACH TOOL ACTUALLY MEASURES")[1].split("HOW TO READ")[0]
+        assert "<call_probe>" not in actions
+        assert "<call_probe>" not in measures
+        assert "PRIMARY detector" not in prompt
 
     def test_subset_lists_only_the_served_tools(self):
         from mllm.message_builder import build_forensic_prompt

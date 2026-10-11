@@ -89,7 +89,10 @@ class TestRuntimeRegistration:
         """ELA's G2-b skill is compression history: it is deliberately absent."""
         fsm = ForensicStateMachine(None, {"noise_expert": NoiseExpert()})
         assert "ela" not in fsm._expert_by_call
-        assert len(fsm.EXPERT_KEY_MAP) == 3
+        # G7 added PROBE (the main detector); TruFor, measured and refused,
+        # must not appear here either.
+        assert set(fsm.EXPERT_KEY_MAP) == {"probe", "freq", "noise", "jpeg"}
+        assert not any("trufor" in source for source in fsm.EXPERT_KEY_MAP.values())
 
     def test_source_names_are_distinct(self):
         assert FrequencyExpertV2.source_name == "frequency_expert_v2"
@@ -99,10 +102,16 @@ class TestRuntimeRegistration:
 
     def test_call_tags_map_to_shipped_sources(self):
         assert ForensicStateMachine.EXPERT_KEY_MAP == {
+            "probe": "probe_dino_expert",
             "freq": "frequency_expert_v2",
             "noise": "noise_expert",
             "jpeg": "jpeg_expert",
         }
+
+    def test_the_registry_is_gated_by_what_the_session_has(self):
+        """A tool the session cannot serve is not dispatchable."""
+        fsm = ForensicStateMachine(None, {"noise_expert": NoiseExpert()})
+        assert fsm._expert_by_call == {"noise": "noise_expert"}
 
 
 def _prompt_text() -> str:

@@ -46,7 +46,9 @@ from config import (
     POLICY_CALL_COST,
     POLICY_CONFLICT_TOLERANCE,
     POLICY_CONFIDENT_POSTERIOR,
+    POLICY_REDUNDANCY,
     POLICY_STEP_LOG_ODDS,
+    POLICY_TOOL_COSTS,
 )
 
 
@@ -136,10 +138,79 @@ class HaltingPolicyV2:
         signed = 2.0 * float(likelihood) - 1.0
         return weight * signed * POLICY_STEP_LOG_ODDS
 
+    # ------------------------------------------------------------------
+    # Redundancy (G7 entry 3)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def redundancy_key(left: str, right: str) -> str:
+        return "|".join(sorted((left, right)))
+
+    @classmethod
+    def redundancy_discount(cls, source: Optional[str], seen: List[str]) -> float:
+        """
+        How much of a later token's weight survives contact with the earlier ones.
+
+        Two experts whose scores move together are partly reporting the same
+        measurement, and adding both at full weight spends the same evidence
+        twice.  The measured overlap on the fitting group is what decides it,
+        the discount lands on whoever is called later, and only positive
+        correlation counts — a negative one means they fail differently.
+
+        An unknown pair (or an expert we never measured against another) is
+        uncorrelated by default, i.e. undiscounted.
+        """
+        if not source or not seen:
+            return 1.0
+        worst = 0.0
+        for other in seen:
+            if other == source:
+                continue
+            worst = max(worst, float(POLICY_REDUNDANCY.get(
+                cls.redundancy_key(source, other), 0.0)))
+        return 1.0 - max(0.0, min(1.0, worst))
+
+    @classmethod
+    def contributions(cls, evidence_chain: List[dict]) -> List[float]:
+        """
+        Signed log-odds per token, in call order, redundancy-discounted.
+
+        Order matters: the first expert to speak on a correlated subject is
+        read at full weight, the ones that follow at what is left.
+        """
+        seen: List[str] = []
+        output = []
+        for token in evidence_chain:
+            source = token.get("source")
+            discount = cls.redundancy_discount(source, seen)
+            output.append(cls.token_contribution(token) * discount)
+            if source and source not in seen:
+                seen.append(source)
+        return output
+
+    @classmethod
+    def discount_report(cls, evidence_chain: List[dict]) -> List[dict]:
+        """Per token: the discount it received and why, for the session counters."""
+        seen: List[str] = []
+        report = []
+        for token in evidence_chain:
+            source = token.get("source")
+            discount = cls.redundancy_discount(source, seen)
+            if discount < 1.0:
+                report.append({
+                    "evidence_id": token.get("evidence_id"),
+                    "source": source,
+                    "discount": round(discount, 4),
+                    "after": list(seen),
+                })
+            if source and source not in seen:
+                seen.append(source)
+        return report
+
     @classmethod
     def posterior(cls, evidence_chain: List[dict]) -> float:
         """P(Fake) from the accumulated weighted evidence (prior 0.5)."""
-        log_odds = sum(cls.token_contribution(t) for t in evidence_chain)
+        log_odds = sum(cls.contributions(evidence_chain))
         return float(1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, log_odds)))))
 
     @classmethod
@@ -148,7 +219,7 @@ class HaltingPolicyV2:
         Weighted disagreement in [0, 1]: 0 when every token points the same
         way, 1 when the signed contributions cancel exactly.
         """
-        contributions = [cls.token_contribution(t) for t in evidence_chain]
+        contributions = cls.contributions(evidence_chain)
         total_magnitude = sum(abs(c) for c in contributions)
         if total_magnitude == 0.0:
             return 0.0
@@ -169,6 +240,17 @@ class HaltingPolicyV2:
         uncertainty = 1.0 - abs(2.0 * posterior - 1.0)
         return float(expert_weight * 0.5 * uncertainty)
 
+    @staticmethod
+    def call_cost(source: str) -> float:
+        """
+        What one more call to this expert costs (G7-3).
+
+        Per tool, because the tools are not priced alike: a statistical expert
+        is arithmetic, PROBE is a ViT-L forward pass.  `PROBE_...` entries in
+        the table are looked up by the expert's source_name.
+        """
+        return float(POLICY_TOOL_COSTS.get(source, POLICY_CALL_COST))
+
     @classmethod
     def tool_utilities(
         cls,
@@ -177,7 +259,7 @@ class HaltingPolicyV2:
         called_experts: set,
     ) -> Dict[str, float]:
         """
-        Expected net utility per expert: gain minus call cost.
+        Expected net utility per expert: gain minus that expert's call cost.
 
         Repeating an expert cannot help — the same image yields the same
         measurement, and identical tokens are suppressed upstream — so already
@@ -186,24 +268,26 @@ class HaltingPolicyV2:
         posterior = cls.posterior(evidence_chain)
         utilities = {}
         for name, weight in available_experts.items():
+            cost = cls.call_cost(name)
             if name in called_experts:
-                utilities[name] = -POLICY_CALL_COST
+                utilities[name] = -cost
                 continue
-            utilities[name] = cls.expected_gain(weight, posterior) - POLICY_CALL_COST
+            utilities[name] = cls.expected_gain(weight, posterior) - cost
         return utilities
 
     @classmethod
     def utility_report(cls, evidence_chain: List[dict],
                        available_experts: Dict[str, float],
                        called_experts: set) -> Dict[str, dict]:
-        """Per expert: estimated gain, the call cost, and the net of the two."""
+        """Per expert: estimated gain, that expert's cost, and the net."""
         posterior = cls.posterior(evidence_chain)
         report = {}
         for name, weight in available_experts.items():
+            cost = cls.call_cost(name)
             gain = 0.0 if name in called_experts else cls.expected_gain(weight, posterior)
             report[name] = {"estimated_gain": round(gain, 4),
-                            "cost": POLICY_CALL_COST,
-                            "net": round(gain - POLICY_CALL_COST, 4),
+                            "cost": cost,
+                            "net": round(gain - cost, 4),
                             "already_called": name in called_experts}
         return report
 
@@ -252,7 +336,7 @@ class HaltingPolicyV2:
             posterior=posterior,
             tool_utilities=utilities,
             conflict_score=conflict,
-            expected_tool_gain=best_utility + (POLICY_CALL_COST if best_expert else 0.0),
+            expected_tool_gain=best_utility + (cls.call_cost(best_expert) if best_expert else 0.0),
             expected_net_utility=best_utility,
             next_expert=best_expert,
         )

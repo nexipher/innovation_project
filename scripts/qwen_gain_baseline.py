@@ -335,17 +335,29 @@ def _write_report(path: str, report: dict) -> None:
         json.dump(report, handle, ensure_ascii=False, indent=2)
 
 
-def _build_experts() -> Dict[str, Any]:
+def _build_experts(dry_run: bool = False) -> Dict[str, Any]:
     from experts.frequency_v2 import FrequencyExpertV2
     from experts.jpeg import JPEGExpert
     from experts.noise import NoiseExpert
     # G2 evidence favours v2; the gain comparison measures the toolkit the
     # pipeline will actually ship, not the disabled v1.
-    return {
+    experts: Dict[str, Any] = {
         "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }
+    # G7: the shipped toolkit now leads with PROBE.  Without it here the
+    # comparison would measure a pipeline the controller can no longer be
+    # configured as — and the test below exists to catch exactly that.
+    if dry_run:
+        from experts.probe_dino import MockProbeExpert
+        experts["probe_dino_expert"] = MockProbeExpert()
+    else:
+        from experts.probe_dino import ProbeDinoExpert
+        probe = ProbeDinoExpert()
+        if not probe.unavailable_reason():
+            experts["probe_dino_expert"] = probe
+    return experts
 
 
 # ---------------------------------------------------------------------------

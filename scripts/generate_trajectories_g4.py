@@ -56,12 +56,18 @@ VARIANTS_MANIFEST = os.path.join(PROJECT_ROOT, "sft_data", "variants", "manifest
 TRAJECTORIES_DIR = os.path.join(PROJECT_ROOT, "sft_data", "trajectories")
 REPORT_PATH = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json")
 G2B_REPORT = os.path.join(PROJECT_ROOT, "calibration", "g2_expert_report.json")
+G7_APPLICABILITY = os.path.join(PROJECT_ROOT, "calibration", "g7_expert_report.json")
 
 # The expert each tool key dispatches to, and how the policy names itself.
 EXPERT_BY_TOOL = {
     "freq": "frequency_expert_v2",
     "noise": "noise_expert",
     "jpeg": "jpeg_expert",
+    # G7: the primary detector.  Policies that serve it require it, so a
+    # treatment where PROBE was not measured as separating produces no such
+    # trajectory rather than a trajectory built on a tool that should not
+    # have been served.
+    "probe": "probe_dino_expert",
 }
 
 TOOL_POLICIES: Dict[str, dict] = {
@@ -71,6 +77,8 @@ TOOL_POLICIES: Dict[str, dict] = {
     "frequency": {"tools": ("freq",), "client": "forensic"},
     "noise+jpeg": {"tools": ("noise", "jpeg"), "client": "forensic", "requires": "jpeg"},
     "noise+frequency": {"tools": ("noise", "freq"), "client": "forensic"},
+    "probe": {"tools": ("probe",), "client": "forensic", "requires": "probe"},
+    "probe+noise": {"tools": ("probe", "noise"), "client": "forensic", "requires": "probe"},
 }
 
 # A tool is served only where the calibration measured it as separating.  0.65
@@ -104,6 +112,19 @@ def load_applicability(report_path: str = G2B_REPORT) -> Dict[str, Dict[str, flo
                 continue
             cells[cell] = float(1.0 - auroc if inverted else auroc)
         table[name] = cells
+
+    # G7: external experts live in their own report (they were measured on the
+    # G7 fitting group, not on the G2 calibration run), same shape, same gate.
+    if os.path.exists(G7_APPLICABILITY):
+        with open(G7_APPLICABILITY, encoding="utf-8") as handle:
+            external = json.load(handle)
+        for name, entry in external.get("experts", {}).items():
+            cells = {}
+            for treatment, metrics in (entry.get("cell_metrics") or {}).items():
+                auroc = metrics.get("auroc_fake_vs_real")
+                if auroc is not None:
+                    cells[treatment] = float(auroc)
+            table[name] = cells
     return table
 
 
@@ -117,7 +138,8 @@ def tool_applicable(tool: str, treatment: str,
     tool whose separability was never measured is how a lucky guess becomes a
     training label.
     """
-    expert = {"freq": "frequency_v2", "noise": "noise", "jpeg": "jpeg"}.get(tool)
+    expert = {"freq": "frequency_v2", "noise": "noise", "jpeg": "jpeg",
+              "probe": "probe_dino"}.get(tool)
     if expert is None:
         return False, f"unknown tool {tool!r}"
     cells = applicability.get(expert)
@@ -177,6 +199,9 @@ def build_experts(tools: Tuple[str, ...]) -> Dict[str, Any]:
     from experts.noise import NoiseExpert
 
     registry = {"freq": FrequencyExpertV2, "noise": NoiseExpert, "jpeg": JPEGExpert}
+    if "probe" in tools:
+        from experts.probe_dino import ProbeDinoExpert
+        registry["probe"] = ProbeDinoExpert
     return {EXPERT_BY_TOOL[tool]: registry[tool]() for tool in tools}
 
 

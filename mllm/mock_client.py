@@ -32,8 +32,10 @@ class MockMLLMClient(BaseMLLMClient):
     turn number, and selected behaviour mode.
     """
 
-    # All valid modes
-    MODES = ("fast_verdict", "two_calls", "explore_all", "conflict")
+    # All valid modes ("probe_then_corroborate" is the G7 protocol: the primary
+    # detector first, then one optional corroborating clue)
+    MODES = ("fast_verdict", "two_calls", "explore_all", "conflict",
+             "probe_then_corroborate")
 
     def __init__(self, mode: str = "two_calls", seed: int = MOCK_MLLM_SEED):
         if mode not in self.MODES:
@@ -152,6 +154,8 @@ class MockMLLMClient(BaseMLLMClient):
             return self._handle_explore_all(evidence)
         elif self._mode == "conflict":
             return self._handle_conflict(evidence)
+        elif self._mode == "probe_then_corroborate":
+            return self._handle_probe_then_corroborate(evidence)
         return self._handle_two_calls(evidence)  # fallback
 
     # ------------------------------------------------------------------
@@ -211,6 +215,22 @@ class MockMLLMClient(BaseMLLMClient):
             else:
                 # All called — wrap up
                 return reasoning + self._verdict()
+
+    def _handle_probe_then_corroborate(self, evidence: Optional[dict]) -> str:
+        """
+        G7 protocol in one mock: PROBE first, then one corroborating clue.
+
+        The corroborating call is what makes the auxiliary experts' wiring
+        observable on CPU — a run that never exercises their dispatch would
+        pass its tests without ever proving they can be reached.
+        """
+        if evidence is None:
+            return self._planning("whole-image AI-generation check") + self._call("probe")
+        if len(self._called_experts) < 2:
+            remaining = [e for e in ("noise", "jpeg", "freq")
+                         if e not in self._called_experts]
+            return self._reasoning(evidence) + self._call(remaining[0] if remaining else "noise")
+        return self._reasoning(evidence) + self._verdict()
 
     def _handle_conflict(self, evidence: Optional[dict]) -> str:
         """Create contradictory evidence → Uncertain verdict."""

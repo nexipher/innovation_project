@@ -65,7 +65,10 @@ _SENTENCE_SPLIT = re.compile(r"[。.;；\n]")
 # claim about a measurement, and 15 samples in the review contained one for an
 # expert that was never invoked.
 TOOL_EXPERTS = {"noise": "noise_expert", "jpeg": "jpeg_expert",
-                "freq": "frequency_expert_v2", "frequency": "frequency_expert_v2"}
+                "freq": "frequency_expert_v2", "frequency": "frequency_expert_v2",
+                # G7: PROBE leads the toolkit now, so its token is cited by
+                # name in the prose and must be recognised as a known expert.
+                "probe": "probe_dino_expert", "probe_dino": "probe_dino_expert"}
 _CALL_TAG = re.compile(r"<call_(\w+)>\s*(\[)?")
 _PLANNING_BLOCK = re.compile(r"<planning>.*?</planning>", re.S)
 
@@ -90,7 +93,8 @@ def _tool_mentions(text: str):
         # Inside a planning block, or followed by coordinates: the turn is
         # proposing a call, not reading results back.
         mentions.append((expert, followed_by_region or match.group(0) in planning))
-    for expert in ("noise_expert", "jpeg_expert", "frequency_expert_v2"):
+    for expert in ("noise_expert", "jpeg_expert", "frequency_expert_v2",
+                   "probe_dino_expert"):
         if expert in text:
             mentions.append((expert, False))
     return mentions
@@ -466,7 +470,8 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
 
         from scripts.admit_trajectories_g4 import CORROBORATION_ONLY
 
-        key = {"frequency_expert_v2": "freq", "noise_expert": "noise", "jpeg_expert": "jpeg"}
+        key = {"frequency_expert_v2": "freq", "noise_expert": "noise",
+               "jpeg_expert": "jpeg", "probe_dino_expert": "probe"}
         carrying_passed = False
         deferred: List[str] = []
         for token in record["evidence"]:

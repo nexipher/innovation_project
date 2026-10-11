@@ -72,7 +72,11 @@ class ProbeDinoExpert(ExternalScoreExpert):
 
     def __init__(self, weights_path: Optional[str] = None, device: str = "cpu",
                  backbone: Optional[str] = None, enabled: bool = True):
-        super().__init__(weights_path, device, enabled)
+        # G7 entry 3: PROBE's probability mapping lives in the calibration
+        # table (`calibration/reliability_table.json`, entry `probe_dino_expert`),
+        # fitted on the A group — so the adapter may say a mapping exists.
+        # The mapping itself is applied by the controller, never here.
+        super().__init__(weights_path, device, enabled, calibrated=True)
         if backbone:
             self.backbone = backbone
 
@@ -198,3 +202,9 @@ class MockProbeExpert(MockExternalScoreExpert):
     weights_env = "PROBE_WEIGHTS"
     weight_source = "mock"
     licence_note = "mock（不涉及上游权重）"
+
+    def __init__(self, score: Optional[float] = None, **kwargs):
+        # Same mapping status as the real expert: the stand-in must not be
+        # the only place where the calibration claim differs.
+        kwargs.setdefault("calibrated", True)
+        super().__init__(score, **kwargs)
