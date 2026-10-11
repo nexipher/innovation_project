@@ -46,6 +46,13 @@ SPLIT_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "g7_split.json")
 RAW_VALUES_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "raw_values.json")
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "calibration")
 
+# Group D is the TruFor re-check set (see scripts/build_g7_group_d.py): its own
+# manifest and split, disjoint from A/B/C and from the test partition.  It is
+# not part of the fitting/selection/validation scheme and decides nothing.
+MANIFEST_D_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "manifest_d.json")
+SPLIT_D_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "g7_split_d.json")
+GROUP_PATHS = {"D": (SPLIT_D_PATH, MANIFEST_D_PATH)}
+
 BOOTSTRAP_ROUNDS = 2000
 TREATMENTS = ("native", "png", "jpeg_q95", "jpeg_q85", "jpeg_q70")
 
@@ -54,13 +61,17 @@ TREATMENTS = ("native", "png", "jpeg_q95", "jpeg_q85", "jpeg_q70")
 # Data
 # ---------------------------------------------------------------------------
 
-def load_group(group: str, split_path: str = SPLIT_PATH,
-               manifest_path: str = MANIFEST_PATH) -> Tuple[List[dict], dict]:
+def load_group(group: str, split_path: Optional[str] = None,
+               manifest_path: Optional[str] = None) -> Tuple[List[dict], dict]:
     """The manifest samples whose source belongs to `group`, and the split."""
+    default_split, default_manifest = GROUP_PATHS.get(group, (SPLIT_PATH, MANIFEST_PATH))
+    split_path = split_path or default_split
+    manifest_path = manifest_path or default_manifest
     with open(split_path, encoding="utf-8") as handle:
         split = json.load(handle)
-    if group not in ("A", "B", "C"):
-        raise SystemExit(f"unknown group {group!r}; the split has A (fit), B (select), C (validate)")
+    if group not in split.get("groups", {}):
+        known = sorted(split.get("groups", {}))
+        raise SystemExit(f"unknown group {group!r}; this split has {known}")
     members = set(split["groups"][group])
     with open(manifest_path, encoding="utf-8") as handle:
         manifest = json.load(handle)
@@ -275,8 +286,11 @@ def correlation_report(rows: List[dict], cached: Dict[str, Dict[str, float]]) ->
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expert", choices=sorted(EXPERTS), required=True)
-    parser.add_argument("--group", choices=("A", "B", "C"), default="A",
-                        help="A fits, B selects, C validates; the test partition is not here")
+    parser.add_argument("--group", choices=("A", "B", "C", "D"), default="A",
+                        help="A fits, B selects, C validates, D is the TruFor re-check "
+                             "group (decides nothing); the test partition is not here")
+    parser.add_argument("--split", default=None, help="划分文件（默认按组选取）")
+    parser.add_argument("--manifest", default=None, help="样本清单（默认按组选取）")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--image-size", type=int, default=None)
     parser.add_argument("--device", default=None)
@@ -288,11 +302,11 @@ def main() -> None:
     parser.add_argument("--output", default=None)
     args = parser.parse_args()
 
-    samples, split = load_group(args.group)
+    samples, split = load_group(args.group, args.split, args.manifest)
     if args.limit:
         samples = samples[:args.limit]
     print(f"专家 {args.expert} ｜ 组 {args.group}（{split['counts'][args.group]} 源）"
-          f"｜ 样本 {len(samples)}")
+          f"｜ 样本 {len(samples)}｜划分 hash {split['hash']}")
 
     device = args.device or ("cuda" if _cuda() else "cpu")
     expert, expert_name = load_expert(args.expert, args.dry_run, device)
@@ -331,6 +345,7 @@ def main() -> None:
         "expert": args.expert, "expert_name": expert_name,
         "dry_run": args.dry_run, "device": device,
         "split_hash": split["hash"],
+        "group_note": split.get("note"),
         "weights": expert.provenance().as_dict(),
         "timing": expert.timing_summary() if hasattr(expert, "timing_summary") else {},
         "summary": summarise(rows, args.group),
