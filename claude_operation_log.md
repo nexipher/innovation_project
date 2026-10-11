@@ -1324,3 +1324,22 @@
   - `plan.md, README.md, claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**846 项测试通过**；重跑 26 分钟（12.86 s/样本）；两批产物并存可对比
 * **置信度或遗留待办（TODO）**：①本批准确率（0.742）**不是泛化结论**（含 B 组全部 18 源，B 参与过阈值选择），入口 6 用 test 分区②弃权仍集中在 `model_stalled`（25 例，多为 PROBE 落中位箱）与 `no_expected_gain`（25 例，修复后上升，因为预算不再被重复调用吃掉、策略能更早判断"没有更多收益"）——这是策略行为的变化，**留待入口 6 定价**③模型现在仍然会重复请求同一工具（103 会话），只是不再有代价；若将来要在提示词层面进一步减少，可考虑在 planning 模板里直接给出"每个工具只能调用一次"的硬约束
+---
+### 2026-10-11 15:35:41 - G7 入口 4 第一步（CPU）：提示词硬约束、弱证据专项检查、审核哈希绑定、批次独立性
+
+* **当前操作动作**：按用户四项要求完成入口 4 的 CPU 准备；期间复核并**更正了我自己在入口 3 写下的一个夸大结论**
+* **对应计划锚点**：plan.md §4.16「入口 4 — 第一步：CPU 准备（四项）」
+* **核心变更说明**：
+  1. **提示词硬约束**：`RULES` 第 2 条由"不要再调用已调用过的专家"改为"**每个专家每会话最多调用一次；重复调用不会被再次执行**，系统直接返回已有测量，这一轮等于浪费——这是硬规则不是建议"；执行层去重（入口 3 已实现）继续兜底，"说清楚"与"拦得住"两层都在。提示词 sha256 `1ef7af02773aa1c9` → `ec50468e31d57d44`，测试重钉
+  2. **弱证据专项检查（`utils/weak_evidence.py`）**：对 P(Fake)∈[0.4,0.6] 的 token，**允许**如实描述轻微倾向、明说接近随机；**不允许**夸成强/决定性依据，或把近随机证据列入自信结论（confidence ≥0.8）的 `primary_evidence`。标记进入工作台红字告警与 `high_risk`（`weak_evidence_promoted`），**由人裁决**（D2 教训：自动筛选只排序不定罪）。13 项测试
+  3. **审核绑定内容哈希与生成版本**：`utils/batch.py` 提供 `content_sha256`（对样本全部训练相关内容做规范化哈希，排除 `review` 块与 bucket 文件名）与 `batch_fingerprint`（全批内容摘要 → 16 位，即"生成版本"）。`record_review` 每条处置**记录当时的哈希与批次**；工作台页面注入 `window.__batch`、导出负载携带 `batch_id` + `batch_fingerprint`；`import` 遇指纹不符**整份拒绝**（无指纹的旧导出需显式 `--allow-unversioned`）；`apply_review` 逐条重算哈希，**不符者作废并计入 undecided**（默认因此拒绝出集并点名），另有 `--require-hashes` 供新批次强制
+  4. **新批次独立目录与指纹**：批次 = 目录 + 指纹。原 237 条按历史路径寻址（批次名 `g4_trial`），**一个字节都不动**；新批次写 `sft_data/train/batches/<id>/`（bucket 文件 + `manifest.json`）、审核记录 `sft_data/review/<id>/`、出集 `.../batches/<id>_reviewed/`。三个脚本（工作台 / record / apply）统一加 `--batch`，默认仍是旧批次；**不同目录 + 指纹校验双保险，旧 accept 不会自动继承**
+  5. **自我更正（重要）**：入口 3 我写过"34 个近随机 token 里 30 个被写进结论并赋予方向 → 会被 SFT 学成过读弱证据"。**这个计数是错的**——它把**规则明确允许的"轻微倾向"**（"接近随机，略偏向伪造"）与"夸成强证据"混同。按严格判据重扫 120 条：近随机 token 出现在 **39 个会话**；**轻微倾向 128 处、明确否定 56 处**（"不足以单独作为决定性证据"），**真正被标记仅 1 个会话**（把 0.52 说成"有力的证据"、同句又承认接近随机）。plan.md 与 README 的对应段落已按更正后的数字重写并标注更正来源
+* **涉及/修改的文件清单**：
+  - `utils/weak_evidence.py, utils/batch.py (Created)`
+  - `mllm/message_builder.py (Modified — 硬约束), scripts/record_review.py, scripts/apply_review.py, scripts/build_review_workstation.py (Modified — 哈希/批次/弱证据标记)`
+  - `tests/test_weak_evidence.py, tests/test_batch_binding.py (Created — 13 + 14 项)`
+  - `tests/test_review_pipeline.py (Modified — 导出带指纹、新增 5 项陈旧判定测试), tests/test_message_builder.py (Modified — 重钉指纹与规则文本)`
+  - `plan.md, README.md, claude_operation_log.md (Modified — 含更正)`
+* **执行结果与验证状态**：**877 项测试通过**（新增 32 项）；旧批次产物与审核记录未被触碰（`git status` 无 `sft_data/review/*` 变更）；工作台重建走同一代码路径
+* **置信度或遗留待办（TODO）**：①**旧批次的 237 条处置没有内容哈希**（记录于本次改动之前），`apply_review` 会把它们列为 `unversioned` 并继续使用；新批次将用 `--require-hashes`，旧批次如需严格化需重导一次（工作台页面重开后重新导出即可，无需重审）②**旧工作台页面尚未重建**（当前 `sft_data/review/index.html` 不含 `window.__batch`），如需对新规则生效可 `build_review_workstation.py --batch g4_trial` 重建，但会重写页面文件，**待用户决定**③弱证据检查的强度词表按实测中文表述构建，新批次若出现新措辞需扩充（有测试保护既有行为）
