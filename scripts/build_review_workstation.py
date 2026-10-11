@@ -46,7 +46,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
 from utils import weak_evidence
-from utils.batch import LEGACY_BATCH, batch_fingerprint
+from utils.batch import LEGACY_BATCH, batch_fingerprint, batch_paths
 
 FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
 BUCKET_FILES = ("sft_tool_positive.json", "sft_no_tool_positive.json",
@@ -135,17 +135,10 @@ def load_samples(final_v2_dir: str = FINAL_V2_DIR) -> List[dict]:
 
 
 def load_trajectories(directory: str = TRAJECTORIES_DIR) -> Dict[str, dict]:
-    records = {}
-    for name in sorted(os.listdir(directory)):
-        if not name.endswith(".json") or name == "manifest.json":
-            continue
-        try:
-            with open(os.path.join(directory, name), encoding="utf-8") as handle:
-                record = json.load(handle)
-        except (OSError, ValueError):
-            continue
-        records[record["trajectory_id"]] = record
-    return records
+    """Trajectory records by id (the batch directory also holds summaries)."""
+    from utils.batch import load_trajectory_records
+
+    return load_trajectory_records(directory)
 
 
 def load_variant_entries(path: str = VARIANTS_MANIFEST) -> Dict[str, dict]:

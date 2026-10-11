@@ -269,14 +269,11 @@ class TestDiagnosticRegionArtifacts:
         assert result["skipped_duplicate_calls"] == 1
         assert result["suppressed_duplicate_count"] == 0
         assert len(result["evidence_chain"]) == 1
-        session_dir = _os.path.join(PROJECT_ROOT, "traces", "evidence",
-                                    result["session_id"])
-        if _os.path.isdir(session_dir):
-            artifacts = _os.listdir(session_dir)
-            # Filenames are "<name>_<evidence_id>.png"; one measurement means
-            # one evidence id, whatever the crop was saved as.
-            ids = {name.rsplit("_", 1)[-1].removesuffix(".png") for name in artifacts}
-            assert len(ids) <= 1
+        # The artifact directory is deliberately not asserted on here: its name
+        # is the session id, which is timestamped to the second, so two sessions
+        # of the same image within one second share a directory and a listing
+        # would mix them.  Artifact naming and persistence are pinned by
+        # TestEvidenceBundleWiring, where the session is the only one running.
 
 
 class TestEvidenceBundleWiring:

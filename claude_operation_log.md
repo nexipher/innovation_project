@@ -1343,3 +1343,22 @@
   - `plan.md, README.md, claude_operation_log.md (Modified — 含更正)`
 * **执行结果与验证状态**：**877 项测试通过**（新增 32 项）；旧批次产物与审核记录未被触碰（`git status` 无 `sft_data/review/*` 变更）；工作台重建走同一代码路径
 * **置信度或遗留待办（TODO）**：①**旧批次的 237 条处置没有内容哈希**（记录于本次改动之前），`apply_review` 会把它们列为 `unversioned` 并继续使用；新批次将用 `--require-hashes`，旧批次如需严格化需重导一次（工作台页面重开后重新导出即可，无需重审）②**旧工作台页面尚未重建**（当前 `sft_data/review/index.html` 不含 `window.__batch`），如需对新规则生效可 `build_review_workstation.py --batch g4_trial` 重建，但会重写页面文件，**待用户决定**③弱证据检查的强度词表按实测中文表述构建，新批次若出现新措辞需扩充（有测试保护既有行为）
+### 2026-10-11 18:02:10 - G7 入口 4 第二步：首批候选生成、no-tool 臂的转换缺陷修复与重生成
+
+* **当前操作动作**：按用户指定策略集（`no-tool` / `probe` / `probe+noise` / `noise+jpeg`）生成 14 源 × 4 格式的首批候选；修复运行与转换中暴露的四处缺陷；重生成受影响的 no-tool 臂；完成准入、转换、校验与工作台
+* **对应计划锚点**：plan.md §4.16「入口 4 第二步：第一批训练候选」
+* **核心变更说明**：
+  1. **规模与成本（按会话核算）**：14 源 × 4 编码格 = **56 变体**（native 不在生成路径内，237 批次亦然——容器本身携带标签）；56 × 4 策略 = 224，减去 q70 上被 jpeg 门槛挡掉的 14 次 = **210 次会话**，实跑约 **70 分钟**（含三轮重跑，见下）。产出 210 条轨迹 → 准入：**121 正 / 69 拒 / 20 弃权**（首轮）
+  2. **缺陷 1（我自己引入的）**：为省时间缓存"每个工具集一个客户端"，导致多个 16.7 GB 的 Qwen 实例同时驻留，**24 GB 卡 OOM**（日志：22.76 GB in use）。修法：客户端只在构建消息时读提示词 → **一个实例、按策略换提示词**（1 次加载、17.1 GB 常驻）。两种错法都写进了代码注释与测试，免得后人再造一遍
+  3. **缺陷 2（批次隔离三处漏网）**：①生成报告写到公共路径 `sft_data/trajectories_report.json`，**覆盖了 237 批次的报告**（已从 git 恢复，本批报告移入批次目录并注明）→ 报告改为**按运行带时间戳**落在批次目录内；②`admit_trajectories`、`build_final_v2`、工作台三个加载器都按文件名读目录，把报告当会话解析（两个直接崩）→ 统一用 `utils/batch.is_trajectory_record`（按记录形状过滤）；③批次变体清单此前根本没写（选源脚本调的是函数不是 main）→ 已补，且只含选定 14 源
+  4. **缺陷 3（系统性的，属第三步要防的"转换阶段信息丢失"）**：no-tool 臂 56 条中 30 条正样本被 final_v2 校验器拒收，理由是 "observation 只有容器与分辨率"——**观察其实写在 `<reasoning>` 或模型自发的 `<planning>` 里**，而 `extract_observation` 只认 planning 的 `Visual Anomalies:` 一行。这是**协议缺一段**：基线提示词没要求 observation。修法：训练用基线新增**显式 `<observation>` 段**（`TRAINING_BASELINE_PROMPT`），读取器优先读它；**历史对照臂的 `BASELINE_SYSTEM_PROMPT` 一字未动**（sha256 仍 `a81f43b97d1b3714`），G2-d/G3-e 的可比性不受影响。修后**丢弃并归档**旧 no-tool 臂（`_superseded_no_tool_v1/`，附 README 说明），**重生成**该臂（56 会话，约 15 分钟）
+  5. **结果（重生成后）**：准入 120 正 / 61 拒 / 29 弃权 → `build_final_v2` 产出 **145 条样本**：**工具正样本 91（Fake 52 / Real 39）**、**无工具正样本 27（Real 22 / Fake 5）**、**合理弃权 27**；**校验器拒绝 4 条**（1 条证据轮与 token 数不符、3 条"相邻结论"结构问题），**无一条泄漏**
+  6. **自动检查**：弱证据扫描 **145 条 / 命中 0**（24 条含近随机 token，无一被夸成强证据）；工作台高风险标记 132（high_confidence 83 / uncertain 27 / multi_tool 68 / conflict 2），**无 `weak_evidence_promoted`**；批次指纹 **`532766c303e63cad`**（写入 `batches/g7_b1/manifest.json`），工作台页面与导出均携带
+  7. **数据偏斜（照实报告，不掩盖）**：P(Real｜工具样本) = 39/91 = **0.43**；P(Real｜无工具样本) = 22/27 = **0.81**；弃权桶 27 条**全为 Fake**。这是任务结构决定的（证据恰好在模型判错的 Fake 上产生增益），与 237 批次同形；本批 `training_weights` 为 **Real ×1.377**（237 是 ×3.02，因为本批没那么偏）。**Real 侧的工具调用样本是齐的（39 条）**，所以"无工具 ⇒ Real"不会被单向加强，但零 Real 弃权这一点需要人工审阅时留意
+* **涉及/修改的文件清单**：
+  - `scripts/generate_trajectories_g4.py`（客户端复用、训练基线、按运行报告）、`scripts/build_final_v2.py`（加载器过滤、批次清单）、`scripts/admit_trajectories_g4.py`、`scripts/build_review_workstation.py`（同上 + 批次路径 import）
+  - `mllm/message_builder.py`（`TRAINING_BASELINE_PROMPT`）、`utils/batch.py`（`is_trajectory_record` / `load_trajectory_records`）
+  - 测试：`tests/test_generate_trajectories_g4.py`、`tests/test_batch_binding.py`（+批次级验收 4 项）、`tests/test_final_v2.py`（+观察段抽取 5 项）、`tests/test_controller.py`（去掉一条会串目录的脆弱断言）
+  - 产物：`sft_data/trajectories_g7_b1/`（210 条 + 按运行报告 + `_superseded_no_tool_v1/`）、`sft_data/admission_report_g7_b1.json`、`sft_data/train/batches/g7_b1/`（145 样本 + manifest + selection）、`sft_data/review/g7_b1/`（工作台）
+* **执行结果与验证状态**：**914 项测试通过**；批次指纹 `532766c303e63cad`；工作台 `sft_data/review/g7_b1/index.html` 就绪；未训练任何模型、未扩量
+* **置信度或遗留待办（TODO）**：①**人工审阅（第三步）未开始** —— 这正是下一步，且按用户要求**既审原始 trace 也审转换后的训练对话**②弃权桶无 Real 样本，需在审阅中判断是"数据自然结果"还是"协议偏向"③4 条被拒样本保留在 `sft_invalid.json` 中供查看④首轮 no-tool 臂已归档但**未删除**，若确认无用可清理

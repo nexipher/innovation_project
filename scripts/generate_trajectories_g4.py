@@ -46,7 +46,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
 from utils.batch import LEGACY_BATCH, batch_paths
-from mllm.message_builder import BASELINE_SYSTEM_PROMPT, build_forensic_prompt
+from mllm.message_builder import (TRAINING_BASELINE_PROMPT,
+                                   build_forensic_prompt)
 from mllm.mock_client import MockMLLMClient
 from scripts.qwen_gain_baseline import _pseudo_probability
 from state_machine.controller import ForensicStateMachine
@@ -58,15 +59,26 @@ TRAJECTORIES_DIR = os.path.join(PROJECT_ROOT, "sft_data", "trajectories")
 REPORT_PATH = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json")
 
 
-def report_path_for(output_dir: str) -> str:
+def report_path_for(output_dir: str, stamp: Optional[str] = None) -> str:
     """
-    The report goes *inside* the batch it describes.
+    One report per run, inside the batch it describes.
 
     It used to be a fixed public path, so generating a batch overwrote the 237
     set's report — the numbers survived in git, but a reader of either batch
-    would have been reading the other one's summary.
+    would have been reading the other one's summary.  A fixed name *inside* the
+    batch has the same defect one level down: regenerating a single arm (the
+    no-tool arm was regenerated after the observation fix) overwrote the whole
+    batch's summary with that arm's.  Hence the run stamp.
     """
-    return os.path.join(output_dir, "report.json")
+    stamp = stamp or datetime.now().strftime("%Y%m%d_%H%M%S")
+    base = os.path.join(output_dir, f"report_{stamp}.json")
+    if not os.path.exists(base):
+        return base
+    # Two runs inside the same second must not share a file.
+    index = 2
+    while os.path.exists(os.path.join(output_dir, f"report_{stamp}-{index}.json")):
+        index += 1
+    return os.path.join(output_dir, f"report_{stamp}-{index}.json")
 G2B_REPORT = os.path.join(PROJECT_ROOT, "calibration", "g2_expert_report.json")
 G7_APPLICABILITY = os.path.join(PROJECT_ROOT, "calibration", "g7_expert_report.json")
 
@@ -228,7 +240,7 @@ def prompt_switching_client(client):
     one instance with the prompt changed underneath it is what fits both.
     """
     def factory(protocol: str, tools: Tuple[str, ...]):
-        client.system_prompt = (BASELINE_SYSTEM_PROMPT if protocol == "baseline"
+        client.system_prompt = (TRAINING_BASELINE_PROMPT if protocol == "baseline"
                                 else build_forensic_prompt(tools))
         return client
 
@@ -391,7 +403,7 @@ def main() -> None:
         # One instance, built with the baseline prompt and re-prompted per
         # policy by the factory below.
         client_factory = prompt_switching_client(
-            QwenVLClient(system_prompt=BASELINE_SYSTEM_PROMPT))
+            QwenVLClient(system_prompt=TRAINING_BASELINE_PROMPT))
         mode = "gpu"
         sft_dir = None
 
@@ -420,13 +432,15 @@ def main() -> None:
         "gated_out": skipped,
         "aggregate": aggregate(records) if records else {},
     }
+    report["policies"] = list(args.policies)
+    report["batch"] = args.batch
     with open(report_path_for(args.output_dir), "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)
 
     print(f"written: {len(records)}  already present: {done}")
     if skipped:
         print(f"gated out example: {skipped[0]['reason']}")
-    print(f"Report: {report_path_for(args.output_dir)}")
+    print(f"Report: {report_path_for(args.output_dir, report['generated_at'])}")
 
 
 def aggregate(records: List[dict]) -> dict:

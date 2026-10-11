@@ -215,7 +215,7 @@ class TestDryRunEndToEnd:
         import scripts.generate_trajectories_g4 as module
 
         out = tmp_path / "trajectories"
-        monkeypatch.setattr(module, "REPORT_PATH", str(tmp_path / "report.json"))
+        # 报告现在落在批次目录里（输出目录内），不再是公共固定路径
         monkeypatch.setattr("sys.argv", [
             "generate_trajectories_g4.py", "--dry-run",
             "--manifest", self._manifest(tmp_path),
@@ -225,8 +225,10 @@ class TestDryRunEndToEnd:
         module.main()
 
         written = sorted(p.name for p in out.glob("*.json"))
-        assert written == ["Real_002baac0_native__no-tool.json",
-                           "Real_002baac0_native__noise.json"]
+        # the run's own report sits beside the trajectories now, one per run
+        assert written[:2] == ["Real_002baac0_native__no-tool.json",
+                               "Real_002baac0_native__noise.json"]
+        assert written[2].startswith("report_") and written[2].endswith(".json")
         record = json.loads((out / written[0]).read_text(encoding="utf-8"))
         assert record["policy"] == "no-tool"
         assert record["tools_served"] == []
@@ -237,7 +239,7 @@ class TestDryRunEndToEnd:
         import scripts.generate_trajectories_g4 as module
 
         out = tmp_path / "trajectories"
-        monkeypatch.setattr(module, "REPORT_PATH", str(tmp_path / "report.json"))
+        # 报告现在落在批次目录里（输出目录内），不再是公共固定路径
         argv = ["generate_trajectories_g4.py", "--dry-run",
                 "--manifest", self._manifest(tmp_path),
                 "--policies", "no-tool", "--output-dir", str(out)]
@@ -245,9 +247,13 @@ class TestDryRunEndToEnd:
         module.main()
         module.main()
 
-        report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
-        assert report["already_present"] == 1
-        assert report["written"] == 0
+        reports = [p for p in out.iterdir() if p.name.startswith("report_")]
+        assert len(reports) == 2, "每次运行留下一份自己的报告"
+        # by mtime, not by name: the collision suffix sorts before the plain name
+        second = json.loads(max(reports, key=lambda p: p.stat().st_mtime)
+                            .read_text(encoding="utf-8"))
+        assert second["already_present"] == 1
+        assert second["written"] == 0
 
 
 class TestClientReuse:
@@ -274,7 +280,8 @@ class TestClientReuse:
 
     def test_the_prompt_follows_the_policy(self):
         from scripts.generate_trajectories_g4 import prompt_switching_client
-        from mllm.message_builder import BASELINE_SYSTEM_PROMPT, build_forensic_prompt
+        from mllm.message_builder import (TRAINING_BASELINE_PROMPT,
+                                          build_forensic_prompt)
 
         class FakeClient:
             def __init__(self):
@@ -283,7 +290,9 @@ class TestClientReuse:
         client = FakeClient()
         factory = prompt_switching_client(client)
         factory("baseline", ())
-        assert client.system_prompt == BASELINE_SYSTEM_PROMPT
+        from mllm.message_builder import TRAINING_BASELINE_PROMPT
+
+        assert client.system_prompt == TRAINING_BASELINE_PROMPT
         factory("forensic", ("probe",))
         assert client.system_prompt == build_forensic_prompt(["probe"])
 

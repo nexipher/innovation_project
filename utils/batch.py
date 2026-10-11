@@ -55,6 +55,39 @@ def batch_fingerprint(samples: Iterable[dict]) -> str:
     return digest[:16]
 
 
+def is_trajectory_record(record) -> bool:
+    """
+    A session, not a summary that happens to sit in the same directory.
+
+    The generator now writes its report beside the trajectories, and three
+    loaders read that directory by filename alone — each of them parsed the
+    report as a session and crashed.  The shape is the filter.
+    """
+    return isinstance(record, dict) and "trajectory_id" in record
+
+
+def load_trajectory_records(directory: str) -> Dict[str, dict]:
+    """trajectory_id -> record, for every real session in the directory.
+
+    Subdirectories are not descended into: an archived arm keeps its own
+    directory so a regenerated arm can live beside what it replaced.
+    """
+    records: Dict[str, dict] = {}
+    if not os.path.isdir(directory):
+        return records
+    for name in sorted(os.listdir(directory)):
+        if not name.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(directory, name), encoding="utf-8") as handle:
+                record = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        if is_trajectory_record(record):
+            records[record["trajectory_id"]] = record
+    return records
+
+
 def batch_paths(batch_id: str = LEGACY_BATCH) -> Dict[str, str]:
     """
     Where a batch's samples, reviews and output live.

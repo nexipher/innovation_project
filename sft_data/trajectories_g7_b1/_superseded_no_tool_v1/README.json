@@ -1,0 +1,5 @@
+{
+ "why": "no-tool 臂第一版：模型把视觉观察写在 <reasoning> 或自发的 <planning> 里，而读取器只认 planning 的 'Visual Anomalies:' 一行，导致 56 条中 30 条正样本的 observation 段只剩容器与分辨率，被 final_v2 校验器如实拒收（no_tool_positive=0）。",
+ "fix": "训练用基线协议改为要求显式 <observation> 段（TRAINING_BASELINE_PROMPT）；历史对照臂的 BASELINE_SYSTEM_PROMPT 一字未动，sha256 仍为 a81f43b97d1b3714。",
+ "disposition": "整批保留在此目录（加载器只读本层 *.json，不会误读子目录）；重新生成的 no-tool 臂与其余三臂共同构成 g7_b1。"
+}

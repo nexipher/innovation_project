@@ -66,28 +66,11 @@ RISK_EPSILON = 0.01
 CONFIDENT = 0.8
 
 
-# A trajectory record, as opposed to the report or manifest that live beside
-# it in the same directory.  Filtering on the shape rather than on a filename
-# list keeps a new kind of summary file from being read as a session.
-RECORD_FIELDS = ("variant_id", "policy", "split")
-
-
 def load_trajectories(directory: str = TRAJECTORIES_DIR) -> List[dict]:
-    records = []
-    for name in sorted(os.listdir(directory)):
-        if not name.endswith(".json"):
-            continue
-        try:
-            with open(os.path.join(directory, name), encoding="utf-8") as handle:
-                record = json.load(handle)
-        except (OSError, ValueError):
-            continue
-        if not isinstance(record, dict) or \
-                not all(field in record for field in RECORD_FIELDS):
-            continue
-        record["_file"] = name
-        records.append(record)
-    return records
+    """Trajectory records only — the report lives in the same directory."""
+    from utils.batch import load_trajectory_records
+
+    return list(load_trajectory_records(directory).values())
 
 
 def assert_train_only(records: List[dict]) -> None:

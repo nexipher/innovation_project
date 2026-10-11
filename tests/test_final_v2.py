@@ -576,3 +576,76 @@ class TestConversationValidation:
         sample["conversations"] = list(reversed(sample["conversations"]))
         problems = _validate(sample)
         assert any("must open with a user turn" in p for p in problems)
+
+
+class TestObservationExtraction:
+    """
+    G7 entry 4: where the model's visual description is read from.
+
+    The first batch's no-tool sessions put it in the reasoning (or in a
+    planning block nobody asked for), the reader looked only at the planning
+    line, and 30 of 56 sessions became metadata-only observations — rejected by
+    the validator, which is correct given what they contained.  The training
+    baseline prompt now asks for an explicit section, and the reader takes it.
+    """
+
+    def _trace(self, tmp_path, assistant_turn):
+        trace = {"conversations": [{"from": "user", "value": "x"},
+                                   {"from": "gpt", "value": assistant_turn}]}
+        path = tmp_path / "trace.json"
+        path.write_text(json.dumps(trace), encoding="utf-8")
+        return str(path)
+
+    def test_an_explicit_observation_section_is_used(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        path = self._trace(tmp_path, "<observation>\n画面右侧有重复的纹理\n</observation>\n"
+                                      "<reasoning>因此…</reasoning>")
+        text = extract_observation({"trace_path": path})
+        assert "重复的纹理" in text
+        assert "因此" not in text, "结论不应混进观察段"
+
+    def test_the_planning_line_still_works_for_the_tool_arms(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        path = self._trace(tmp_path, "<planning>\nVisual Anomalies: 边缘过度平滑\n</planning>")
+        assert "边缘过度平滑" in extract_observation({"trace_path": path})
+
+    def test_the_explicit_section_wins_when_both_are_present(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        path = self._trace(tmp_path,
+                           "<planning>\nVisual Anomalies: 旧写法\n</planning>"
+                           "<observation>\n新写法\n</observation>")
+        assert "新写法" in extract_observation({"trace_path": path})
+
+    def test_an_empty_observation_section_falls_back(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        path = self._trace(tmp_path, "<observation>\n\n</observation>"
+                                      "<planning>\nVisual Anomalies: 内容\n</planning>")
+        assert "内容" in extract_observation({"trace_path": path})
+
+    def test_nothing_to_read_gives_an_empty_string(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        path = self._trace(tmp_path, "<reasoning>只有结论</reasoning>")
+        assert extract_observation({"trace_path": path}) == ""
+
+
+class TestTheTrainingBaseline:
+    def test_the_training_prompt_asks_for_an_observation_section(self):
+        from mllm.message_builder import TRAINING_BASELINE_PROMPT
+
+        assert "<observation>" in TRAINING_BASELINE_PROMPT
+        assert "no verdict" in TRAINING_BASELINE_PROMPT.lower()
+
+    def test_the_historical_baseline_is_untouched(self):
+        """The G2-d/G3-e arms were measured under this exact prompt."""
+        import hashlib
+
+        from mllm.message_builder import BASELINE_SYSTEM_PROMPT
+
+        assert "<observation>" not in BASELINE_SYSTEM_PROMPT
+        assert hashlib.sha256(BASELINE_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
+            "a81f43b97d1b3714"

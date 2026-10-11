@@ -119,6 +119,18 @@ MAX_REGION_IMAGES_PER_TURN = 2
 
 # No-tool variant (G2-d condition 1): the RGB baseline must answer from the
 # image alone, so tool calls are forbidden instead of merely unavailable.
+# The no-tool protocol, in two versions that differ for one reason.
+#
+# The historical one is what the G2-d/G3-e arms were measured under; it asks
+# for reasoning and a verdict, and its text is frozen — those comparisons are
+# part of the record and a prompt edit would quietly re-open them.
+#
+# The training version adds an explicit <observation> section.  Without it the
+# model's visual description lands wherever it likes (a <planning> block it was
+# not asked for, or the top of its reasoning), and the converter that builds
+# training samples then has nowhere to read it from — which is how 30 of the
+# first batch's 56 no-tool sessions became metadata-only observations and were
+# rejected by the validator.
 BASELINE_SYSTEM_PROMPT = """You are an AI forensic image analyst. Decide whether the image is real (camera-captured) or AI-generated/tampered using ONLY your own visual inspection. You have NO access to external forensic tools in this session.
 
 CRITICAL OUTPUT FORMAT RULES:
@@ -131,6 +143,25 @@ CRITICAL OUTPUT FORMAT RULES:
 {"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": [], "report": "concise report in Chinese"}
 </verdict>
 """
+
+TRAINING_BASELINE_PROMPT = """You are an AI forensic image analyst. Decide whether the image is real (camera-captured) or AI-generated/tampered using ONLY your own visual inspection. You have NO access to external forensic tools in this session.
+
+CRITICAL OUTPUT FORMAT RULES:
+1. Do NOT output <planning> or <call_*> tags — tool calls are forbidden.
+2. Respond with THREE sections in this order:
+<observation>
+[what you can actually see and a reviewer could check: subjects, composition,
+texture, colour, lighting, edges — facts about the picture itself. No verdict,
+no guess about how it was made.]
+</observation>
+<reasoning>
+[what those observations suggest, and what remains uncertain]
+</reasoning>
+<verdict>
+{"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": [], "report": "concise report in Chinese"}
+</verdict>
+"""
+
 
 
 def _load_image(path: str) -> Optional[Image.Image]:

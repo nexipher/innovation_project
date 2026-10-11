@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-10-11T17:36:20",
+  "generated_at": "2026-10-11T17:53:33",
   "applicability_threshold": 0.65,
   "no_tool_positive_labels": {
-    "Fake": 6,
+    "Fake": 5,
     "Real": 23
   },
   "risk_epsilon": 0.01,
   "trajectories": 210,
   "variants": 56,
   "categories": {
-    "positive": 121,
-    "reject": 69,
-    "honest_abstention": 20
+    "positive": 120,
+    "reject": 61,
+    "honest_abstention": 29
   },
   "per_policy": {
     "no-tool": {
       "n": 56,
-      "positive": 29,
+      "positive": 28,
       "mean_cost_delta": 0.0
     },
     "noise+jpeg": {
       "n": 42,
       "positive": 15,
-      "mean_cost_delta": 2.6429
+      "mean_cost_delta": 2.619
     },
     "probe": {
       "n": 56,
       "positive": 37,
-      "mean_cost_delta": 1.4464
+      "mean_cost_delta": 1.375
     },
     "probe+noise": {
       "n": 56,
       "positive": 40,
-      "mean_cost_delta": 2.2679
+      "mean_cost_delta": 2.1964
     }
   },
-  "admitted_mean_cost_delta": 1.405,
-  "rejected_mean_cost_delta": 1.5072,
+  "admitted_mean_cost_delta": 1.3583,
+  "rejected_mean_cost_delta": 1.5902,
   "decisions": [
     {
       "trajectory_id": "no-tool__ADM_977_adm_174_jpeg_q70",
@@ -119,15 +119,12 @@
       "treatment": "jpeg_q85",
       "generator": "ADM",
       "ground_truth": "Fake",
-      "verdict": "Real",
-      "category": "reject",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "introduced a confident error",
-        "no-tool conclusion is wrong"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -306,15 +303,12 @@
       "treatment": "png",
       "generator": "ADM",
       "ground_truth": "Fake",
-      "verdict": "Real",
-      "category": "reject",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "introduced a confident error",
-        "no-tool conclusion is wrong"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -401,14 +395,13 @@
       "treatment": "jpeg_q70",
       "generator": "BigGAN",
       "ground_truth": "Fake",
-      "verdict": "Real",
-      "category": "reject",
+      "verdict": "Fake",
+      "category": "positive",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
       "reasons": [
-        "introduced a confident error",
-        "no-tool conclusion is wrong"
+        "no-tool conclusion, correct and confident"
       ],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
@@ -475,6 +468,7 @@
       "risk_reduced": false,
       "cost_delta": 0.0,
       "reasons": [
+        "introduced a confident error",
         "no-tool conclusion is wrong"
       ],
       "brier_delta": 0.0,
@@ -519,13 +513,11 @@
       "generator": "BigGAN",
       "ground_truth": "Fake",
       "verdict": "Uncertain",
-      "category": "reject",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": true,
       "cost_delta": 1.5,
-      "reasons": [
-        "risk fell but the conclusion is still wrong"
-      ],
+      "reasons": [],
       "brier_delta": -0.0143,
       "nll_delta": -0.0285,
       "p_truth_delta": 0.0145
@@ -656,15 +648,12 @@
       "treatment": "png",
       "generator": "BigGAN",
       "ground_truth": "Fake",
-      "verdict": "Real",
-      "category": "reject",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "introduced a confident error",
-        "no-tool conclusion is wrong"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -818,14 +807,12 @@
       "treatment": "jpeg_q85",
       "generator": "Glide",
       "ground_truth": "Fake",
-      "verdict": "Fake",
-      "category": "positive",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "no-tool conclusion, correct and confident"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -844,13 +831,11 @@
       "generator": "Glide",
       "ground_truth": "Fake",
       "verdict": "Uncertain",
-      "category": "reject",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 2.5,
-      "reasons": [
-        "risk did not fall against the no-tool run"
-      ],
+      "reasons": [],
       "brier_delta": 0.0872,
       "nll_delta": 0.1761,
       "p_truth_delta": -0.0807
@@ -868,13 +853,11 @@
       "generator": "Glide",
       "ground_truth": "Fake",
       "verdict": "Uncertain",
-      "category": "reject",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": true,
       "cost_delta": 1.5,
-      "reasons": [
-        "risk fell but the conclusion is still wrong"
-      ],
+      "reasons": [],
       "brier_delta": -0.0143,
       "nll_delta": -0.0285,
       "p_truth_delta": 0.0145
@@ -893,13 +876,11 @@
       "generator": "Glide",
       "ground_truth": "Fake",
       "verdict": "Uncertain",
-      "category": "reject",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": true,
       "cost_delta": 2.5,
-      "reasons": [
-        "risk fell but the conclusion is still wrong"
-      ],
+      "reasons": [],
       "brier_delta": -0.0143,
       "nll_delta": -0.0285,
       "p_truth_delta": 0.0145
@@ -1006,14 +987,12 @@
       "treatment": "png",
       "generator": "Glide",
       "ground_truth": "Fake",
-      "verdict": "Fake",
-      "category": "positive",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "no-tool conclusion, correct and confident"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -1778,12 +1757,14 @@
       "treatment": "jpeg_q70",
       "generator": "Real",
       "ground_truth": "Real",
-      "verdict": "Uncertain",
-      "category": "honest_abstention",
+      "verdict": "Real",
+      "category": "positive",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [],
+      "reasons": [
+        "no-tool conclusion, correct and confident"
+      ],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -1804,7 +1785,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": -1.5,
+      "cost_delta": 1.5,
       "reasons": [],
       "brier_delta": -0.2023,
       "nll_delta": -0.4467,
@@ -1827,7 +1808,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": -1.0,
+      "cost_delta": 2.0,
       "reasons": [],
       "brier_delta": -0.2023,
       "nll_delta": -0.4467,
@@ -2458,14 +2439,12 @@
       "treatment": "jpeg_q70",
       "generator": "Real",
       "ground_truth": "Real",
-      "verdict": "Real",
-      "category": "positive",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "no-tool conclusion, correct and confident"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -2486,7 +2465,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": 1.5,
+      "cost_delta": -1.5,
       "reasons": [],
       "brier_delta": -0.2023,
       "nll_delta": -0.4467,
@@ -2509,7 +2488,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": 3.0,
+      "cost_delta": 0.0,
       "reasons": [],
       "brier_delta": -0.2272,
       "nll_delta": -0.5293,
@@ -3003,7 +2982,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": 3.0,
+      "cost_delta": 2.0,
       "reasons": [],
       "brier_delta": -0.1354,
       "nll_delta": -0.2797,
@@ -3025,7 +3004,7 @@
       "category": "reject",
       "conditional_ok": true,
       "risk_reduced": false,
-      "cost_delta": 1.5,
+      "cost_delta": 0.5,
       "reasons": [
         "risk did not fall against the no-tool run"
       ],
@@ -3050,7 +3029,7 @@
       "category": "reject",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": 3.0,
+      "cost_delta": 2.0,
       "reasons": [
         "risk fell but the conclusion is still wrong"
       ],
@@ -3583,7 +3562,6 @@
       "risk_reduced": false,
       "cost_delta": 0.0,
       "reasons": [
-        "introduced a confident error",
         "no-tool conclusion is wrong"
       ],
       "brier_delta": 0.0,
@@ -3604,11 +3582,13 @@
       "generator": "SD14",
       "ground_truth": "Fake",
       "verdict": "Uncertain",
-      "category": "honest_abstention",
+      "category": "reject",
       "conditional_ok": true,
       "risk_reduced": true,
       "cost_delta": 3.0,
-      "reasons": [],
+      "reasons": [
+        "risk fell but the conclusion is still wrong"
+      ],
       "brier_delta": -0.1079,
       "nll_delta": -0.2199,
       "p_truth_delta": 0.123
@@ -3850,15 +3830,12 @@
       "treatment": "jpeg_q70",
       "generator": "SD15",
       "ground_truth": "Fake",
-      "verdict": "Real",
-      "category": "reject",
+      "verdict": "Uncertain",
+      "category": "honest_abstention",
       "conditional_ok": true,
       "risk_reduced": false,
       "cost_delta": 0.0,
-      "reasons": [
-        "introduced a confident error",
-        "no-tool conclusion is wrong"
-      ],
+      "reasons": [],
       "brier_delta": 0.0,
       "nll_delta": 0.0,
       "p_truth_delta": 0.0
@@ -3879,7 +3856,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": 1.5,
+      "cost_delta": -1.5,
       "reasons": [],
       "brier_delta": -0.214,
       "nll_delta": -0.4827,
@@ -3902,7 +3879,7 @@
       "category": "positive",
       "conditional_ok": true,
       "risk_reduced": true,
-      "cost_delta": 1.5,
+      "cost_delta": -1.5,
       "reasons": [],
       "brier_delta": -0.214,
       "nll_delta": -0.4827,
@@ -4197,6 +4174,7 @@
       "risk_reduced": false,
       "cost_delta": 0.0,
       "reasons": [
+        "introduced a confident error",
         "no-tool conclusion is wrong"
       ],
       "brier_delta": 0.0,
@@ -4605,7 +4583,6 @@
       "risk_reduced": false,
       "cost_delta": 0.0,
       "reasons": [
-        "introduced a confident error",
         "no-tool conclusion is wrong"
       ],
       "brier_delta": 0.0,

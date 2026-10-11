@@ -73,6 +73,10 @@ def bucket_for(record: dict, category: str) -> str:
 
 
 _PLANNING_ANOMALIES = re.compile(r"Visual Anomalies:\s*(.+)", re.I)
+# The no-tool training protocol asks for an explicit section; the tool protocols
+# describe the same thing in their planning line.  Either way the model's own
+# visual description is what the observation section is for.
+_OBSERVATION_BLOCK = re.compile(r"<observation>\s*(.*?)\s*</observation>", re.S | re.I)
 
 
 def load_trace(record: dict) -> Optional[dict]:
@@ -105,7 +109,11 @@ def extract_observation(record: dict) -> str:
     for turn in trace.get("conversations", []):
         if turn.get("from") != "gpt":
             continue
-        match = _PLANNING_ANOMALIES.search(turn.get("value", ""))
+        value = turn.get("value", "")
+        block = _OBSERVATION_BLOCK.search(value)
+        if block and block.group(1).strip():
+            return f"模型视觉观察：{block.group(1).strip()}"
+        match = _PLANNING_ANOMALIES.search(value)
         if match:
             return f"模型视觉观察：{match.group(1).strip()}"
         break
@@ -113,27 +121,10 @@ def extract_observation(record: dict) -> str:
 
 
 def load_trajectories(directory: str) -> Dict[str, dict]:
-    """
-    Trajectory records only.
+    """Trajectory records by id (the directory also holds summaries)."""
+    from utils.batch import load_trajectory_records
 
-    The directory also holds the generation's `report.json` (and a batch may
-    keep other summaries there), so the filter is on the record's shape rather
-    than on a list of filenames — a file without a trajectory_id is a summary,
-    and reading it as a session is how this crashed the first time.
-    """
-    records = {}
-    for name in sorted(os.listdir(directory)):
-        if not name.endswith(".json"):
-            continue
-        try:
-            with open(os.path.join(directory, name), encoding="utf-8") as handle:
-                record = json.load(handle)
-        except (OSError, ValueError):
-            continue
-        if not isinstance(record, dict) or "trajectory_id" not in record:
-            continue
-        records[record["trajectory_id"]] = record
-    return records
+    return load_trajectory_records(directory)
 
 
 def load_variant_paths(path: str = VARIANTS_MANIFEST) -> Dict[str, str]:
@@ -148,7 +139,8 @@ def load_variant_paths(path: str = VARIANTS_MANIFEST) -> Dict[str, str]:
 
 def build(trajectory_dir: str = TRAJECTORIES_DIR,
           admission_path: str = ADMISSION_REPORT,
-          output_dir: str = OUTPUT_DIR) -> dict:
+          output_dir: str = OUTPUT_DIR,
+          batch_id: str = LEGACY_BATCH) -> dict:
     assert_not_frozen(output_dir)
 
     with open(admission_path, encoding="utf-8") as handle:
@@ -192,6 +184,18 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
             json.dump(samples, handle, ensure_ascii=False, indent=2)
     with open(os.path.join(output_dir, "sft_invalid.json"), "w", encoding="utf-8") as handle:
         json.dump(invalid, handle, ensure_ascii=False, indent=2)
+
+    # The batch's own version stamp: every sample's content digest, hashed once.
+    # A review recorded against one fingerprint must not be applied to another,
+    # and this is the value `record_review` stores with each decision.
+    from utils.batch import write_manifest
+
+    all_samples = [{**sample, "_bucket_file": name}
+                   for name, samples in buckets.items() for sample in samples]
+    write_manifest(batch_id, output_dir, samples=all_samples,
+                   generation={"trajectories_dir": trajectory_dir,
+                               "admission_report": admission_path,
+                               "source": "g7 entry 4, step 2"})
 
     labels = collections.Counter(
         sample["ground_truth"] for samples in buckets.values() for sample in samples)
@@ -239,7 +243,8 @@ def main() -> None:
     if args.output_dir is None:
         args.output_dir = paths["samples"]
 
-    metadata = build(args.trajectories_dir, args.admission_report, args.output_dir)
+    metadata = build(args.trajectories_dir, args.admission_report, args.output_dir,
+                     args.batch)
     print(f"counts: {metadata['counts']}")
     print(f"rejected by the validator: {metadata['invalid']}")
     print(f"total: {metadata['total']}  ->  {args.output_dir}")

@@ -10,30 +10,30 @@
   "container": "jpg",
   "ground_truth": "Fake",
   "model_candidate": "Real",
-  "final_verdict": "Real",
-  "confidence": 0.95,
-  "report": "这张图片显示了一只看起来很真实的狗，没有明显的AI生成或篡改迹象。",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "根据观察到的细节，如自然的毛发质感、自然的光影效果以及和谐的构图，可以判断这张图片显示了一只真实的小狗。背景模糊但没有不自然的光影效果，整体构图和谐。因此可以得出结论，这是一张真实拍摄的照片。",
   "posterior": 0.5,
   "conflict_score": 0.0,
   "policy_reasons": [
-    "candidate_without_tools"
+    "budget_exhausted"
   ],
-  "model_probability": 0.05,
+  "model_probability": 0.5,
   "evidence": [],
   "counters": {
-    "model_turns": 1,
+    "model_turns": 7,
     "expert_calls": 0,
     "unique_evidence": 0,
     "suppressed_duplicates": 0,
-    "weighted_cost": 0.5
+    "weighted_cost": 3.5
   },
-  "halting_reason": "candidate_without_tools",
-  "elapsed_s": 2.88,
-  "trace_path": "traces/sft_sessions/forensic_sft_session_20261011_172205_SD15_174_sdv5_00135_jpeg_q70.json",
+  "halting_reason": "budget_exhausted",
+  "elapsed_s": 33.4,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20261011_174643_SD15_174_sdv5_00135_jpeg_q70.json",
   "policy_version": "v2",
   "scores": {
-    "model_nll": 2.9957,
-    "model_brier": 0.9025,
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
     "posterior_nll": 0.6931,
     "posterior_brier": 0.25,
     "posterior_error": 0.5

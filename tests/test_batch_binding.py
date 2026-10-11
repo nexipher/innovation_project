@@ -183,24 +183,93 @@ class TestNoSharedOutputs:
 
         legacy = batch_paths(LEGACY_BATCH)["trajectories"]
         new = batch_paths("g7_b1")["trajectories"]
-        assert report_path_for(new) == os.path.join(new, "report.json")
-        assert report_path_for(new) != report_path_for(legacy)
+        assert report_path_for(new, "20261011_170000").startswith(new)
+        assert report_path_for(new, "20261011_170000") != \
+            report_path_for(legacy, "20261011_170000")
+        assert report_path_for(new, "a") != report_path_for(new, "b"), \
+            "每次运行的报告不得互相覆盖"
         # and the historical public report is not where a batch writes
-        assert report_path_for(new) != os.path.join(PROJECT_ROOT, "sft_data",
-                                                    "trajectories_report.json")
+        assert report_path_for(new, "x") != os.path.join(PROJECT_ROOT, "sft_data",
+                                                         "trajectories_report.json")
 
-    def test_the_batch_report_on_disk_belongs_to_that_batch(self):
-        """The move is only done if a reader can tell which batch it is."""
-        path = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1",
-                            "report.json")
-        if not os.path.exists(path):
+    def test_every_report_in_the_batch_says_which_run_it_was(self):
+        """A reader must be able to tell which batch and which run it is."""
+        import glob
+
+        paths = glob.glob(os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1",
+                                       "report_*.json"))
+        if not paths:
             pytest.skip("本批次报告尚未生成")
-        with open(path, encoding="utf-8") as handle:
-            report = json.load(handle)
-        assert report.get("batch") == "g7_b1"
+        for path in paths:
+            with open(path, encoding="utf-8") as handle:
+                report = json.load(handle)
+            assert report.get("batch") == "g7_b1", path
+            assert report.get("policies"), path
 
     def test_the_legacy_report_still_describes_the_legacy_batch(self):
         path = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json")
         with open(path, encoding="utf-8") as handle:
             report = json.load(handle)
         assert report["planned"] == 440 and report["written"] == 440
+
+
+class TestTheBuiltBatch:
+    """The first training batch, checked the way the plan says to check it."""
+
+    def test_the_batch_has_a_fingerprint_and_a_manifest(self):
+        path = os.path.join(PROJECT_ROOT, "sft_data", "train", "batches",
+                            "g7_b1", "manifest.json")
+        if not os.path.exists(path):
+            pytest.skip("批次尚未构建")
+        with open(path, encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        assert manifest["fingerprint"] == "532766c303e63cad"
+        assert manifest["samples"] == 145
+
+    def test_no_sample_comes_from_a_reserved_partition(self):
+        """The batch's sources are train-partition sources, by id, not by hope."""
+        from utils.batch import load_samples
+
+        samples = load_samples("g7_b1")
+        if not samples:
+            pytest.skip("批次尚未构建")
+        with open(os.path.join(PROJECT_ROOT, "sft_data", "split_v2.json"),
+                  encoding="utf-8") as handle:
+            split = json.load(handle)
+        sources = {split["sources"][key]["path"]
+                   for key, entry in split["sources"].items()
+                   if entry["split"] == "train"}
+        test_paths = {e["path"] for e in split["sources"].values()
+                      if e["split"] == "test"}
+        assert all(sample["metadata"]["split"] == "train" for sample in samples)
+        assert not (sources & test_paths)          # the guard itself
+        # every sample's source is one of the train sources the split declares
+        chosen = json.load(open(os.path.join(
+            PROJECT_ROOT, "sft_data", "train", "batches", "g7_b1",
+            "selection.json"), encoding="utf-8"))["chosen"]
+        assert len(chosen) == 14
+        assert all(split["sources"][key]["split"] == "train" for key in chosen)
+
+    def test_near_chance_evidence_is_not_promoted_anywhere(self):
+        from utils.batch import load_samples
+        from utils.weak_evidence import flags
+
+        samples = load_samples("g7_b1")
+        if not samples:
+            pytest.skip("批次尚未构建")
+        promoted = {s["id"]: flags(s) for s in samples if flags(s)}
+        assert promoted == {}, promoted
+
+    def test_the_no_tool_arm_exists_in_both_classes(self):
+        """The shortcut this batch must not teach: tools mean Fake."""
+        from utils.batch import load_samples
+        import collections
+
+        samples = load_samples("g7_b1")
+        if not samples:
+            pytest.skip("批次尚未构建")
+        by_bucket = collections.defaultdict(collections.Counter)
+        for sample in samples:
+            by_bucket[sample["_bucket_file"]][sample["ground_truth"]] += 1
+        assert by_bucket["sft_tool_positive.json"]["Real"] >= 30
+        assert by_bucket["sft_no_tool_positive.json"]["Real"] >= 20
