@@ -289,6 +289,24 @@ def apply_fitted(state: dict, table: Dict[str, Dict[str, float]],
     return out
 
 
+def decide(fusion_delta: Optional[float]) -> str:
+    """
+    Step 3's rule, stated once and applied to whatever group is being read.
+
+    Written before the numbers existed: a margin of ±0.02 on the selection
+    group's ΔAUROC, with everything in between treated as "no gain".  The rule
+    is applied to B for selection and to C for the verdict — and C wins when
+    they disagree, which is what happened.
+    """
+    if fusion_delta is None:
+        return "无法判定（该组不足以比较）"
+    if fusion_delta >= FUSION_WINS_MARGIN:
+        return "融合稳定优于 PROBE 单独 → 保留多专家组合，继续研究调度"
+    if fusion_delta <= FUSION_LOSES_MARGIN:
+        return "融合无收益 → PROBE 作为主检测器，旧专家降为辅助线索"
+    return "收益在噪声范围内 → PROBE 作为主检测器，旧专家降为辅助线索（不做全格式准入）"
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -350,16 +368,9 @@ def main() -> None:
         if entry:
             print(f"  {name:26s} Δ {entry['delta']:+.4f}  CI {entry['ci']}")
 
-    # The decision rule from Step 3, applied to the B-group numbers.
+    # The decision rule from Step 3, applied to the selection group.
     fusion_delta = (deltas.get("existing+probe - probe") or {}).get("delta")
-    if fusion_delta is None:
-        verdict = "无法判定（B 组不足以比较）"
-    elif fusion_delta >= FUSION_WINS_MARGIN:
-        verdict = "融合稳定优于 PROBE 单独 → 保留多专家组合，继续研究调度"
-    elif fusion_delta <= FUSION_LOSES_MARGIN:
-        verdict = "融合无收益 → PROBE 作为主检测器，旧专家降为辅助线索"
-    else:
-        verdict = "收益在噪声范围内 → 按格式适用条件决定，不做全格式准入"
+    verdict = decide(fusion_delta)
 
     freeze = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -462,11 +473,21 @@ def validate_c() -> None:
             for left, right in (("existing+probe", "probe"), ("existing", "probe"))
             if left in probabilities_by_condition},
         "verdict_on_b": freeze["verdict"],
+        "verdict_on_c": decide((report_delta := paired_delta(
+            [{"source_id": samples[sid]["source_id"], "label": labels[index[sid]],
+              "left": probabilities_by_condition["existing+probe"][index[sid]],
+              "right": probabilities_by_condition["probe"][index[sid]]}
+             for sid in sample_ids],
+            lambda rs: auroc([r["left"] for r in rs], [r["label"] for r in rs]) -
+            auroc([r["right"] for r in rs], [r["label"] for r in rs])))["delta"]
+            if "existing+probe" in probabilities_by_condition else None),
+        "verdict_note": "B 与 C 不一致时以 C 为准（独立验证组）",
     }
     path = os.path.join(OUTPUT_DIR, "g7_validation_C.json")
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=1, allow_nan=False)
     print(f"\n冻结结论（在 B 组上得出）：{freeze['verdict']}")
+    print(f"C 组独立判定：{report['verdict_on_c']}")
     print("（若 C 组的 Δ 未复现该结论，以 C 组为准——这正是独立验证组的用途）")
     print(f"Report: {os.path.relpath(path, PROJECT_ROOT)}")
 
