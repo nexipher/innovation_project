@@ -56,6 +56,17 @@ from utils.logger import SessionLogger
 VARIANTS_MANIFEST = os.path.join(PROJECT_ROOT, "sft_data", "variants", "manifest.json")
 TRAJECTORIES_DIR = os.path.join(PROJECT_ROOT, "sft_data", "trajectories")
 REPORT_PATH = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json")
+
+
+def report_path_for(output_dir: str) -> str:
+    """
+    The report goes *inside* the batch it describes.
+
+    It used to be a fixed public path, so generating a batch overwrote the 237
+    set's report — the numbers survived in git, but a reader of either batch
+    would have been reading the other one's summary.
+    """
+    return os.path.join(output_dir, "report.json")
 G2B_REPORT = os.path.join(PROJECT_ROOT, "calibration", "g2_expert_report.json")
 G7_APPLICABILITY = os.path.join(PROJECT_ROOT, "calibration", "g7_expert_report.json")
 
@@ -409,13 +420,13 @@ def main() -> None:
         "gated_out": skipped,
         "aggregate": aggregate(records) if records else {},
     }
-    with open(REPORT_PATH, "w", encoding="utf-8") as handle:
+    with open(report_path_for(args.output_dir), "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)
 
     print(f"written: {len(records)}  already present: {done}")
     if skipped:
         print(f"gated out example: {skipped[0]['reason']}")
-    print(f"Report: {REPORT_PATH}")
+    print(f"Report: {report_path_for(args.output_dir)}")
 
 
 def aggregate(records: List[dict]) -> dict:

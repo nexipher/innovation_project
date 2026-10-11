@@ -1,0 +1,104 @@
+{
+  "trajectory_id": "noise+jpeg__Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q85",
+  "policy": "noise+jpeg",
+  "tools_served": [
+    "noise",
+    "jpeg"
+  ],
+  "variant_id": "Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q85",
+  "source_id": "Real/0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "jpeg_q85",
+  "container": "jpg",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "图像中存在明显的像素块状结构，可能表明经过了JPEG压缩。然而，该指标的强度接近随机水平（P(Fake)=0.449），且在低质量重压缩后几乎无效，因此无法单独作为判据。综合考虑，图像的真实性仍无法确定。",
+  "posterior": 0.464,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "candidate_overridden_by_posterior",
+    "model_stalled"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-9600307bba",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[0, 0, 104, 112]",
+      "region_pixels": [
+        0,
+        0,
+        104,
+        112
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        504,
+        224
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.2756, DCT anomaly: 3.3541)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.2756, DCT anomaly=3.3541). This is the weaker end of the calibration band: the same structure appears when an already-compressed image is re-saved, and at low quality (≤ 70) the band loses its discriminative power almost entirely, so it should not drive a verdict on its own. Whether the band is decisive here depends on the cell the calibration table records for this input, which is attached to the token.",
+      "strength": 0.5533,
+      "raw_metric": 2.107015,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.113087
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20261011_164855_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q85/region_E-9600307bba.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_164855_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q85/jpeg_blockiness_map_E-9600307bba.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 4,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 3.0
+  },
+  "halting_reason": "model_stalled",
+  "elapsed_s": 14.48,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20261011_164855_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q85.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.6236,
+    "posterior_brier": 0.2153,
+    "posterior_error": 0.464
+  }
+}

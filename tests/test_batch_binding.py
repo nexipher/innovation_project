@@ -173,3 +173,34 @@ class TestGenerationIsolation:
                 [sys.executable, os.path.join(PROJECT_ROOT, "scripts", script), "--help"],
                 capture_output=True, text=True, timeout=120).stdout
             assert "--batch" in output, script
+
+
+class TestNoSharedOutputs:
+    """Every script that writes a report must write it inside its batch."""
+
+    def test_the_generator_writes_its_report_into_the_batch(self):
+        from scripts.generate_trajectories_g4 import report_path_for
+
+        legacy = batch_paths(LEGACY_BATCH)["trajectories"]
+        new = batch_paths("g7_b1")["trajectories"]
+        assert report_path_for(new) == os.path.join(new, "report.json")
+        assert report_path_for(new) != report_path_for(legacy)
+        # and the historical public report is not where a batch writes
+        assert report_path_for(new) != os.path.join(PROJECT_ROOT, "sft_data",
+                                                    "trajectories_report.json")
+
+    def test_the_batch_report_on_disk_belongs_to_that_batch(self):
+        """The move is only done if a reader can tell which batch it is."""
+        path = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1",
+                            "report.json")
+        if not os.path.exists(path):
+            pytest.skip("本批次报告尚未生成")
+        with open(path, encoding="utf-8") as handle:
+            report = json.load(handle)
+        assert report.get("batch") == "g7_b1"
+
+    def test_the_legacy_report_still_describes_the_legacy_batch(self):
+        path = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json")
+        with open(path, encoding="utf-8") as handle:
+            report = json.load(handle)
+        assert report["planned"] == 440 and report["written"] == 440

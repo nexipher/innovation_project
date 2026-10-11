@@ -113,14 +113,24 @@ def extract_observation(record: dict) -> str:
 
 
 def load_trajectories(directory: str) -> Dict[str, dict]:
+    """
+    Trajectory records only.
+
+    The directory also holds the generation's `report.json` (and a batch may
+    keep other summaries there), so the filter is on the record's shape rather
+    than on a list of filenames — a file without a trajectory_id is a summary,
+    and reading it as a session is how this crashed the first time.
+    """
     records = {}
     for name in sorted(os.listdir(directory)):
-        if not name.endswith(".json") or name == "manifest.json":
+        if not name.endswith(".json"):
             continue
         try:
             with open(os.path.join(directory, name), encoding="utf-8") as handle:
                 record = json.load(handle)
         except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict) or "trajectory_id" not in record:
             continue
         records[record["trajectory_id"]] = record
     return records

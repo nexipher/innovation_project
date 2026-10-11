@@ -1,0 +1,104 @@
+{
+  "trajectory_id": "noise+jpeg__Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95",
+  "policy": "noise+jpeg",
+  "tools_served": [
+    "noise",
+    "jpeg"
+  ],
+  "variant_id": "Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95",
+  "source_id": "Real/0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad",
+  "split": "train",
+  "generator": "Real",
+  "treatment": "jpeg_q95",
+  "container": "jpg",
+  "ground_truth": "Real",
+  "model_candidate": "Uncertain",
+  "final_verdict": "Uncertain",
+  "confidence": 0.5,
+  "report": "噪声残留水平为3.2036，属于中等强度。在G2校准集上，这个测量值接近随机（P(Fake)=0.564），因此无法确定图像的真实来源或处理方式。噪声残留水平的高低并不直接指向伪造或真实图像，而是反映了图像传感器的噪声特性。此外，降噪、锐化和重压缩操作都会影响噪声残留水平，因此仅凭此证据不足以得出结论。综合考虑现有证据，噪声残留水平的测量结果表明图像可能经过了处理，但无法确定是伪造还是真实图像。尽管如此，现有的工具（如噪声残留专家）无法提供更具体的证据来进一步降低不确定性。噪声残留水平的测量结果虽然提供了图像可能经过处理的信息，但无法区分伪造与真实图像，因为这些处理方法同样会影响噪声残留水平。因此，现有工具无法进一步降低不确定性。",
+  "posterior": 0.5331,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "candidate_overridden_by_posterior",
+    "model_stalled"
+  ],
+  "model_probability": 0.5,
+  "evidence": [
+    {
+      "evidence_id": "E-c4996480a2",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[28, 41, 53, 78]",
+      "region_pixels": [
+        28,
+        41,
+        53,
+        78
+      ],
+      "region_normalized_1000": [
+        135,
+        82,
+        257,
+        155
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Whole-image noise-residual level 3.2036: the camera end of the G2 calibration band. Residual consistent with a camera sensor; a band is an association measured on the calibration set, not a physical proof of origin.",
+      "reasoning": "Whole-image residual micro-noise level 3.2036 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.",
+      "strength": 0.6469,
+      "raw_metric": 3.203583,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.008981
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20261011_164721_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-c4996480a2.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_164721_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/noise_residual_map_E-c4996480a2.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 4,
+    "expert_calls": 1,
+    "unique_evidence": 1,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 3.0
+  },
+  "halting_reason": "model_stalled",
+  "elapsed_s": 19.5,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20261011_164721_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95.json",
+  "policy_version": "v2",
+  "scores": {
+    "model_nll": 0.6931,
+    "model_brier": 0.25,
+    "posterior_nll": 0.7616,
+    "posterior_brier": 0.2842,
+    "posterior_error": 0.5331
+  }
+}

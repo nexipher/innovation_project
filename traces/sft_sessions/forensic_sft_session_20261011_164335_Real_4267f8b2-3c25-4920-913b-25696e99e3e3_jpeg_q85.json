@@ -1,0 +1,234 @@
+{
+  "id": "session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants_g7_b1/Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "confidence": 0.5,
+    "report": "根据噪声残留和JPEG结构分析，图像存在中等程度的微小噪声和JPEG压缩痕迹，但这些特征在G2校准表中对应的概率接近随机，无法明确判断图像的真实性或伪造性。",
+    "posterior": 0.3663,
+    "tool_utilities": {
+      "noise_expert": -0.15,
+      "jpeg_expert": -0.15
+    },
+    "conflict_score": 0.0,
+    "redundancy_discounts": [
+      {
+        "evidence_id": "E-213da124cb",
+        "source": "jpeg_expert",
+        "discount": 0.67,
+        "after": [
+          "noise_expert"
+        ]
+      }
+    ],
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Uncertain"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 300, 300]\nVisual Anomalies: 眼睛周围的皮肤纹理异常细腻，可能暗示了图像经过了处理。\nExpert Target & Hypothesis: <call_noise>[100, 100, 300, 300]</call_noise> → 检查是否存在微小噪声残留，以判断图像是否经过了处理。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-92505a4b9e\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[75, 50, 225, 150]\", \"region_pixels\": [75, 50, 225, 150], \"region_normalized_1000\": [100, 100, 300, 300], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Whole-image noise-residual level 3.3017: the camera end of the G2 calibration band. Residual consistent with a camera sensor; a band is an association measured on the calibration set, not a physical proof of origin.\", \"reasoning\": \"Whole-image residual micro-noise level 3.3017 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.\", \"strength\": 0.6797, \"raw_metric\": 3.301706, \"source\": \"noise_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.718, \"Fake\": 0.282}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.04}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": null, \"mapping\": null, \"sources\": null, \"samples\": null, \"split_hash\": null, \"weights_sha256\": null}, \"support_raw\": \"Uncertain\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/region_E-92505a4b9e.png\", \"visual_artifacts\": [\"traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/noise_residual_map_E-92505a4b9e.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/region_E-92505a4b9e.png",
+        "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/noise_residual_map_E-92505a4b9e.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 100, 300, 300]\nVisual Anomalies: 图像整体呈现蓝色像素块状结构，可能存在JPEG压缩痕迹。\nExpert Target & Hypothesis: <call_jpeg>[100, 100, 300, 300]</call_jpeg> → 检查是否存在JPEG压缩痕迹，以判断图像是否经过了处理。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-213da124cb\", \"evidence_name\": \"double_jpeg_quantization\", \"region\": \"patch_coordinates_[75, 50, 225, 150]\", \"region_pixels\": [75, 50, 225, 150], \"region_normalized_1000\": [100, 100, 300, 300], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.5581, DCT anomaly: 3.1175)\", \"reasoning\": \"Moderate JPEG structure found (blockiness=1.5581, DCT anomaly=3.1175). This is the weaker end of the calibration band: the same structure appears when an already-compressed image is re-saved, and at low quality (≤ 70) the band loses its discriminative power almost entirely, so it should not drive a verdict on its own. Whether the band is decisive here depends on the cell the calibration table records for this input, which is attached to the token.\", \"strength\": 0.5899, \"raw_metric\": 2.181838, \"source\": \"jpeg_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.\", \"counter_explanation\": \"本指标衡量\\\"是否存在 JPEG 压缩历史\\\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。\", \"reliability\": 0.972, \"calibrated_likelihood\": {\"Real\": 0.551, \"Fake\": 0.449}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.5408333333333333, \"separation_polarity_corrected\": 0.9720833333333333, \"region_area_ratio\": 0.04}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": null, \"mapping\": null, \"sources\": null, \"samples\": null, \"split_hash\": null, \"weights_sha256\": null}, \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/region_E-213da124cb.png\", \"visual_artifacts\": [\"traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/jpeg_blockiness_map_E-213da124cb.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/region_E-213da124cb.png",
+        "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/jpeg_blockiness_map_E-213da124cb.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 当前策略估计继续调用收益不足（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析两个专家的测量结果：\n1. <call_noise>[100, 100, 300, 300]</call_noise> 的微小噪声残留水平为 3.3017，属于中等水平，且在 G2 校准表中对应的概率接近随机，因此对伪造与否的判断没有显著影响。\n2. <call_jpeg>[100, 100, 300, 300]</call_jpeg> 的 JPEG 结构分析显示中等程度的块状结构和 DCT 异常，但在 G2 校准表中，这种结构在重压缩到质量 ≤ 70 时几乎无效，因此也不足以单独驱动判断。\n\n由于两个专家的测量结果都指向不确定性，且没有明确的方向性，现有的工具无法进一步降低不确定性。因此，根据现有证据，我们无法确定图像的真实性和伪造性。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"noise_residual_inconsistency\", \"double_jpeg_quantization\"], \"report\": \"根据噪声残留和JPEG结构分析，图像存在中等程度的微小噪声和JPEG压缩痕迹，但这些特征在G2校准表中对应的概率接近随机，无法明确判断图像的真实性或伪造性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-92505a4b9e",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[75, 50, 225, 150]",
+      "region_pixels": [
+        75,
+        50,
+        225,
+        150
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        300,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Whole-image noise-residual level 3.3017: the camera end of the G2 calibration band. Residual consistent with a camera sensor; a band is an association measured on the calibration set, not a physical proof of origin.",
+      "reasoning": "Whole-image residual micro-noise level 3.3017 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.",
+      "strength": 0.6797,
+      "raw_metric": 3.301706,
+      "source": "noise_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.28); the benign reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.718,
+        "Fake": 0.282
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.04
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "support_raw": "Uncertain",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/region_E-92505a4b9e.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/noise_residual_map_E-92505a4b9e.png"
+      ]
+    },
+    {
+      "evidence_id": "E-213da124cb",
+      "evidence_name": "double_jpeg_quantization",
+      "region": "patch_coordinates_[75, 50, 225, 150]",
+      "region_pixels": [
+        75,
+        50,
+        225,
+        150
+      ],
+      "region_normalized_1000": [
+        100,
+        100,
+        300,
+        300
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "JPEG structural analysis reveals DCT coefficient histogram hollowing. (blockiness: 1.5581, DCT anomaly: 3.1175)",
+      "reasoning": "Moderate JPEG structure found (blockiness=1.5581, DCT anomaly=3.1175). This is the weaker end of the calibration band: the same structure appears when an already-compressed image is re-saved, and at low quality (≤ 70) the band loses its discriminative power almost entirely, so it should not drive a verdict on its own. Whether the band is decisive here depends on the cell the calibration table records for this input, which is attached to the token.",
+      "strength": 0.5899,
+      "raw_metric": 2.181838,
+      "source": "jpeg_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.45) and does not determine a direction.",
+      "counter_explanation": "本指标衡量\"是否存在 JPEG 压缩历史\"而非伪造痕迹：G2 校准显示高值倾向 Real（PNG 格分离度 0.972、native 0.962，但重压缩至 q70 后降至 0.569），即它主要反映来源的压缩历史。统一重压缩后的图像上该证据近乎无效，不得作为独立判据。",
+      "reliability": 0.972,
+      "calibrated_likelihood": {
+        "Real": 0.551,
+        "Fake": 0.449
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.5408333333333333,
+        "separation_polarity_corrected": 0.9720833333333333,
+        "region_area_ratio": 0.04
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate JPEG structural level; this band is near the calibrated chance level, and re-compression weakens it further.",
+      "diagnostic_region_image": "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/region_E-213da124cb.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_164335_Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85/jpeg_blockiness_map_E-213da124cb.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      750,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-11T16:43:35.261225",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "skipped_duplicate_calls": 0,
+    "weighted_cost": 3.5,
+    "policy_version": "v2",
+    "available_experts": [
+      "jpeg_expert",
+      "noise_expert"
+    ],
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.3663,
+    "conflict_score": 0.0,
+    "candidate_overridden": false,
+    "tool_utilities": {
+      "noise_expert": -0.15,
+      "jpeg_expert": -0.15
+    },
+    "redundancy_discounts": [
+      {
+        "evidence_id": "E-213da124cb",
+        "source": "jpeg_expert",
+        "discount": 0.67,
+        "after": [
+          "noise_expert"
+        ]
+      }
+    ]
+  }
+}

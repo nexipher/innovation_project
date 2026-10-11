@@ -1,0 +1,212 @@
+{
+  "id": "session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants_g7_b1/Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95.jpg",
+  "ground_truth": "Real",
+  "source_model": "Real",
+  "final_verdict": {
+    "verdict": "Real",
+    "confidence": 0.7581,
+    "report": "图像被判定为 Real 的概率为 0.939，这表明图像的真实性得到了有力的支持。尽管图像中的微小噪声水平较高，但这种水平并不能作为伪造的直接证据，因为高噪声水平也是相机传感器的正常表现。",
+    "posterior": 0.2419,
+    "tool_utilities": {
+      "probe_dino_expert": -0.25,
+      "noise_expert": -0.15
+    },
+    "conflict_score": 0.1883,
+    "redundancy_discounts": [],
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "model_candidate": "Real"
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [135, 82, 257, 155]\nVisual Anomalies: 两只动物的轮廓和纹理看起来非常清晰，没有明显的模糊或失焦现象。\nExpert Target & Hypothesis: <call_probe>[0, 0, 500, 196]</call_probe> — 使用AI生成鉴别器来评估整个图像的生成性。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-e87ab01a60\", \"evidence_name\": \"aigi_discriminator_score\", \"region\": \"patch_coordinates_[0, 0, 103, 98]\", \"region_pixels\": [0, 0, 103, 98], \"region_normalized_1000\": [0, 0, 500, 196], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"整图判别分数 0.0450（外部判别器的原始输出，未经本地校准）。输入预处理：500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。\", \"reasoning\": \"该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。\", \"strength\": 0.045, \"raw_metric\": 0.044972, \"source\": \"probe_dino_expert\", \"support\": \"Real\", \"interpretation_text\": \"Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.06); the benign reading applies.\", \"counter_explanation\": \"外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。\", \"reliability\": 0.984, \"calibrated_likelihood\": {\"Real\": 0.939, \"Fake\": 0.061}, \"condition_metadata\": {\"bin_samples\": 49, \"confound_drop_png_to_q70\": 0.021874999999999978, \"separation_polarity_corrected\": 0.98359375, \"region_area_ratio\": 0.098}, \"semantics_aligned\": true, \"applicability\": \"strong\", \"applicability_conditions\": \"五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": \"A\", \"mapping\": \"quantile_bins\", \"sources\": 62, \"samples\": 248, \"split_hash\": \"37bf2f1db22ccdef\", \"weights_sha256\": \"c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156\"}, \"support_raw\": \"Uncertain\", \"direction\": \"Real\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-e87ab01a60.png\"}",
+      "image_paths": [
+        "traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-e87ab01a60.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [0, 0, 103, 98]\nVisual Anomalies: 图像中存在明显的阴影和纹理，可能是由于自然光照造成的。\nExpert Target & Hypothesis: <call_noise>[0, 0, 103, 98]</call_noise> — 调用噪声残留专家来评估图像中的微小噪声水平。\n</planning>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-c4996480a2\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[0, 0, 21, 49]\", \"region_pixels\": [0, 0, 21, 49], \"region_normalized_1000\": [0, 0, 103, 98], \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Whole-image noise-residual level 3.2036: the camera end of the G2 calibration band. Residual consistent with a camera sensor; a band is an association measured on the calibration set, not a physical proof of origin.\", \"reasoning\": \"Whole-image residual micro-noise level 3.2036 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.\", \"strength\": 0.6469, \"raw_metric\": 3.203583, \"source\": \"noise_expert\", \"support\": \"Uncertain\", \"interpretation_text\": \"Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.845, \"calibrated_likelihood\": {\"Real\": 0.436, \"Fake\": 0.564}, \"condition_metadata\": {\"bin_samples\": 78, \"confound_drop_png_to_q70\": -0.07333333333333333, \"separation_polarity_corrected\": 0.8454166666666667, \"region_area_ratio\": 0.00999}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": null, \"mapping\": null, \"sources\": null, \"samples\": null, \"split_hash\": null, \"weights_sha256\": null}, \"direction\": \"Uncertain\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"diagnostic_region_image\": \"traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-c4996480a2.png\", \"visual_artifacts\": [\"traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/noise_residual_map_E-c4996480a2.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-c4996480a2.png",
+        "traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/noise_residual_map_E-c4996480a2.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 当前策略估计继续调用收益不足（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析了两个专家的反馈：\n1. <call_probe>[0, 0, 500, 196]</call_probe> 的结果表明图像被判定为 Real 的概率为 0.939，这提供了强有力的证据支持图像的真实性。\n2. <call_noise>[0, 0, 103, 98]</call_noise> 的结果虽然表明图像中的微小噪声水平较高，但这种水平并不足以确定图像是否为伪造，因为高噪声水平也可能是相机传感器的正常表现。\n\n尽管 <call_noise> 提供了一定的背景信息，但它并没有提供足够的证据来推翻图像的真实性。图像的整体判别分数（0.939）已经非常接近于 1，这表明图像很可能不是伪造的。此外，图像中的微小噪声水平（3.2036）虽然较高，但并不能作为伪造的直接证据，因为高噪声水平也是相机传感器的正常表现。\n\n综合以上两点，现有的工具无法进一步降低不确定性，因为 <call_noise> 的结果不足以反驳 <call_probe> 的结论。图像的真实性得到了较为明确的支持。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"confidence\": 0.939, \"primary_evidence\": [\"aigi_discriminator_score\"], \"report\": \"图像被判定为 Real 的概率为 0.939，这表明图像的真实性得到了有力的支持。尽管图像中的微小噪声水平较高，但这种水平并不能作为伪造的直接证据，因为高噪声水平也是相机传感器的正常表现。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-e87ab01a60",
+      "evidence_name": "aigi_discriminator_score",
+      "region": "patch_coordinates_[0, 0, 103, 98]",
+      "region_pixels": [
+        0,
+        0,
+        103,
+        98
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        500,
+        196
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "整图判别分数 0.0450（外部判别器的原始输出，未经本地校准）。输入预处理：500×336 → pad to ≥336 → 2 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。",
+      "reasoning": "该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。",
+      "strength": 0.045,
+      "raw_metric": 0.044972,
+      "source": "probe_dino_expert",
+      "support": "Real",
+      "interpretation_text": "Calibration: this measurement band corresponds to camera-source statistics (P(Fake)=0.06); the benign reading applies.",
+      "counter_explanation": "外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。",
+      "reliability": 0.984,
+      "calibrated_likelihood": {
+        "Real": 0.939,
+        "Fake": 0.061
+      },
+      "condition_metadata": {
+        "bin_samples": 49,
+        "confound_drop_png_to_q70": 0.021874999999999978,
+        "separation_polarity_corrected": 0.98359375,
+        "region_area_ratio": 0.098
+      },
+      "semantics_aligned": true,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156"
+      },
+      "support_raw": "Uncertain",
+      "direction": "Real",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。",
+      "diagnostic_region_image": "traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-e87ab01a60.png"
+    },
+    {
+      "evidence_id": "E-c4996480a2",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[0, 0, 21, 49]",
+      "region_pixels": [
+        0,
+        0,
+        21,
+        49
+      ],
+      "region_normalized_1000": [
+        0,
+        0,
+        103,
+        98
+      ],
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Whole-image noise-residual level 3.2036: the camera end of the G2 calibration band. Residual consistent with a camera sensor; a band is an association measured on the calibration set, not a physical proof of origin.",
+      "reasoning": "Whole-image residual micro-noise level 3.2036 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.",
+      "strength": 0.6469,
+      "raw_metric": 3.203583,
+      "source": "noise_expert",
+      "support": "Uncertain",
+      "interpretation_text": "Calibration: this measurement band is near chance (P(Fake)=0.56) and does not determine a direction.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.845,
+      "calibrated_likelihood": {
+        "Real": 0.436,
+        "Fake": 0.564
+      },
+      "condition_metadata": {
+        "bin_samples": 78,
+        "confound_drop_png_to_q70": -0.07333333333333333,
+        "separation_polarity_corrected": 0.8454166666666667,
+        "region_area_ratio": 0.00999
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": null,
+        "mapping": null,
+        "sources": null,
+        "samples": null,
+        "split_hash": null,
+        "weights_sha256": null
+      },
+      "direction": "Uncertain",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/region_E-c4996480a2.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261011_164706_Real_0d8bbe7e-0eb6-49cd-852a-c5b03b8eb4ad_jpeg_q95/noise_residual_map_E-c4996480a2.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      206,
+      500
+    ],
+    "total_steps": 3,
+    "halting_reason": "no_expected_gain",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-11T16:47:06.130545",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 3,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "skipped_duplicate_calls": 0,
+    "weighted_cost": 3.5,
+    "policy_version": "v2",
+    "available_experts": [
+      "noise_expert",
+      "probe_dino_expert"
+    ],
+    "policy_reason": "no_expected_gain",
+    "policy_reasons": [
+      "no_expected_gain"
+    ],
+    "posterior": 0.2419,
+    "conflict_score": 0.1883,
+    "candidate_overridden": false,
+    "tool_utilities": {
+      "probe_dino_expert": -0.25,
+      "noise_expert": -0.15
+    },
+    "redundancy_discounts": []
+  }
+}
