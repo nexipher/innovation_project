@@ -1260,3 +1260,26 @@
   - `plan.md (Modified — D 组小节 + 入口 1 判定互链)、README.md (Modified — 准入表与已知局限的 TruFor 行)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**775 测试通过**（新增 8 项）；GPU 用时 **113 s**（授权后执行），未与其他作业争卡；D 组与所有决策组的互斥性由测试断言，而非约定
 * **置信度或遗留待办（TODO）**：①反向的**机制未知**（观察到 TruFor 给 Real 更高分；noiseprint 响应相机侧残差只是**假设**，未验证）②反向信号与现有专家 |ρ| ≤ 0.19，说明不是同一条压缩历史轴的重复 —— 但"弱 + 反向"两条足以维持不接入，**不再追加研究**，除非将来 L1 局部篡改路线重启③D 组目前只用于 TruFor；若将来要给其它外部专家做同类"独立复测"，应**先写判读规则再跑**（本次的做法可复用）④`calibration/set/images_d/` 已有 320 张，重跑前无需重建；如需扩容或换种子，改 `--seed` 会同时改变清单与划分文件，须一并重新提交
+---
+### 2026-10-11 14:10:20 - G7 入口 3 接线（CPU 全部完成）：PROBE 成为主检测器，TruFor 不接入
+
+* **当前操作动作**：按用户四步指令执行入口 3 的第二步"控制链接线"，把 `probe_dino` 接进运行时全链路（注册 / 解析 / 提示词 / 校准 / 整流 / 停止策略 / 校验器 / 生成器），全部在 CPU 上完成并用测试固定
+* **对应计划锚点**：plan.md §4.16「入口 3」的 1) 决策规则 与 2) 控制链接线 a–k 行
+* **核心变更说明**：
+  1. **注册与提示词**：`EXPERT_KEY_MAP` 增 `probe ↔ probe_dino_expert`（`EXPERT_SOURCE_MAP` 同步）；`main.build_pipeline` 在有权重时注册真实 PROBE、CPU 时用 Mock；**提示词改为按注册表生成**（`build_forensic_prompt(tags)`）—— 没装 PROBE 的机器不会被告知 PROBE 存在（控制器对未注册调用是**静默丢弃**，这正是必须正面测试的地方）。PROBE 排在 `TOOL_ORDER` 首位，读法规则单独成条（"概率而非区域伪影"）
+  2. **解析器**：白名单 `CALLABLE_TOOLS` 增 `probe`；`_TAG_NORMALIZE` 增模型可能用到的别名（`call_probe` / `probe_dino` / `dino` / `aigi`）。**踩到过一次坑**：别名表的键是**正则捕获到的名字**（`<call_call_probe>` 捕获到 `call_probe`），第一版按标签写成了 `call_call_probe`，等于没写
+  3. **校准（只用 A 组）**：`build_reliability_table.py` 增"外部专家"段，从 `g7_external_probe_dino_A.json` 的 **A 组、匹配格（png/q95/q85/q70，与既有专家同口径）** 拟合：分离度 **0.9836**、`semantics_aligned=true`、`applicability="strong"`、5 个分位分箱（p_fake = 0.000 / 0.061 / 0.520 / 1.000 / 1.000）、**provenance 块**（拟合组 A、62 源 / 248 样本、划分 hash、权重 sha256）。既有 G2 条目未被改动
+  4. **Evidence Bundle**：token 新增 `calibration` 块（来源表 / 拟合组 / 映射类型 / 源数 / 权重哈希），由控制器在校准命中时写入 —— 满足"保存原始分数、校准概率、适用条件、权重、校准版本"；适配器侧文案去状态化（不再自称"未校准"），`metadata.calibration_status` 区分 mapped/unmapped，方向始终由 `calibrated_likelihood` 决定
+  5. **停止策略（逐工具成本）**：`POLICY_TOOL_COSTS` 给出 `probe_dino_expert = 0.25`（统计型专家保持 0.15），`expected_gain`/`tool_utilities`/`utility_report` 按工具取成本，`expected_tool_gain` 同步修正；trace 记录每个工具的实际成本
+  6. **重复计权防护**：用 A 组实测的两两 Spearman，**只对正相关折减**（负相关 = 互补，不折减），后调用者权重乘 `1 − max(0, ρ)`；A 组正值对只有 `noise↔jpeg +0.330` 与 `frequency_v2↔probe +0.164`。折减明细写进 trace 的 `redundancy_discounts`。**副作用已记录**：后验规则因此改变，G2-d/G3-e 的历史数字与新规则不可直接比较
+  7. **下游同步**：`final_v2` 的 `TOOL_EXPERTS` / 适用性键映射 / 接地来源元组增 PROBE（否则校验器会把 probe token 标成 unknown expert）；新增 `calibration/g7_expert_report.json`（PROBE 12 个格式格的校正分离度，最低 resize_2x 0.675 ≥ 0.65 门）并由 `load_applicability` 合并，G4 生成器与 `tool_applicable` 因此认它；`TOOL_POLICIES` 增 `probe` / `probe+noise`（**本轮不生成**）；`MockMLLMClient` 增 `probe_then_corroborate` 模式（先 probe 再一条辅助线索），CPU 上能跑完整链路
+* **涉及/修改的文件清单**：
+  - `state_machine/controller.py, state_machine/halting_v2.py, state_machine/evidence_tokenizer.py (Modified)`
+  - `utils/parser.py, utils/reliability.py, utils/final_v2.py (Modified)`
+  - `mllm/message_builder.py (Modified — 工具表 + 按注册表生成 + 读法规则分工具), mllm/mock_client.py (Modified — 新模式)`
+  - `config.py (Modified — POLICY_TOOL_COSTS / POLICY_REDUNDANCY), main.py (Modified), experts/{__init__,external_base,probe_dino}.py (Modified)`
+  - `scripts/build_reliability_table.py, scripts/generate_trajectories_g4.py, scripts/qwen_gain_baseline.py (Modified)；scripts/build_g7_applicability.py, scripts/g7_acceptance.py, scripts/g7_acceptance_review.py (Created)`
+  - `calibration/reliability_table.json, calibration/g7_expert_report.json (Modified/Created)`
+  - `tests/test_probe_wiring.py (Created — 17 项)、tests/test_g7_acceptance.py (Created — 18 项)、tests/test_g7_acceptance_review.py (Created — 13 项)；其余 7 个测试文件按新契约更新`
+* **执行结果与验证状态**：**837 项测试通过**（其中 31 项新增：接线 17 + 验收 18→其中 1 项为双读数，审阅 13）；提示词 sha256 有意变更（`09dd259ae0b130f6` → `e9e2120587d8049d`）并在测试中重钉；**配置指纹随之改变 → 所有可续跑评测会冷启动**（计划中已预告）。CPU 端 `--dry-run` 走通 120 样本全链路（13 秒）；真实验收已获用户授权并在跑
+* **置信度或遗留待办（TODO）**：①**后验规则变更**（重复计权折减）会影响任何与 G2-d/G3-e 的数字对比，需在入口 6 的对照里注明口径②`scripts/replay_halting_g3.py` 的 `SHIPPED_EXPERTS` 未加 PROBE（它重放的是 G3 的历史会话，加进去会改变历史口径）③提示词里 PROBE 的 measures 文案仍写"separation ≈0.98"，取自 A 组匹配格整体；若将来换拟合组需同步④`config.SYSTEM_PROMPT`（G1 遗留的三工具文本）已死但仍在文件里，未清理
