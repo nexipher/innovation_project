@@ -206,6 +206,27 @@ def build_experts(tools: Tuple[str, ...]) -> Dict[str, Any]:
     return {EXPERT_BY_TOOL[tool]: registry[tool]() for tool in tools}
 
 
+def cached_client_factory(build_client):
+    """
+    One client per (protocol, tool set) instead of one per session.
+
+    A Qwen load is ~12 s and a session is ~12 s, so rebuilding the client per
+    trajectory doubled the run: 210 sessions spent ~40 minutes loading weights
+    they had already loaded.  A client carries only its system prompt, and
+    `run()` resets the session, so sharing it across sessions with the same
+    prompt is what it is for.
+    """
+    cache = {}
+
+    def factory(protocol: str, tools: Tuple[str, ...]):
+        key = (protocol, tuple(tools))
+        if key not in cache:
+            cache[key] = build_client(protocol, tools)
+        return cache[key]
+
+    return factory
+
+
 def run_trajectory(variant: dict, policy_name: str, policy: dict,
                    client_factory: Callable[[str, Tuple[str, ...]], Any],
                    sft_dir: Optional[str] = None) -> dict:
@@ -359,10 +380,12 @@ def main() -> None:
     else:
         from mllm.qwen_client import QwenVLClient
 
-        def client_factory(variant, tools):
+        def build_client(variant, tools):
             prompt = (BASELINE_SYSTEM_PROMPT if variant == "baseline"
                       else build_forensic_prompt(tools))
             return QwenVLClient(system_prompt=prompt)
+
+        client_factory = cached_client_factory(build_client)
         mode = "gpu"
         sft_dir = None
 

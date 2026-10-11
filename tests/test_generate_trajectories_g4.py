@@ -248,3 +248,32 @@ class TestDryRunEndToEnd:
         report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
         assert report["already_present"] == 1
         assert report["written"] == 0
+
+
+class TestClientReuse:
+    """
+    G7 entry 4: a client is reused across sessions with the same prompt.
+
+    The first GPU run of the batch rebuilt it per trajectory, paying a 12 s
+    model load for a 12 s session — the run took twice as long as it had to.
+    """
+
+    def test_one_client_per_protocol_and_tool_set(self):
+        from scripts.generate_trajectories_g4 import cached_client_factory
+
+        built = []
+
+        def build(protocol, tools):
+            built.append((protocol, tuple(tools)))
+            return {"protocol": protocol, "tools": tuple(tools)}
+
+        factory = cached_client_factory(build)
+        first = factory("forensic", ("probe",))
+        again = factory("forensic", ("probe",))
+        other_tools = factory("forensic", ("probe", "noise"))
+        other_protocol = factory("baseline", ())
+
+        assert first is again
+        assert len(built) == 3
+        assert other_tools is not first and other_protocol is not first
+        assert len(built) == 3, "每种（协议, 工具集）只应构建一次"
