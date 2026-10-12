@@ -148,7 +148,9 @@ class TestTheWorkstationCarriesTheBatch:
             page = (out / name).read_text(encoding="utf-8")
             assert "<script><script" not in page, name
             assert "</script></script>" not in page, name
-            assert page.count("window.__batch") == 1, name
+            # the injected *assignment* appears once; the identifier is also
+            # read by the script (BATCH = window.__batch || {})
+            assert page.count("window.__batch = ") == 1, name
             assert page.count("window.__review") <= 1, name
 
     def test_the_export_button_is_wired(self, tmp_path):
