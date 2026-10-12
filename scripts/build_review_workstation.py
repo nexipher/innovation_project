@@ -823,7 +823,7 @@ def render_index(samples: List[dict], sets: dict, page_path: str,
 <table><thead><tr><th>样本</th><th>桶</th><th>真值</th><th>策略</th><th>处理</th><th>生成器</th>
 <th>模型判定</th><th>后验 P(Fake)</th><th>高风险</th><th>你的结论</th><th>备注</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table>
-<script>{batch_script(batch["id"], batch["fingerprint"])}</script>
+{batch_script(batch["id"], batch["fingerprint"])}
 <script>{REVIEW_SCRIPT}</script>
 </body></html>
 """

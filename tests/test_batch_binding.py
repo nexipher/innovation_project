@@ -137,6 +137,26 @@ class TestTheWorkstationCarriesTheBatch:
         page = (out / "index.html").read_text(encoding="utf-8")
         assert "batch_fingerprint: BATCH.fingerprint" in page
 
+    def test_the_pages_have_no_nested_script_tags(self, tmp_path):
+        """
+        A `<script>` inside a `<script>` is a syntax error, and the browser
+        stops running the whole block — the export button then does nothing at
+        all, which is exactly what happened to the first batch's page.
+        """
+        _, out = self._build(tmp_path)
+        for name in ("index.html", "samples/a.html"):
+            page = (out / name).read_text(encoding="utf-8")
+            assert "<script><script" not in page, name
+            assert "</script></script>" not in page, name
+            assert page.count("window.__batch") == 1, name
+            assert page.count("window.__review") <= 1, name
+
+    def test_the_export_button_is_wired(self, tmp_path):
+        _, out = self._build(tmp_path)
+        page = (out / "index.html").read_text(encoding="utf-8")
+        assert 'id="export"' in page
+        assert "exportButton.addEventListener('click', exportAll)" in page
+
 
 class TestGenerationIsolation:
     """

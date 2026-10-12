@@ -1379,3 +1379,15 @@
   - `claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**917 项测试通过**；145 条样本 image_path 全部有效；工作台页面无"（未提供）"
 * **置信度或遗留待办（TODO）**：①人工审阅仍未开始（第三步）②本批指纹以 `bb64cb8ec42788df` 为准（`batches/g7_b1/manifest.json`）③同类"公共路径"漏网已出现四处（报告、三处加载器、变体清单），已完成一轮系统排查：现在所有生成侧路径都经 `batch_paths`，并有互斥性测试兜底
+### 2026-10-12 14:10:44 - 工作台导出按钮失灵：索引页生成了嵌套 <script>（已修）
+
+* **当前操作动作**：用户报告"已审 26 条，但『导出全部决定』按钮点不动"；定位为模板缺陷并修复，重建工作台
+* **对应计划锚点**：plan.md §4.16「入口 4 第三步」的审阅与导出环节
+* **核心变更说明**：
+  1. **根因**：`render_index` 的模板写成 `<script>{batch_script(...)}</script>`，而 `batch_script()` **自己就返回一对 `<script>` 标签** → 生成物是 `<script><script>window.__batch=…</script></script>`。浏览器的 HTML 解析器把内层标签当成脚本文本 → **语法错误** → 整段内联脚本不执行 → `DOMContentLoaded` 里的 `exportButton.addEventListener('click', exportAll)` 从未注册，按钮自然"点不动"（样本页的判定按钮在同源脚本的别处，未受影响，所以审阅本身能做）
+  2. **修法**：索引页模板去掉多余的外层 `<script>`（样本页本来就是对的）。重建后：**0 处嵌套标签**，`window.__batch` 正常注入（指纹 `bb64cb8ec42788df`）
+  3. **回归测试（3 项）**：页面不得出现 `<script><script` 或 `</script></script>`；`window.__batch` 恰好出现一次；`id="export"` 与 `exportButton.addEventListener('click', exportAll)` 同时存在——即"按钮真的被接上了"
+  4. **对用户已审的 26 条**：决定保存在浏览器 `localStorage`（键 `finalv2review.v1`），与页面文件内容无关，**重建不会清空**；刷新后计数应仍显示 26/145。若显示为 0，说明该浏览器把 `file://` 的存储按文件隔离，需要在控制台执行 `copy(localStorage.getItem('finalv2review.v1'))` 手动取回并粘贴给我
+* **涉及/修改的文件清单**：`scripts/build_review_workstation.py (Modified)、tests/test_batch_binding.py (Modified — +3 项)、sft_data/review/g7_b1/ (Rebuilt)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**920 项测试通过**；重建后的索引页与样本页均无嵌套脚本标签
+* **置信度或遗留待办（TODO）**：①用户刷新后需确认计数仍为 26/145，并在填写 reviewer 后导出②导出后执行 `record_review.py --import … --batch g7_b1`（导出已带批次指纹，指纹不符会被整份拒绝）③"按钮能点"这一类缺陷此前没有任何测试覆盖，现已补上（这与之前几处"公共路径"同属"只在真人使用时才暴露"的问题）
