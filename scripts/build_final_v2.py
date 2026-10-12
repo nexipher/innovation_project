@@ -140,7 +140,8 @@ def load_variant_paths(path: str = VARIANTS_MANIFEST) -> Dict[str, str]:
 def build(trajectory_dir: str = TRAJECTORIES_DIR,
           admission_path: str = ADMISSION_REPORT,
           output_dir: str = OUTPUT_DIR,
-          batch_id: str = LEGACY_BATCH) -> dict:
+          batch_id: str = LEGACY_BATCH,
+          variants_manifest: Optional[str] = None) -> dict:
     assert_not_frozen(output_dir)
 
     with open(admission_path, encoding="utf-8") as handle:
@@ -149,7 +150,13 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
                 if d["category"] in ("positive", "honest_abstention")]
 
     trajectories = load_trajectories(trajectory_dir)
-    variant_paths = load_variant_paths()
+    # The batch's own variants manifest: reading the public one left every
+    # sample's image_path empty, and the review workstation then showed
+    # "（未提供）" for the image the model actually saw — the paths were never
+    # there to begin with, because the variant ids belong to this batch's
+    # manifest and not to the 237 set's.
+    variant_paths = load_variant_paths(
+        variants_manifest or batch_paths(batch_id)["variants"])
     split = load_split()
     applicability = load_applicability()
 

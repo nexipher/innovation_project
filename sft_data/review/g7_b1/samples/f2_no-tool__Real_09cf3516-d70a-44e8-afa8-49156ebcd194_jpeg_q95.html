@@ -50,7 +50,7 @@
 <div class="flag">高风险标记：high_confidence</div>
 
 <h2>图像证据</h2>
-<figure class="missing"><figcaption>模型实际输入的变体（jpeg_q95）（未提供）</figcaption></figure><figure><img src="../../../../dataset/Real/09cf3516-d70a-44e8-afa8-49156ebcd194.jpg" alt="数据集源图（未经处理）"><figcaption>数据集源图（未经处理）</figcaption></figure>
+<figure><img src="../../../variants_g7_b1/Real_09cf3516-d70a-44e8-afa8-49156ebcd194_jpeg_q95.jpg" alt="模型实际输入的变体（jpeg_q95）"><figcaption>模型实际输入的变体（jpeg_q95）</figcaption></figure><figure><img src="../../../../dataset/Real/09cf3516-d70a-44e8-afa8-49156ebcd194.jpg" alt="数据集源图（未经处理）"><figcaption>数据集源图（未经处理）</figcaption></figure>
 
 <h2>判定与置信度（各自的含义不同，别混用）</h2>
 <table class='kv'><tr><th>原始模型判定</th><td>Real（p=0.15）</td><td class='note'>模型自己选的标签与自报概率，未受后验约束</td></tr><tr><th>停止后验 P(Fake)</th><td>—</td><td class='note'>无工具轨迹没有后验（工具不可用，停止策略直接采用模型判定）</td></tr><tr><th>停止后验 P(Real)</th><td>—</td><td class='note'>同上</td></tr><tr><th>所选标签置信度</th><td>0.85</td><td class='note'>无工具轨迹：所选标签置信度是模型自报值（basis=model_perception），不是校准概率</td></tr><tr><th>模型 Brier</th><td>0.0225</td><td class='note'>模型自报概率的 Brier 分数</td></tr><tr><th>停止后验 Brier</th><td>0.25</td><td class='note'>后验概率的 Brier 分数</td></tr><tr><th>停止原因</th><td>candidate_without_tools</td><td class='note'>halting_reason: candidate_without_tools</td></tr></table><table><thead><tr><th>来源</th><th>判定</th><th>后验 P(Fake)</th><th>后验 Brier</th><th>加权成本</th></tr></thead><tbody><tr><th>本轨迹</th><td>Real</td><td>—</td><td>0.25</td><td>0.5</td></tr><tr><th>no-tool 基线</th><td>Real</td><td>0.5</td><td>0.25</td><td>0.5</td></tr></tbody></table><p class="note">无工具轨迹：基线与本轨迹是同一次运行，ΔBrier 没有意义，不参与本桶判定。</p>
@@ -87,7 +87,7 @@
 <h2>本页的修改历史（浏览器本地）</h2>
 <ul id="history" class="note"></ul>
 <script>window.__review = {sample: "f2_no-tool__Real_09cf3516-d70a-44e8-afa8-49156ebcd194_jpeg_q95"};</script>
-<script>window.__batch = {"id": "g7_b1", "fingerprint": "532766c303e63cad"};</script>
+<script>window.__batch = {"id": "g7_b1", "fingerprint": "bb64cb8ec42788df"};</script>
 <script>
 /* One decision per sample, kept in the browser; export feeds record_review.py.
    No server: localStorage survives a refresh, the export is the record. */

@@ -1362,3 +1362,20 @@
   - 产物：`sft_data/trajectories_g7_b1/`（210 条 + 按运行报告 + `_superseded_no_tool_v1/`）、`sft_data/admission_report_g7_b1.json`、`sft_data/train/batches/g7_b1/`（145 样本 + manifest + selection）、`sft_data/review/g7_b1/`（工作台）
 * **执行结果与验证状态**：**914 项测试通过**；批次指纹 `532766c303e63cad`；工作台 `sft_data/review/g7_b1/index.html` 就绪；未训练任何模型、未扩量
 * **置信度或遗留待办（TODO）**：①**人工审阅（第三步）未开始** —— 这正是下一步，且按用户要求**既审原始 trace 也审转换后的训练对话**②弃权桶无 Real 样本，需在审阅中判断是"数据自然结果"还是"协议偏向"③4 条被拒样本保留在 `sft_invalid.json` 中供查看④首轮 no-tool 臂已归档但**未删除**，若确认无用可清理
+### 2026-10-12 11:06:48 - 工作台缺图：批次样本的 image_path 读的是公共变体清单（已修，指纹随之更新）
+
+* **当前操作动作**：用户在工作台发现每页都显示"模型实际输入的变体（未提供）"，定位并修复；重跑转换与工作台
+* **对应计划锚点**：plan.md §4.16「入口 4 第二步」的产物与第三步的审阅条件
+* **核心变更说明**：
+  1. **根因**：`build_final_v2` 用 `load_variant_paths()` 的默认参数读**公共**变体清单 `sft_data/variants/manifest.json`（那是 237 批次 20 源的），本批次 14 源的 variant id 不在其中 → **145 条样本的 `image_path` 全为空字符串**。工作台据此渲染"（未提供）"，审阅者看不到模型实际输入的那张图——而"看得见输入"正是审阅的前提
+  2. **修法**：`build()` 接受 `variants_manifest`，默认取 `batch_paths(batch)["variants"]`（批次自己的清单）。重跑转换后：145 条样本 **image_path 全非空且文件全部存在**；重建工作台后页面 **0 处"（未提供）"**，每页两张图（模型输入的变体 + 未处理源图）
+  3. **一并核对**：no-tool 样本页已能显示新的 `<observation>` 段落（"模型视觉观察"字样出现在页面上），确认上一轮的协议修复在页面层也生效
+  4. **指纹变化（如实记录）**：`image_path` 属样本内容，修复后**批次指纹由 `532766c303e63cad` 变为 `bb64cb8ec42788df`**。此时尚无任何人工审核记录，故无决定作废；工作台页面与导出携带的是新指纹。测试改为**重算比对**（`batch_fingerprint(load_samples)` vs manifest），不再硬编码指纹——样本被手工改动会立刻在此处暴露
+  5. **"missing images: 0" 曾是误导性指标**：`_img()` 对空路径走的是"（未提供）"分支、不计入 missing 集合，所以报告说 0 缺失而实际是"路径从未存在"。已加三条回归测试钉住：每条样本的 image_path 非空且文件存在、指向的是对应格式的变体（不是源图）、工作台页面不含"（未提供）"
+* **涉及/修改的文件清单**：
+  - `scripts/build_final_v2.py (Modified — variants_manifest 按批次解析)`
+  - `tests/test_batch_binding.py (Modified — 新增 TestTheSamplesCarryTheirImages 3 项、指纹测试改为重算)`
+  - `sft_data/train/batches/g7_b1/*.json (Regenerated — image_path 已填)、sft_data/review/g7_b1/ (Rebuilt)`
+  - `claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**917 项测试通过**；145 条样本 image_path 全部有效；工作台页面无"（未提供）"
+* **置信度或遗留待办（TODO）**：①人工审阅仍未开始（第三步）②本批指纹以 `bb64cb8ec42788df` 为准（`batches/g7_b1/manifest.json`）③同类"公共路径"漏网已出现四处（报告、三处加载器、变体清单），已完成一轮系统排查：现在所有生成侧路径都经 `batch_paths`，并有互斥性测试兜底

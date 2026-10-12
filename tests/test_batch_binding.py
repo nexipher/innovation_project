@@ -216,15 +216,19 @@ class TestNoSharedOutputs:
 class TestTheBuiltBatch:
     """The first training batch, checked the way the plan says to check it."""
 
-    def test_the_batch_has_a_fingerprint_and_a_manifest(self):
+    def test_the_manifest_fingerprint_describes_what_is_on_disk(self):
+        """Recomputed, not hardcoded: a sample edited by hand shows up here."""
+        from utils.batch import batch_fingerprint, load_samples
+
         path = os.path.join(PROJECT_ROOT, "sft_data", "train", "batches",
                             "g7_b1", "manifest.json")
         if not os.path.exists(path):
             pytest.skip("批次尚未构建")
         with open(path, encoding="utf-8") as handle:
             manifest = json.load(handle)
-        assert manifest["fingerprint"] == "532766c303e63cad"
-        assert manifest["samples"] == 145
+        samples = load_samples("g7_b1")
+        assert manifest["samples"] == len(samples) == 145
+        assert manifest["fingerprint"] == batch_fingerprint(samples)
 
     def test_no_sample_comes_from_a_reserved_partition(self):
         """The batch's sources are train-partition sources, by id, not by hope."""
@@ -273,3 +277,48 @@ class TestTheBuiltBatch:
             by_bucket[sample["_bucket_file"]][sample["ground_truth"]] += 1
         assert by_bucket["sft_tool_positive.json"]["Real"] >= 30
         assert by_bucket["sft_no_tool_positive.json"]["Real"] >= 20
+
+
+class TestTheSamplesCarryTheirImages:
+    """
+    G7 entry 4: a sample knows which file the model was shown.
+
+    The first conversion read the *public* variants manifest, so every sample's
+    image_path came out empty and the review workstation showed "（未提供）"
+    where the image belongs — the reviewer could not see what the model saw.
+    """
+
+    def test_every_sample_points_at_a_picture_that_exists(self):
+        from utils.batch import load_samples
+
+        samples = load_samples("g7_b1")
+        if not samples:
+            pytest.skip("批次尚未构建")
+        empty = [s["id"] for s in samples if not s.get("image_path")]
+        assert empty == [], empty
+        missing = [s["image_path"] for s in samples
+                   if not os.path.exists(os.path.join(PROJECT_ROOT, s["image_path"]))]
+        assert missing == [], missing
+
+    def test_the_image_is_the_variant_the_model_was_shown(self):
+        """A q70 sample shows the q70 file, not the source."""
+        from utils.batch import load_samples
+
+        samples = load_samples("g7_b1")
+        if not samples:
+            pytest.skip("批次尚未构建")
+        for sample in samples[:20]:
+            assert "variants_g7_b1" in sample["image_path"], sample["id"]
+            assert sample["metadata"]["treatment"] in sample["image_path"], sample["id"]
+
+    def test_the_review_pages_render_the_images(self):
+        page_dir = os.path.join(PROJECT_ROOT, "sft_data", "review", "g7_b1",
+                                "samples")
+        if not os.path.isdir(page_dir):
+            pytest.skip("工作台尚未构建")
+        pages = sorted(os.listdir(page_dir))[:10]
+        for name in pages:
+            with open(os.path.join(page_dir, name), encoding="utf-8") as handle:
+                html = handle.read()
+            assert "（未提供）" not in html, name
+            assert "<img src=" in html, name
