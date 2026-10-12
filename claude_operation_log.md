@@ -1391,3 +1391,15 @@
 * **涉及/修改的文件清单**：`scripts/build_review_workstation.py (Modified)、tests/test_batch_binding.py (Modified — +3 项)、sft_data/review/g7_b1/ (Rebuilt)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**920 项测试通过**；重建后的索引页与样本页均无嵌套脚本标签
 * **置信度或遗留待办（TODO）**：①用户刷新后需确认计数仍为 26/145，并在填写 reviewer 后导出②导出后执行 `record_review.py --import … --batch g7_b1`（导出已带批次指纹，指纹不符会被整份拒绝）③"按钮能点"这一类缺陷此前没有任何测试覆盖，现已补上（这与之前几处"公共路径"同属"只在真人使用时才暴露"的问题）
+### 2026-10-12 14:18:12 - 导出按钮仍不可用：真正的原因是 BATCH 未定义（点击抛 ReferenceError，页面毫无反馈）
+
+* **当前操作动作**：用户硬刷新后仍报告导出按钮不可点；用 node 把页面脚本真跑了一遍，定位到第二处（也是真正生效的那处）缺陷并修复，同时补上导出反馈与不依赖下载的兜底
+* **对应计划锚点**：plan.md §4.16「入口 4 第三步」的审阅导出环节
+* **核心变更说明**：
+  1. **第一处修复没解决用户的问题**：上一轮修掉的是索引页的嵌套 `<script>`（那确实会让整段脚本失效），但我注入的全局名是 `window.__batch`，而导出函数里写的是 **`BATCH.id` / `BATCH.fingerprint`** → 点击时抛 `ReferenceError: BATCH is not defined`。**页面没有任何错误提示**，从用户视角看就是"按钮点了没反应"，与上一处缺陷的表现完全一样。修法：脚本开头 `var BATCH = window.__batch || { id: '', fingerprint: '' };`
+  2. **导出不再静默**：成功时在状态行显示"已导出 N 条决定到 review_decisions_<batch>.json（控制台也留了一份）"，同时把 JSON 打进 console 供手动复制；失败时 `flash('导出失败：' + err)`。此前"成功但下载被浏览器静默拦截"与"按钮坏了"在体感上不可区分——这正是问题拖了两轮的原因
+  3. **新增 node 级端到端测试（`tests/test_workstation_script.py`，2 项）**：把生成页面的内联脚本加载进一个最小 DOM（getElementById/addEventListener/localStorage/Blob/URL），**真的点击导出按钮**，断言产出 `{batch_id, batch_fingerprint, reviewer, decisions}` 的 payload；另有一项静态检查禁止出现"只有 `window.__batch` 却引用 `BATCH`"的写法。**这类"只在真人使用时暴露"的缺陷，静态检查抓不到，只有把脚本跑起来才能抓**
+  4. 对用户已审的 26 条：决定存在 `localStorage['finalv2review.v1']`，重建页面不影响；硬刷新后计数应仍为 26/145
+* **涉及/修改的文件清单**：`scripts/build_review_workstation.py (Modified)、tests/test_workstation_script.py (Created)、sft_data/review/g7_b1/ (Rebuilt)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**921 项测试通过**；node 端到端点击测试通过（payload 含批次指纹 `bb64cb8ec42788df`）
+* **置信度或遗留待办（TODO）**：①用户需再硬刷新一次并确认计数 26/145②若浏览器仍拦截下载，控制台已留完整 JSON，可粘贴给我直接转 `dispositions.jsonl`③人工审阅（第三步）继续

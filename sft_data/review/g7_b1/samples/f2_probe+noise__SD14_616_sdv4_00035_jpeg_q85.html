@@ -164,6 +164,11 @@ Expert Target &amp; Hypothesis: &lt;call_probe&gt;0, 0, 1000, 1000&lt;/call_prob
 /* One decision per sample, kept in the browser; export feeds record_review.py.
    No server: localStorage survives a refresh, the export is the record. */
 (function () {
+  /* The batch identity the page was built for.  `batch_script()` sets
+     `window.__batch` before this block runs; it used to be read as a bare
+     `BATCH`, which is undefined — so the export button threw on click and the
+     page looked like it simply ignored the user. */
+  var BATCH = window.__batch || { id: '', fingerprint: '' };
   var KEY = 'finalv2review.v1';
   var state = load();
   var storageOk = true;
@@ -200,6 +205,10 @@ Expert Target &amp; Hypothesis: &lt;call_probe&gt;0, 0, 1000, 1000&lt;/call_prob
   }
 
   function exportAll() {
+    try { exportPayload(); } catch (err) { flash('导出失败：' + err); }
+  }
+
+  function exportPayload() {
     var payload = {
       reviewer: (document.getElementById('reviewer') || {}).value || state.reviewer || '',
       exported_at: new Date().toISOString(),
@@ -207,11 +216,18 @@ Expert Target &amp; Hypothesis: &lt;call_probe&gt;0, 0, 1000, 1000&lt;/call_prob
       batch_fingerprint: BATCH.fingerprint,
       decisions: state.decisions || {}
     };
-    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var text = JSON.stringify(payload, null, 2);
+    var blob = new Blob([text], { type: 'application/json' });
     var link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'review_decisions.json';
+    link.download = 'review_decisions_' + (BATCH.id || 'batch') + '.json';
     document.body.appendChild(link); link.click(); link.remove();
+    // Say so, and leave a copy in the console: a silent export is
+    // indistinguishable from a broken button, and a blocked download on a
+    // file:// page looks exactly the same to the person clicking.
+    console.log('导出的决定（可在此复制）：\n' + text);
+    flash('已导出 ' + Object.keys(payload.decisions).length + ' 条决定到 '
+          + link.download + '（控制台也留了一份）');
   }
 
   function importFile(file) {
