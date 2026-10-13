@@ -54,14 +54,37 @@ ENUMERATOR = re.compile(r"(^|[\s（(])(\d+)\s*[.）)]\s*(?=\s|<)|(^|[\s（(])(\d
 # copula only counts as a claim when a number follows it, so "因为…" and
 # "认为…" are not read as measurements.
 ASSIGNMENT = re.compile(r"(?:为|是|等于|约等于|≈|=)\s*约?\s*\d")
+# "PROBE 原始分数 0.3431" states a value with no verb at all — the number
+# follows the quantity's own name, which is a claim just as much as
+# "得分为 0.3431" is.
+CUE_VALUE = re.compile(r"(得分|分数|原始|度量|读数|水平|指标|概率|可能性|似然)"
+                       r"\s*(?:为|是|等于|=|约|≈)?\s*[约≈]?\s*\d")
 
 RESULT_VERBS = ("显示", "表明", "给出", "得到", "返回", "指出", "说明", "测得", "读数",
                 "得分", "结果为", "水平为", "输出的", "报告了", "显示出")
-# Advice, absence, hypothesis, denial: the clause is not claiming a measurement.
-NOT_A_CLAIM = ("未调用", "没有调用", "尚未", "未获得", "没有获得", "无法获得", "无法",
-               "不能", "不应", "建议调用", "可以调用", "应该调用", "若调用", "如果调用",
-               "假设", "假定", "将会", "可能会得到", "需要调用", "尚未执行", "跳过",
-               "没有", "无需", "不再")
+# What makes a clause *not* a claim: the act of measuring is what is negated
+# ("未获得结果", "没有调用").  A negative *result* is still a claim —
+# "noise 专家显示没有相机噪声" says a measurement was taken and came back
+# clean, so a bare "没有" must not exempt the clause (it did: a session where
+# noise never ran passed with that sentence).
+NON_EXECUTION_MARKERS = (
+    "未调用", "没有调用", "未执行", "尚未执行", "未做", "尚未做",
+    "未获得", "没有获得", "未得到", "没有取得", "无法获得", "无法得到",
+    "无法给出", "不能给出", "未能获得", "未产生", "未返回", "未产生结果",
+    "尚未获得", "尚未", "跳过", "已跳过",
+    "建议调用", "可以调用", "应该调用", "需要调用", "需要先调用",
+    "若调用", "如果调用", "假设", "假定", "可能会得到", "将会",
+)
+# The same idea as a pattern: "没有再次测量" negates the *act*.  A bare "没有"
+# cannot be a marker (a negative result is still a measurement), but
+# "没有 + (再次) + 测量/调用/获得" is a statement about the act.
+NON_EXECUTION_PATTERN = re.compile(
+    r"(没有|尚未|未曾|不曾|未|无法|不能)\s*(再次|重新|重复)?\s*"
+    r"(测量|调用|执行|得到|获得|取得|产生|返回|读取|给出)")
+# A finding's severity: a defect triggers the one correction and can fail the
+# session; a candidate is recorded for a person and never blocks on its own.
+DEFECT = "defect"
+CANDIDATE = "candidate"
 
 SOURCE_WORDS: Dict[str, tuple] = {
     # 探针 is how the model actually names it in Chinese prose; leaving it out
@@ -95,8 +118,58 @@ SYSTEM_CUES = ("系统", "策略", "参考后验", "后验", "冲突度")
 # The model's own confidence is not an expert measurement.
 SELF_CUES = ("置信度", "confidence", "把握")
 
+# --- direction (what a measurement is used to infer) -----------------------
+#
+# The binding above checks *attribution*: right expert, right field, right
+# value.  It cannot see the other failure the review found — quoting a real
+# number and reading the opposite direction out of it ("PROBE 原始分数
+# 0.3431，表明图像更可能真实").  That is a separate check with its own two
+# verdicts, because the two cases differ in what they mean.
+# Direction is read *clause by clause*, and only from a clause that draws an
+# inference ("表明/说明/指向/支持/意味着"): listing a measurement is not an
+# assertion about it.  A clause that negates the inference, hedges it, or
+# mentions both directions is left alone — the check would rather miss a
+# finding than invent one (22 flags on real traces were mostly this mistake
+# before these rules: see the replay).
+INFER_CONNECTIVES = ("表明", "说明", "指向", "支持", "意味着", "证实", "证明", "暗示",
+                     "推断", "得出")
+MENTION_REAL = ("真实", "自然", "real")
+# Bare "生成" is not a generation claim ("由相机传感器生成的"), so the Fake
+# vocabulary names the AI-generation phrasings instead.
+MENTION_FAKE = ("伪造", "ai生成", "合成", "生成图像", "生成图", "生成痕迹",
+                "人工生成", "fake")
+NEGATED_ASSERTION = ("并不", "不直接", "不指向", "未指向", "不应", "不能", "难以",
+                     "无法", "不足", "没有足够", "未提供", "不明确", "不确定",
+                     "并没有", "尚不能", "很难", "未发现", "不足以",
+                     "而不是", "并非", "不是", "没有", "无")
+# Detector names contain "AI 生成" without asserting a generation claim.
+DETECTOR_PHRASE = re.compile(
+    r"(?:ai\s*生成|aigi|agi)?\s*(?:探测器|检测器|鉴别器|判别器|鉴定器|分级器)")
+# Carrying a citation into the next sentence only makes sense when that
+# sentence is *about* it — "。这表明图像更可能真实。" — not when it opens a
+# new topic ("然而，由于图像中存在一些视觉异常…这可能暗示了伪造").
+ANAPHORIC_START = re.compile(
+    r"^\s*[（(]?\s*(?:这|那|它|其|该|上述|此|据此|由此|因此|故而)(?!外|时)")
+# A weak number may be reported and may lean; it may not be turned into a
+# direction.  These markers are the allowed hedging (entry 4's policy).
+HEDGES = ("接近随机", "接近于随机", "略偏", "略倾向于", "不足以", "不能单独",
+          "无法单独", "轻微的", "有限的", "不确定性", "保留", "谨慎", "弱证据",
+          "仅能", "只能说明", "不能确定", "无法确定", "不足以确定", "相当",
+          "差距不大", "无明显差异")
+# A calibrated direction is only decisive enough to contradict when it lies
+# outside the band the calibration itself calls near chance (utils.weak_evidence
+# uses the same numbers).  Inside it, a definite direction is an over-read and
+# goes to a person, not to a correction.
+NEAR_CHANCE_LOW = 0.4
+NEAR_CHANCE_HIGH = 0.6
+
 TOKEN_TEXT_FIELDS = ("reasoning", "interpretation_text", "phenomenon",
                      "counter_explanation", "evidence_name")
+# Sub-metrics an expert names in its own prose ("blockiness=0.8779").  Quoting
+# one *with its name* is quoting the expert; lifting the bare number is a role
+# question for a person, because prose also carries calibration statistics and
+# thresholds that are not measurements of this image.
+NAMED_TEXT_VALUE = re.compile(r"([A-Za-z][A-Za-z _\-]{1,24}?)\s*[:=]\s*(\d+(?:\.\d+)?)")
 # Structured fields whose values are probabilities, and the display tolerance
 # each class of claim is allowed.  0.05 is *not* a general tolerance: a
 # probability claim must be good to 0.005 unless it is written more precisely,
@@ -127,6 +200,13 @@ class ExpertRecord:
     evidence_id: str = ""
     fields: Dict[str, float] = field(default_factory=dict)
     text_values: List[float] = field(default_factory=list)
+    # What this measurement supports, and on what basis.  `support_label` when
+    # there is no calibration: the direction is then the expert's own label,
+    # polarity-corrected, and much weaker ground for a conflict claim.
+    direction: Optional[str] = None          # "Fake" / "Real" / None
+    direction_gap: Optional[float] = None    # |P(Fake) - P(Real)| when calibrated
+    direction_basis: str = ""
+    named_text_fields: Dict[str, float] = field(default_factory=dict)
 
     def probability_fields(self) -> Dict[str, float]:
         return {name: value for name, value in self.fields.items()
@@ -169,7 +249,12 @@ class Ledger:
                 if isinstance(value, (int, float)):
                     record.fields[f"condition_metadata.{name}"] = float(value)
             for key in TOKEN_TEXT_FIELDS:
-                record.text_values.extend(_numbers(str(token.get(key) or "")))
+                text = str(token.get(key) or "")
+                record.text_values.extend(_numbers(text))
+                for name, literal in NAMED_TEXT_VALUE.findall(text):
+                    record.named_text_fields[name.strip().lower()] = float(literal)
+            (record.direction, record.direction_gap,
+             record.direction_basis) = _token_direction(token)
             measured[source] = record
         system_values: List[float] = []
         for text in system_texts or ():
@@ -221,24 +306,48 @@ class Ledger:
     # ------------------------------------------------------------------
 
     def findings(self, text: str) -> List[dict]:
-        """Every way `text` says something the ledger does not support."""
+        """
+        Every way `text` says something the ledger does not support.
+
+        A finding carries a `severity`: `defect` findings are the ones the
+        correction loop acts on; `candidate` findings are recorded for a
+        person.  Not finding anything is **not** a certificate of fidelity —
+        the checks cover the patterns that have been defined and nothing else.
+        """
         output: List[dict] = []
+        recent: List[str] = []
         for sentence in SENTENCE_SPLIT.split(text or ""):
             sentence = sentence.strip()
             if not sentence:
                 continue
-            output.extend(self._sentence_findings(sentence))
+            claims, cited = self._sentence_findings(sentence)
+            output.extend(claims)
+            # A direction is often asserted in the sentence after the number
+            # ("…0.3431。这表明图像更可能真实。"), so a citation is carried one
+            # sentence forward — but only into a sentence that names no expert
+            # of its own, or "然而，噪声残留专家的得分…" would be judged
+            # against PROBE from the sentence before it.
+            if cited:
+                sources = list(cited)
+            elif recent and not _named_sources(sentence) and ANAPHORIC_START.match(sentence):
+                sources = list(recent)
+            else:
+                sources = []
+            output.extend(self._direction_findings(sentence, sources))
+            recent = list(cited)
         return _dedupe(output)
 
     # -- sentence level -------------------------------------------------
 
-    def _sentence_findings(self, sentence: str) -> List[dict]:
+    def _sentence_findings(self, sentence: str) -> Tuple[List[dict], List[str]]:
+        """Findings in one sentence, and the experts whose values it cites."""
         cleaned = COORDINATE_BLOCK.sub(" ", sentence)
         cleaned = DIMENSION.sub(" ", CALL_TAG.sub(" ", cleaned))
         cleaned = ENUMERATOR.sub(r"\1", cleaned)
         clauses = [clause.strip() for clause in CLAUSE_SPLIT.split(cleaned) if clause.strip()]
         findings: List[dict] = []
         subjects: List[str] = []
+        cited: List[str] = []
         skipped_here: set = set()
         for clause in clauses:
             named = _named_sources(clause)
@@ -253,6 +362,7 @@ class Ledger:
                     continue
                 findings.append({
                     "kind": "fabricated_expert_result", "source": source,
+                    "severity": DEFECT,
                     "sentence": clause[:220],
                     "why": f"{source} 在本会话没有产生任何 token，句子却陈述了它的结果",
                 })
@@ -261,47 +371,132 @@ class Ledger:
             findings.extend(skipped)
             ran_subjects = [source for source in subjects if self.ran(source)]
             if ran_subjects:
-                findings.extend(self._numbers_in(clause, ran_subjects))
+                clause_findings, clause_cited = self._numbers_in(clause, ran_subjects)
+                findings.extend(clause_findings)
+                cited.extend(clause_cited)
         # A skipped expert is unrun *and* was asked twice; when the clause
         # describes a re-measurement, the precise finding is the skipped one,
         # and reporting both double-counts the same defect.
-        return [finding for finding in findings
+        kept = [finding for finding in findings
                 if not (finding["kind"] == "fabricated_expert_result"
                         and finding.get("source") in skipped_here)]
+        return kept, cited
+
+    # -- direction ------------------------------------------------------
+
+    def _direction_findings(self, sentence: str, cited: Sequence[str]) -> List[dict]:
+        """
+        What the sentence *infers* from the values it cites.
+
+        Attribution can be perfect and the inference still wrong: quoting
+        PROBE's real raw score and reading "更可能真实" out of it passed every
+        check the ledger had.  A calibrated direction outside the near-chance
+        band contradicted in the same breath is a defect; a direction asserted
+        out of a near-chance value is an over-read and goes to a person.
+        """
+        if not cited:
+            return []
+        asserted = _asserted_direction(sentence)
+        if not asserted:
+            return []
+        if any(hedge in sentence for hedge in HEDGES):
+            # The sentence keeps the measurement in proportion; entry 4's
+            # policy allows that, whichever side of the band it is on.
+            return []
+        findings: List[dict] = []
+        for source in cited:
+            record = self.measured.get(source)
+            if record is None or record.direction is None or record.direction == asserted:
+                continue
+            gap = record.direction_gap
+            if record.direction_basis != "calibrated_likelihood":
+                findings.append({
+                    "kind": "direction_conflict", "source": source,
+                    "severity": CANDIDATE, "asserted": asserted,
+                    "evidence_id": record.evidence_id,
+                    "sentence": sentence[:220],
+                    "why": (f"{source} 的方向来自 support 标签（未经校准），"
+                            f"与句中断言的 {asserted} 相反；基础较弱，交人工裁决"),
+                })
+                continue
+            if gap is not None and gap < (NEAR_CHANCE_HIGH - NEAR_CHANCE_LOW):
+                findings.append({
+                    "kind": "direction_overread", "source": source,
+                    "severity": CANDIDATE, "asserted": asserted,
+                    "evidence_id": record.evidence_id,
+                    "sentence": sentence[:220],
+                    "why": (f"{source} 的校准概率处于近随机箱"
+                            f"（|P(Fake)−P(Real)|={gap:.2f}），句子却断言了明确方向"),
+                })
+                continue
+            findings.append({
+                "kind": "direction_conflict", "source": source,
+                "severity": DEFECT, "asserted": asserted,
+                "evidence_id": record.evidence_id,
+                "field_direction": record.direction,
+                "sentence": sentence[:220],
+                "why": (f"{source} 的校准方向是 {record.direction}，"
+                        f"句子断言相反方向 {asserted}"),
+            })
+        return findings
 
     # -- number checking -------------------------------------------------
 
-    def _numbers_in(self, clause: str, sources: Sequence[str]) -> List[dict]:
+    def _numbers_in(self, clause: str,
+                    subjects: Sequence[str]) -> Tuple[List[dict], List[str]]:
         cues = _cues(clause)
         system_cue = any(kind == "system" for _, kind in cues)
+        positions = _mention_positions(clause, subjects)
         findings: List[dict] = []
+        cited: List[str] = []
         for match in NUMBER.finditer(clause):
             cue = _cue_covering(cues, match.start())
             if cue == "self":
                 continue
+            primary = _nearest_source(positions, match.start(), subjects)
             label = _strict_label(cue, cues)
             strict = label != ""          # "" = the clause calls it no kind of probability
             literal = match.group(1)
             value = float(literal)
+            decimals = _decimals(literal)
             if match.group(2):
                 value /= 100.0
-            decimals = _decimals(literal)
+                # "93.9%" is displayed to a tenth of a *percent*: the rounding
+                # precision in the fraction domain is two digits finer.
+                decimals += 2
             finding = self._check_number(
-                value, decimals, sources, strict, label, system_cue)
+                value, decimals, primary, subjects, strict, label, system_cue, clause)
             if finding is not None:
                 finding["value"] = value
                 finding["sentence"] = clause.strip()[:220]
                 findings.append(finding)
-        return findings
+            elif primary is not None and primary not in cited:
+                # Only a value that resolved cleanly is a *citation*: the
+                # direction check is about reading a real measurement the
+                # wrong way, and a fabricated number is already its own defect.
+                cited.append(primary)
+        return findings, cited
 
-    def _check_number(self, value: float, decimals: int, sources: Sequence[str],
-                      strict: bool, label: Optional[str],
-                      system_cue: bool) -> Optional[dict]:
+    def _check_number(self, value: float, decimals: int, primary: Optional[str],
+                      subjects: Sequence[str], strict: bool, label: Optional[str],
+                      system_cue: bool, clause: str = "") -> Optional[dict]:
+        """
+        Judge one number: it belongs to the *nearest* named expert first.
+
+        A sentence may name several experts; letting any mentioned expert's
+        fields license the value was still too loose — so the nearest mention
+        is the owner, a match on another mentioned expert is `misattributed_
+        value` naming it, and a match that exists only in an expert's prose is
+        a candidate ("this is a calibration statistic, not a measurement of
+        this image").
+        """
         metric_cap = METRIC_TOLERANCE_CAP
         prob_cap = PROBABILITY_TOLERANCE_CAP
         wrong_field: Optional[Tuple[str, str]] = None
-        for source in sources:
-            record = self.measured[source]
+        text_only: Optional[str] = None
+
+        if primary is not None:
+            record = self.measured[primary]
             if strict:
                 swapped: Optional[str] = None
                 for name, known in record.probability_fields().items():
@@ -313,22 +508,27 @@ class Ledger:
                     # P(Real) and the sentence calls it P(Fake).
                     swapped = swapped or name
                 if swapped is not None:
-                    wrong_field = wrong_field or (source, swapped)
+                    wrong_field = wrong_field or (primary, swapped)
                 if system_cue and _matches_any(self.system_values, value, decimals, prob_cap):
                     return None
                 for name, known in record.metric_fields().items():
                     if _matches(value, known, decimals, metric_cap):
-                        wrong_field = wrong_field or (source, name)
+                        wrong_field = wrong_field or (primary, name)
                 if wrong_field is None:
-                    for known in record.text_values:
-                        if _matches(value, known, decimals, metric_cap):
-                            return None
-            else:
-                for known in list(record.fields.values()) + record.text_values:
-                    if _matches(value, known, decimals, metric_cap):
+                    if _names_its_own_submetric(record, clause, value, decimals):
                         return None
+                    if _matches_any(record.text_values, value, decimals, metric_cap):
+                        text_only = primary
+            else:
+                if _matches_any(list(record.fields.values()), value, decimals, metric_cap):
+                    return None
                 if system_cue and _matches_any(self.system_values, value, decimals, metric_cap):
                     return None
+                if _names_its_own_submetric(record, clause, value, decimals):
+                    return None
+                if _matches_any(record.text_values, value, decimals, metric_cap):
+                    text_only = primary
+
         if wrong_field is not None:
             source, name = wrong_field
             if name.startswith("calibrated_likelihood."):
@@ -339,24 +539,47 @@ class Ledger:
                        "不是该专家的校准概率，句子把它说成了概率")
             return {
                 "kind": "misattributed_field", "source": source,
-                "field": name,
+                "field": name, "severity": DEFECT,
                 "evidence_id": self.measured[source].evidence_id,
                 "why": why,
             }
+        for other in subjects:
+            if other == primary:
+                continue
+            record = self.measured[other]
+            for name, known in record.fields.items():
+                if _matches(value, known, decimals,
+                            prob_cap if name.startswith("calibrated_likelihood.") else metric_cap):
+                    return {
+                        "kind": "misattributed_value", "source": other,
+                        "field": name, "severity": DEFECT,
+                        "evidence_id": record.evidence_id,
+                        "why": (f"{value:g} 是 {other} 的 {name}，"
+                                "不属于句子最近提到的专家"),
+                    }
         for other, record in self.measured.items():
-            if other in sources:
+            if other in subjects:
                 continue
             for name, known in record.fields.items():
                 if _matches(value, known, decimals,
                             prob_cap if name.startswith("calibrated_likelihood.") else metric_cap):
                     return {
                         "kind": "misattributed_value", "source": other,
-                        "field": name, "evidence_id": record.evidence_id,
+                        "field": name, "severity": DEFECT,
+                        "evidence_id": record.evidence_id,
                         "why": (f"{value:g} 是 {other} 的 {name}，"
                                 "不属于句子提到的专家"),
                     }
+        if text_only is not None:
+            return {
+                "kind": "text_value_as_measurement", "source": text_only,
+                "severity": CANDIDATE,
+                "evidence_id": self.measured[text_only].evidence_id,
+                "why": (f"{value:g} 只出现在 {text_only} 的自由文本里"
+                        "（可能是校准统计或阈值），不能据此断言它是本图的测量；交人工裁决"),
+            }
         return {
-            "kind": "fabricated_value",
+            "kind": "fabricated_value", "severity": DEFECT,
             "why": "句子给出的数值在本会话的任何 token 中都不存在",
         }
 
@@ -366,13 +589,16 @@ class Ledger:
             return []
         if not any(word in lowered for word in ("再次", "重新", "又一次", "新的测量", "再次测量")):
             return []
+        if any(marker in lowered for marker in ("没有再次", "未再次", "没有重新", "未重新",
+                                               "并未再次", "不曾再", "不再")):
+            return []
         findings = []
         for source in self.skipped:
             if source not in sources:
                 continue
             findings.append({
                 "kind": "skipped_request_as_new_evidence", "source": source,
-                "sentence": clause[:220],
+                "severity": DEFECT, "sentence": clause[:220],
                 "why": "该专家的重复请求被跳过，句子里却当成了一次新的测量",
             })
         return findings
@@ -385,10 +611,108 @@ def _named_sources(clause: str) -> List[str]:
 
 
 def _is_claim(clause: str) -> bool:
+    """A statement about a measurement — including a *negative* one."""
     lowered = clause.lower()
-    if not any(verb in lowered for verb in RESULT_VERBS) and not ASSIGNMENT.search(clause):
+    if (not any(verb in lowered for verb in RESULT_VERBS)
+            and not ASSIGNMENT.search(clause) and not CUE_VALUE.search(lowered)):
         return False
-    return not any(marker in lowered for marker in NOT_A_CLAIM)
+    if any(marker in lowered for marker in NON_EXECUTION_MARKERS):
+        return False
+    return not NON_EXECUTION_PATTERN.search(lowered)
+
+
+def _names_its_own_submetric(record: ExpertRecord, clause: str, value: float,
+                             decimals: int) -> bool:
+    """The clause quotes a named sub-metric of this expert, name and all."""
+    lowered = clause.lower()
+    return any(name in lowered and _matches(value, known, decimals, METRIC_TOLERANCE_CAP)
+               for name, known in record.named_text_fields.items())
+
+
+def _token_direction(token: dict) -> Tuple[Optional[str], Optional[float], str]:
+    """
+    What the measurement supports, and on what basis.
+
+    The calibration is the authority when it is there; otherwise the expert's
+    own support label is used, polarity-corrected by `semantics_aligned`, and
+    marked as the weaker basis it is.
+    """
+    likelihood = token.get("calibrated_likelihood") or {}
+    real = likelihood.get("Real")
+    fake = likelihood.get("Fake")
+    if isinstance(real, (int, float)) and isinstance(fake, (int, float)):
+        gap = round(abs(float(fake) - float(real)), 4)
+        if float(fake) > float(real):
+            return "Fake", gap, "calibrated_likelihood"
+        if float(real) > float(fake):
+            return "Real", gap, "calibrated_likelihood"
+        return None, 0.0, "calibrated_likelihood"
+    support = str(token.get("support") or "").strip()
+    if support in ("Real", "AI-generated"):
+        label = "Real" if support == "Real" else "Fake"
+        if token.get("semantics_aligned") is False:
+            label = "Fake" if label == "Real" else "Real"
+        return label, None, "support_label"
+    return None, None, ""
+
+
+def _mask_sources(text: str) -> str:
+    """Blank out expert names so "AI 生成探测器" is not read as a direction."""
+    masked = DETECTOR_PHRASE.sub(lambda match: " " * len(match.group(0)), text.lower())
+    for words in SOURCE_WORDS.values():
+        for word in words:
+            masked = masked.replace(word, " " * len(word))
+    return masked
+
+
+def _asserted_direction(text: str) -> Optional[str]:
+    """
+    The direction the text asserts, or None.
+
+    One class must be mentioned, in a clause that also draws an inference and
+    does not negate or hedge it.  Both classes in one clause, or conflicting
+    clauses, mean the text is talking about directions rather than asserting
+    one — and are not a finding.
+    """
+    asserted: set = set()
+    for clause in CLAUSE_SPLIT.split(_mask_sources(text)):
+        if not clause.strip():
+            continue
+        if not any(conn in clause for conn in INFER_CONNECTIVES):
+            continue
+        if any(marker in clause for marker in NEGATED_ASSERTION):
+            continue
+        real = any(word in clause for word in MENTION_REAL)
+        fake = any(word in clause for word in MENTION_FAKE)
+        if real and not fake:
+            asserted.add("Real")
+        elif fake and not real:
+            asserted.add("Fake")
+    return asserted.pop() if len(asserted) == 1 else None
+
+
+def _mention_positions(clause: str, sources: Sequence[str]) -> List[Tuple[int, str]]:
+    lowered = clause.lower()
+    positions: List[Tuple[int, str]] = []
+    for source in sources:
+        for word in SOURCE_WORDS.get(source, ()):
+            start = lowered.find(word)
+            while start != -1:
+                positions.append((start, source))
+                start = lowered.find(word, start + 1)
+    return sorted(positions)
+
+
+def _nearest_source(positions: Sequence[Tuple[int, str]], position: int,
+                    fallback: Sequence[str]) -> Optional[str]:
+    """The expert mentioned closest to this number; a trailing one still counts."""
+    before = [source for start, source in positions if start <= position]
+    if before:
+        return before[-1]
+    after = [source for start, source in positions if start > position]
+    if after:
+        return after[0]
+    return fallback[0] if fallback else None
 
 
 def _cues(clause: str) -> List[Tuple[int, str]]:

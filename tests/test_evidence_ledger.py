@@ -136,11 +136,18 @@ class TestFieldBinding:
         assert ledger.findings("噪声残留专家的校准概率 P(Fake) 为 0.564。") == []
         assert ledger.findings("噪声残留专家的校准概率 P(Real) 为 0.436。") == []
 
-    def test_a_number_from_the_experts_own_text_is_quotable(self):
+    def test_a_number_from_the_experts_own_text_is_a_candidate(self):
+        """Prose numbers may be calibration statistics, not measurements."""
         token = {**_token("jpeg_expert", raw=0.7, p_fake=0.8),
                  "reasoning": "blockiness 2.5 偏高，提示重复压缩。"}
         ledger = Ledger.from_session([token])
-        assert ledger.findings("JPEG 压缩专家显示 blockiness 为 2.5。") == []
+        findings = ledger.findings("JPEG 压缩专家显示 blockiness 为 2.5。")
+        assert [f["kind"] for f in findings] == ["text_value_as_measurement"]
+        assert findings[0]["severity"] == "candidate"
+
+    def test_a_structured_field_is_not_shadowed_by_the_text_pool(self):
+        ledger = Ledger.from_session([_token("noise_expert", raw=3.0912, p_fake=0.564)])
+        assert ledger.findings("噪声残留专家的水平为 3.09。") == []
 
     def test_the_summary_prints_the_right_values_for_a_rewrite(self):
         ledger = Ledger.from_session([_token("noise_expert", raw=3.0912, p_fake=0.564,
@@ -213,3 +220,137 @@ class TestSystemNumbers:
     def test_an_expert_cannot_borrow_the_system_number(self):
         findings = self._ledger().findings("噪声残留专家的水平为 0.63。")
         assert [f["kind"] for f in findings] == ["fabricated_value"]
+
+
+class TestDirectionConsistency:
+    """
+    A real number read in the wrong direction (§4.17 B 段第 1.6 步 A).
+
+    The reproduced case: PROBE raw=0.3431 with a near-chance calibration
+    (P(Fake)=0.52), reported as "表明图像更可能真实".  Attribution was
+    perfect, so every previous check passed.
+    """
+
+    TOKEN = {"source": "probe_dino_expert", "evidence_id": "E-P", "raw_metric": 0.3431,
+             "strength": 0.3431, "calibrated_likelihood": {"Real": 0.48, "Fake": 0.52}}
+
+    def _ledger(self, likelihood=None, **overrides):
+        token = {**self.TOKEN, **overrides}
+        if likelihood is not None:
+            token["calibrated_likelihood"] = likelihood
+        return Ledger.from_session([token])
+
+    def test_the_reproduced_case_is_flagged(self):
+        findings = self._ledger().findings("PROBE 原始分数 0.3431，表明图像更可能真实。")
+        assert [f["kind"] for f in findings] == ["direction_overread"]
+        # near chance → a person decides, not the correction loop
+        assert findings[0]["severity"] == "candidate"
+
+    def test_a_clear_direction_contradicted_is_a_defect(self):
+        ledger = self._ledger(likelihood={"Real": 0.05, "Fake": 0.95})
+        findings = ledger.findings("PROBE 原始分数 0.3431，表明图像更可能真实。")
+        assert [f["kind"] for f in findings] == ["direction_conflict"]
+        assert findings[0]["severity"] == "defect"
+
+    def test_the_direction_the_calibration_gives_is_not_flagged(self):
+        ledger = self._ledger(likelihood={"Real": 0.05, "Fake": 0.95})
+        assert ledger.findings("PROBE 原始分数 0.3431，表明图像更可能伪造。") == []
+
+    def test_a_hedged_weak_value_may_lean(self):
+        """Entry 4's policy: a near-chance number may lean, not decide."""
+        assert self._ledger().findings(
+            "PROBE 原始分数 0.3431 接近随机，不足以指向真实。") == []
+
+    def test_the_direction_check_needs_a_real_citation(self):
+        """A fabricated number is already its own defect."""
+        findings = self._ledger().findings("PROBE 得分 0.999，表明图像更可能真实。")
+        assert [f["kind"] for f in findings] == ["fabricated_value"]
+
+    def test_a_direction_in_the_next_sentence_is_caught(self):
+        findings = self._ledger().findings("PROBE 原始分数 0.3431。这表明图像更可能真实。")
+        assert [f["kind"] for f in findings] == ["direction_overread"]
+
+    def test_the_expert_name_is_not_a_direction_assertion(self):
+        """"AI 生成探测器" names the tool; it does not assert a direction."""
+        ledger = self._ledger(likelihood={"Real": 0.05, "Fake": 0.95})
+        findings = ledger.findings("AI生成探测器给出了 0.3431，表明图像更可能真实。")
+        assert [f["kind"] for f in findings] == ["direction_conflict"]
+
+    def test_an_uncalibrated_support_label_conflict_is_a_candidate(self):
+        token = {"source": "noise_expert", "evidence_id": "E-N", "raw_metric": 4.2,
+                 "strength": 0.9, "support": "AI-generated", "semantics_aligned": True}
+        ledger = Ledger.from_session([token])
+        findings = ledger.findings("噪声残留专家显示 4.2 的高水平，表明图像更可能真实。")
+        assert [f["kind"] for f in findings] == ["direction_conflict"]
+        assert findings[0]["severity"] == "candidate"
+
+
+class TestNegativeResultsAreStillClaims:
+    """"No noise found" is a measurement; "not measured" is not (§4.17 1.6 B)."""
+
+    def test_a_clean_result_from_an_unrun_expert_is_flagged(self):
+        ledger = Ledger.from_session([_token()], served=["probe_dino_expert", "noise_expert"])
+        findings = ledger.findings("noise 专家显示没有相机噪声，支持生成。")
+        assert [f["kind"] for f in findings] == ["fabricated_expert_result"]
+        assert findings[0]["source"] == "noise_expert"
+
+    def test_a_real_negative_result_is_checked_and_passes(self):
+        ledger = Ledger.from_session([_token("noise_expert", raw=0.4, p_fake=0.2)])
+        assert ledger.findings("噪声残留专家显示没有明显的相机噪声，水平为 0.4。") == []
+
+    def test_a_missing_result_is_still_not_a_claim(self):
+        ledger = Ledger.from_session([_token()], served=["probe_dino_expert", "noise_expert"])
+        assert ledger.findings("本会话未获得噪声残留专家的测量结果。") == []
+
+
+class TestAttributionUsesTheNearestExpert:
+    """Two experts in one sentence must not licence each other's numbers."""
+
+    def _ledger(self):
+        return Ledger.from_session([
+            _token("probe_dino_expert", raw=0.9838, p_fake=1.0, evidence_id="E-P"),
+            _token("noise_expert", raw=4.2, p_fake=0.11, evidence_id="E-N"),
+        ])
+
+    def test_a_value_that_belongs_to_the_other_expert_is_flagged(self):
+        findings = self._ledger().findings(
+            "噪声残留专家与探针专家相比，噪声残留专家的水平为 0.9838。")
+        assert [f["kind"] for f in findings] == ["misattributed_value"]
+        assert findings[0]["source"] == "probe_dino_expert"
+
+    def test_a_comparison_of_two_real_values_is_not_flagged(self):
+        assert self._ledger().findings(
+            "噪声残留专家的水平为 4.2，探针专家的原始分数为 0.9838。") == []
+
+
+class TestPerCentPrecision:
+    def test_the_displayed_precision_survives_the_conversion(self):
+        ledger = Ledger.from_session([_token("noise_expert", raw=3.0, p_fake=0.9387)])
+        assert ledger.findings("噪声残留专家的校准概率 P(Fake) 为 93.9%。") == []
+        assert [f["kind"] for f in ledger.findings(
+            "噪声残留专家的校准概率 P(Fake) 为 95%。")] == ["fabricated_value"]
+
+
+class TestProseNumbersHaveARole:
+    """
+    An expert's prose carries sub-metrics, calibration statistics and
+    thresholds.  Quoting a sub-metric *with its name* is quoting the expert;
+    lifting a bare number out of the prose is a role question for a person.
+    """
+
+    def test_a_named_submetric_quoted_with_its_name_is_the_experts_own(self):
+        token = {**_token("jpeg_expert", raw=0.7, p_fake=0.8),
+                 "reasoning": "blockiness=0.8779 与 DCT anomaly=4.6279 均偏高。"}
+        ledger = Ledger.from_session([token])
+        assert ledger.findings("JPEG 压缩专家显示 blockiness=0.8779 的结构特征。") == []
+
+    def test_a_calibration_statistic_cited_as_a_measurement_is_a_candidate(self):
+        """The real trace: the model cited the calibration set's medians."""
+        token = {**_token("noise_expert", raw=3.0912, p_fake=0.564),
+                 "reasoning": "校准集中生成图像中位数为2.0，真实图像中位数为3.6。"}
+        ledger = Ledger.from_session([token])
+        findings = ledger.findings(
+            "噪声残留专家给出的校准集中位数为 2.0，真实图像中位数为 3.6。")
+        assert [f["kind"] for f in findings] == ["text_value_as_measurement"] * 2
+        assert {f["value"] for f in findings} == {2.0, 3.6}
+        assert all(f["severity"] == "candidate" for f in findings)
