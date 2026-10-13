@@ -1537,3 +1537,30 @@
   - `claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**973 项测试通过**（新增 22 项）；会话级测试覆盖：虚构→纠正→通过、纠正后仍虚构→failed、干净收尾→pass、**只纠正一次**；收尾措辞测试覆盖四种原因且断言引导性问句已消失
 * **置信度或遗留待办（TODO）**：①**停滞定义尚未改**（仍为"候选被驳回两次"）——按计划它属于第 2 步 v3（v2 保留供历史复算，新语义进 v3）②`build_final_v2` 尚未据此拒收样本（第 5 步）③下一步：v3 决策权（Qwen 主导，参考收益只作建议，不静默改标签）
+
+### 2026-10-13 13:14:12 - G7 §4.17 B 段第 1.5 步：账本收紧（绑定/容差/否定）+ 结案统一入口 + failed 硬门禁
+
+* **当前操作动作**：按用户审阅 B1 后列出的 A–E 五处缺口与停止反馈问题，逐条收紧：①统一结案检查入口 ②账本绑定 专家→evidence_id→字段→数值 ③容差与单位按字段类别 ④否定按分句 ⑤failed 贯通准入与转换；并把 v2 的 stall 措辞改为如实描述
+* **对应计划锚点**：plan.md §4.17「B 段第 1.5 步」（本轮按用户给定的 1→5 顺序执行；v3 仍为第 5 步之后的下一步）
+* **核心变更说明**：
+  1. **统一结案入口（用户 A）**：此前只有"额外请求的收尾轮"过账本，**候选被规则接受且自带 report 时直接采用**——候选里的虚构可绕过检查进入训练数据。现在候选直通 / 收尾轮 / 纠正轮 / v1 快路径**全部走同一入口**，并记录 `conclusion.source`（candidate / closing_turn / correction / v1_candidate）；v1 只标注不纠正（协议冻结）。收尾轮与纠正轮中出现的调用一律记为**未执行**（`calls_executed=false`），候选轮中则按本轮是否真的执行（重复调用被跳过时也为 false）
+  2. **账本绑定（用户 B）**：不再把所有 token 的数字放进公共池。数值必须属于**句子提到的专家**的字段；跨专家借用 → `misattributed_value` 并注明真实来源字段与 `evidence_id`；把原始度量说成校准概率、或把 P(Real)/P(Fake) 说反 → `misattributed_field`（说明是"原始度量被说成概率"还是"方向被说反"）。token 文本字段（reasoning/interpretation 等）中的数字视为该专家可引用的合法值
+  3. **容差与单位（用户 C）**：删除"0/1/1000 及 >1000 直接跳过"与"0.05 通用容差"。概率类上限 **0.005**、度量类上限 0.05，且按展示精度收紧（`min(0.5·10⁻ᵈ, 上限)`）；百分数按 /100 换算；只排除**坐标表达**（方括号、`N×N`）、调用标签与列表序号。因此 `Fake=0` / `Real=1` 这类虚构可检出
+  4. **否定按分句（用户 D）**：整句含否定词即放行 → **逐分句**判定。用户给的两条真实反例都进了测试："噪声专家显示低噪声，但不能单独确定真假"（前一分句仍受检）、"重复请求已跳过，没有再次测量得到新结果"（不得判为新增测量）
+  5. **四态分离 + failed 硬门禁（用户 E）**：`evidence_check.status`（检查）/ `conclusion.verdict_parse`（格式）/ `conclusion.calls`+`calls_executed`（结案纯净度）/ **trainable**（准入）各自记录，不再共用一个 pass。新增 `utils/final_v2.conclusion_gate()`，在**准入评分**与**转换**两处拒收：`failed`、`not_run`、结案不可解析、结案含未执行调用；转换端另写 `sft_gated.json` 并计数，**原始轨迹不改写**；历史缺字段的记录按"未受该检查"计（本次转换对其计数为 `legacy_without_evidence_check`）
+  6. **停止反馈忠实化（用户第 3 点）**：v2 的 stall 提示此前写"连续给出了相同的内容"，而 v2 实际统计的是**连续无新证据**。现按实际条件措辞并附真实轮数（新增诊断字段 `stall_turns`，**不改变任何决策**）；严格"重复 / 无效动作"语义留给 v3
+  7. **真实数据回放（新增 `scripts/g7_ledger_replay.py`，只读）**：用收紧后的账本对 g7_b1 的 210 条已落盘会话重放 → **20 条**会被拦下；与 A1 审计的 `fabricated_expert_result` 会话 **19/20 重合**，另 1 条是 A1 漏报的真阳性（"微噪声水平显示为正常范围"而 noise 从未产生 token），A1 的 1 条误报（"AI生成探测器给出了高概率"而 probe 确实执行）未重复；**149 条已准入样本中 19 条**至少要过一次纠正
+  8. **回放暴露并修掉的两处误报**（写进测试之前的自查）：①`1. <call_noise>` 的列表序号与调用标签内的坐标被当成数值（"1" 命中 jpeg 的 reliability）②把 PROBE 自身的检测分数称作"AI 生成概率"是**准确叙述**，不是字段错位 → 只有"**校准**概率 / P(Real) / P(Fake) / 似然"才按似然字段严格校验，"得分/分数/水平"等度量提示词落在数值之前时按度量读
+  9. **顺带修掉的真缺陷**：A1 审计 `scripts/g7_audit_traces.py` 里 local `SOURCE_WORDS` **遮蔽了共享词表导入**——上一轮"共享词表"的改动实际未生效。删除 local 定义后重跑审计，计数与产物**逐字节一致**（45/76/14/11），说明当时结论未受该缺陷影响，但"共享词表"现在才真正成立
+* **涉及/修改的文件清单**：
+  - `utils/evidence_ledger.py (Rewritten — 字段绑定、分句否定、按类别容差、新发现类型、系统数值许可)`
+  - `state_machine/controller.py (Modified — 统一结案入口、conclusion 块、系统文本入账本、stall 措辞、计数器)`
+  - `state_machine/halting_v2.py (Modified — 诊断字段 stall_turns，决策不变)`
+  - `utils/final_v2.py (Modified — conclusion_gate)、scripts/admit_trajectories_g4.py (Modified — 准入拒收 + 报告计数)`
+  - `scripts/build_final_v2.py (Modified — 转换硬门禁 + sft_gated.json + 空标签组成不再抛异常)、scripts/generate_trajectories_g4.py (Modified — 轨迹记录带 conclusion)`
+  - `scripts/g7_audit_traces.py (Modified — 删除遮蔽共享词表的 local 定义)、calibration/g7_audit_raw_traces.json (Regenerated — 与前一版逐字节一致)`
+  - `scripts/g7_ledger_replay.py (Created)、calibration/g7_ledger_replay.json (Created — 只读回放报告)`
+  - `tests/test_evidence_ledger.py (Extended — 16 项新增：绑定/容差/否定/系统数值)、tests/test_evidence_check_session.py (Extended — 统一入口 5 项 + stall 措辞)、tests/test_conclusion_gate.py (Created — 13 项)`
+  - `README.md (Modified — §6.3 证据账本与结案门禁)、plan.md (Modified — B 段第 1.5 步)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**1008 项测试通过**（基线 973 → 本轮新增 35 项：账本 13→29、会话 9→15、门禁 13）；会话级测试覆盖：候选直通被检查（干净→pass；含虚构→一次纠正→pass_after_correction）、纠正轮调用记为未执行、重复调用记为未执行、四态计数各自写入 trace；门禁测试覆盖：failed/not_run/不可解析/未执行调用四类拒收、准入强制 reject、转换拒收并留档、历史记录不被回溯判定
+* **置信度或遗留待办（TODO）**：①**v3（Qwen 主导）尚未实施**——标签覆盖代码仍在（用户第 3 点后半），"合法调用不因参考收益为负被否、合法结案不被静默改标签、Uncertain 不作同意、停止原因细分、停滞改为重复/无效动作"是下一步 ②A1 审计脚本的 `fabricated_value` 判据仍是旧口径（与账本不同源），是否据此重跑 A 段审计待定 ③"20 条至少要经过一次纠正"是**上界**而非最终 failed 数——纠正是否成功需要模型在场，属于 D 段小批 GPU 验证的内容 ④16 条"依据不明"弃权与 7 条无工具会话仍待人工判断（用户先前已列为待办）

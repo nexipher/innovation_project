@@ -127,6 +127,15 @@ def admit(tool_record: dict, baseline_record: Optional[dict],
     treatment = tool_record["treatment"]
     tools = tool_record.get("tools_served") or []
 
+    # §4.17 R4: the evidence gate comes first — a session whose fabrication
+    # survived its one correction is not a training example no matter how good
+    # its risk numbers look, so the category is forced to reject at the end.
+    from utils.final_v2 import conclusion_gate
+
+    evidence_gate = conclusion_gate(tool_record)
+    if evidence_gate:
+        reasons.append(f"evidence gate: {evidence_gate}")
+
     retired = [t for t in tools if t in RETIRED_TOOLS]
     if retired:
         reasons.append(f"retired expert in trajectory: {retired}")
@@ -217,6 +226,9 @@ def admit(tool_record: dict, baseline_record: Optional[dict],
         if risk_reduced and not _correct(tool_record):
             reasons.append("risk fell but the conclusion is still wrong")
 
+    if evidence_gate:
+        category = "reject"
+
     return {
         "trajectory_id": tool_record["trajectory_id"],
         "policy": tool_record["policy"],
@@ -229,6 +241,7 @@ def admit(tool_record: dict, baseline_record: Optional[dict],
         "ground_truth": tool_record["ground_truth"],
         "verdict": tool_record.get("final_verdict"),
         "category": category,
+        "evidence_gate": evidence_gate,
         "conditional_ok": conditional_ok,
         "risk_reduced": risk_reduced,
         "cost_delta": deltas["cost_delta"],
@@ -257,12 +270,16 @@ def run(records: List[dict], applicability: Dict[str, Dict[str, float]],
         return round(sum(values) / len(values), 4) if values else None
 
     no_tool_positives = [d for d in admitted if not d.get("uses_tools", True)]
+    gated = [d for d in decisions if d.get("evidence_gate")]
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "applicability_threshold": threshold,
         "no_tool_positive_labels": dict(
             Counter(d["ground_truth"] for d in no_tool_positives)),
         "risk_epsilon": RISK_EPSILON,
+        # §4.17 R4: how many trajectories the evidence gate removed, by reason
+        "evidence_gate": dict(Counter(d["evidence_gate"] for d in gated)),
+        "evidence_gate_rejects": len(gated),
         "trajectories": len(decisions),
         "variants": len(paired),
         "categories": dict(categories),

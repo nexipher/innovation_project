@@ -81,6 +81,38 @@ _LOCAL_MEASUREMENT = re.compile(
 _METADATA_LINE = re.compile(r"^[-*\s]*(container|quality|resolution|格式|分辨率)\b", re.I)
 
 
+def conclusion_gate(record: dict) -> Optional[str]:
+    """
+    Why this trajectory may not become training data, or None (§4.17 R4).
+
+    Four things are separate and must stay separate: the evidence check, the
+    format of the adopted answer, whether the conclusion is faithful, and
+    whether the sample is trainable.  This function is the last one — the hard
+    gate that keeps a session whose fabrication survived its single correction
+    out of the training set (and out of admission scoring, which calls it too).
+
+    Legacy trajectories (generated before the ledger existed) have no
+    `evidence_check` key at all; they are not retroactively re-judged here —
+    the audit of those trajectories is a separate, recorded exercise.
+    """
+    if "evidence_check" not in record:
+        return None
+    check = record.get("evidence_check") or {}
+    status = check.get("status")
+    if status == "failed":
+        return "evidence_check_failed"
+    if status not in ("pass", "pass_after_correction"):
+        return f"evidence_check_{status or 'missing'}"
+    conclusion = record.get("conclusion")
+    if conclusion is None:
+        return None                     # written by a pre-R4 generator
+    if conclusion.get("verdict_parse") != "ok":
+        return "conclusion_without_parseable_verdict"
+    if conclusion.get("calls") and not conclusion.get("calls_executed"):
+        return "conclusion_contains_unexecuted_calls"
+    return None
+
+
 def _tool_mentions(text: str):
     """(expert, is_call_shaped) for every tool the assistant refers to."""
     mentions = []

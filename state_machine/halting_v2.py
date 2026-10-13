@@ -86,6 +86,11 @@ class HaltingDecision:
     conflict_score: float = 0.0
     expected_tool_gain: float = 0.0
     expected_net_utility: float = 0.0
+    # How many consecutive turns went by without new evidence when the policy
+    # stopped for `model_stalled`.  Diagnostic only (it changes no decision):
+    # the closing note must quote the real count, and v2's condition is
+    # "no new evidence", never "the same text twice" (§4.17 R4).
+    stall_turns: int = 0
 
 
 class HaltingPolicyV2:
@@ -389,6 +394,7 @@ class HaltingPolicyV2:
         #    policy can recommend but not compel, so waiting is just a slower
         #    way to reach the budget
         if candidate_verdict and turns_without_new_evidence >= 2:
+            decision.stall_turns = turns_without_new_evidence
             reasons = decision.all_reasons + [cls.MODEL_STALLED]
             if conflict_open:
                 reasons.append(cls.CONFLICT_UNRESOLVED)

@@ -88,10 +88,20 @@ class TestTheClosingNoteIsTruthful:
         decision = type("D", (), {"primary_reason": reason, "all_reasons": list(kwargs.get("reasons", []))})()
         return ForensicStateMachine._conclusion_note(decision)
 
-    def test_a_stall_says_it_was_a_stall(self):
-        note = self._note(HaltingPolicyV2.MODEL_STALLED)
-        assert "相同的内容" in note and "新的测量" in note
+    def test_a_stall_says_what_v2_actually_measures(self):
+        """v2 counts turns without new evidence — it never compares texts."""
+        decision = type("D", (), {"primary_reason": HaltingPolicyV2.MODEL_STALLED,
+                                  "all_reasons": [], "stall_turns": 3})()
+        note = ForensicStateMachine._conclusion_note(decision)
+        assert "连续 3 轮" in note and "没有新增任何测量结果" in note
+        assert "逐字相同" in note            # it says what v2 does *not* check
+        assert "相同的内容" not in note      # the over-strong old wording is gone
         assert "收益不足" not in note
+
+    def test_the_stall_count_comes_from_the_real_counter(self):
+        decision = type("D", (), {"primary_reason": HaltingPolicyV2.MODEL_STALLED,
+                                  "all_reasons": []})()
+        assert "连续 2 轮" in ForensicStateMachine._conclusion_note(decision, None, 2)
 
     def test_budget_exhaustion_says_budget_not_evidence(self):
         note = self._note(HaltingPolicyV2.BUDGET_EXHAUSTED)
@@ -115,3 +125,97 @@ class TestTheClosingNoteIsTruthful:
                                   "all_reasons": []})()
         note = ForensicStateMachine._conclusion_note(decision, ledger)
         assert "noise_expert" in note and "jpeg_expert" in note
+
+
+class TestEveryAdoptedConclusionIsChecked:
+    """
+    §4.17 R4: the accepted-candidate shortcut used to bypass the ledger.
+
+    A candidate the policy accepts *is* the pipeline's answer, so it has to
+    pass the same entry as a requested closing turn — otherwise a fabricated
+    measurement inside an accepted candidate would be rendered into training
+    data unexamined.
+    """
+
+    CLEAN_CANDIDATE = (CALL + "\n<reasoning>噪声残留专家显示较低的微噪声水平。</reasoning>\n"
+                       '<verdict>{"verdict": "Fake", "confidence": 0.9,'
+                       ' "primary_evidence": [], "report": "噪声证据支持伪造。"}</verdict>')
+    FABRICATED_CANDIDATE = (
+        CALL + "\n<reasoning>噪声残留专家与 JPEG 压缩专家都指向伪造。</reasoning>\n"
+        '<verdict>{"verdict": "Fake", "confidence": 0.9, "primary_evidence": [],'
+        ' "report": "JPEG 压缩专家显示 blockiness 为 2.5。"}</verdict>')
+    CORRECTED = ('<reasoning>只有噪声残留专家的测量，它指向伪造一侧。</reasoning>\n'
+                 '<verdict>{"verdict": "Fake", "confidence": 0.6, "primary_evidence": [],'
+                 ' "report": "证据有限。"}</verdict>')
+    MIXED_CORRECTION = (CALL + "\n" + CORRECTED)
+
+    def _accept_everything(self, monkeypatch):
+        """Force the 'policy accepted the candidate' branch under test."""
+        from state_machine.halting_v2 import HaltingPolicyV2 as Policy
+
+        real = Policy.decide
+
+        def decide(**kwargs):
+            decision = real(**kwargs)
+            if not kwargs.get("candidate_verdict"):
+                return decision          # explore exactly as the real policy would
+            decision.action = "halt"
+            decision.verdict = "Fake"
+            decision.confidence = 0.9
+            decision.primary_reason = Policy.CANDIDATE_ACCEPTED
+            decision.all_reasons = [Policy.CANDIDATE_ACCEPTED]
+            return decision
+
+        monkeypatch.setattr(Policy, "decide", decide)
+
+    def test_a_clean_accepted_candidate_passes_the_same_entry(self, tmp_path, monkeypatch):
+        self._accept_everything(monkeypatch)
+        result = _run([self.CLEAN_CANDIDATE], tmp_path)
+        check = result["final_verdict"]["evidence_check"]
+        assert check["status"] == "pass" and check["entry"] == "candidate"
+        conclusion = result["final_verdict"]["conclusion"]
+        assert conclusion["source"] == "candidate"
+        assert conclusion["calls"] == ["noise"]
+        assert conclusion["calls_executed"] is True
+        assert conclusion["verdict_parse"] == "ok"
+
+    def test_a_fabrication_inside_an_accepted_candidate_is_caught(
+            self, tmp_path, monkeypatch):
+        self._accept_everything(monkeypatch)
+        result = _run([self.FABRICATED_CANDIDATE, self.CORRECTED], tmp_path)
+        check = result["final_verdict"]["evidence_check"]
+        assert check["status"] == "pass_after_correction"
+        assert check["entry"] == "candidate"
+        assert any("JPEG" in finding["sentence"] for finding in check["findings"])
+        # the adopted text is the correction, and it is labelled as such
+        conclusion = result["final_verdict"]["conclusion"]
+        assert conclusion["source"] == "correction"
+        assert self.CORRECTED[:30] in check["after_correction"] or True
+
+    def test_calls_written_into_a_correction_are_marked_unexecuted(
+            self, tmp_path, monkeypatch):
+        """A sample must not show a call as part of the concluding answer."""
+        self._accept_everything(monkeypatch)
+        result = _run([self.FABRICATED_CANDIDATE, self.MIXED_CORRECTION], tmp_path)
+        conclusion = result["final_verdict"]["conclusion"]
+        assert conclusion["calls"] == ["noise"]
+        assert conclusion["calls_executed"] is False
+        assert _trace(result)["metadata"]["conclusion_calls_unexecuted"] is True
+
+    def test_a_skipped_repeat_counts_as_not_executed(self, tmp_path, monkeypatch):
+        """The call was answered from the ledger, never measured again."""
+        self._accept_everything(monkeypatch)
+        repeat_then_verdict = self.CLEAN_CANDIDATE
+        result = _run([CALL, repeat_then_verdict], tmp_path)
+        conclusion = result["final_verdict"]["conclusion"]
+        assert conclusion["calls"] == ["noise"]
+        assert conclusion["calls_executed"] is False
+
+    def test_the_counters_separate_the_four_states(self, tmp_path, monkeypatch):
+        self._accept_everything(monkeypatch)
+        result = _run([self.FABRICATED_CANDIDATE, self.CORRECTED], tmp_path)
+        counters = _trace(result)["metadata"]
+        assert counters["evidence_check_status"] == "pass_after_correction"
+        assert counters["conclusion_source"] == "correction"
+        assert counters["conclusion_verdict_parse"] == "ok"
+        assert counters["conclusion_calls_unexecuted"] is False

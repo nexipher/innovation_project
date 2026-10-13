@@ -190,15 +190,40 @@ class ForensicStateMachine:
             # posterior, v1 halts on it immediately (kept for replay).
             candidate_verdict = Parser.parse_verdict(raw_output)
             if candidate_verdict and "verdict" in candidate_verdict and HALTING_POLICY == "v1":
+                # §4.17 R4: even the v1 shortcut is annotated by the ledger.
+                # v1 is frozen for replay, so the check does not correct here
+                # (a correction turn would change the protocol it records);
+                # a v1 session that fabricates is marked failed and the
+                # conversion gate refuses it.
+                v1_ledger = EvidenceLedger.from_session(
+                    evidence_chain, skipped_sources=skipped_sources,
+                    served=list(self._experts),
+                    system_texts=self._system_texts(conversation),
+                )
+                v1_findings = v1_ledger.findings(raw_output)
+                candidate_verdict["evidence_check"] = {
+                    "status": "pass" if not v1_findings else "failed",
+                    "findings": v1_findings,
+                    "entry": "v1_candidate",
+                    "note": "v1 协议冻结：只标注不纠正",
+                }
+                candidate_verdict["conclusion"] = {
+                    "source": "v1_candidate",
+                    "calls": [name for name, _ in Parser.extract_all_calls(raw_output)],
+                    "calls_executed": False,
+                    "verdict_parse": "ok",
+                }
                 final_verdict = candidate_verdict
                 halting_reason = HaltingChecker.VERDICT_OUTPUT
                 break
 
             # 4c. Extract expert calls
             calls = Parser.extract_all_calls(raw_output)
+            turn_calls_executed = True
 
             if calls:
                 # 4d. Execute each expert call
+                turn_calls_executed = True   # did every call in this turn run?
                 for expert_name, rel_bbox in calls:
                     # Convert normalized [0,1000] → absolute pixel coordinates,
                     # keeping both spaces in the trace (plan.md §4.8 G1).
@@ -224,6 +249,7 @@ class ForensicStateMachine:
                     # buys measurements, not repetitions).
                     if source_name in measured_sources:
                         skipped_duplicate_calls += 1
+                        turn_calls_executed = False
                         if source_name not in skipped_sources:
                             skipped_sources.append(source_name)
                         notice = (
@@ -424,39 +450,66 @@ class ForensicStateMachine:
                     HaltingPolicyV2.CANDIDATE_ACCEPTED,
                     HaltingPolicyV2.CANDIDATE_WITHOUT_TOOLS,
                 )
+                # §4.17 R3/R4: the ledger is the only authority on what was
+                # measured, and **every** conclusion this pipeline adopts goes
+                # through it — the accepted-candidate shortcut used to skip the
+                # check entirely, so a fabrication inside an accepted candidate
+                # would have been rendered into training data unexamined.  One
+                # correction is allowed; the original and the correction are
+                # both recorded, never silently dropped.
+                ledger = EvidenceLedger.from_session(
+                    evidence_chain, skipped_sources=skipped_sources,
+                    served=list(self._experts),
+                    system_texts=self._system_texts(conversation),
+                )
                 if accepted and (candidate_verdict or {}).get("report"):
-                    model_candidate = candidate_verdict
+                    final_output = raw_output
+                    adopted_from = "candidate"
+                    adopted_calls = [name for name, _ in calls]
+                    adopted_calls_executed = turn_calls_executed
                 else:
-                    # §4.17 R3: the ledger is the only authority on what was
-                    # measured, and the closing turn is where fabrications have
-                    # been appearing (45 sentences in the audit).  One
-                    # correction is allowed; both the original and the
-                    # correction are recorded, never silently dropped.
-                    ledger = EvidenceLedger.from_session(
-                        evidence_chain, skipped_sources=skipped_sources,
-                        served=list(self._experts))
-                    note = self._conclusion_note(decision, ledger)
+                    note = self._conclusion_note(
+                        decision, ledger, turns_without_new_evidence)
                     final_output = self._request_conclusion(
                         image_path, conversation, note
                     )
                     model_turn_count += 1
-                    findings = ledger.findings(final_output)
-                    evidence_check = {"status": "pass", "findings": []}
-                    if findings:
-                        correction = correction_note(ledger, findings)
-                        corrected = self._request_conclusion(
-                            image_path, conversation, correction)
-                        model_turn_count += 1
-                        remaining = ledger.findings(corrected)
-                        evidence_check = {
-                            "status": "pass_after_correction" if not remaining else "failed",
-                            "findings": findings,
-                            "after_correction": remaining,
-                            "correction_note": correction,
-                            "original_closing": final_output[-4000:],
-                        }
-                        final_output = corrected
-                    model_candidate = Parser.parse_verdict(final_output) or {}
+                    adopted_from = "closing_turn"
+                    # A closing turn's calls are never executed (the controller
+                    # does not run the measurement engine from this entry), so
+                    # any call written here is recorded as unexecuted.
+                    adopted_calls = [name for name, _ in Parser.extract_all_calls(final_output)]
+                    adopted_calls_executed = False
+                findings = ledger.findings(final_output)
+                evidence_check = {"status": "pass", "findings": [], "entry": adopted_from}
+                if findings:
+                    correction = correction_note(ledger, findings)
+                    corrected = self._request_conclusion(
+                        image_path, conversation, correction)
+                    model_turn_count += 1
+                    remaining = ledger.findings(corrected)
+                    evidence_check = {
+                        "status": "pass_after_correction" if not remaining else "failed",
+                        "findings": findings,
+                        "after_correction": remaining,
+                        "correction_note": correction,
+                        "original_closing": final_output[-4000:],
+                        "entry": adopted_from,
+                    }
+                    final_output = corrected
+                    # Calls written into a correction turn are never executed:
+                    # a training sample must not show a call as part of the
+                    # answer that produced a verdict.
+                    adopted_from = "correction"
+                    adopted_calls = [name for name, _ in Parser.extract_all_calls(final_output)]
+                    adopted_calls_executed = False
+                model_candidate = Parser.parse_verdict(final_output) or {}
+                conclusion = {
+                    "source": adopted_from,
+                    "calls": adopted_calls,
+                    "calls_executed": adopted_calls_executed,
+                    "verdict_parse": "ok" if model_candidate.get("verdict") else "failed",
+                }
                 final_verdict = {
                     "verdict": decision.verdict,
                     "confidence": decision.confidence,
@@ -473,6 +526,10 @@ class ForensicStateMachine:
                     "policy_reasons": list(decision.all_reasons),
                     "model_candidate": model_candidate.get("verdict"),
                     "evidence_check": evidence_check,
+                    # §4.17 R4: check-pass / format-valid / conclusion-faithful
+                    # / trainable are four different things.  This block is the
+                    # first three; `trainable` is the conversion gate's call.
+                    "conclusion": conclusion,
                 }
                 break
 
@@ -536,6 +593,7 @@ class ForensicStateMachine:
             policy_decision=policy_decision,
             available_experts=list(self._experts),
             evidence_check=evidence_check,
+            conclusion=(final_verdict or {}).get("conclusion"),
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -625,9 +683,23 @@ class ForensicStateMachine:
         return HaltingPolicyV2.expert_weights(separations)
 
     @staticmethod
-    def _conclusion_note(decision, ledger=None) -> str:
+    def _system_texts(conversation: List[Dict[str, str]]) -> List[str]:
         """
-        Frame the closing turn truthfully (§4.17 R2).
+        The numbers the system itself put in the conversation.
+
+        A model quoting "系统参考后验 P(Fake)=0.63" is not fabricating; only
+        the notes the pipeline injected may be cited this way, never the
+        expert tokens (attributing another expert's value is a defect).
+        """
+        return [turn.get("value", "") for turn in conversation
+                if turn.get("from") == "user"
+                and turn.get("value", "").startswith("[System:")]
+
+    @staticmethod
+    def _conclusion_note(decision, ledger=None,
+                         turns_without_new_evidence: int = 0) -> str:
+        """
+        Frame the closing turn truthfully (§4.17 R2/R4).
 
         The old default asked the model to "explain why the existing tools
         cannot reduce the uncertainty further" — a leading question, and the
@@ -635,6 +707,11 @@ class ForensicStateMachine:
         now names the real reason, states what the ledger contains, and asks
         for a conclusion from those measurements or a plain statement of what
         is missing.  It never suggests a label.
+
+        The stall wording describes what v2 actually measures: consecutive
+        turns that produced no new evidence — not "the same content twice"
+        (v2 never compares the texts).  The strict repeated-action semantics
+        belong to v3.
         """
         summary = ledger.summary() if ledger is not None else ""
         tail = ("请只使用已执行的专家返回过的数值给出结论；若这些测量不足以判定，"
@@ -644,10 +721,18 @@ class ForensicStateMachine:
         elif HaltingPolicyV2.CONFLICT_UNRESOLVED in decision.all_reasons:
             head = "[System: 证据之间存在未解决的冲突，且不再有新的取证。"
         elif decision.primary_reason == HaltingPolicyV2.MODEL_STALLED:
-            head = "[System: 你连续给出了相同的内容而没有新的测量或新的动作，会话到此结束。"
+            turns = getattr(decision, "stall_turns", 0) or turns_without_new_evidence
+            head = (
+                f"[System: 你已连续 {turns} 轮没有新增任何测量结果"
+                "（判定依据是每轮是否产生新证据，不是每轮文字是否逐字相同），"
+                "会话到此结束。"
+            )
         else:
             head = "[System: 当前策略估计继续调用收益不足（这是策略的估计，不是对工具能力的定论）。"
-        return f"{head}{summary}。{tail}]"
+        body = head if head.endswith("。") else head + "。"
+        if summary:
+            body += summary + "。"
+        return f"{body}{tail}]"
 
     def _request_conclusion(
         self, image_path: str, conversation: List[Dict[str, str]], note: str
@@ -671,6 +756,7 @@ class ForensicStateMachine:
         policy_decision=None,
         available_experts: Optional[List[str]] = None,
         evidence_check: Optional[dict] = None,
+        conclusion: Optional[dict] = None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -711,5 +797,15 @@ class ForensicStateMachine:
                     evidence_chain or []),
                 # The evidence ledger's verdict on the closing turn (§4.17 R3).
                 "evidence_check_status": (evidence_check or {}).get("status"),
+            })
+        if conclusion is not None:
+            # §4.17 R4: one `pass` cannot stand for four different things.
+            # These are the check and the format/purity of the adopted
+            # conclusion; `trainable` is decided by the conversion gate.
+            counters.update({
+                "conclusion_source": conclusion.get("source"),
+                "conclusion_verdict_parse": conclusion.get("verdict_parse"),
+                "conclusion_calls_unexecuted": bool(
+                    conclusion.get("calls") and not conclusion.get("calls_executed")),
             })
         return counters

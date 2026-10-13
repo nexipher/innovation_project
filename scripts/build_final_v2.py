@@ -40,6 +40,7 @@ from scripts.generate_trajectories_g4 import load_applicability
 from utils.final_v2 import (
     RETIRED_EXPERTS,
     SCHEMA_VERSION,
+    conclusion_gate,
     load_split,
     render_sample,
     validate_sample,
@@ -162,6 +163,9 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
 
     buckets: Dict[str, List[dict]] = {name: [] for name in FILES}
     invalid: List[dict] = []
+    gated: List[dict] = []
+    gate_reasons: collections.Counter = collections.Counter()
+    legacy_without_check = 0
 
     for decision in admitted:
         record = trajectories.get(decision["trajectory_id"])
@@ -169,6 +173,19 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
             invalid.append({"trajectory_id": decision["trajectory_id"],
                             "problems": ["trajectory record missing"]})
             continue
+        # §4.17 R4: the hard gate.  `failed` must not become a training sample,
+        # and the same refusal applies to an adopted conclusion that does not
+        # parse or that shows a call the controller never executed.  The
+        # original trajectory record is left untouched; only the rendering is
+        # refused, and the reason is written down.
+        reason = conclusion_gate(record)
+        if reason:
+            gated.append({"trajectory_id": record["trajectory_id"],
+                          "category": decision["category"], "reason": reason})
+            gate_reasons[reason] += 1
+            continue
+        if "evidence_check" not in record:
+            legacy_without_check += 1
         record = {**record,
                   "image_path": variant_paths.get(record["variant_id"], ""),
                   "resolution": (split or {}).get("sources", {})
@@ -191,6 +208,10 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
             json.dump(samples, handle, ensure_ascii=False, indent=2)
     with open(os.path.join(output_dir, "sft_invalid.json"), "w", encoding="utf-8") as handle:
         json.dump(invalid, handle, ensure_ascii=False, indent=2)
+    # Refused by the evidence gate: kept beside the samples so a reviewer can
+    # see what was removed and why, without reading the trajectory again.
+    with open(os.path.join(output_dir, "sft_gated.json"), "w", encoding="utf-8") as handle:
+        json.dump(gated, handle, ensure_ascii=False, indent=2)
 
     # The batch's own version stamp: every sample's content digest, hashed once.
     # A review recorded against one fingerprint must not be applied to another,
@@ -210,11 +231,16 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
     # mostly where the no-tool baseline is confidently wrong, which in this
     # dataset means Fake, so the raw composition is Fake-heavy (75/25) and
     # would otherwise teach a "tools mean Fake" prior.
-    weights = {
-        label: round(labels[max(labels, key=labels.get)]
-                     / max(1, labels.get(label, 0)), 4)
-        for label in ("Real", "Fake")
-    }
+    # Every admitted trajectory can be refused by the evidence gate, in which
+    # case there is no label composition to balance (this used to raise on an
+    # empty Counter instead of writing the empty, recorded result).
+    weights = {}
+    if labels:
+        weights = {
+            label: round(labels[max(labels, key=labels.get)]
+                         / max(1, labels.get(label, 0)), 4)
+            for label in ("Real", "Fake")
+        }
     metadata = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "schema_version": SCHEMA_VERSION,
@@ -228,6 +254,9 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
         "split_hash": (split or {}).get("hash"),
         "counts": {bucket: len(samples) for bucket, samples in buckets.items()},
         "invalid": len(invalid),
+        "gated": len(gated),
+        "gate_reasons": dict(gate_reasons),
+        "legacy_without_evidence_check": legacy_without_check,
         "total": sum(len(samples) for samples in buckets.values()),
     }
     with open(os.path.join(output_dir, "metadata.json"), "w", encoding="utf-8") as handle:

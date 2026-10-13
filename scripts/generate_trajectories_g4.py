@@ -288,6 +288,10 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
         # carried here so the conversion step can refuse a session whose
         # fabrication survived its one correction instead of rendering it away.
         "evidence_check": verdict.get("evidence_check"),
+        # §4.17 R4: which turn the adopted conclusion came from, whether it
+        # parsed, and whether any call in it was left unexecuted — the
+        # conversion gate reads these before rendering a single sample.
+        "conclusion": verdict.get("conclusion"),
         "confidence": verdict.get("confidence"),
         "report": verdict.get("report"),
         "posterior": verdict.get("posterior"),
