@@ -178,8 +178,11 @@ class TestToolPolicies:
         template stopped inviting the call tag inside its prose (the acceptance
         run showed the model writing the tag twice in one response), which
         moved it to e9e2120587d8049d; entry 4 then made the once-per-session
-        rule explicit rather than advisory, and re-pinned it here.  Anything
-        that moves it again has to say so in a commit.
+        rule explicit rather than advisory; the repair pass (B segment step 2)
+        added the single-action rule, the optional bbox, the "no clear
+        anomaly" planning line and the pre-call claim rule, moving it to
+        8c342dc61db40df7.  Anything that moves it again has to say so in a
+        commit.
         """
         import hashlib
 
@@ -188,7 +191,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "ec50468e31d57d44"
+            "8c342dc61db40df7"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

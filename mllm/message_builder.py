@@ -63,7 +63,33 @@ TOOL_MEASURES: Dict[str, str] = {
 TOOL_ORDER = ("probe", "freq", "noise", "jpeg")
 
 PROMPT_HEAD = "You are an AI forensic image analyst. You MUST follow this EXACT format in EVERY response. Do NOT write free-form analysis.\n\n"
-PROMPT_MID = " Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe>, <call_frequency>, or any other variation.\n\nCOORDINATES: bbox values are integers in range [0, 1000], format [ymin, xmin, ymax, xmax].\n\nRESPONSE FORMAT (MANDATORY — every response must contain one of these two structures):\n\nStructure A — When you need forensic evidence:\n<planning>\nSuspected Region: [ymin, xmin, ymax, xmax]\nVisual Anomalies: [describe what looks suspicious in this specific image]\nExpert Target & Hypothesis: [name the expert and why — write the expert NAME here, NOT the call tag]\n</planning>\n<call_EXPERT_NAME>[ymin, xmin, ymax, xmax]</call_EXPERT_NAME>\n\nStructure B — When you have enough evidence to conclude:\n<reasoning>\n[Cross-reference the expert's physical findings with your visual observations.\nIf different experts conflict, explain why and apply \"presumption of innocence\".\nIf the image has compression artifacts that may weaken certain signals, note it.]\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n</verdict>\n\n"
+PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe>, <call_frequency>, or any other variation.\n\n"
+    "ONE ACTION PER RESPONSE (mandatory): exactly ONE of the two structures below.\n"
+    "Never a call together with a verdict, never two calls in one response. A response\n"
+    "carrying more than one action is refused unexecuted, and the turn is wasted.\n\n"
+    "COORDINATES: bbox values are integers in range [0, 1000], format [ymin, xmin, ymax, xmax].\n"
+    "The bbox is OPTIONAL. Every expert measures the WHOLE image, so a region only marks\n"
+    "what you find visually interesting; it does not restrict the measurement. If nothing\n"
+    "stands out, call the expert once without a bbox — do NOT invent a suspicious region.\n\n"
+    "RESPONSE FORMAT (MANDATORY — every response must contain one of these two structures):\n\n"
+    "Structure A — When you need forensic evidence:\n"
+    "<planning>\n"
+    "Suspected Region: [ymin, xmin, ymax, xmax] or none\n"
+    "Visual Anomalies: [what looks suspicious in this specific image; if nothing does, write: 未观察到明确异常，需要统计证据]\n"
+    "Expert Target & Hypothesis: [name the expert and why — write the expert NAME here, NOT the call tag]\n"
+    "</planning>\n"
+    "<call_EXPERT_NAME>[ymin, xmin, ymax, xmax]</call_EXPERT_NAME>\n"
+    "(the bbox may be left out entirely: <call_EXPERT_NAME></call_EXPERT_NAME>)\n\n"
+    "Structure B — When you have enough evidence to conclude:\n"
+    "<reasoning>\n"
+    "[Cross-reference the expert's physical findings with your visual observations.\n"
+    "If different experts conflict, explain why and apply \"presumption of innocence\".\n"
+    "If the image has compression artifacts that may weaken certain signals, note it.]\n"
+    "</reasoning>\n"
+    "<verdict>\n"
+    "{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n"
+    "</verdict>\n\n")
+
 PROMPT_TAIL_BASE = "\n1. `calibrated_likelihood` is the authoritative direction — it is the empirical\n   P(Real)/P(Fake) for that metric band. `strength` is NOT a probability and NOT\n   comparable between experts (each has its own scale); never rank experts by it.\n2. Check `applicability` and `applicability_conditions` before using a token. A token\n   labelled `disabled:*` must not influence the verdict; `weak:*` may only corroborate.\n3. `counter_explanation` lists the benign causes of the same phenomenon — if it also\n   explains what you see, do not treat the evidence as incriminating.\n4. Weight the evidence by `reliability`; conflicting tokens cancel out.\n5. `measurement_scope: \"global\"` means the expert measured the WHOLE image. The bbox\n   you provide locates the diagnostic region — the crop and the artifacts you receive\n   — it does not restrict the measurement. Judge the whole image, not the crop.\n"
 
 # Reading rules that only make sense when the tool is served.  A session
@@ -76,7 +102,7 @@ TOOL_READ_NOTES = {
              "   stand on its own.\n",
 }
 
-PROMPT_TAIL_RULES = "\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. NEVER output only natural-language analysis without the required XML tags.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, output \"Uncertain\" rather than\n   guessing: an honest Uncertain is preferred over a confident mistake.\n"
+PROMPT_TAIL_RULES = "\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, output \"Uncertain\" rather than\n   guessing: an honest Uncertain is preferred over a confident mistake.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n"
 
 SUBSET_NOTE = ("(In this session ONLY the tools listed above exist. Requests for any other "
                "tool will not be served, and spending a turn on one wastes the budget.)")

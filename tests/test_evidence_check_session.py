@@ -137,11 +137,13 @@ class TestEveryAdoptedConclusionIsChecked:
     data unexamined.
     """
 
-    CLEAN_CANDIDATE = (CALL + "\n<reasoning>噪声残留专家显示较低的微噪声水平。</reasoning>\n"
+    # Under the single-action protocol (R9) a conclusion turn carries no call:
+    # the call was made in the turn before, and the verdict is its own turn.
+    CLEAN_CANDIDATE = ('<reasoning>噪声残留专家显示较低的微噪声水平。</reasoning>\n'
                        '<verdict>{"verdict": "Fake", "confidence": 0.9,'
                        ' "primary_evidence": [], "report": "噪声证据支持伪造。"}</verdict>')
     FABRICATED_CANDIDATE = (
-        CALL + "\n<reasoning>噪声残留专家与 JPEG 压缩专家都指向伪造。</reasoning>\n"
+        '<reasoning>噪声残留专家与 JPEG 压缩专家都指向伪造。</reasoning>\n'
         '<verdict>{"verdict": "Fake", "confidence": 0.9, "primary_evidence": [],'
         ' "report": "JPEG 压缩专家显示 blockiness 为 2.5。"}</verdict>')
     CORRECTED = ('<reasoning>只有噪声残留专家的测量，它指向伪造一侧。</reasoning>\n'
@@ -170,19 +172,19 @@ class TestEveryAdoptedConclusionIsChecked:
 
     def test_a_clean_accepted_candidate_passes_the_same_entry(self, tmp_path, monkeypatch):
         self._accept_everything(monkeypatch)
-        result = _run([self.CLEAN_CANDIDATE], tmp_path)
+        result = _run([CALL, self.CLEAN_CANDIDATE], tmp_path)
         check = result["final_verdict"]["evidence_check"]
         assert check["status"] == "pass" and check["entry"] == "candidate"
         conclusion = result["final_verdict"]["conclusion"]
         assert conclusion["source"] == "candidate"
-        assert conclusion["calls"] == ["noise"]
-        assert conclusion["calls_executed"] is True
+        # a conclusion turn requests nothing, so there is nothing unexecuted
+        assert conclusion["calls"] == []
         assert conclusion["verdict_parse"] == "ok"
 
     def test_a_fabrication_inside_an_accepted_candidate_is_caught(
             self, tmp_path, monkeypatch):
         self._accept_everything(monkeypatch)
-        result = _run([self.FABRICATED_CANDIDATE, self.CORRECTED], tmp_path)
+        result = _run([CALL, self.FABRICATED_CANDIDATE, self.CORRECTED], tmp_path)
         check = result["final_verdict"]["evidence_check"]
         assert check["status"] == "pass_after_correction"
         assert check["entry"] == "candidate"
@@ -196,24 +198,24 @@ class TestEveryAdoptedConclusionIsChecked:
             self, tmp_path, monkeypatch):
         """A sample must not show a call as part of the concluding answer."""
         self._accept_everything(monkeypatch)
-        result = _run([self.FABRICATED_CANDIDATE, self.MIXED_CORRECTION], tmp_path)
+        result = _run([CALL, self.FABRICATED_CANDIDATE, self.MIXED_CORRECTION], tmp_path)
         conclusion = result["final_verdict"]["conclusion"]
         assert conclusion["calls"] == ["noise"]
         assert conclusion["calls_executed"] is False
         assert _trace(result)["metadata"]["conclusion_calls_unexecuted"] is True
 
-    def test_a_skipped_repeat_counts_as_not_executed(self, tmp_path, monkeypatch):
-        """The call was answered from the ledger, never measured again."""
+    def test_a_repeat_call_is_skipped_and_the_conclusion_is_call_free(
+            self, tmp_path, monkeypatch):
+        """The repeat is answered from the ledger; the verdict turn asks nothing."""
         self._accept_everything(monkeypatch)
-        repeat_then_verdict = self.CLEAN_CANDIDATE
-        result = _run([CALL, repeat_then_verdict], tmp_path)
+        result = _run([CALL, CALL, self.CLEAN_CANDIDATE], tmp_path)
+        assert result["skipped_duplicate_calls"] == 1
         conclusion = result["final_verdict"]["conclusion"]
-        assert conclusion["calls"] == ["noise"]
-        assert conclusion["calls_executed"] is False
+        assert conclusion["calls"] == []
 
     def test_the_counters_separate_the_four_states(self, tmp_path, monkeypatch):
         self._accept_everything(monkeypatch)
-        result = _run([self.FABRICATED_CANDIDATE, self.CORRECTED], tmp_path)
+        result = _run([CALL, self.FABRICATED_CANDIDATE, self.CORRECTED], tmp_path)
         counters = _trace(result)["metadata"]
         assert counters["evidence_check_status"] == "pass_after_correction"
         assert counters["conclusion_source"] == "correction"

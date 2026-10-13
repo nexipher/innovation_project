@@ -40,6 +40,16 @@ class Parser:
     )
 
     # Generic call tag: captures expert name and bbox
+    # §4.17 R9: the bbox is optional.  Every expert measures the whole image,
+    # so which region the model names is a diagnostic note, not a requirement
+    # — and a model with nothing to point at must not be forced to invent a
+    # region before it may consult the statistics.
+    _RE_CALL_ANY = re.compile(
+        r"<call_(\w+)>\s*"
+        r"(?:\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]?)?\s*"
+        r"(?:</call_\w+>)?",
+        re.I)
+
     _RE_CALL = re.compile(
         r"<call_(\w+)>\s*\[?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]?\s*</call_\1>",
         re.DOTALL | re.IGNORECASE,
@@ -168,22 +178,47 @@ class Parser:
         return cls._TAG_NORMALIZE.get(name.lower(), name.lower())
 
     @classmethod
-    def extract_all_calls(cls, text: str) -> List[Tuple[str, List[int]]]:
+    def extract_all_calls(cls, text: str) -> List[Tuple[str, Optional[List[int]]]]:
         """
         Extract ALL expert calls (any type) from the text.
-        Uses the generic _RE_CALL pattern + tag normalisation.
+
+        A call may carry a bbox or not: `bbox is None` means "measure the
+        image as a whole, I have no region to point at", which is a legal
+        request (R9).
 
         Returns:
-            List of (expert_name, bbox) tuples.
+            List of (expert_name, bbox_or_None) tuples.
         """
         results = []
-        for m in cls._RE_CALL.finditer(text):
+        for m in cls._RE_CALL_ANY.finditer(text):
             raw_name = m.group(1)
             expert_name = cls._normalize_expert_name(raw_name)
-            if expert_name in cls.CALLABLE_TOOLS:
-                bbox = [int(m.group(i)) for i in range(2, 6)]
-                results.append((expert_name, bbox))
+            if expert_name not in cls.CALLABLE_TOOLS:
+                continue
+            if m.group(2) is None:
+                results.append((expert_name, None))
+            else:
+                results.append((expert_name, [int(m.group(i)) for i in range(2, 6)]))
         return results
+
+    @classmethod
+    def protocol_action(cls, text: str) -> dict:
+        """
+        What one turn did, judged by the single-action protocol (§4.17 R9).
+
+        One tool request or one conclusion — never both, never two requests.
+        The parser is where "mixed" is *decided* (rather than the executor
+        quietly picking a half), so the controller can answer it with a
+        protocol correction and execute nothing.
+        """
+        calls = cls.extract_all_calls(text)
+        verdict = cls.has_verdict(text)
+        violation = None
+        if calls and verdict:
+            violation = "call_and_verdict"
+        elif len(calls) > 1:
+            violation = "multiple_calls"
+        return {"calls": calls, "verdict": verdict, "violation": violation}
 
     @classmethod
     def has_verdict(cls, text: str) -> bool:

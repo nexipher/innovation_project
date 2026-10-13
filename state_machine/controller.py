@@ -181,6 +181,8 @@ class ForensicStateMachine:
         invalid_action_turns = 0
         format_failure_turns = 0
         advisory_sent = False
+        # §4.17 R9: turns refused for carrying more than one action.
+        protocol_violations = 0
 
         # Outer safety net: the halting budget fires first; the +1 allows the
         # forced-conclusion turn that budget halting triggers.
@@ -229,8 +231,25 @@ class ForensicStateMachine:
                 halting_reason = HaltingChecker.VERDICT_OUTPUT
                 break
 
-            # 4c. Extract expert calls
-            calls = Parser.extract_all_calls(raw_output)
+            # 4c. Extract expert calls — one action per turn (§4.17 R9).
+            # A turn that mixes a call with a conclusion, or asks for two
+            # tools at once, is answered with a protocol correction and
+            # **nothing is executed**: the executor never picks a half for
+            # the model, and the trace records that the turn was refused.
+            action = Parser.protocol_action(raw_output)
+            if action["violation"]:
+                protocol_violations += 1
+                protocol = (
+                    "[System: 协议要求每轮只有一个动作 —— 要么一次工具调用"
+                    "（一个 <call_x> 标签），要么一次结案（一个 <verdict> 标签）。"
+                    "本轮同时出现了多个动作，因此都未执行。"
+                    "请重新输出：只保留你要做的那个动作。]"
+                )
+                self._logger.add_system_message(protocol)
+                conversation.append({"from": "user", "value": protocol})
+                calls, candidate_verdict = [], None
+            else:
+                calls = action["calls"]
             turn_calls_executed = True
 
             if calls:
@@ -239,9 +258,19 @@ class ForensicStateMachine:
                 for expert_name, rel_bbox in calls:
                     # Convert normalized [0,1000] → absolute pixel coordinates,
                     # keeping both spaces in the trace (plan.md §4.8 G1).
-                    transform = CoordinateTransformer.transform(rel_bbox, w, h)
-                    abs_bbox = transform["region_pixels"]
-                    patch = ImageUtils.crop_bbox(img, abs_bbox)
+                    # §4.17 R9: a call without a bbox is legal — every expert
+                    # measures the whole image, and the region was only ever a
+                    # diagnostic note.  Nothing is invented here: the trace
+                    # records that no region was requested.
+                    if rel_bbox is None:
+                        transform = {"region_pixels": [0, 0, h, w],
+                                     "region_normalized_1000": None}
+                        abs_bbox = [0, 0, h, w]
+                        patch = img
+                    else:
+                        transform = CoordinateTransformer.transform(rel_bbox, w, h)
+                        abs_bbox = transform["region_pixels"]
+                        patch = ImageUtils.crop_bbox(img, abs_bbox)
 
                     source_name = self._expert_by_call.get(expert_name, "")
                     expert = self._experts.get(source_name)
@@ -432,7 +461,8 @@ class ForensicStateMachine:
                 # "no new evidence", which a legal first call also produces.
                 if calls:
                     action_signature: tuple = tuple(
-                        (expert_name, tuple(rel_bbox)) for expert_name, rel_bbox in calls)
+                        (expert_name, tuple(rel_bbox) if rel_bbox else None)
+                        for expert_name, rel_bbox in calls)
                 elif candidate_verdict:
                     action_signature = ("verdict",)
                 else:
@@ -710,6 +740,7 @@ class ForensicStateMachine:
             evidence_check=evidence_check,
             conclusion=(final_verdict or {}).get("conclusion"),
             v3_signals=v3_signals,
+            protocol_violations=protocol_violations,
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -879,6 +910,7 @@ class ForensicStateMachine:
         evidence_check: Optional[dict] = None,
         conclusion: Optional[dict] = None,
         v3_signals: Optional[dict] = None,
+        protocol_violations: int = 0,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -901,6 +933,9 @@ class ForensicStateMachine:
             # reasons and the trace looked identical (0 of 3237 traces
             # recorded this before 2026-10-11).
             "available_experts": sorted(available_experts or []),
+            # §4.17 R9: how many turns carried more than one action and were
+            # refused unexecuted.
+            "protocol_violations": protocol_violations,
         }
         if policy_decision is not None:
             # A replay must be able to explain the stop from the trace alone.

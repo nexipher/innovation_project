@@ -1608,3 +1608,22 @@
   - `README.md (Modified — §6.4 终止策略 v3)、plan.md (Modified — B 段第 2 步)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**1051 项测试通过**（基线 1028 → 本轮 +23）。关键断言：后验 0.95 而模型结案 Real → **最终标签 Real**（reference_recommendation 记为 Fake、advisory 含 reference_disagrees）；会话中**不再出现**"暂不能结案/与当前校准后验不一致"提示；模型弃权 → 最终 Uncertain 且记 `model_abstained`；参考收益为 0 时第二次调用仍执行且提示只发一次；同一调用三次 → `loop_protection`；三轮无合法动作 → `format_failure`；预算耗尽 → 标签由收尾轮给出
 * **置信度或遗留待办（TODO）**：①**下游影响审计**（准入评分、Brier 口径、转换、报告）在 v3 产物上尚未复核——v3 的 `final_verdict` 语义变了（模型标签而非后验标签），`scores.posterior_brier` 仍是参考后验的校准指标，需在 CPU 回归里明确区分"模型标签准确率"与"参考后验 Brier"②v3 尚未在任何真实批次上运行（受 GPU 授权约束）③下一步：**全局单动作协议**（一次调用或一次结案、bbox 可选、允许"未观察到明确异常"、混合输出给协议纠正而不静默择一）
+
+### 2026-10-13 13:58:47 - G7 §4.17 B 段第 3 步：全局单动作协议（一次调用或一次结案；bbox 可选；不负向逼迫）
+
+* **当前操作动作**：按用户第三次给定顺序第 2 项实施全局单动作协议——每轮只允许一个动作（一次工具调用或一次结案），解析器与执行器共同约束、混合输出给协议纠正且**不静默择一**；bbox 改为可选；允许首轮"未观察到明确异常"；未测量前不得声称 SRM/DCT/传感器级物理证据
+* **对应计划锚点**：plan.md §4.17（B 段第 3 步；对应交接文档 R9 与用户顺序第 2 项）
+* **核心变更说明**：
+  1. **解析器先判定（`Parser.protocol_action`）**：一轮里出现"调用 + 结案"记 `call_and_verdict`，出现两个及以上调用记 `multiple_calls`。判定在解析层完成，执行器不挑选其中一半
+  2. **执行器拒绝并说明**：违规轮**不执行任何调用、不采用结案**，发送协议纠正（"都未执行，请重新输出只保留你要做的那个动作"），并计入 `metadata.protocol_violations`；该轮在策略侧按"无效动作"计（v3：连续三次即 `format_failure`）
+  3. **bbox 可选**：`<call_noise></call_noise>` 合法；缺省时按整图测量（`region_pixels=[0,0,h,w]`、`region_normalized_1000=None`、`measurement_scope="global"`）——**不编造关注区域**，轨迹如实记录"未指定区域"
+  4. **提示词（SOP）同步**：新增"ONE ACTION PER RESPONSE（一轮一个动作，多于一个即被拒绝且该轮作废）"；坐标段明确 bbox 可选、无异常时**不要编造可疑区域**；Structure A 的 planning 允许 `Suspected Region: none` 与 `Visual Anomalies: 未观察到明确异常，需要统计证据`；新增规则 6：**调用前只能描述看得见的外观**（纹理/边缘/光照），SRM、DCT 直方图、传感器噪声只能在该专家返回 token 之后引用
+  5. **提示词哈希更新**：`FORENSIC_SYSTEM_PROMPT` sha256[:16] `ec50468e31d57d44` → **`8c342dc61db40df7`**（测试内注释记录变更链，改动必须写明理由）；`BASELINE_SYSTEM_PROMPT`（无工具对照）**未改动**，sha256[:16] 仍为 `a81f43b97d1b3714`；`config_fingerprint.prompt_digest()` 随之变化并写入每个批次
+* **涉及/修改的文件清单**：
+  - `utils/parser.py (Modified — `_RE_CALL_ANY` bbox 可选、`extract_all_calls` 返回 bbox_or_None、新增 `protocol_action`)`
+  - `state_machine/controller.py (Modified — 4c 协议判定与拒绝、bbox 缺省按整图、动作签名兼容 None、`protocol_violations` 计数器)`
+  - `mllm/message_builder.py (Modified — SOP：单动作、bbox 可选、"未观察到明确异常"、调用前不得声称物理证据)`
+  - `tests/test_single_action_protocol.py (Created — 14 项)、tests/test_evidence_check_session.py (Modified — 结案轮按协议不含调用；重复调用用例改写)、tests/test_message_builder.py (Modified — 新哈希 8c342dc61db40df7)`
+  - `claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**1065 项测试通过**（基线 1051 → 本轮 +14）。协议测试覆盖：解析层三类判定；混合轮/双调用轮**均不执行**（`expert_call_count == 0`、`unique_evidence_count == 0`）且提示明确；无 bbox 调用按整图测量且 `region_normalized_1000 is None`；提示词包含单动作、bbox 可选、不许编造区域、"未观察到明确异常"与调用前证据规则
+* **置信度或遗留待办（TODO）**：①协议由**提示词 + 解析器 + 执行器**三层共同约束，但真实模型是否遵守只能在小批 GPU 运行中观察（本轮无 GPU 授权）②`scripts/g7_acceptance.py` 的会话记账（调用-坐标恒等式）在 bbox 可选后需按新语义重核——它校验的是"模型声明的调用都被执行"，仍成立，但**无 bbox 调用**的坐标恒等式需在 CPU 回归时补一条③下一步：**校准修正**（只用指定开发来源、修正跨格式权重，保留旧表供复算）
