@@ -182,3 +182,45 @@ def _counts(samples: List[dict]) -> dict:
         label = sample.get("ground_truth", "?")
         counts[bucket][label] = counts[bucket].get(label, 0) + 1
     return counts
+
+
+# ---------------------------------------------------------------------------
+# Version records (§4.17 工程收口)
+# ---------------------------------------------------------------------------
+
+VERSIONS_FILE = "VERSIONS.json"
+
+
+def batch_versions(experts: Optional[dict] = None, extra: Optional[dict] = None) -> dict:
+    """
+    The four versions a batch must record to be readable later.
+
+    A batch is only interpretable with the code, the prompt, the expert
+    (weight) specs and the calibration table it was produced under.  Old
+    batches recorded some of this in scattered reports and none of it in the
+    batch directory; this is the single record that travels with the data.
+    """
+    from datetime import datetime
+
+    from utils.config_fingerprint import calibration_identity, compute, prompt_digest
+
+    versions = {
+        "recorded_at": datetime.now().isoformat(timespec="seconds"),
+        "halting_policy": os.environ.get("FORENSIC_HALTING_POLICY", "v2"),
+        "prompt_digest": prompt_digest(),
+        "calibration": calibration_identity(),
+        "fingerprint": compute(experts or {}),
+    }
+    if extra:
+        versions.update(extra)
+    return versions
+
+
+def write_batch_versions(directory: str, experts: Optional[dict] = None,
+                         extra: Optional[dict] = None) -> str:
+    """Write `VERSIONS.json` into a batch directory; returns its path."""
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, VERSIONS_FILE)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(batch_versions(experts, extra), handle, ensure_ascii=False, indent=2)
+    return path

@@ -1769,3 +1769,24 @@
   - `sft_data/review/g7_b2/*.html (Regenerated — 指纹 20e7ba4c80984686)`
 * **执行结果与验证状态**：**分块运行 1115 通过 + 1 跳过**（369+407+339）。真实数据核对：样本 observation 段现为「模型视觉观察：未观察到明确异常，需要统计证据 / container: jpg, quality: jpeg_q70 / resolution: [256, 256]（输入图像尺寸（模型实际所见））」——模型原话保留、尺寸正确、无编造描述。
 * **置信度或遗留待办（TODO）**：①**"模型是否真会描述场景"只能下一批验证**（提示词改动需 GPU 重跑；本批 56 条的通用句是既成事实，保留原样）②新协议下若模型仍写通用句，可以考虑在验收指标里加一条"观察段是否包含具体可见特征"的自动检查（当前没有）③分辨率来源已标注，但**源图分辨率与模型输入尺寸可能不同**（本批恰好都是 256×256），工作台显示时按来源区分
+
+### 2026-10-13 22:04:46 - 工程收口（四件事）+ 历史批次全部冻结（用户决定）
+
+* **当前操作动作**：按用户指示暂停新增专家/大批生成/SFT，做**工程收口**四件事；随后按用户两条补充修正：①过去所有批次**全部冻结为历史实验**（换专家后生成新版）②台账漏报 g7_b1 的审核导出（用户指出）。
+* **对应计划锚点**：plan.md 顶部新「当前阶段与近期任务」；`CURRENT_PROGRAM_ARCHITECTURE.md`、`KNOWN_ISSUES.md`、`sft_data/BATCH_INVENTORY.md`
+* **核心变更说明**：
+  1. **唯一当前版本（收口 1）**：`CURRENT_PROGRAM_ARCHITECTURE.md`——当前任务是全局生成检测；**Qwen 主导调用与结案，控制器负责执行与安全约束，参考后验只作对照**；唯一推荐启动命令 `FORENSIC_HALTING_POLICY=v3 python main.py --image <path>`；**默认仍是 v2**，实验版本只能显式开启；真实可用专家（probe/noise/jpeg/freq；退役 frequency v1、ela；trufor 不在主链）；运行时序与停止原因一览。
+  2. **文档整理（收口 2）**：README 顶部新增 §0「当前版本」并指向三份权威文档，§7 起明确标注为**历史档案**；plan.md 顶部改为「当前阶段与近期任务」（含收口四件事的落地位置与推进顺序），其余全部归入「历史计划档案（不再与当前指令并列）」。
+  3. **数据与产物隔离（收口 3）**：新增 `scripts/batch_inventory.py` → 生成 `sft_data/BATCH_INVENTORY.md`：逐批记录**类别、轨迹数、策略/提示词/校准表/代码四版本、样本与审核状态**；新增 `utils/batch.write_batch_versions()`，生成器与评审材料构建器在每个批次目录写 `VERSIONS.json`；为既有批次**回填**了版本文件（g7_b2 取自其运行报告；g7_b1 取自轨迹的 policy_version + 归档的 v1 校准表，缺项如实写"未记录"）。台账顶部写明两条规则：**重新渲染工作台 ≠ 重新生成轨迹**、**自动检查通过 ≠ 允许训练**。
+  4. **未完成清单（收口 4）**：`KNOWN_ISSUES.md`——A 证据忠实性 6 项、B 重复调用与停止记录 5 项、C 专家更换与重新校准 5 项、D 审核与数据卫生 5 项，每项**状态**（已实现待验证／尚未修复／暂缓）+ **验收条件**；E 段明确暂缓项；近期聚焦三件事。
+  5. **冻结决定（用户补充 1）**：过去的所有批次（g7_b1、g7_b2、237 集、两个缺陷归档）**全部冻结为历史实验**——换专家后测量系统改变，历史批次一律不进 SFT；未审核不再是训练前置（D2 暂缓），D3 结案。
+  6. **修正漏报（用户补充 2）**：台账此前只查 `sft_data/review/review_decisions_<id>.json` 一个位置，漏掉批次目录内的导出 → 报"无导出文件"**假零**。现在两个位置都查并读文件自身的 `batch_id`；g7_b1 显示 **145/145 已审核（导出 sft_data/review/g7_b1/review_decisions_g7_b1.json）**，同时如实指出该导出**从未写回仓库**（`record_review --import` 未执行），并给出补做命令。
+* **涉及/修改的文件清单**：
+  - `CURRENT_PROGRAM_ARCHITECTURE.md (Created)、KNOWN_ISSUES.md (Created)、sft_data/BATCH_INVENTORY.md (Created/Generated)`
+  - `README.md (Modified — §0 当前版本 + §7 历史档案分界)、plan.md (Modified — 顶部当前阶段 + 档案分界)`
+  - `utils/batch.py (Modified — batch_versions/write_batch_versions)、scripts/batch_inventory.py (Created)`
+  - `scripts/generate_trajectories_g4.py、scripts/build_review_from_trajectories.py (Modified — 每次运行写 VERSIONS.json)`
+  - `sft_data/trajectories_g7_b1|_g7_b2/VERSIONS.json (Created — 回填并注明来源)`
+  - `tests/test_batch_binding.py (Extended — 版本记录、台账文案、导出查找与冻结分类)`
+* **执行结果与验证状态**：**分块运行 1121 通过 + 1 跳过**（369+407+345）。台账实测输出：g7_b1「冻结 · 历史实验（已审核，仍不用于训练）」145/145；g7_b2「冻结 · 历史实验（未审核；新材料由新版专家生成）」0/56。**未运行任何 GPU 任务。**
+* **置信度或遗留待办（TODO）**：①g7_b1 的 145 条审核导出仍未写回 dispositions（该批已冻结，仅留档；补做命令已写入清单 D5）②新专家接入前的"评测替代专家"需要的入口/数据尚未设计（C2 暂缓）③提示词与状态行的真实效果仍待 GPU 对照（B2、A4）

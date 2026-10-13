@@ -3,10 +3,46 @@
 **主动探索型双分支图像取证系统**
 MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的法证报告。
 
+> **先读 §0：当前版本与入口。** 本文档 §1–§6 描述现在的系统；§7 起为**历史档案**
+> （计划、进展、旧路线），保留备查，不再是当前指令。
+
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-353%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-1115%20passed-brightgreen)](./tests/)
+
+---
+
+---
+
+## 0. 当前版本（工程收口，2026-10-13）
+
+**当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**，
+参考后验只作对照、不覆盖标签。默认配置是 **v2**，当前策略必须显式启用：
+
+```bash
+FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>     # 唯一推荐启动命令
+```
+
+**权威文档（只描述当前代码）**：
+
+| 文档 | 内容 |
+|------|------|
+| [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md) | 当前任务、角色分工、入口、真实可用的专家、运行时序、版本记录规则 |
+| [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) | 未完成问题清单（已实现待验证 / 尚未修复 / 暂缓），每项带验收条件 |
+| [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账：历史 / 待审核 / 合格训练三类材料与各自的版本记录 |
+
+**当前实际可用的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`
+（后三者计划退出工具箱）。`frequency`(v1)、`ela` 已退役；`trufor` 不在全局主链，仅作对照。
+
+**三条不可混淆的规则**：
+
+1. 默认 v2——**不显式设置 `FORENSIC_HALTING_POLICY=v3` 就不是当前策略**；报告必须核对策略、
+   提示词指纹与校准表身份（每个批次目录的 `VERSIONS.json`）。
+2. **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。进 SFT 的唯一路径是
+   `record_review --import` → `apply_review` → `build_final_v2`（门禁）。
+3. 未审核批次（含 g7_b1、g7_b2）**不得用于 SFT**；因缺陷作废的批次归档在
+   `sft_data/trajectories_<id>_<原因>/`，不参与任何统计。
 
 ---
 
@@ -527,6 +563,10 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 筛查器**未命中不等于已证明忠实**：检查只覆盖已定义的模式，人工审核仍是必需的。
 
 ---
+
+> **以下为历史档案（§7–§11）**：路线图、进展、旧规范与引用。保留备查；
+> 当前阶段与近期任务以 [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md)
+> 与 [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) 为准，本区的方案不再作为当前指令。
 
 ## 7. 项目进展与路线图
 

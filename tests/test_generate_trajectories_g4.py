@@ -225,10 +225,16 @@ class TestDryRunEndToEnd:
         module.main()
 
         written = sorted(p.name for p in out.glob("*.json"))
-        # the run's own report sits beside the trajectories now, one per run
-        assert written[:2] == ["Real_002baac0_native__no-tool.json",
-                               "Real_002baac0_native__noise.json"]
-        assert written[2].startswith("report_") and written[2].endswith(".json")
+        # the run's own report and the batch's version record sit beside the
+        # trajectories: §4.17 收口 requires the four versions to travel with
+        # the data, not only inside a report
+        assert written == ["Real_002baac0_native__no-tool.json",
+                           "Real_002baac0_native__noise.json",
+                           "VERSIONS.json",
+                           next(name for name in written if name.startswith("report_"))]
+        versions = json.loads((out / "VERSIONS.json").read_text(encoding="utf-8"))
+        assert versions["halting_policy"] in ("v1", "v2", "v3")
+        assert versions["prompt_digest"] and versions["calibration"]["digest"]
         record = json.loads((out / written[0]).read_text(encoding="utf-8"))
         assert record["policy"] == "no-tool"
         assert record["tools_served"] == []

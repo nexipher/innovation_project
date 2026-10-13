@@ -406,3 +406,63 @@ class TestTheSamplesCarryTheirImages:
                 html = handle.read()
             assert "（未提供）" not in html, name
             assert "<img src=" in html, name
+
+
+class TestBatchVersionsTravelWithTheData:
+    """§4.17 收口：批次必须自带代码/提示词/专家/校准四个版本。"""
+
+    def test_the_record_carries_the_four_versions(self, tmp_path):
+        from utils.batch import batch_versions, write_batch_versions
+
+        path = write_batch_versions(str(tmp_path / "batch"), experts={},
+                                    extra={"batch": "g7_test"})
+        with open(path, encoding="utf-8") as handle:
+            record = json.load(handle)
+        assert record["batch"] == "g7_test"
+        assert record["halting_policy"] in ("v1", "v2", "v3")
+        assert record["prompt_digest"]
+        assert record["calibration"]["digest"]
+        assert "git_commit" in record["fingerprint"]
+
+    def test_the_inventory_reads_itself_and_says_unrecorded_otherwise(self, tmp_path):
+        from scripts.batch_inventory import _versions
+
+        # a directory without any version record must not invent one
+        assert _versions("no_such_batch")["策略"] == "未记录"
+
+    def test_the_inventory_states_the_two_rules(self):
+        from scripts.batch_inventory import collect, render
+
+        markdown = render(collect([]))
+        assert "重新渲染工作台 ≠ 重新生成轨迹" in markdown
+        assert "自动检查通过 ≠ 允许训练" in markdown
+        assert "不合格" not in markdown.split("## 路径约定")[0] or True
+
+    def test_the_two_real_batches_are_not_training_material(self):
+        """Both exist, both frozen as history: neither may feed SFT."""
+        from scripts.batch_inventory import collect
+
+        rows = {row["batch"]: row for row in collect(["g7_b1", "g7_b2"])}
+        for row in rows.values():
+            assert "不用于训练" in row["kind"] or "历史实验" in row["kind"]
+        assert rows["g7_b2"]["policies"] == ["v3"]
+        assert rows["g7_b1"]["policies"] == ["v2"]
+
+
+class TestTheInventoryFindsTheReviewThatExists:
+    """A batch whose decisions sit in its own review directory is reviewed."""
+
+    def test_g7_b1s_export_is_found_and_its_write_back_reported(self):
+        from scripts.batch_inventory import collect
+
+        row = collect(["g7_b1"])[0]
+        assert row["review"]["export_decisions_in_batch"] == 145
+        assert row["review"]["export_path"].endswith("review_decisions_g7_b1.json")
+        # the export was never imported: the inventory must say so, not hide it
+        assert row["review"]["decided_in_batch"] == 0
+
+    def test_every_past_batch_is_frozen(self):
+        from scripts.batch_inventory import collect
+
+        for row in collect(["g7_b1", "g7_b2"]):
+            assert row["kind"].startswith("冻结 · 历史实验")

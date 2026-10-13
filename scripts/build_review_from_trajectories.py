@@ -31,7 +31,7 @@ from typing import Dict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import batch_paths, load_trajectory_records
+from utils.batch import batch_paths, load_trajectory_records, write_batch_versions
 from utils.final_v2 import render_sample
 
 
@@ -103,6 +103,14 @@ def build(batch_id: str, split: Dict) -> Dict:
     with open(os.path.join(paths["samples"], "review_only.json"), "w",
               encoding="utf-8") as handle:
         json.dump(note, handle, ensure_ascii=False, indent=2)
+    # Re-rendering the review material is not regenerating the trajectories:
+    # the versions record what this batch *was produced* with, and says which
+    # files this run touched.
+    write_batch_versions(paths["samples"], extra={
+        "batch": batch_id,
+        "re_rendered_review_material": note["generated_at"],
+        "note": "工作台/评审样本重新渲染 ≠ 轨迹重新生成；本文件不改变采样内容",
+    })
     return note
 
 

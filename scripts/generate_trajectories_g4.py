@@ -45,7 +45,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import LEGACY_BATCH, batch_paths
+from utils.batch import LEGACY_BATCH, batch_paths, write_batch_versions
 from mllm.message_builder import (TRAINING_BASELINE_PROMPT,
                                    build_forensic_prompt)
 from mllm.mock_client import MockMLLMClient
@@ -469,6 +469,13 @@ def main() -> None:
     with open(report_path_for(args.output_dir), "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)
 
+    # §4.17 工程收口: the four versions travel with the data, not only inside
+    # one report: code, policy, prompt digest, expert specs, calibration.
+    versions_path = write_batch_versions(
+        args.output_dir, experts=build_experts(("freq", "noise", "jpeg")),
+        extra={"batch": args.batch, "policies": list(args.policies), "mode": mode,
+               "report": os.path.basename(report_path_for(args.output_dir))})
+    print(f"versions: {versions_path}")
     print(f"written: {len(records)}  already present: {done}")
     if skipped:
         print(f"gated out example: {skipped[0]['reason']}")
