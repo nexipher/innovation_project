@@ -35,7 +35,7 @@ from typing import Dict, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import LEGACY_BATCH, batch_paths
+from utils.batch import LEGACY_BATCH, assert_not_frozen_batch, batch_paths
 from scripts.generate_trajectories_g4 import load_applicability
 from utils.final_v2 import (
     RETIRED_EXPERTS,
@@ -148,7 +148,8 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
           admission_path: str = ADMISSION_REPORT,
           output_dir: str = OUTPUT_DIR,
           batch_id: str = LEGACY_BATCH,
-          variants_manifest: Optional[str] = None) -> dict:
+          variants_manifest: Optional[str] = None,
+          allow_frozen: bool = False) -> dict:
     assert_not_frozen(output_dir)
 
     with open(admission_path, encoding="utf-8") as handle:
@@ -276,6 +277,7 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
         "split_hash": (split or {}).get("hash"),
         "counts": {bucket: len(samples) for bucket, samples in buckets.items()},
         "invalid": len(invalid),
+        "frozen_batch_used": bool(allow_frozen),
         "gated": len(gated),
         "gate_reasons": dict(gate_reasons),
         "fidelity": {
@@ -303,7 +305,11 @@ def main() -> None:
     parser.add_argument("--admission-report", default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    parser.add_argument("--allow-frozen", action="store_true",
+                        help="只用于分析：允许读取冻结批次，产物会标注 frozen_batch_used")
     args = parser.parse_args()
+    # §4.17: the freeze is enforced here, not only written in the docs
+    assert_not_frozen_batch(args.batch, "转换/出集", allow=args.allow_frozen)
     paths = batch_paths(args.batch)
     if args.trajectories_dir is None:
         args.trajectories_dir = paths["trajectories"]
@@ -313,7 +319,7 @@ def main() -> None:
         args.output_dir = paths["samples"]
 
     metadata = build(args.trajectories_dir, args.admission_report, args.output_dir,
-                     args.batch)
+                     args.batch, allow_frozen=args.allow_frozen)
     print(f"counts: {metadata['counts']}")
     print(f"rejected by the validator: {metadata['invalid']}")
     print(f"total: {metadata['total']}  ->  {args.output_dir}")

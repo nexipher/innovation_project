@@ -1821,3 +1821,20 @@
 * **涉及/修改的文件清单**：`plan.md`、`README.md`、`scripts/g7_acceptance.py`、`scripts/cpu_acceptance_r5.py`、`tests/test_config_fingerprint.py (Extended — 2 项)`
 * **执行结果与验证状态**：**core 343 通过（26 秒）**；全仓再 grep，"默认 v2"只存在于历史档案与已改写的新表述中。
 * **置信度或遗留待办（TODO）**：无新增；GPU 依赖项（F3）仍待环境恢复。
+
+### 2026-10-13 23:21:45 - 三条收口：训练入口硬拒收冻结批次、逐轮审计按时间顺序、测试文档去环境假设
+
+* **当前操作动作**：按用户三条意见收口——①冻结此前只是文档约定，补**代码层拒收** ②逐轮审计有时间顺序漏洞（用最终证据替早期输出背书）③`TESTING.md` 把本容器内存限制写成通用要求。CPU only，未动 GPU。
+* **对应计划锚点**：`KNOWN_ISSUES.md` A5/D6、`CURRENT_PROGRAM_ARCHITECTURE.md` §6、`TESTING.md`
+* **核心变更说明**：
+  1. **冻结成为硬约束（D6）**：新增 `sft_data/FROZEN.json`（登记 g4_trial / g7_b1 / g7_b2 及各自理由）；`utils/batch.assert_not_frozen_batch()` 让三个写入入口**直接退出**——`apply_review`（生成训练集）、`build_final_v2`（转换/出集）、`generate_trajectories_g4`（补写轨迹，避免把"从未在同一次运行里发生过"的会话混进历史批次）。分析用途需显式 `--allow-frozen`，`build_final_v2`/`apply_review` 的产物写入 `frozen_batch_used=true` 自标记。拒绝信息写明理由、给出正确做法（新建批次 id）。
+  2. **逐轮审计按时间顺序（A5）**：此前每轮都用**最终证据链**判定（理由是"晚到的数值仍是合法引用"）——这会给早期输出背书：某轮凭空写出噪声专家的结果，而噪声在**两轮之后**才被测量，旧口径直接放行。现在按 trace 顺序推进，每轮只用**该轮之前已投递**的 token 建账本（投递轮从 trace 里的 token JSON 解析），被替换的收尾轮不参与。**在 g7_b2 上实测抓到 2 例真缺陷**（旧口径 0 例）：①probe 令牌 raw=0.998454/P(Fake)=1.0，模型却写"探针的得分非常低（0.0015）…表明真实"②把 probe 的 P(Fake)=0.0 读成"AI 生成图像的可能性 0.939"。两例均为**数值+方向双错**，正是审核要看的形态。
+  3. **测试文档去环境假设**：`TESTING.md` 的 2 GB 表述改为"**本容器当前**的 cgroup 上限（读 `/sys/fs/cgroup/memory.max`）…这条不是对所有环境的要求"；`run_tests.sh` 改为**自适应**——读出余量，> 800 MB 一次跑完，紧张时按每块 8 个文件分块；读不到 cgroup 文件的机器按"内存充足"处理。module 层实测 3 分 20 秒（本容器余量小，自动分块），full 层 7 块全过。
+* **涉及/修改的文件清单**：
+  - `sft_data/FROZEN.json (Created)、utils/batch.py (Modified — frozen_batches/is_frozen/assert_not_frozen_batch)`
+  - `scripts/apply_review.py、scripts/build_final_v2.py、scripts/generate_trajectories_g4.py (Modified — 拒绝 + --allow-frozen + 产物标记)`
+  - `utils/final_v2.py (Modified — audit_dialogue 按轮推进、_parse_evidence_turn)`
+  - `tests/test_conversion_fidelity.py (Extended — TestTheAuditRespectsTime 3 项：晚到 token 不给早期背书 / 已投递则放行 / 收尾轮不重判)、tests/test_batch_binding.py (Extended — 冻结拒收 5 项，含 CLI 子进程)、tests/test_generate_trajectories_g4.py (Modified — 管道测试显式 --allow-frozen)`
+  - `scripts/run_tests.sh (Modified — 自适应分块)、TESTING.md、KNOWN_ISSUES.md、CURRENT_PROGRAM_ARCHITECTURE.md、README.md`
+* **执行结果与验证状态**：**full 层 7 块 1152 通过 + 1 跳过**（139+155+276+128+144+152+158）；新增测试覆盖：三个入口拒收（含真实 CLI 子进程断言"已冻结为历史实验"且未写出文件）、分析用途可显式放行、未冻结批次正常通过、审计的时间顺序三例。
+* **置信度或遗留待办（TODO）**：①g7_b2 上那 2 例新缺陷已写入清单 A5，属**冻结批次**的既成事实（不修数据，只作为规则有效性的证据）②`--allow-frozen` 的产物标记只在 build_final_v2/apply_review 写入 metadata；`generate_trajectories_g4` 的补写未标记（轨迹目录本身属于该批次，暂不加）③GPU 依赖项（F3：A4 观察协议、B2 状态行效果、C2 新专家评测）仍待环境恢复

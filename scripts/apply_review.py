@@ -174,6 +174,7 @@ def apply(dispositions: Dict[str, dict], final_v2_dir: str = FINAL_V2_DIR,
 
 
 def main() -> None:
+    """CLI entry: refuses to build a training set out of a frozen batch."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--final-v2-dir", default=None)
     parser.add_argument("--output-dir", default=None)
@@ -182,7 +183,14 @@ def main() -> None:
     parser.add_argument("--require-hashes", action="store_true",
                         help="拒绝没有内容哈希的旧格式决定（新批次应当开启）")
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument("--allow-frozen", action="store_true",
+                        help="只用于分析：允许读取冻结批次，产物会标注 frozen_batch_used")
     args = parser.parse_args()
+
+    # §4.17: the freeze is enforced here, not only written in the docs.  The
+    # 237 集 (g4_trial) is frozen too, so a default run now refuses — that is
+    # the intended behaviour; analysis passes --allow-frozen and is labelled.
+    assert_not_frozen_batch(args.batch, "生成训练集", allow=args.allow_frozen)
 
     if args.final_v2_dir is None:
         args.final_v2_dir = batch_paths(args.batch)["samples"]
@@ -194,6 +202,11 @@ def main() -> None:
     dispositions = load_dispositions(args.dispositions)
     metadata = apply(dispositions, args.final_v2_dir, args.output_dir,
                      args.allow_partial, args.require_hashes, args.batch)
+    if args.allow_frozen:
+        metadata["frozen_batch_used"] = True
+        with open(os.path.join(args.output_dir, "metadata.json"), "w",
+                  encoding="utf-8") as handle:
+            json.dump(metadata, handle, ensure_ascii=False, indent=2)
 
     print(f"counts: {metadata['counts']}")
     if metadata["stale_decisions"]:

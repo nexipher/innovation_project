@@ -82,6 +82,9 @@ python scripts/batch_inventory.py                                               
 - **批次台账**：`sft_data/BATCH_INVENTORY.md`（`scripts/batch_inventory.py` 生成），
   逐批写明类别（历史/待审核/合格训练）与三个版本。
 - **进 SFT 的唯一路径**：`record_review --import` → `apply_review` → `build_final_v2`（门禁）。
+  **冻结是硬约束**：`sft_data/FROZEN.json` 登记已冻结批次，`apply_review` / `build_final_v2` /
+  `generate_trajectories_g4` 遇到即退出；分析用途加 `--allow-frozen`，产物标注
+  `frozen_batch_used=true`。
   两条容易忘掉的规则写在台账顶部：
   **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。
 

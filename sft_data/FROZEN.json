@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-10-13T22:30:00",
+  "decision": "过去的所有批次冻结为历史实验（用户 2026-10-13）；换专家后生成新版",
+  "frozen": [
+    {
+      "batch": "g4_trial",
+      "reason": "最早的 237 集（v1/v2 时代），只作回归对照"
+    },
+    {
+      "batch": "g7_b1",
+      "reason": "v2 时代批次；已完成浏览器审核但未写回，不再与 SFT 挂钩"
+    },
+    {
+      "batch": "g7_b2",
+      "reason": "v3 验收批次；换专家后由新版重新生成，不用于训练"
+    }
+  ],
+  "note": "本文件是**训练入口的硬约束**：apply_review / build_final_v2 / 轨迹生成都会读它并拒绝写入冻结批次；确需对冻结批次做分析时加 --allow-frozen，产物会被标注 frozen_batch_used=true。"
+}

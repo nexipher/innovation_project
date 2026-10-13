@@ -237,3 +237,51 @@ class TestTheReviewBuilderKeepsTheModelsAccount:
             {"from": "gpt", "value": "<planning>\nExpert Target & Hypothesis: probe\n</planning>"}]}),
             encoding="utf-8")
         assert _observation({"trace_path": str(trace_path)}) == ""
+
+
+class TestTheAuditRespectsTime:
+    """
+    A turn may only be judged against the evidence that existed when it was
+    written.  The first version used the final chain "so a later value stays
+    legal", which vindicates an early fabrication with a token that arrives
+    afterwards — the real batch had exactly that shape.
+    """
+
+    NOISE_TOKEN = {"evidence_id": "E-N", "source": "noise_expert", "raw_metric": 4.2,
+                   "strength": 4.2, "measurement_scope": "global",
+                   "calibrated_likelihood": {"Real": 0.1, "Fake": 0.9}}
+
+    CLAIM = ("<reasoning>噪声残留专家显示水平为 4.2。</reasoning>\n"
+             '<verdict>{"verdict": "Fake", "confidence": 0.8}</verdict>')
+    DELIVERY = {"from": "user", "value": json.dumps(NOISE_TOKEN, ensure_ascii=False)}
+
+    def _audit(self, turns):
+        return audit_dialogue({**_record(), "_trace": {"conversations": turns}})
+
+    def test_an_early_claim_is_not_vindicated_by_a_later_token(self):
+        audit = self._audit([
+            {"from": "user", "value": "分析。"},
+            {"from": "gpt", "value": self.CLAIM},      # turn 1: claims noise
+            self.DELIVERY,                              # turn 2: noise arrives after
+            {"from": "gpt", "value": CLOSING},
+        ])
+        assert [f["kind"] for f in audit["defects"]] == ["fabricated_expert_result"]
+        assert audit["defects"][0]["turn"] == 1
+
+    def test_a_claim_about_an_already_delivered_token_is_clean(self):
+        audit = self._audit([
+            {"from": "user", "value": "分析。"},
+            self.DELIVERY,                              # delivered first
+            {"from": "gpt", "value": self.CLAIM},
+            {"from": "gpt", "value": CLOSING},
+        ])
+        assert audit["defects"] == []
+
+    def test_the_closing_turn_may_quote_everything(self):
+        """It is excluded from the conversation, so it is not re-judged here."""
+        audit = self._audit([
+            {"from": "user", "value": "分析。"},
+            self.DELIVERY,
+            {"from": "gpt", "value": CLOSING},
+        ])
+        assert audit["defects"] == []

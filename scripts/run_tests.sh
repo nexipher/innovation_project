@@ -10,11 +10,28 @@ set -euo pipefail
 tier="${1:-core}"
 cd "$(dirname "$0")/.."
 
+# How much memory can one pytest process expect?  Read the container limit
+# and what is already resident; fall back to "plenty" when the files are not
+# there (other machines, macOS, CI).  Small headroom -> small chunks, because
+# a killed run reports nothing about what passed.
+headroom_mb() {
+  local max current
+  max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null) || { echo 999999; return; }
+  [[ "$max" == "max" ]] && { echo 999999; return; }
+  current=$(cat /sys/fs/cgroup/memory.current 2>/dev/null || echo 0)
+  echo $(( (max - current) / 1024 / 1024 ))
+}
+
 chunked() {           # chunked <pytest args...>
-  # Small chunks on purpose: this box's shared cgroup kills a run that loads
-  # too many images at once (seen three times), and a killed chunk reports
-  # nothing about what passed.
-  local size=8
+  local headroom size
+  headroom=$(headroom_mb)
+  if (( headroom > 800 )); then
+    echo "   （可用内存约 ${headroom} MB：一次跑完）"
+    python -m pytest tests -q "$@"
+    return
+  fi
+  size=8
+  echo "   （可用内存约 ${headroom} MB：按每块 ${size} 个文件分块）"
   mapfile -t files < <(ls tests/test_*.py)
   local index=0
   while (( index < ${#files[@]} )); do

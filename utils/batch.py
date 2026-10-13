@@ -224,3 +224,45 @@ def write_batch_versions(directory: str, experts: Optional[dict] = None,
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(batch_versions(experts, extra), handle, ensure_ascii=False, indent=2)
     return path
+
+
+# ---------------------------------------------------------------------------
+# Frozen batches: a rule the code enforces, not only the docs (§4.17)
+# ---------------------------------------------------------------------------
+
+FROZEN_PATH = os.path.join(PROJECT_ROOT, "sft_data", "FROZEN.json")
+
+
+def frozen_batches() -> Dict[str, dict]:
+    """batch id -> {reason, ...} for every batch declared frozen."""
+    try:
+        with open(FROZEN_PATH, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, ValueError):
+        return {}
+    return {entry["batch"]: entry for entry in payload.get("frozen", [])}
+
+
+def is_frozen(batch_id: str) -> bool:
+    return batch_id in frozen_batches()
+
+
+def assert_not_frozen_batch(batch_id: str, purpose: str,
+                            allow: bool = False) -> None:
+    """
+    Refuse to write training material (or new trajectories) into a frozen
+    batch.
+
+    The freeze used to be a documentation convention: nothing stopped
+    `apply_review` or `build_final_v2` from producing a training set out of a
+    batch the project had decided to retire.  `--allow-frozen` exists for
+    analysis runs and labels its output, so an artifact can never quietly come
+    from a frozen batch.
+    """
+    entry = frozen_batches().get(batch_id)
+    if entry is None or allow:
+        return
+    raise SystemExit(
+        f"批次 {batch_id} 已冻结为历史实验（{entry.get('reason', '未注明理由')}），"
+        f"不能用于{purpose}。请新建批次 id（如 g7_b3）在换专家后生成新版；"
+        f"若确需分析该批次，显式加 --allow-frozen，产物会标注 frozen_batch_used=true。")

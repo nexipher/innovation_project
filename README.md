@@ -43,7 +43,8 @@ FORENSIC_HALTING_POLICY=v2 python main.py --image <path>               # 仅用�
 1. 默认即当前策略 v3；历史复算显式选 v2。报告必须核对策略、提示词指纹与校准表身份
    （每个批次目录的 `VERSIONS.json`）。
 2. **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。进 SFT 的唯一路径是
-   `record_review --import` → `apply_review` → `build_final_v2`（门禁）。
+   `record_review --import` → `apply_review` → `build_final_v2`（门禁），且这三个写入入口
+   会读 `sft_data/FROZEN.json`：**冻结批次直接拒绝**，分析用途需 `--allow-frozen` 并留下标记。
 3. 未审核批次（含 g7_b1、g7_b2）**不得用于 SFT**；因缺陷作废的批次归档在
    `sft_data/trajectories_<id>_<原因>/`，不参与任何统计。
 

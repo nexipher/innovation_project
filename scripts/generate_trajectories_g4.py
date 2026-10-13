@@ -45,7 +45,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import LEGACY_BATCH, batch_paths, write_batch_versions
+from utils.batch import (LEGACY_BATCH, assert_not_frozen_batch, batch_paths,
+                         write_batch_versions)
 from mllm.message_builder import (TRAINING_BASELINE_PROMPT,
                                    build_forensic_prompt)
 from mllm.mock_client import MockMLLMClient
@@ -398,7 +399,12 @@ def main() -> None:
                         help="MockMLLMClient (CPU plumbing validation only)")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    parser.add_argument("--allow-frozen", action="store_true",
+                        help="只用于分析/重放：允许向冻结批次补写轨迹")
     args = parser.parse_args()
+    # A frozen batch is a record of what was measured: adding sessions to it
+    # would make the record say something that never happened in one run.
+    assert_not_frozen_batch(args.batch, "生成新轨迹", allow=args.allow_frozen)
     paths = batch_paths(args.batch)
     if args.manifest is None:
         args.manifest = paths["variants"]

@@ -415,56 +415,76 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
 
 def audit_dialogue(record: dict) -> dict:
     """
-    Every supervised assistant turn, judged by the same ledger (§4.17 R6).
+    Every supervised assistant turn, judged **against what it could see then**.
 
-    The runtime check covers the *adopted* conclusion; the training
-    conversation keeps every earlier assistant turn as it was written, and a
-    fabrication in one of those is supervised just as much.  The turn that
-    `render_answer` replaces is excluded — its text does not survive into the
-    sample — and everything else is judged with the final ledger, so a value
-    that arrived later is still a legal quotation.
+    The runtime check covers the adopted conclusion; the training conversation
+    keeps every earlier assistant turn as it was written, and a fabrication in
+    one of those is supervised just as much.  The turn `render_answer`
+    replaces is excluded — its text does not survive into the sample.
+
+    Time matters.  The first version judged every turn with the *final*
+    evidence chain "so a later value is still a legal quotation", which
+    vindicates an early claim with evidence that had not arrived yet: a turn
+    that invents the noise expert's result passes because noise is called two
+    turns later.  Each turn is therefore judged with the ledger as of that
+    turn — the tokens delivered *before* it — and the closing turn alone may
+    quote whatever the session eventually collected.
     """
     from utils.evidence_ledger import Ledger
 
     trace = record.get("_trace") or {}
     trace_turns = trace.get("conversations", [])
     closing = _closing_index(trace_turns)
-    turns = [(index, turn.get("value") or "")
-             for index, turn in enumerate(trace_turns)
-             if (turn.get("from") or "") == "gpt" and index != closing]
-    if not turns:
+    if not trace_turns:
         return {"turns": 0, "defects": [], "candidates": [],
                 "repeat_request_turns": []}
 
-    ledger = Ledger.from_session(
-        record.get("evidence") or [],
-        served=record.get("tools_served") or [],
-        system_texts=[turn.get("value") or "" for turn in trace_turns
-                      if (turn.get("from") or "") == "user"
-                      and (turn.get("value") or "").startswith("[System:")],
-    )
-    defects, candidates = [], []
-    for index, value in turns:
+    served = record.get("tools_served") or []
+    system_texts = [turn.get("value") or "" for turn in trace_turns
+                    if (turn.get("from") or "") == "user"
+                    and (turn.get("value") or "").startswith("[System:")]
+
+    delivered: List[dict] = []
+    defects: List[dict] = []
+    candidates: List[dict] = []
+    repeats: List[int] = []
+    supervised = 0
+    for index, turn in enumerate(trace_turns):
+        role = (turn.get("from") or "")
+        value = turn.get("value") or ""
+        if role == "user":
+            if _is_evidence_turn(value):
+                token = _parse_evidence_turn(value)
+                if token:
+                    delivered.append(token)
+            continue
+        if role != "gpt":
+            continue
+        following = trace_turns[index + 1] if index + 1 < len(trace_turns) else {}
+        if (following.get("from") or "") == "user" and "已跳过执行" in (
+                following.get("value") or ""):
+            repeats.append(index)
+        if index == closing:
+            continue
+        supervised += 1
+        # **As of this turn**: only what had been delivered when it was written.
+        ledger = Ledger.from_session(delivered, served=served,
+                                     system_texts=system_texts)
         for finding in ledger.findings(value):
             entry = {"turn": index, **finding}
             (defects if finding.get("severity", "defect") == "defect"
              else candidates).append(entry)
-
-    # A turn that asked again for an expert already measured is a no-progress
-    # action: the system skipped it and said so.  41 of the 56 acceptance
-    # sessions did this, so the count travels with the sample — such a turn is
-    # not a good action to imitate, and a reviewer needs to see it.
-    repeats = []
-    for index, turn in enumerate(trace_turns):
-        if (turn.get("from") or "") != "gpt":
-            continue
-        following = trace_turns[index + 1] if index + 1 < len(trace_turns) else {}
-        if (following.get("from") or "") != "user":
-            continue
-        if "已跳过执行" in (following.get("value") or ""):
-            repeats.append(index)
-    return {"turns": len(turns), "defects": defects, "candidates": candidates,
+    return {"turns": supervised, "defects": defects, "candidates": candidates,
             "repeat_request_turns": repeats}
+
+
+def _parse_evidence_turn(value: str) -> Optional[dict]:
+    """The token a delivery turn carried (the trace stores what was injected)."""
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        return None
+    return parsed if isinstance(parsed, dict) and parsed.get("evidence_id") else None
 
 
 def render_sample(record: dict, category: str, observation_text: str = "",

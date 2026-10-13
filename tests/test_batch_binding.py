@@ -457,3 +457,49 @@ class TestTheInventoryFindsTheReviewThatExists:
 
         for row in collect(["g7_b1", "g7_b2"]):
             assert row["kind"].startswith("冻结 · 历史实验")
+
+
+class TestFrozenBatchesAreRefusedByTheCode:
+    """§4.17: the freeze is a hard refusal at every writing entry, not a note."""
+
+    def test_the_register_names_the_produced_batches(self):
+        from utils.batch import frozen_batches, is_frozen
+
+        frozen = frozen_batches()
+        for batch_id in ("g4_trial", "g7_b1", "g7_b2"):
+            assert is_frozen(batch_id), batch_id
+            assert frozen[batch_id]["reason"]
+
+    def test_generating_trajectories_into_a_frozen_batch_is_refused(self, tmp_path):
+        import subprocess
+        import sys as _sys
+
+        from config import PROJECT_ROOT
+
+        result = subprocess.run(
+            [_sys.executable, "scripts/generate_trajectories_g4.py",
+             "--batch", "g7_b2", "--dry-run", "--limit", "1",
+             "--output-dir", str(tmp_path / "out")],
+            cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=180)
+        assert result.returncode != 0
+        assert "已冻结为历史实验" in (result.stdout + result.stderr)
+        assert not (tmp_path / "out").exists() or not list((tmp_path / "out").glob("*.json"))
+
+    def test_conversion_of_a_frozen_batch_is_refused(self, tmp_path):
+        from scripts.build_final_v2 import build
+
+        from utils.batch import assert_not_frozen_batch
+
+        with pytest.raises(SystemExit, match="已冻结为历史实验"):
+            assert_not_frozen_batch("g7_b1", "转换/出集")
+
+    def test_analysis_runs_may_opt_in_and_are_labelled(self, tmp_path):
+        from utils.batch import assert_not_frozen_batch
+
+        # explicit opt-in does not raise; the caller records the label
+        assert assert_not_frozen_batch("g7_b2", "分析", allow=True) is None
+
+    def test_an_unfrozen_batch_passes(self):
+        from utils.batch import assert_not_frozen_batch
+
+        assert assert_not_frozen_batch("g7_b3_new", "训练出集") is None

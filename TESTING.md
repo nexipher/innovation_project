@@ -7,8 +7,8 @@
 | 层 | 命令 | 内容 | 实测耗时 |
 |----|------|------|----------|
 | **核心不变量** | `scripts/run_tests.sh core` | 账本、门禁、协议解析、v2/v3 策略、转换与忠实性检查、校准来源、token/message 构造 | **约 30 秒**（341 项） |
-| **模块测试** | `scripts/run_tests.sh module` | 上述之外的全部单元测试；**不含**会话级/端到端（`slow`） | 约 3–5 分钟（每块 8 个文件） |
-| **全景回归** | `scripts/run_tests.sh full` | 全部，含真实图像与 CPU 专家的会话级用例 | 约 5.5 分钟（7 块，实测 1140 通过 + 1 跳过） |
+| **模块测试** | `scripts/run_tests.sh module` | 上述之外的全部单元测试；**不含**会话级/端到端（`slow`） | 内存充足时一次跑完；紧张时分块，约 3–5 分钟 |
+| **全景回归** | `scripts/run_tests.sh full` | 全部，含真实图像与 CPU 专家的会话级用例 | 同上；实测（本容器内存紧张时 7 块）1140 通过 + 1 跳过，约 5.5 分钟 |
 
 也可以直接用 pytest：
 
@@ -18,11 +18,13 @@ python -m pytest tests -m "not slow"      # 模块
 python -m pytest tests                    # 全景（内存紧张时用 run_tests.sh，它分块跑）
 ```
 
-**为什么必须分块**：本机的 cgroup 上限是 **2 GB**（`/sys/fs/cgroup/memory.max`），
-常驻已占 1.5 GB 左右，留给一个 pytest 进程的余量只有几百 MB。一次加载全部图像/专家会被
-OOM 杀掉（已发生三次，进程被 Killed 且不报告已通过的用例）。`run_tests.sh` 的
-module/full 自动按**每块 8 个测试文件**分段跑；跑全套前先看
-`cat /sys/fs/cgroup/memory.current`。
+**分块是自适应，不是固定要求**：`run_tests.sh` 会读当前容器的
+`/sys/fs/cgroup/memory.max` 与 `memory.current`——
+**余量 > 800 MB 就一次跑完；余量小则自动按每块 8 个测试文件分块**。
+在内存受限的容器里，一次加载全部图像/专家进程会被 OOM 杀掉，而被杀的那次
+**不报告已通过的用例**（本机曾发生三次，2 GB 上限、常驻 1.5 GB 左右）。
+读不到 cgroup 文件的机器（本机之外、macOS、CI）按"内存充足"处理，
+所以这条**不是对所有环境的要求**；跑全套前想知道余量：`cat /sys/fs/cgroup/memory.current`。
 
 ## 何时跑哪一层
 
