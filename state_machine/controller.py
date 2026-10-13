@@ -34,6 +34,7 @@ from utils.evidence_ledger import Ledger as EvidenceLedger, correction_note
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 from state_machine.halting_v2 import HaltingPolicyV2
+from state_machine.halting_v3 import HaltingPolicyV3
 
 
 class ForensicStateMachine:
@@ -173,6 +174,13 @@ class ForensicStateMachine:
         called_experts: set = set()
         policy_decision = None
         turns_without_new_evidence = 0
+        # §4.17 R5 (v3): loop guards measured on actions, and the advisory
+        # note the reference is allowed to send exactly once.
+        previous_action = None
+        repeated_action_turns = 0
+        invalid_action_turns = 0
+        format_failure_turns = 0
+        advisory_sent = False
 
         # Outer safety net: the halting budget fires first; the +1 allows the
         # forced-conclusion turn that budget halting triggers.
@@ -414,24 +422,79 @@ class ForensicStateMachine:
                     conversation.append({"from": "user", "value": correction})
 
             # 4e. Ask the halting policy what to do next
-            if HALTING_POLICY == "v2":
+            if HALTING_POLICY in ("v2", "v3"):
                 turns_without_new_evidence = (
                     0 if len(evidence_chain) > evidence_before_turn
                     else max(0, turns_without_new_evidence) + 1
                 )
-                decision = HaltingPolicyV2.decide(
-                    model_turns=model_turn_count,
-                    expert_calls=expert_call_count,
-                    evidence_chain=evidence_chain,
-                    candidate_verdict=candidate_verdict,
-                    available_experts=self._expert_weights(),
-                    called_experts=called_experts,
-                    turns_without_new_evidence=turns_without_new_evidence,
-                    tools_available=self._allow_exploration,
-                )
+                # §4.17 R5: v3's loop guards are about *actions* — the same
+                # action again, or a turn that never became one — not about
+                # "no new evidence", which a legal first call also produces.
+                if calls:
+                    action_signature: tuple = tuple(
+                        (expert_name, tuple(rel_bbox)) for expert_name, rel_bbox in calls)
+                elif candidate_verdict:
+                    action_signature = ("verdict",)
+                else:
+                    action_signature = ()
+                    format_failure_turns += 1
+                if action_signature and action_signature == previous_action:
+                    repeated_action_turns += 1
+                else:
+                    repeated_action_turns = 0
+                invalid_action_turns = 0 if action_signature else invalid_action_turns + 1
+                previous_action = action_signature
+
+                if HALTING_POLICY == "v3":
+                    decision = HaltingPolicyV3.decide(
+                        model_turns=model_turn_count,
+                        expert_calls=expert_call_count,
+                        evidence_chain=evidence_chain,
+                        candidate_verdict=candidate_verdict,
+                        available_experts=self._expert_weights(),
+                        called_experts=called_experts,
+                        repeated_actions=repeated_action_turns,
+                        invalid_actions=invalid_action_turns,
+                        tools_available=self._allow_exploration,
+                    )
+                else:
+                    decision = HaltingPolicyV2.decide(
+                        model_turns=model_turn_count,
+                        expert_calls=expert_call_count,
+                        evidence_chain=evidence_chain,
+                        candidate_verdict=candidate_verdict,
+                        available_experts=self._expert_weights(),
+                        called_experts=called_experts,
+                        turns_without_new_evidence=turns_without_new_evidence,
+                        tools_available=self._allow_exploration,
+                    )
                 policy_decision = decision
                 if decision.action == "continue":
-                    if candidate_verdict:
+                    if HALTING_POLICY == "v3":
+                        if candidate_verdict:
+                            # A <verdict> tag with a label that is not
+                            # Real/Fake/Uncertain: a protocol problem, and it
+                            # is answered as one — never by quietly choosing a
+                            # label the model did not write.
+                            protocol = (
+                                "[System: <verdict> 中的 verdict 必须是 Real / Fake / "
+                                "Uncertain 之一。请按 SOP 重新输出你的结案。]"
+                            )
+                            self._logger.add_system_message(protocol)
+                            conversation.append({"from": "user", "value": protocol})
+                        elif decision.advisory and not advisory_sent:
+                            # The reference's estimate, marked as advice.  It
+                            # never forbids a call: v3 executes legal calls
+                            # whether or not the estimate is positive.
+                            advisory_sent = True
+                            note = (
+                                "[System: 策略的参考估计认为继续调用收益有限，"
+                                "但这只是参考，不影响你也无权阻止你的取证判断；"
+                                "你可以继续调用未用过的工具，或给出结案。]"
+                            )
+                            self._logger.add_system_message(note)
+                            conversation.append({"from": "user", "value": note})
+                    elif candidate_verdict:
                         # A verdict tag was overridden: say so, or the model
                         # will simply repeat it until the budget runs out.
                         override = (
@@ -446,14 +509,17 @@ class ForensicStateMachine:
                         conversation.append({"from": "user", "value": override})
                     continue
                 halting_reason = decision.primary_reason
-                # The policy owns the label.  When it accepted the model's own
-                # verdict the report is already written, so asking for another
-                # turn would only add cost the baseline must not carry (the
-                # no-tool arm is meant to be a single-turn measurement).
-                accepted = decision.primary_reason in (
-                    HaltingPolicyV2.CANDIDATE_ACCEPTED,
-                    HaltingPolicyV2.CANDIDATE_WITHOUT_TOOLS,
-                )
+                # v2: the policy owns the label.  v3: the model does — the
+                # policy only decided that the session ends (§4.17 R5).
+                if HALTING_POLICY == "v3":
+                    accepted = (candidate_verdict or {}).get("verdict") in (
+                        HaltingPolicyV3.LEGAL_LABELS) and bool(
+                        (candidate_verdict or {}).get("report"))
+                else:
+                    accepted = decision.primary_reason in (
+                        HaltingPolicyV2.CANDIDATE_ACCEPTED,
+                        HaltingPolicyV2.CANDIDATE_WITHOUT_TOOLS,
+                    )
                 # §4.17 R3/R4: the ledger is the only authority on what was
                 # measured, and **every** conclusion this pipeline adopts goes
                 # through it — the accepted-candidate shortcut used to skip the
@@ -532,12 +598,22 @@ class ForensicStateMachine:
                     "calls_executed": adopted_calls_executed,
                     "verdict_parse": "ok" if model_candidate.get("verdict") else "failed",
                 }
+                # §4.17 R5: in v3 the label is whatever the adopted conclusion
+                # says — `Real`, `Fake`, `Uncertain` or nothing parseable.
+                # The posterior is recorded beside it and never becomes it.
+                if HALTING_POLICY == "v3":
+                    final_label = model_candidate.get("verdict") or "Uncertain"
+                    final_confidence = round(float(
+                        model_candidate.get("confidence") or 0.5), 4)
+                else:
+                    final_label = decision.verdict
+                    final_confidence = decision.confidence
                 final_verdict = {
-                    "verdict": decision.verdict,
-                    "confidence": decision.confidence,
+                    "verdict": final_label,
+                    "confidence": final_confidence,
                     "report": model_candidate.get("report") or (
                         "取证后仍未形成可判定方向，按疑罪从无输出 Uncertain。"
-                        if decision.verdict == "Uncertain"
+                        if final_label == "Uncertain"
                         else "基于校准后验与已获取证据的判定。"
                     ),
                     "posterior": round(decision.posterior, 4),
@@ -552,6 +628,12 @@ class ForensicStateMachine:
                     # / trainable are four different things.  This block is the
                     # first three; `trainable` is the conversion gate's call.
                     "conclusion": conclusion,
+                    # §4.17 R5: the reference opinion, kept as a reference.
+                    "reference": {
+                        "recommendation": getattr(decision, "reference_label", None),
+                        "advisory": list(getattr(decision, "advisory", []) or []),
+                        "note": "参考后验与建议不构成标签；标签一律取自模型结案",
+                    },
                 }
                 break
 
@@ -608,6 +690,17 @@ class ForensicStateMachine:
             }
 
         # 6. Finalise SFT data with observable counters
+        v3_signals = None
+        if HALTING_POLICY == "v3":
+            reference = (final_verdict or {}).get("reference") or {}
+            v3_signals = {
+                "repeated_action_turns": repeated_action_turns,
+                "invalid_action_turns": invalid_action_turns,
+                "format_failure_turns": format_failure_turns,
+                "advisory_notes": list(reference.get("advisory") or []),
+                "model_label": (final_verdict or {}).get("model_candidate"),
+                "reference_recommendation": reference.get("recommendation"),
+            }
         counters = self._build_counters(
             model_turn_count, expert_call_count,
             suppressed_duplicate_count, evidence_chain,
@@ -616,6 +709,7 @@ class ForensicStateMachine:
             available_experts=list(self._experts),
             evidence_check=evidence_check,
             conclusion=(final_verdict or {}).get("conclusion"),
+            v3_signals=v3_signals,
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -742,6 +836,11 @@ class ForensicStateMachine:
             head = "[System: 取证预算已耗尽，本次会话到此结束。"
         elif HaltingPolicyV2.CONFLICT_UNRESOLVED in decision.all_reasons:
             head = "[System: 证据之间存在未解决的冲突，且不再有新的取证。"
+        elif getattr(HaltingPolicyV3, "LOOP_PROTECTION", None) == decision.primary_reason:
+            head = ("[System: 会话因重复或无效的动作而终止"
+                    "（同一动作连续出现，或始终没有形成合法的调用/结案）。")
+        elif getattr(HaltingPolicyV3, "FORMAT_FAILURE", None) == decision.primary_reason:
+            head = "[System: 连续多轮没有形成合法的动作或结案，会话到此结束。"
         elif decision.primary_reason == HaltingPolicyV2.MODEL_STALLED:
             turns = getattr(decision, "stall_turns", 0) or turns_without_new_evidence
             head = (
@@ -779,6 +878,7 @@ class ForensicStateMachine:
         available_experts: Optional[List[str]] = None,
         evidence_check: Optional[dict] = None,
         conclusion: Optional[dict] = None,
+        v3_signals: Optional[dict] = None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -820,6 +920,8 @@ class ForensicStateMachine:
                 # The evidence ledger's verdict on the closing turn (§4.17 R3).
                 "evidence_check_status": (evidence_check or {}).get("status"),
             })
+        if v3_signals:
+            counters.update(v3_signals)
         if conclusion is not None:
             # §4.17 R4: one `pass` cannot stand for four different things.
             # These are the check and the format/purity of the adopted

@@ -1587,3 +1587,24 @@
   - `README.md (Modified — §6.3 方向一致性与边界)、plan.md (Modified — B 段第 1.6 步)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**1028 项测试通过**（基线 1008 → 本轮 +20）；用户复现的两例在测试中直接复刻（`PROBE 原始分数 0.3431，表明图像更可能真实` → `direction_overread`；`noise 专家显示没有相机噪声` → `fabricated_expert_result`）。真实数据回放（210 条 g7_b1 会话）：**21 条含 defect**（fabricated_expert_result 44、direction_conflict 3、fabricated_value 1；其中 20 条在已准入样本内）、**2 条只含 candidate**（direction_overread 2、text_value_as_measurement 2）；与 A1 审计的 fabricated_expert_result 会话 19/20 重合
 * **置信度或遗留待办（TODO）**：①**方向检查是高精度、低召回**——它宁可漏也不误报（用户要求的原则），中文自然语言的复杂情形仍会漏，须由人工审核兜底 ②候选发现目前只进 trace 与计数器，**工作台/转换侧尚未展示**（属第 5 步）③中间监督轮仍未检查（第 5 步）④下一步按用户顺序第 2 项：**v3（Qwen 主导，取消静默标签覆盖，收益降为建议）**
+
+### 2026-10-13 13:49:12 - G7 §4.17 B 段第 2 步：v3 决策权（Qwen 主导，取消静默标签覆盖，收益降为建议）
+
+* **当前操作动作**：按用户第三次给定顺序第 1 项实施 v3——合法结案不被静默改标签、低收益只作参考、停止原因细分、停滞按重复/无效动作定义。v2 原样保留供历史复算；v3 可用 `FORENSIC_HALTING_POLICY=v3` 选择并写入配置指纹。**CPU only，不生成数据、不训练、不动 GPU。**
+* **对应计划锚点**：plan.md §4.17「B 段第 2 步」（对应用户顺序第 1 项；此前留待 v3 的三处 TODO 一并关闭）
+* **核心变更说明**：
+  1. **新策略 `state_machine/halting_v3.py`**：策略只决定"**会话何时结束、为何结束**"，从不决定标签。合法结案（Real / Fake / Uncertain）立即结束，**模型自己的标签即最终标签**；后验、冲突度、工具效用照算但只作**参考**（`final_verdict.reference = {recommendation, advisory, note}`、计数器 `model_label` / `reference_recommendation`）
+  2. **取消三处 v2 病灶**：①候选与后验不一致被驳回并要求继续取证（68 条静默替换的来源）→ v3 不再驳回合法结案；②`Uncertain` 被当作"同意"并随后验落成 Real/Fake → v3 记 `model_abstained`，最终标签就是 Uncertain；③参考收益为负时拒绝调用 → 降为建议：合法调用照常执行，参考估计以一条**明确标注"只是参考、无权阻止"**的系统提示发送（每会话至多一次）
+  3. **停止原因细分**：`model_concluded` / `budget_exhausted` / `loop_protection` / `format_failure` / `evidence_check_failed`（后者由控制器记录）。预算与防循环停止时**不写标签**（`verdict=None`）——由收尾轮产出结案；收尾轮不可解析即记为不可解析（`conclusion.verdict_parse=failed`），而不是由策略补一个标签
+  4. **停滞按动作定义**：同一动作（同一次调用含 bbox，或结案）连续 ≥3 次 → `loop_protection`；连续 ≥3 轮没有形成任何合法动作 → `format_failure`。v2 的 `model_stalled`（量的是"连续无新证据"，此前已被用户指出名实不符）在 v3 中不再存在；v2 措辞已是如实描述
+  5. **标签与置信度来源分离**：v3 的 `confidence` 取自模型自述（缺省 0.5），**不是**校准概率；`verdict` 取自被采用的结案文本（候选直通 / 收尾轮 / 纠正轮，仍全部过账本与门禁）
+  6. **协议纠正**：`<verdict>` 标签里的标签不是 Real/Fake/Uncertain 三者之一时记为 `illegal_conclusion`，发送格式纠正并继续——**不静默替模型选一个标签**
+  7. **策略选择**：`config.HALTING_POLICY = os.environ.get("FORENSIC_HALTING_POLICY", "v2")`，非法值直接报错；策略版本已进配置指纹，v2/v3 产物可区分复算
+* **涉及/修改的文件清单**：
+  - `state_machine/halting_v3.py (Created)、state_machine/controller.py (Modified — v2/v3 共用结案入口；v3 标签与参考分离；动作签名与循环保护信号；计数器)`
+  - `state_machine/halting_v2.py (Modified — HaltingDecision 增加诊断字段 advisory/reference_label，v2 决策不变)`
+  - `config.py (Modified — 环境变量选择策略 + 非法值报错)`
+  - `tests/test_halting_v3.py (Created — 14 项)、tests/test_controller_v3.py (Created — 9 项)`
+  - `README.md (Modified — §6.4 终止策略 v3)、plan.md (Modified — B 段第 2 步)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**1051 项测试通过**（基线 1028 → 本轮 +23）。关键断言：后验 0.95 而模型结案 Real → **最终标签 Real**（reference_recommendation 记为 Fake、advisory 含 reference_disagrees）；会话中**不再出现**"暂不能结案/与当前校准后验不一致"提示；模型弃权 → 最终 Uncertain 且记 `model_abstained`；参考收益为 0 时第二次调用仍执行且提示只发一次；同一调用三次 → `loop_protection`；三轮无合法动作 → `format_failure`；预算耗尽 → 标签由收尾轮给出
+* **置信度或遗留待办（TODO）**：①**下游影响审计**（准入评分、Brier 口径、转换、报告）在 v3 产物上尚未复核——v3 的 `final_verdict` 语义变了（模型标签而非后验标签），`scores.posterior_brier` 仍是参考后验的校准指标，需在 CPU 回归里明确区分"模型标签准确率"与"参考后验 Brier"②v3 尚未在任何真实批次上运行（受 GPU 授权约束）③下一步：**全局单动作协议**（一次调用或一次结案、bbox 可选、允许"未观察到明确异常"、混合输出给协议纠正而不静默择一）

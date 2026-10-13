@@ -91,6 +91,10 @@ class HaltingDecision:
     # the closing note must quote the real count, and v2's condition is
     # "no new evidence", never "the same text twice" (§4.17 R4).
     stall_turns: int = 0
+    # v3 (§4.17 R5): advice recorded beside the decision, and the label the
+    # reference would have given — never the label that is used.
+    advisory: List[str] = field(default_factory=list)
+    reference_label: Optional[str] = None
 
 
 class HaltingPolicyV2:

@@ -2554,3 +2554,15 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 7. **中间监督轮**（边界 e）属于第 5 步（忠实转换检查整条被监督对话），本轮不改；本轮把该限制写进记录：`evidence_check.caveat` 明示"未命中不等于已证明忠实"。
 
 **完成后再做**：v3（取消静默标签覆盖）→ 全局调用协议 → 校准来源与格式权重 → 忠实转换与并排审核 → CPU 回归 → 小批 GPU。
+
+### B 段第 2 步：v3 决策权（Qwen 主导；用户 2026-10-13 第三次给定顺序第 1 项）
+
+目标：**取消静默标签覆盖**，低收益只作参考。v2 原样保留供历史复算；v3 通过 `FORENSIC_HALTING_POLICY=v3` 选择并写入配置指纹。
+
+1. **新策略 `state_machine/halting_v3.py`**：策略只决定"会话何时结束、为何结束"，**从不决定标签**。合法结案（Real/Fake/Uncertain）立即结束并把**模型自己的标签**作为结案；后验/冲突度/工具效用照算，但只作为**参考**写入（`reference_posterior`、`reference_recommendation`、`advisory`）。
+2. **停止原因细分**：`model_concluded`（自主结案）/ `budget_exhausted` / `loop_protection`（重复或无效动作）/ `format_failure` / `evidence_check_failed`。预算与防循环停止时**不写标签**（`verdict=None`），由收尾轮产出；收尾轮不可解析则记为不可解析，而不是由策略补一个标签。
+3. **停滞重定义**：v3 的循环保护按**动作**判定（同一动作连续出现 ≥3 次；或连续 ≥3 轮没有形成任何合法动作），不再用 v2 的"连续无新证据"。
+4. **`no_expected_gain` 降级为建议**：不再否决合法调用，也不作为停止理由；参考估计以一条明确标注"只是参考"的系统提示发送（每会话至多一次），并记入 `advisory` 与计数器。
+5. **Uncertain 不是同意**：模型弃权时记 `model_abstained`（而非 `reference_disagrees`），最终标签就是 Uncertain。
+6. **控制器**：v2/v3 共用同一结案入口与账本检查；v3 标签取自被采用的结案文本（`model_candidate`），置信度取自模型自述，**不得**与校准概率混淆。
+

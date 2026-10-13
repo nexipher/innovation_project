@@ -488,6 +488,22 @@ v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条�
 
 v2 的 stall 措辞如实描述其真实条件（**连续无新证据**，不是"文字相同"，并附真实轮数）；"重复 / 无效动作"的严格语义属于 v3。
 
+### 6.4 终止策略 v3（Qwen 主导，`FORENSIC_HALTING_POLICY=v3`）
+
+v2 由策略拥有标签：候选与后验不一致会被驳回直到模型重复，`Uncertain` 候选被当作"同意"并随后验落为 Real/Fake——A 段审计由此数出 68 条模型结论被静默替换、7 条方向相反、1 条标签互换。**v3 不决定标签**，只决定会话何时结束、为何结束：
+
+| 停止原因 | 含义 |
+|----------|------|
+| `model_concluded` | 模型给出合法结案（Real/Fake/Uncertain）——经账本检查后**即为最终标签** |
+| `budget_exhausted` | 轮次/调用预算耗尽；**不写标签**，由收尾轮产出 |
+| `loop_protection` | 同一动作连续 ≥3 次，或连续 ≥3 轮没有形成任何合法动作（v2 的 model_stalled 量的是"无新证据"，名实不符） |
+| `format_failure` | 连续多轮没有形成合法动作或结案 |
+| `evidence_check_failed` | 账本检查在纠正后仍不合格（由控制器记录） |
+
+后验、冲突度、工具效用仍计算，但只作**参考**记录：`final_verdict.reference = {recommendation, advisory}`、计数器 `model_label` / `reference_recommendation`。**`no_expected_gain` 降为建议**——不否决合法调用、不作为停止理由，只以一条标注"只是参考"的系统提示发送一次。模型弃权记 `model_abstained`（不是与后验"一致"）。v3 的 `confidence` 是模型自述，**不是**校准概率。
+
+v2 原样保留供历史批次复算；策略选择进入配置指纹。
+
 ---
 
 ## 7. 项目进展与路线图

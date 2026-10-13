@@ -40,9 +40,16 @@ ENTROPY_THRESHOLD = 0.3             # halt when classification entropy < this
 KL_THRESHOLD = 1e-3                 # halt when KL divergence between successive
                                     #   confidence distributions < this
 
-# Halting policy v2 (plan.md §4.10 G3-c).  "v2" decides from the posterior;
-# "v1" keeps the legacy tag-order checker, for offline replay comparison.
-HALTING_POLICY = "v2"
+# Which halting policy a session runs (plan.md §4.10 G3-c, §4.17 R5).
+#   "v1"  legacy tag-order checker — kept for replay only
+#   "v2"  posterior-driven, and the posterior owns the label
+#   "v3"  Qwen-led: the model concludes, the posterior advises
+# The default stays v2 so nothing changes by accident; a run selects v3 with
+# FORENSIC_HALTING_POLICY=v3 and the choice is recorded in the config
+# fingerprint next to every batch it produced.
+HALTING_POLICY = os.environ.get("FORENSIC_HALTING_POLICY", "v2").strip().lower() or "v2"
+if HALTING_POLICY not in ("v1", "v2", "v3"):
+    raise ValueError(f"unknown halting policy: {HALTING_POLICY!r}")
 POLICY_STEP_LOG_ODDS = 1.5          # log-odds one perfectly-weighted token contributes
 POLICY_CONFIDENT_POSTERIOR = 0.65   # |P(Fake)| needed to halt on a label
 POLICY_CONFLICT_TOLERANCE = 0.5     # weighted disagreement above which no label is safe
