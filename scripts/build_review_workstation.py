@@ -194,10 +194,19 @@ def high_risk_reasons(sample: dict, trajectory: Optional[dict]) -> List[str]:
         reasons.append("high_confidence")
     if conflict > 0.5 or "conflict_unresolved" in ((trajectory or {}).get("policy_reasons") or []):
         reasons.append("conflict")
-    # G7 entry 4: near-chance evidence written up as though it settled something.
-    # The flag sorts the sample to the top of the pile; the reviewer decides.
-    if weak_evidence.flags(sample):
-        reasons.append("weak_evidence_promoted")
+    # G7 entry 4 / §4.17: the screener's findings, each named as itself.  The
+    # flag sorts the sample to the top of the pile; the reviewer decides.
+    # (Every family used to be filed as "weak_evidence_promoted", which is
+    # wrong for a repeat-request turn or a label-report conflict.)
+    label_by_kind = {
+        "repeat_request_turn": "repeat_request_no_progress",
+        "label_report_conflict": "label_report_conflict",
+        "global_evidence_localised": "global_evidence_localised",
+    }
+    for finding in weak_evidence.flags(sample):
+        kind = finding.get("kind") or "weak_evidence_promoted"
+        reasons.append(label_by_kind.get(kind, kind if finding.get("kind")
+                                         else "weak_evidence_promoted"))
     return reasons
 
 
@@ -263,6 +272,11 @@ def conversation_html(sample: dict, page_path: str, missing: set) -> Tuple[str, 
         images = turn.get("image_paths") or []
         badge = ('<span class="badge sup">参与训练 · 被监督</span>' if supervised
                  else '<span class="badge mask">掩码 · 不进 loss</span>')
+        following = turns[index + 1] if index + 1 < len(turns) else {}
+        if (supervised and (following.get("from") or "") == "user"
+                and "已跳过执行" in (following.get("value") or "")):
+            badge += ('<span class="badge drop">重复请求 · 已被跳过执行'
+                      '（无进展，不能作为动作示范）</span>')
         head = (f"轮 {index} ｜ {'助手' if supervised else '用户/系统'} ｜ {badge}"
                 + (f" ｜ 附 {len(images)} 张图" if images else ""))
         figures = "".join(

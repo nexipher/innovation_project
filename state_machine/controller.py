@@ -280,6 +280,7 @@ class ForensicStateMachine:
             else:
                 calls = action["calls"]
             turn_calls_executed = True
+            turn_signature_parts: list = []
 
             if calls:
                 # 4d. Execute each expert call
@@ -320,6 +321,10 @@ class ForensicStateMachine:
                     if source_name in measured_sources:
                         skipped_duplicate_calls += 1
                         turn_calls_executed = False
+                        # A repeat request is an action that produced nothing;
+                        # the loop guard must see it as one (the bbox differs,
+                        # the measurement does not).
+                        turn_signature_parts.append(("repeat", source_name))
                         if source_name not in skipped_sources:
                             skipped_sources.append(source_name)
                         notice = (
@@ -332,6 +337,7 @@ class ForensicStateMachine:
                         continue
 
                     expert_call_count += 1
+                    turn_signature_parts.append(("call", source_name))
 
                     # G3-a: the measurement is taken on the whole image.  The
                     # reliability table is calibrated on full images (n=700),
@@ -469,14 +475,20 @@ class ForensicStateMachine:
                             "value": evidence_json,
                             **({"image_paths": artifact_rels} if artifact_rels else {}),
                         })
+                        # §4.17: the state, restated after every measurement.
+                        # The token stays above; this line is what stops the
+                        # model from going back for a measurement it already
+                        # has (41 of 56 acceptance sessions did).
+                        state_note = self._state_note(
+                            evidence_chain, list(self._experts), measured_sources)
+                        self._logger.add_conversation_turn("user", state_note)
+                        conversation.append({"from": "user", "value": state_note})
             else:
-                # No calls and no verdict — malformed output, inject correction
+                # No calls and no verdict — malformed output, inject the
+                # correction that says what is actually wrong.
                 valid, msg = Parser.validate_tag_structure(raw_output)
                 if not valid:
-                    correction = (
-                        f"[System: 输出格式错误 — {msg} "
-                        f"请严格按照 SOP 格式重新输出，包含 <call_*> 或 <verdict> 标签。]"
-                    )
+                    correction = self._format_correction(raw_output, msg)
                     self._logger.add_system_message(correction)
                     conversation.append({"from": "user", "value": correction})
 
@@ -490,17 +502,20 @@ class ForensicStateMachine:
                 # action again, or a turn that never became one — not about
                 # "no new evidence", which a legal first call also produces.
                 if calls:
-                    action_signature: tuple = tuple(
-                        (expert_name, tuple(rel_bbox) if rel_bbox else None)
-                        for expert_name, rel_bbox in calls)
+                    action_signature = tuple(turn_signature_parts) or ("call",)
                 elif candidate_verdict:
                     action_signature = ("verdict",)
                 else:
                     action_signature = ()
                     format_failure_turns += 1
-                if action_signature and action_signature == previous_action:
+                # A repeat request is a no-progress action whether or not it
+                # repeats the previous turn verbatim: the measurement it asks
+                # for is already in the conversation.
+                no_progress = any(part[0] == "repeat"
+                                  for part in turn_signature_parts)
+                if action_signature and (no_progress or action_signature == previous_action):
                     repeated_action_turns += 1
-                else:
+                elif action_signature:
                     repeated_action_turns = 0
                 invalid_action_turns = 0 if action_signature else invalid_action_turns + 1
                 previous_action = action_signature
@@ -887,6 +902,63 @@ class ForensicStateMachine:
             separations[source_name] = self._reliability_table.weight_of(
                 entry, self._condition)[0]
         return HaltingPolicyV2.expert_weights(separations)
+
+    @staticmethod
+    def _format_correction(text: str, message: str) -> str:
+        """
+        A correction the model can act on (§4.17).
+
+        "请包含 <call_*> 或 <verdict> 标签" is useless when the model *did*
+        write a call tag — inside <planning>, where it is read as prose.  One
+        BigGAN session did that three times and died as a format failure with
+        a message telling it to do what it had already done.  When the tags
+        are buried, the correction quotes the exact line to move.
+        """
+        buried = Parser.prose_only_calls(text)
+        if buried:
+            tags = "  ".join(f"<call_{name}></call_{name}>" for name in buried)
+            return (
+                "[System: 输出位置错误 —— 你在 <planning>（或 <reasoning>）内写了调用标签，"
+                "块内的标签只是文字引用，**不会被执行**。请把调用单独放在 </planning> 之后：\n"
+                f"  {tags}\n"
+                "一轮只能有一个动作：一次这样的调用，或一个 <verdict> 结案。]"
+            )
+        return (
+            f"[System: 输出格式错误 — {message} "
+            f"请严格按照 SOP 格式重新输出，包含 <call_*> 或 <verdict> 标签。]"
+        )
+
+    @staticmethod
+    def _state_note(evidence_chain: List[dict], served, measured_sources: Dict[str, str]) -> str:
+        """
+        What the session has, said plainly, after every measurement (§4.17).
+
+        41 of the 56 acceptance sessions asked for an expert it had already
+        measured (the notice was sent, the request was skipped) — so the
+        result had been delivered and the model still went back for it.  The
+        answer is not to hide the token but to stop making the model
+        re-derive the state from a JSON blob: the executed experts, their key
+        fields, and what is still available, restated after every measurement.
+        The full token stays in the conversation above this line.
+        """
+        lines = []
+        for token in evidence_chain:
+            likelihood = token.get("calibrated_likelihood") or {}
+            p_fake = likelihood.get("Fake")
+            direction = "—"
+            if p_fake is not None:
+                direction = "Fake" if float(p_fake) >= 0.5 else "Real"
+            lines.append(
+                f"  - {token.get('source')}（{token.get('evidence_id')}）："
+                f"P(Fake)={p_fake}（方向 {direction}），raw_metric={token.get('raw_metric')}，"
+                f"适用 {token.get('applicability')}")
+        remaining = [source for source in (served or []) if source not in measured_sources]
+        return (
+            "[System: 本会话状态 —— 已执行的专家：\n" + "\n".join(lines) +
+            f"\n尚可调用：{', '.join(remaining) if remaining else '（无）'}。"
+            "每个专家每会话只对整图测量一次：重复请求的返回值与上面已有的 token 相同，"
+            "系统会跳过执行并白费一轮。请基于上面已给出的结论继续，或直接给出结案。]"
+        )
 
     @staticmethod
     def _system_texts(conversation: List[Dict[str, str]]) -> List[str]:

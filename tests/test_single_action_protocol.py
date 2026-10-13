@@ -181,3 +181,36 @@ class TestAReasoningTagIsNotARequest:
     def test_a_real_request_outside_the_blocks_is_still_seen(self):
         text = self.REAL_TURN + "\n<call_jpeg></call_jpeg>"
         assert Parser.executable_calls(text) == [("jpeg", None)]
+
+
+class TestTheCorrectionSaysWhatIsWrong:
+    """The BigGAN q95 session: the tag was written, in the wrong place."""
+
+    BURIED = ("<planning>\nSuspected Region: none\n"
+              "Visual Anomalies: 未观察到明确异常，需要统计证据\n"
+              "Expert Target & Hypothesis: <call_probe>\n</planning>")
+
+    def test_a_buried_tag_is_named_in_the_correction(self):
+        from state_machine.controller import ForensicStateMachine
+
+        correction = ForensicStateMachine._format_correction(
+            self.BURIED, "缺少 <verdict> 或 <call_*> 标签")
+        assert "<call_probe></call_probe>" in correction
+        assert "不会被执行" in correction
+        assert "</planning> 之后" in correction
+
+    def test_a_genuinely_tagless_turn_keeps_the_generic_message(self):
+        from state_machine.controller import ForensicStateMachine
+
+        correction = ForensicStateMachine._format_correction(
+            "我觉得这张图很正常。", "缺少 <verdict> 或 <call_*> 标签")
+        assert "输出格式错误" in correction
+        assert "不会被执行" not in correction
+
+    def test_a_reasoning_buried_tag_is_caught_too(self):
+        from state_machine.controller import ForensicStateMachine
+
+        text = ("<reasoning>1. <call_noise> 的结果表明噪声较低。</reasoning>\n"
+                "我认为证据不足。")
+        correction = ForensicStateMachine._format_correction(text, "缺少标签")
+        assert "<call_noise></call_noise>" in correction

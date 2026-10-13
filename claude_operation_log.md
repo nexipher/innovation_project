@@ -1728,3 +1728,25 @@
   - `sft_data/review/g7_b2/*.html (Regenerated — 56 页 + 索引，指纹 c58fb13c074086eb)`、`README.md (Modified — 工作台批次隔离说明)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：全量测试 **1118 通过 + 1 跳过**（含 3 项新的页面级测试，真在 node 里加载页面脚本、点导出、喂导入文件）。g7_b2 工作台已用修复后的构建器重建；**g7_b1 的旧页面与旧键均未改动**（其决定已通过导出写回仓库）。
 * **置信度或遗留待办（TODO）**：①用户浏览器中 g7_b2 页面的进度会从 0/56 开始（旧决定只在 g7_b1 页可见，且打开该页会复制到新键）②若今后重建 g7_b1 页面，其旧键内容会被复制到 `finalv2review.v1:g7_b1:<指纹>`，两份并存、互不覆盖③工作台的批次隔离已测，但**人工审核尚未开始**（56 条待审）
+
+### 2026-10-13 21:24:29 - 修复：重复请求（41/56）的口径、状态行与动作记录 + 格式纠错具体化
+
+* **当前操作动作**：按用户四项建议修复重复请求问题（41/56 会话出现可执行的重复请求并收到跳过通知），统一统计口径，并把格式纠错改为"说出真正错在哪"；GPU 已由用户关闭，涉及显卡的对照留待下次开机。CPU only。
+* **对应计划锚点**：plan.md §4.17「B 段第 8 步」
+* **核心变更说明**：
+  1. **口径缺陷（根因之一）**：轨迹记录只带 5 个计数器，**`skipped_duplicate_calls` 与 `protocol_violations` 不在其中** → 报告读到假零（"没有重复执行"被误读为"没有重复请求"）。现在记录携带 trace 的完整计数块，并新增成对命名：**`requests`（请求=执行+重复）、`executions`（实际执行）、`repeat_requests`（重复请求）**；报告对缺失字段显示 `未记录` 而非 0。**重跑同一批**：请求 **103** / 执行 **62** / 重复 **41**，**41/56 会话含重复**（与用户计数一致）。
+  2. **每轮状态行**：每次测量注入后追加 `[System: 本会话状态 —— 已执行的专家：…（P(Fake)、方向、raw_metric、适用条件）；尚可调用：…；每专家每会话只对整图测量一次，重复请求返回值相同、会被跳过并白费一轮]`。完整 token 仍在上面；状态行只把关键字段提到前面（用户建议 1、2）。
+  3. **重复 = 无进展**：动作签名按"执行/重复"区分（**同一专家即同一次测量**，bbox 不参与——这正是项目的测量语义），重复轮计入防循环信号：连续两次重复请求即 `loop_protection`；请求与执行分别计数（用户建议 3）。
+  4. **重复轮不作动作示范**：样本 `fidelity.dialogue_audit.repeat_request_turns` 记录轮号；筛查器新增候选 `repeat_request_turn`；工作台在该助手轮打"**重复请求 · 已被跳过执行（无进展，不能作为动作示范）**"徽章；高风险原因按类型分别命名（`repeat_request_no_progress`、`label_report_conflict`、`global_evidence_localised`…），不再一律叫 `weak_evidence_promoted`（用户建议 4）。
+  5. **格式纠错具体化**（用户本轮新指出）：`Parser.prose_only_calls` 识别"只写在 `<planning>`/`<reasoning>` 内"的标签；纠错改成"**你在规划块内写了调用标签——块内标签只是文字引用，不会被执行**；请把调用单独放在 `</planning>` 之后：`<call_probe></call_probe>`"。无标签的输出仍用原通用提示。
+* **涉及/修改的文件清单**：
+  - `state_machine/controller.py (Modified — _state_note、动作签名按执行/重复、_format_correction)`
+  - `utils/parser.py (Modified — prose_only_calls)`
+  - `scripts/generate_trajectories_g4.py (Modified — 记录携带完整计数块 + requests/executions/repeat_requests)`
+  - `scripts/g7_b2_report.py (Modified — 口径统一、缺失字段显式化、新增请求/执行/重复行)`
+  - `utils/final_v2.py (Modified — dialogue_audit.repeat_request_turns)、utils/weak_evidence.py (Modified — repeat_request_flags)`
+  - `scripts/build_review_workstation.py (Modified — 重复轮徽章、高风险原因按类型命名)`
+  - `tests/test_controller_v3.py / test_single_action_protocol.py / test_conversion_fidelity.py (Extended — 状态行、重复计数与防循环、纠错文案、样本标记)`
+  - `sft_data/review/g7_b2/*.html (Regenerated — 指纹 9e2c7e5224b781da)、calibration/g7_report_g7_b2.json (Regenerated)`
+* **执行结果与验证状态**：**分块运行 1110 通过 + 1 跳过**（369+402+339）。真实数据核对：屏幕标记 `repeat_request_no_progress` **41** 条、`fidelity.repeat_request_turns` 指名轮号、工作台徽章与筛查标记均在样本上验证通过；报告口径与用户人工计数一致（103/62/41）。
+* **置信度或遗留待办（TODO）**：①**状态行是否真的降低重复率尚未验证**——需要 GPU 对照（同批次前 8 个变体，命令已备好：`--output-dir sft_data/trajectories_g7_b2_statefix`），开机即可跑②重复轮当前记为**候选**（交人工），是否需要在转换时直接排除该**会话**（而非仅标记该轮）取决于审核口径③格式纠错新文案同样只能在真实模型上验证效果

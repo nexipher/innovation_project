@@ -195,3 +195,31 @@ class TestTheScreenerAsksTheLedger:
         sample = self._sample_with(answer, [self._token(p_fake=0.52)])
         sample["final_verdict"] = {"verdict": "Uncertain", "confidence": 0.4}
         assert flags(sample) == []
+
+
+class TestRepeatRequestTurnsAreMarked:
+    """A re-request is a no-progress action, not a model behaviour to copy."""
+
+    TRACE = _trace([
+        {"from": "user", "value": "分析。"},
+        {"from": "gpt", "value": "<call_noise></call_noise>"},
+        {"from": "user", "value": "[System: noise_expert 已在本会话对整图测量过"
+                                  "（E-1），重复调用不会产生新的测量，已跳过执行。]"},
+        {"from": "gpt", "value": CLOSING},
+    ])
+
+    def test_the_audit_names_the_turn(self):
+        audit = audit_dialogue({**_record(), "_trace": self.TRACE})
+        assert audit["repeat_request_turns"] == [1]
+
+    def test_the_sample_counts_them(self):
+        sample = _sample(_record(), self.TRACE)
+        assert sample["fidelity"]["dialogue_audit"]["repeat_request_turns"] == [1]
+
+    def test_the_screener_flags_the_sample_for_a_person(self):
+        from utils.weak_evidence import repeat_request_flags
+
+        sample = _sample(_record(), self.TRACE)
+        findings = repeat_request_flags(sample)
+        assert [f["kind"] for f in findings] == ["repeat_request_turn"]
+        assert findings[0]["severity"] == "candidate"

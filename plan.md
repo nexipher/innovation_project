@@ -2590,3 +2590,12 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 **g7_b2 结果（56 次会话，修复解析器后）**：合法主动结案 **56/56**（其中合法弃权 9）、解析失败 **0**、外部截断 1（format_failure）；标签 Real 24 / Fake 23 / Uncertain 9；停止原因 model_concluded 55；协议违规 0；平均 2.93 轮 / 1.11 次调用 / 成本 2.57；证据检查 54 pass、**2 failed**（虚构数值与方向冲突在纠正后仍存在 → 门禁拒收）；缺陷 fabricated_value 1 + direction_conflict 1，候选 direction_overread 3。**PROBE 单独对照（同图像、缓存分数离线）**：55 条有 probe 令牌的会话里 **53 条判对**，而整条 Agent **44/56**——单检测器在这批图像上优于 Qwen 主导链。逐条看：11 条与 PROBE 不一致里 6 条是 probe≈0.52 近随机箱上的**合法弃权**（符合既定政策），3 条是 probe=1.000 强 Fake 而模型给 Real/Uncertain 的**真失败**，1 条 probe=0.061 强 Real 被弃权。
 
 **本轮发现的两处解析缺陷（均由验收暴露，非模型问题）**：①`<planning>` 内写 `<call_x>`（模板把标签当"专家名"）②`<reasoning>` 内引用 `<call_x>`——都曾被计为"一次额外请求"，导致 56/56 会话被拒。修复为 `Parser.strip_prose`（规划/推理块内的标签一律不是请求）+ 提示词明确"标签只在 `</planning>` 后出现一次"；两批被污染的轨迹分别归档在 `sft_data/trajectories_g7_b2_parser_bug/` 与 `..._reasoning_prose/`，均附 `ARCHIVE_NOTE.json`，不参与任何统计。
+
+### B 段第 8 步：重复请求（41/56）的修复与口径统一 + 格式纠错具体化（用户指出；GPU 已关，效果待验证）
+
+- **口径统一**：轨迹记录此前只带 5 个计数器（`skipped_duplicate_calls`、`protocol_violations` **根本不在里面**），报告读它们得到的是**假零**。现在记录携带 trace 的完整计数块，并新增成对字段 **`requests`（请求）/ `executions`（执行）/ `repeat_requests`（重复请求）**；报告对缺失字段输出 `未记录`（`None`），不再用 0 冒充。重跑同一批数据：**请求 103 / 执行 62，重复请求 41，41/56 会话含重复**（与用户人工计数一致）。
+- **每轮状态行**（用户建议 1、2）：每次测量注入后追加一条 `[System: 本会话状态 —— 已执行的专家：…（P(Fake)/方向/raw/适用）；尚可调用：…；每专家整图只测一次，重复请求会被跳过并白费一轮]`。完整 token 原样保留在其上方，状态行只是把关键字段提到前面。
+- **重复请求 = 无进展动作**（用户建议 3）：动作签名按"执行 / 重复"区分（同一专家即同一次测量，bbox 不参与），重复轮计入防循环信号 → 连续两次重复请求即 `loop_protection`；计数器分别记 **请求次数** 与 **实际执行次数**。
+- **重复轮不作为动作示范**（用户建议 4）：轨迹记录与样本的 `fidelity.dialogue_audit.repeat_request_turns` 记录轮号；弱证据筛查新增候选 `repeat_request_turn`（"无进展动作，不应作为动作示范"）；工作台在对应助手轮上打**"重复请求 · 已被跳过执行（无进展，不能作为动作示范）"**徽章；高风险原因按类型分别命名（`repeat_request_no_progress` 等），不再一律叫 `weak_evidence_promoted`。
+- **格式纠错具体化**（用户新指出）：BigGAN q95 会话连续三次把调用写在 `<planning>` 内，纠错却说"请包含 `<call_*>` 或 `<verdict>`"——让它做已经做过的事。现在 `Parser.prose_only_calls` 识别"只出现在论述块内"的标签，纠错直接点名并给出应输出的行：`<call_probe></call_probe>` 放在 `</planning>` 之后，并说明块内标签"不会被执行"。
+- **未完成**：状态行能否真正降低重复率需要 GPU 对照（用户已关闭 GPU）；已用同一批次的前 8 个变体准备好对照方案（`--output-dir sft_data/trajectories_g7_b2_statefix`），开机即可跑。

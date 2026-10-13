@@ -231,6 +231,21 @@ class Parser:
         return cls.extract_all_calls(cls.strip_prose(text))
 
     @classmethod
+    def prose_only_calls(cls, text: str) -> List[str]:
+        """
+        Experts whose call tags appear *only* inside a prose block.
+
+        This is the shape the acceptance batch showed three times in one
+        session: the model writes <call_probe> inside <planning>, so a
+        correction that says "include a <call_*> tag" is telling it to do what
+        it already did.  Naming the buried tags is what makes the correction
+        actionable.
+        """
+        seen = {name for name, _ in cls.extract_all_calls(text)}
+        outside = {name for name, _ in cls.executable_calls(text)}
+        return sorted(seen - outside)
+
+    @classmethod
     def protocol_action(cls, text: str) -> dict:
         """
         What one turn did, judged by the single-action protocol (§4.17 R9).

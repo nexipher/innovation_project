@@ -188,6 +188,22 @@ def label_report_flags(sample: dict) -> List[dict]:
     return []
 
 
+def repeat_request_flags(sample: dict) -> List[dict]:
+    """Turns that re-requested a measurement already delivered (candidate)."""
+    turns = sample.get("fidelity") or {}
+    indexes = ((turns.get("dialogue_audit") or {}).get("repeat_request_turns") or [])
+    if not indexes:
+        return []
+    return [{
+        "kind": "repeat_request_turn",
+        "severity": "candidate",
+        "source": None,
+        "evidence_id": None,
+        "sentence": f"第 {index} 轮重复请求了已测量过的专家（系统已跳过执行）",
+        "reason": "重复请求轮：无进展动作，不应作为动作示范",
+    } for index in indexes]
+
+
 def weak_tokens(sample: dict) -> List[dict]:
     """The tokens whose calibrated likelihood sits in the near-chance band."""
     output = []
@@ -230,7 +246,7 @@ def flags(sample: dict) -> List[dict]:
     checks cover what has been defined, and a person still reads the sample.
     """
     structural = (ledger_flags(sample) + localisation_flags(sample)
-                  + label_report_flags(sample))
+                  + label_report_flags(sample) + repeat_request_flags(sample))
     weak = weak_tokens(sample)
     if not weak:
         return structural

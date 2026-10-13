@@ -44,6 +44,32 @@ CONCLUSION = "model_concluded"
 TRUNCATIONS = ("budget_exhausted", "loop_protection", "format_failure")
 
 
+def _trace_counters(record: dict) -> dict:
+    """The trace's counter block, for records written before it was carried."""
+    path = record.get("trace_path")
+    if not path:
+        return {}
+    try:
+        with open(os.path.join(PROJECT_ROOT, path), encoding="utf-8") as handle:
+            return (json.load(handle).get("metadata") or {})
+    except (OSError, ValueError):
+        return {}
+
+
+def _counter(record: dict, key: str):
+    """
+    One counter, from the record or its trace; None when neither has it.
+
+    Returning 0 for a key that does not exist is how `skipped_duplicate_calls`
+    was reported as "no repeats" while 41 of 56 sessions had one — a missing
+    key must never look like a measured zero.
+    """
+    counters = record.get("counters") or {}
+    if key in counters:
+        return counters[key]
+    return _trace_counters(record).get(key)
+
+
 def _probe_reference(record: dict, table) -> Optional[str]:
     """PROBE alone: its own score, read through the calibration table."""
     for token in record.get("evidence") or []:
@@ -77,6 +103,21 @@ def summarise(records: List[dict], table=None) -> dict:
         finding.get("kind")
         for record in records
         for finding in ((record.get("evidence_check") or {}).get("candidates") or []))
+
+    # Requests vs executions, kept apart: a repeat request is a request that
+    # produced nothing, and "no repeat execution" must not read as "no repeat
+    # request" (§4.17).
+    executions = sum((_counter(r, "expert_calls") or 0) for r in records)
+    repeat_requests = sum((_counter(r, "skipped_duplicate_calls") or 0)
+                          + (_counter(r, "suppressed_duplicates") or 0)
+                          for r in records)
+    sessions_with_repeats = [r["trajectory_id"] for r in records
+                             if (_counter(r, "skipped_duplicate_calls") or 0)
+                             + (_counter(r, "suppressed_duplicates") or 0) > 0]
+    unrecorded = sorted({key for key in ("skipped_duplicate_calls",
+                                         "protocol_violations",
+                                         "suppressed_duplicates")
+                         if any(_counter(r, key) is None for r in records)})
 
     counters = [r.get("counters") or {} for r in records]
     mean = lambda key: round(sum(c.get(key) or 0 for c in counters) / len(counters), 3) \
@@ -119,8 +160,13 @@ def summarise(records: List[dict], table=None) -> dict:
         "evidence_check": dict(checks),
         "evidence_defect_kinds": dict(defect_kinds),
         "evidence_candidate_kinds": dict(candidate_kinds),
-        "protocol_violations": sum(c.get("protocol_violations") or 0
-                                   for c in counters),
+        "executions": executions,
+        "repeat_requests": repeat_requests,
+        "requests": executions + repeat_requests,
+        "sessions_with_repeat_requests": len(sessions_with_repeats),
+        "unrecorded_counters": unrecorded,
+        "protocol_violations": sum(_counter(r, "protocol_violations") or 0
+                                   for r in records),
         "mean_turns": mean("model_turns"),
         "mean_expert_calls": mean("expert_calls"),
         "mean_weighted_cost": mean("weighted_cost"),
@@ -170,6 +216,10 @@ def main() -> None:
     print(f"  标签 {summary['labels']}｜停止原因 {summary['halting_reasons']}")
     print(f"  证据检查 {summary['evidence_check']}｜缺陷 {summary['evidence_defect_kinds']}"
           f"｜候选 {summary['evidence_candidate_kinds']}")
+    print(f"  请求/执行：{summary['requests']}/{summary['executions']}"
+          f"（其中重复请求 {summary['repeat_requests']}，"
+          f"{summary['sessions_with_repeat_requests']}/{summary['sessions']} 会话含重复）"
+          f"｜未记录字段 {summary['unrecorded_counters']}")
     print(f"  协议违规 {summary['protocol_violations']}｜平均轮数 {summary['mean_turns']}"
           f"｜平均调用 {summary['mean_expert_calls']}｜平均成本 {summary['mean_weighted_cost']}")
     print(f"  PROBE 单独对照：{summary['probe_alone']}")

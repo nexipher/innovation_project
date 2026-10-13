@@ -404,7 +404,8 @@ def audit_dialogue(record: dict) -> dict:
              for index, turn in enumerate(trace_turns)
              if (turn.get("from") or "") == "gpt" and index != closing]
     if not turns:
-        return {"turns": 0, "defects": [], "candidates": []}
+        return {"turns": 0, "defects": [], "candidates": [],
+                "repeat_request_turns": []}
 
     ledger = Ledger.from_session(
         record.get("evidence") or [],
@@ -419,7 +420,22 @@ def audit_dialogue(record: dict) -> dict:
             entry = {"turn": index, **finding}
             (defects if finding.get("severity", "defect") == "defect"
              else candidates).append(entry)
-    return {"turns": len(turns), "defects": defects, "candidates": candidates}
+
+    # A turn that asked again for an expert already measured is a no-progress
+    # action: the system skipped it and said so.  41 of the 56 acceptance
+    # sessions did this, so the count travels with the sample — such a turn is
+    # not a good action to imitate, and a reviewer needs to see it.
+    repeats = []
+    for index, turn in enumerate(trace_turns):
+        if (turn.get("from") or "") != "gpt":
+            continue
+        following = trace_turns[index + 1] if index + 1 < len(trace_turns) else {}
+        if (following.get("from") or "") != "user":
+            continue
+        if "已跳过执行" in (following.get("value") or ""):
+            repeats.append(index)
+    return {"turns": len(turns), "defects": defects, "candidates": candidates,
+            "repeat_request_turns": repeats}
 
 
 def render_sample(record: dict, category: str, observation_text: str = "",
@@ -476,6 +492,9 @@ def render_sample(record: dict, category: str, observation_text: str = "",
                 "defect_count": len(dialogue["defects"]),
                 "candidate_count": len(dialogue["candidates"]),
                 "defect_kinds": sorted({finding["kind"] for finding in dialogue["defects"]}),
+                # turns that re-requested a measurement already in hand: kept
+                # in the record, never presented as a model action to copy
+                "repeat_request_turns": dialogue["repeat_request_turns"],
             },
         },
         "audit": {"review_status": "pending_human", "review_method": "automated_validator"},

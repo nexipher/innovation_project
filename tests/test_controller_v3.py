@@ -108,6 +108,14 @@ class TestStopReasons:
         assert result["halting_reason"] == "loop_protection"
         assert result["final_verdict"]["verdict"] == "Uncertain"
 
+    def test_a_re_request_is_counted_as_a_no_progress_action(self, v3):
+        """The 41-of-56 pattern: ask again for an expert already measured."""
+        again = ("<planning>\nSuspected Region: [500, 400, 600, 500]\n</planning>\n"
+                 "<call_noise>[500, 400, 600, 500]</call_noise>")
+        result = v3([CALL, again, again, CLOSING])
+        assert result["skipped_duplicate_calls"] == 2
+        assert result["halting_reason"] == "loop_protection"
+
     def test_turns_without_a_legal_action_are_a_format_failure(self, v3):
         result = v3([GARBAGE, GARBAGE, GARBAGE, CLOSING])
         assert result["halting_reason"] == "format_failure"
@@ -117,11 +125,11 @@ class TestStopReasons:
         from state_machine import halting_v3
 
         monkeypatch.setattr(halting_v3, "MAX_MODEL_TURNS", 3)
-        third_call = ("<planning>\nSuspected Region: [500, 400, 600, 500]\n</planning>\n"
-                      "<call_noise>[500, 400, 600, 500]</call_noise>")
-        # The third turn is still an action, not a conclusion: the budget is
-        # what ends the session, and the closing turn supplies the label.
-        result = v3([CALL, SECOND_CALL, third_call,
+        # Three *distinct* actions: repeating one expert would be a loop, and
+        # the loop guard fires before the budget does (by design).
+        probe_call = ("<planning>\nSuspected Region: [400, 300, 700, 600]\n</planning>\n"
+                      "<call_probe>[400, 300, 700, 600]</call_probe>")
+        result = v3([CALL, probe_call, SECOND_CALL,
                      _verdict("Real", 0.7, "预算用尽前的结案。")])
         assert result["halting_reason"] == "budget_exhausted"
         assert result["final_verdict"]["verdict"] == "Real"
@@ -158,3 +166,23 @@ class TestAFailedConclusionIsNotAnAbstention:
         metadata = _trace(result)["metadata"]
         assert metadata["verdict_status"] == "model_concluded"
         assert metadata["model_abstained"] is True
+
+
+class TestTheSessionStateIsRestated:
+    """§4.17: the model should not have to re-derive the state from a blob."""
+
+    def test_every_measurement_is_followed_by_a_state_note(self, v3):
+        result = v3([CALL, _verdict("Fake", 0.8)])
+        notes = [turn["value"] for turn in result["conversation"]
+                 if turn["from"] == "user" and "本会话状态" in turn["value"]]
+        assert len(notes) == 1
+        assert "已执行的专家" in notes[0] and "noise_expert" in notes[0]
+        assert "P(Fake)" in notes[0] and "尚可调用" in notes[0]
+
+    def test_the_state_note_lists_what_is_still_available(self, v3):
+        result = v3([CALL, _verdict("Fake", 0.8)])
+        note = next(turn["value"] for turn in result["conversation"]
+                    if turn["from"] == "user" and "本会话状态" in turn["value"])
+        assert "jpeg_expert" in note                # served but not yet called
+        assert "noise_expert" not in note.split("尚可调用")[1]   # already measured
+        assert "重复请求" in note

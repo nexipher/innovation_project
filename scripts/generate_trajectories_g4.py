@@ -319,12 +319,24 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
             if verdict.get("model_candidate") else None
         ),
         "evidence": result["evidence_chain"],
+        # The trace's own counter block, carried through as it is.  The
+        # record used to keep five of its keys, so `skipped_duplicate_calls`
+        # (41 of these 56 sessions had one) and `protocol_violations` were
+        # simply absent — and a report reading them saw 0.  A missing key must
+        # never look like a zero, so nothing is dropped.
         "counters": {
+            **metadata.get("counters", metadata),
             "model_turns": result["model_turn_count"],
             "expert_calls": result["expert_call_count"],
             "unique_evidence": result["unique_evidence_count"],
-            "suppressed_duplicates": result["suppressed_duplicate_count"],
             "weighted_cost": result["weighted_cost"],
+            # `expert_calls` is the *executed* count; the requests the session
+            # made are executions + skips.  Both names travel together so a
+            # reader cannot mistake one for the other.
+            "repeat_requests": (result["skipped_duplicate_calls"]
+                                + result["suppressed_duplicate_count"]),
+            "requests": (result["expert_call_count"]
+                         + result["skipped_duplicate_calls"]),
         },
         "halting_reason": result["halting_reason"],
         "elapsed_s": round(elapsed, 2),
