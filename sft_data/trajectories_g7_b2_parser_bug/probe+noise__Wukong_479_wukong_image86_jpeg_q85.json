@@ -1,0 +1,196 @@
+{
+  "trajectory_id": "probe+noise__Wukong_479_wukong_image86_jpeg_q85",
+  "policy": "probe+noise",
+  "tools_served": [
+    "probe",
+    "noise"
+  ],
+  "variant_id": "Wukong_479_wukong_image86_jpeg_q85",
+  "source_id": "Wukong/479_wukong_image86",
+  "split": "train",
+  "generator": "Wukong",
+  "treatment": "jpeg_q85",
+  "container": "jpg",
+  "ground_truth": "Fake",
+  "model_candidate": "Fake",
+  "final_verdict": "Fake",
+  "verdict_status": "model_concluded",
+  "reference": {
+    "recommendation": "Fake",
+    "advisory": [],
+    "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+  },
+  "record_schema": "g7_r4",
+  "evidence_check": {
+    "status": "pass",
+    "findings": [],
+    "candidates": [
+      {
+        "kind": "text_value_as_measurement",
+        "source": "noise_expert",
+        "severity": "candidate",
+        "evidence_id": "E-51bbcfd13d",
+        "why": "3.6 只出现在 noise_expert 的自由文本里（可能是校准统计或阈值），不能据此断言它是本图的测量；交人工裁决",
+        "value": 3.6,
+        "sentence": "而真实图像的中位数为 3.6）"
+      }
+    ],
+    "entry": "closing_turn",
+    "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+  },
+  "conclusion": {
+    "source": "closing_turn",
+    "calls": [
+      "probe",
+      "noise"
+    ],
+    "calls_executed": false,
+    "verdict_parse": "ok"
+  },
+  "confidence": 0.95,
+  "report": "综合探针专家和噪声残留专家的评估，图像被判定为 AI 生成的可能性非常高。探针专家的高得分和噪声残留专家的生成图像相关性支持了这一结论。",
+  "posterior": 0.8472,
+  "conflict_score": 0.0,
+  "policy_reasons": [
+    "budget_exhausted"
+  ],
+  "model_probability": 0.95,
+  "evidence": [
+    {
+      "evidence_id": "E-20d673f3be",
+      "evidence_name": "aigi_discriminator_score",
+      "region": "patch_coordinates_[0, 0, 512, 512]",
+      "region_pixels": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "region_normalized_1000": null,
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "整图判别分数 0.9999（外部判别器的原始输出，未经本地校准）。输入预处理：512×512 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。",
+      "reasoning": "该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。",
+      "strength": 0.9999,
+      "raw_metric": 0.999886,
+      "source": "probe_dino_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=1.00); the generative reading applies.",
+      "counter_explanation": "外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。",
+      "reliability": 0.987,
+      "calibrated_likelihood": {
+        "Real": 0.0,
+        "Fake": 1.0
+      },
+      "condition_metadata": {
+        "bin_samples": 50,
+        "confound_drop_png_to_q70": 0.021874999999999978,
+        "separation_polarity_corrected": 0.98359375,
+        "condition": "jpeg_q85",
+        "weight_basis": "condition:jpeg_q85",
+        "weight": 0.9865,
+        "region_area_ratio": 1.0
+      },
+      "semantics_aligned": true,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "mapping_scope": "pooled_quantile_bins",
+        "weight_basis": "condition:jpeg_q85",
+        "weight": 0.9865,
+        "condition": "jpeg_q85"
+      },
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。",
+      "diagnostic_region_image": "traces/evidence/session_20261013_192752_Wukong_479_wukong_image86_jpeg_q85/region_E-20d673f3be.png"
+    },
+    {
+      "evidence_id": "E-51bbcfd13d",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[0, 0, 512, 512]",
+      "region_pixels": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "region_normalized_1000": null,
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Whole-image noise-residual level 2.0020: the generated-imagery end of the G2 calibration band. Variance collapse detected; a band is an association measured on the calibration set, not a physical proof of origin.",
+      "reasoning": "Whole-image residual micro-noise level 2.0020 (low). The G2 calibration set associates this band with generated imagery (fake median 2.0 vs real median 3.6). The number is one statistic of the whole image and says nothing about where in the image anything is. Denoising, sharpening and re-compression move it the same way, so on its own it is a weak signal, not proof of origin.",
+      "strength": 0.232,
+      "raw_metric": 2.002018,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.65); the generative reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.774,
+      "calibrated_likelihood": {
+        "Real": 0.347,
+        "Fake": 0.653
+      },
+      "condition_metadata": {
+        "bin_samples": 49,
+        "confound_drop_png_to_q70": -0.074,
+        "separation_polarity_corrected": 0.794,
+        "condition": "jpeg_q85",
+        "weight_basis": "condition:jpeg_q85",
+        "weight": 0.774,
+        "region_area_ratio": 1.0
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": null,
+        "mapping_scope": "pooled_quantile_bins",
+        "weight_basis": "condition:jpeg_q85",
+        "weight": 0.774,
+        "condition": "jpeg_q85"
+      },
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Low residual micro-noise level — smooth, low-variance output of the kind the calibration set associates with generated imagery.",
+      "diagnostic_region_image": "traces/evidence/session_20261013_192752_Wukong_479_wukong_image86_jpeg_q85/region_E-51bbcfd13d.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261013_192752_Wukong_479_wukong_image86_jpeg_q85/noise_residual_map_E-51bbcfd13d.png"
+      ]
+    }
+  ],
+  "counters": {
+    "model_turns": 7,
+    "expert_calls": 2,
+    "unique_evidence": 2,
+    "suppressed_duplicates": 0,
+    "weighted_cost": 5.5
+  },
+  "halting_reason": "budget_exhausted",
+  "elapsed_s": 46.86,
+  "trace_path": "traces/sft_sessions/forensic_sft_session_20261013_192752_Wukong_479_wukong_image86_jpeg_q85.json",
+  "policy_version": "v3",
+  "scores": {
+    "model_nll": 0.0513,
+    "model_brier": 0.0025,
+    "posterior_nll": 0.1658,
+    "posterior_brier": 0.0233,
+    "posterior_error": 0.1528
+  }
+}

@@ -2586,3 +2586,7 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 - **正式小批**：单臂 `probe+noise`，14 源 × 4 编码格 = **56 次会话**（用户"50 个左右、大致看一下"）。
 - **统计口径（`scripts/g7_b2_report.py`）**：合法主动结案、合法弃权、**解析失败（单独计，不并入弃权）**、外部截断（预算/防循环/格式）、证据纠正与缺陷/候选类型、协议违规、平均轮数/调用/成本，以及**用缓存分数离线计算的 PROBE 单独对照臂**（同一批图像，读同一张表）。
 - **人工检查材料（`scripts/build_review_from_trajectories.py`）**：单臂批次没有 no-tool 配对，admission 必然全拒；因此直接由轨迹渲染评审样本（明确标注 `admission=not_applied_review_only`）并建工作台，供"原始回答 vs 最终训练对话"并排查看。
+
+**g7_b2 结果（56 次会话，修复解析器后）**：合法主动结案 **56/56**（其中合法弃权 9）、解析失败 **0**、外部截断 1（format_failure）；标签 Real 24 / Fake 23 / Uncertain 9；停止原因 model_concluded 55；协议违规 0；平均 2.93 轮 / 1.11 次调用 / 成本 2.57；证据检查 54 pass、**2 failed**（虚构数值与方向冲突在纠正后仍存在 → 门禁拒收）；缺陷 fabricated_value 1 + direction_conflict 1，候选 direction_overread 3。**PROBE 单独对照（同图像、缓存分数离线）**：55 条有 probe 令牌的会话里 **53 条判对**，而整条 Agent **44/56**——单检测器在这批图像上优于 Qwen 主导链。逐条看：11 条与 PROBE 不一致里 6 条是 probe≈0.52 近随机箱上的**合法弃权**（符合既定政策），3 条是 probe=1.000 强 Fake 而模型给 Real/Uncertain 的**真失败**，1 条 probe=0.061 强 Real 被弃权。
+
+**本轮发现的两处解析缺陷（均由验收暴露，非模型问题）**：①`<planning>` 内写 `<call_x>`（模板把标签当"专家名"）②`<reasoning>` 内引用 `<call_x>`——都曾被计为"一次额外请求"，导致 56/56 会话被拒。修复为 `Parser.strip_prose`（规划/推理块内的标签一律不是请求）+ 提示词明确"标签只在 `</planning>` 后出现一次"；两批被污染的轨迹分别归档在 `sft_data/trajectories_g7_b2_parser_bug/` 与 `..._reasoning_prose/`，均附 `ARCHIVE_NOTE.json`，不参与任何统计。

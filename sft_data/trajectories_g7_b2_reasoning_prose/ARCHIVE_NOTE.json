@@ -1,0 +1,5 @@
+{
+  "purpose": "g7_b2 中 9 条 format_failure 轨迹——<reasoning> 内引用标签的解析缺陷留证，重跑替换",
+  "defect": "模型在 <reasoning> 里引用 <call_x>（“1. <call_probe> 的结果表明…”），解析器把散文块内的标签计为请求 → 与同轮 <verdict> 冲突 → call_and_verdict 拒收",
+  "fix": "Parser.strip_prose（planning + reasoning）+ Parser.executable_calls；回归测试 tests/test_single_action_protocol.py::TestAReasoningTagIsNotARequest"
+}

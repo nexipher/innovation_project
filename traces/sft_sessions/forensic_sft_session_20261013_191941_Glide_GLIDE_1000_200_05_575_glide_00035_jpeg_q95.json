@@ -1,0 +1,292 @@
+{
+  "id": "session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95",
+  "image_path": "/root/autodl-tmp/innovation_project/sft_data/variants_g7_b2/Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95.jpg",
+  "ground_truth": "Fake",
+  "source_model": "Unknown",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "confidence": 0.5,
+    "report": "综合探测器和噪声残留专家的测量结果，探测器倾向于图像为 AI 生成，但噪声残留的证据不足以完全否定这一可能性。",
+    "posterior": 0.8471,
+    "tool_utilities": {
+      "probe_dino_expert": -0.25,
+      "noise_expert": -0.15
+    },
+    "conflict_score": 0.0,
+    "redundancy_discounts": [],
+    "policy_reason": "budget_exhausted",
+    "policy_reasons": [
+      "budget_exhausted"
+    ],
+    "model_candidate": "Uncertain",
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "closing_turn",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "conclusion": {
+      "source": "closing_turn",
+      "calls": [],
+      "calls_executed": false,
+      "verdict_parse": "ok"
+    },
+    "reference": {
+      "recommendation": "Fake",
+      "advisory": [],
+      "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+    }
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: none\nVisual Anomalies: 未观察到明确异常，需要统计证据\nExpert Target & Hypothesis: <call_probe> 整体图像的AI生成检测\n</planning>\n<call_probe>"
+    },
+    {
+      "from": "user",
+      "value": "[System: 协议要求每轮只有一个动作 —— 要么一次工具调用（一个 <call_x> 标签），要么一次结案（一个 <verdict> 标签）。本轮同时出现了多个动作，因此都未执行。请重新输出：只保留你要做的那个动作。]"
+    },
+    {
+      "from": "user",
+      "value": "[System: 输出格式错误 — 缺少 <verdict> 或 <call_*> 标签，请输出判定结论或调用法证专家。 请严格按照 SOP 格式重新输出，包含 <call_*> 或 <verdict> 标签。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<call_probe>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-fd321fb153\", \"evidence_name\": \"aigi_discriminator_score\", \"region\": \"patch_coordinates_[0, 0, 256, 256]\", \"region_pixels\": [0, 0, 256, 256], \"region_normalized_1000\": null, \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"整图判别分数 0.9996（外部判别器的原始输出，未经本地校准）。输入预处理：336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。\", \"reasoning\": \"该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。\", \"strength\": 0.9996, \"raw_metric\": 0.999556, \"source\": \"probe_dino_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=1.00); the generative reading applies.\", \"counter_explanation\": \"外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。\", \"reliability\": 0.977, \"calibrated_likelihood\": {\"Real\": 0.0, \"Fake\": 1.0}, \"condition_metadata\": {\"bin_samples\": 49, \"confound_drop_png_to_q70\": 0.021874999999999978, \"separation_polarity_corrected\": 0.98359375, \"condition\": \"jpeg_q95\", \"weight_basis\": \"condition:jpeg_q95\", \"weight\": 0.9771, \"region_area_ratio\": 1.0}, \"semantics_aligned\": true, \"applicability\": \"strong\", \"applicability_conditions\": \"五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": \"A\", \"mapping\": \"quantile_bins\", \"sources\": 62, \"samples\": 248, \"split_hash\": \"37bf2f1db22ccdef\", \"weights_sha256\": \"c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156\", \"mapping_scope\": \"pooled_quantile_bins\", \"weight_basis\": \"condition:jpeg_q95\", \"weight\": 0.9771, \"condition\": \"jpeg_q95\"}, \"support_raw\": \"Uncertain\", \"direction\": \"AI-generated\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。\", \"diagnostic_region_image\": \"traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/region_E-fd321fb153.png\"}",
+      "image_paths": [
+        "traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/region_E-fd321fb153.png"
+      ]
+    },
+    {
+      "from": "user",
+      "value": "[System: 策略的参考估计认为继续调用收益有限，但这只是参考，不影响你也无权阻止你的取证判断；你可以继续调用未用过的工具，或给出结案。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<call_probe>"
+    },
+    {
+      "from": "user",
+      "value": "[System: probe_dino_expert 已在本会话对整图测量过（E-fd321fb153），整图测量与区域无关，重复调用不会产生新的测量，已跳过执行。请基于现有证据继续。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "{\"evidence_id\": \"E-7f3d048912\", \"evidence_name\": \"noise_residual_inconsistency\", \"region\": \"patch_coordinates_[0, 0, 256, 256]\", \"region_pixels\": [0, 0, 256, 256], \"region_normalized_1000\": null, \"coordinate_space\": \"pixels\", \"region_semantics\": \"diagnostic_evidence_region\", \"measurement_scope\": \"global\", \"phenomenon\": \"Whole-image noise-residual level 2.2774: the generated-imagery end of the G2 calibration band. Variance collapse detected; a band is an association measured on the calibration set, not a physical proof of origin.\", \"reasoning\": \"Whole-image residual micro-noise level 2.2774 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.\", \"strength\": 0.3135, \"raw_metric\": 2.277357, \"source\": \"noise_expert\", \"support\": \"AI-generated\", \"interpretation_text\": \"Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.65); the generative reading applies.\", \"counter_explanation\": \"该指标衡量残差水平而非\\\"不一致性\\\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\\\"异常即伪造\\\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。\", \"reliability\": 0.806, \"calibrated_likelihood\": {\"Real\": 0.347, \"Fake\": 0.653}, \"condition_metadata\": {\"bin_samples\": 49, \"confound_drop_png_to_q70\": -0.074, \"separation_polarity_corrected\": 0.794, \"condition\": \"jpeg_q95\", \"weight_basis\": \"condition:jpeg_q95\", \"weight\": 0.8063, \"region_area_ratio\": 1.0}, \"semantics_aligned\": false, \"applicability\": \"inverted:high-metric-means-real\", \"applicability_conditions\": \"高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。\", \"calibration\": {\"table\": \"calibration/reliability_table.json\", \"fitted_on\": \"A\", \"mapping\": \"quantile_bins\", \"sources\": 62, \"samples\": 248, \"split_hash\": \"37bf2f1db22ccdef\", \"weights_sha256\": null, \"mapping_scope\": \"pooled_quantile_bins\", \"weight_basis\": \"condition:jpeg_q95\", \"weight\": 0.8063, \"condition\": \"jpeg_q95\"}, \"support_raw\": \"Uncertain\", \"direction\": \"AI-generated\", \"direction_source\": \"calibrated_likelihood\", \"interpretation_text_raw\": \"Intermediate residual level; the calibrated likelihood is close to chance for this band.\", \"diagnostic_region_image\": \"traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/region_E-7f3d048912.png\", \"visual_artifacts\": [\"traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/noise_residual_map_E-7f3d048912.png\"]}",
+      "image_paths": [
+        "traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/region_E-7f3d048912.png",
+        "traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/noise_residual_map_E-7f3d048912.png"
+      ]
+    },
+    {
+      "from": "gpt",
+      "value": "<call_probe>"
+    },
+    {
+      "from": "user",
+      "value": "[System: probe_dino_expert 已在本会话对整图测量过（E-fd321fb153），整图测量与区域无关，重复调用不会产生新的测量，已跳过执行。请基于现有证据继续。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<call_noise>"
+    },
+    {
+      "from": "user",
+      "value": "[System: noise_expert 已在本会话对整图测量过（E-7f3d048912），整图测量与区域无关，重复调用不会产生新的测量，已跳过执行。请基于现有证据继续。]"
+    },
+    {
+      "from": "user",
+      "value": "[System: 取证预算已耗尽，本次会话到此结束。已执行的专家：noise_expert（E-7f3d048912；condition_metadata.bin_samples=49, condition_metadata.confound_drop_png_to_q70=-0.074, condition_metadata.region_area_ratio=1, condition_metadata.separation_polarity_corrected=0.794, condition_metadata.weight=0.8063, raw_metric=2.27736, reliability=0.806, strength=0.3135；校准概率 2 项（数值见该专家的 token））；probe_dino_expert（E-fd321fb153；condition_metadata.bin_samples=49, condition_metadata.confound_drop_png_to_q70=0.021875, condition_metadata.region_area_ratio=1, condition_metadata.separation_polarity_corrected=0.983594, condition_metadata.weight=0.9771, raw_metric=0.999556, reliability=0.977, strength=0.9996；校准概率 2 项（数值见该专家的 token））；本会话未执行的专家：（无）；其中被跳过（重复请求）：noise_expert, probe_dino_expert。请只使用已执行的专家返回过的数值给出结论；若这些测量不足以判定，如实说明还缺哪种测量。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<reasoning>\n综合分析两个专家的测量结果：\n- 探测器（probe_dino_expert）的测量结果为 0.9996，表明图像高度可能是 AI 生成的。\n- 噪声残留专家（noise_expert）的测量结果为 2.2774，这在 G2 校准中属于生成图像的末端，但其可靠性较低（0.806），且仅作为弱证据使用。\n\n尽管探测器的分数非常接近于 1.0，但噪声残留的分数并不支持这一结论。综合来看，探测器的证据更为有力，但噪声残留的证据不足以完全否定 AI 生成的可能性。因此，目前的证据不足以得出明确的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"confidence\": 0.5, \"primary_evidence\": [\"aigi_discriminator_score\", \"noise_residual_inconsistency\"], \"report\": \"综合探测器和噪声残留专家的测量结果，探测器倾向于图像为 AI 生成，但噪声残留的证据不足以完全否定这一可能性。\"}\n</verdict>"
+    }
+  ],
+  "evidence_chain": [
+    {
+      "evidence_id": "E-fd321fb153",
+      "evidence_name": "aigi_discriminator_score",
+      "region": "patch_coordinates_[0, 0, 256, 256]",
+      "region_pixels": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "region_normalized_1000": null,
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "整图判别分数 0.9996（外部判别器的原始输出，未经本地校准）。输入预处理：336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。",
+      "reasoning": "该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。",
+      "strength": 0.9996,
+      "raw_metric": 0.999556,
+      "source": "probe_dino_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=1.00); the generative reading applies.",
+      "counter_explanation": "外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。",
+      "reliability": 0.977,
+      "calibrated_likelihood": {
+        "Real": 0.0,
+        "Fake": 1.0
+      },
+      "condition_metadata": {
+        "bin_samples": 49,
+        "confound_drop_png_to_q70": 0.021874999999999978,
+        "separation_polarity_corrected": 0.98359375,
+        "condition": "jpeg_q95",
+        "weight_basis": "condition:jpeg_q95",
+        "weight": 0.9771,
+        "region_area_ratio": 1.0
+      },
+      "semantics_aligned": true,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "mapping_scope": "pooled_quantile_bins",
+        "weight_basis": "condition:jpeg_q95",
+        "weight": 0.9771,
+        "condition": "jpeg_q95"
+      },
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。",
+      "diagnostic_region_image": "traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/region_E-fd321fb153.png"
+    },
+    {
+      "evidence_id": "E-7f3d048912",
+      "evidence_name": "noise_residual_inconsistency",
+      "region": "patch_coordinates_[0, 0, 256, 256]",
+      "region_pixels": [
+        0,
+        0,
+        256,
+        256
+      ],
+      "region_normalized_1000": null,
+      "coordinate_space": "pixels",
+      "region_semantics": "diagnostic_evidence_region",
+      "measurement_scope": "global",
+      "phenomenon": "Whole-image noise-residual level 2.2774: the generated-imagery end of the G2 calibration band. Variance collapse detected; a band is an association measured on the calibration set, not a physical proof of origin.",
+      "reasoning": "Whole-image residual micro-noise level 2.2774 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.",
+      "strength": 0.3135,
+      "raw_metric": 2.277357,
+      "source": "noise_expert",
+      "support": "AI-generated",
+      "interpretation_text": "Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.65); the generative reading applies.",
+      "counter_explanation": "该指标衡量残差水平而非\"不一致性\"：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\"异常即伪造\"的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。",
+      "reliability": 0.806,
+      "calibrated_likelihood": {
+        "Real": 0.347,
+        "Fake": 0.653
+      },
+      "condition_metadata": {
+        "bin_samples": 49,
+        "confound_drop_png_to_q70": -0.074,
+        "separation_polarity_corrected": 0.794,
+        "condition": "jpeg_q95",
+        "weight_basis": "condition:jpeg_q95",
+        "weight": 0.8063,
+        "region_area_ratio": 1.0
+      },
+      "semantics_aligned": false,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "calibration": {
+        "table": "calibration/reliability_table.json",
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "weights_sha256": null,
+        "mapping_scope": "pooled_quantile_bins",
+        "weight_basis": "condition:jpeg_q95",
+        "weight": 0.8063,
+        "condition": "jpeg_q95"
+      },
+      "support_raw": "Uncertain",
+      "direction": "AI-generated",
+      "direction_source": "calibrated_likelihood",
+      "interpretation_text_raw": "Intermediate residual level; the calibrated likelihood is close to chance for this band.",
+      "diagnostic_region_image": "traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/region_E-7f3d048912.png",
+      "visual_artifacts": [
+        "traces/evidence/session_20261013_191941_Glide_GLIDE_1000_200_05_575_glide_00035_jpeg_q95/noise_residual_map_E-7f3d048912.png"
+      ]
+    }
+  ],
+  "metadata": {
+    "image_size": [
+      256,
+      256
+    ],
+    "total_steps": 7,
+    "halting_reason": "budget_exhausted",
+    "mock_mode": "qwen_real",
+    "session_timestamp": "2026-10-13T19:19:41.124169",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 7,
+    "expert_call_count": 2,
+    "unique_evidence_count": 2,
+    "suppressed_duplicate_count": 0,
+    "skipped_duplicate_calls": 3,
+    "weighted_cost": 5.5,
+    "policy_version": "v3",
+    "available_experts": [
+      "noise_expert",
+      "probe_dino_expert"
+    ],
+    "calibration_condition": "jpeg_q95",
+    "protocol_violations": 1,
+    "policy_reason": "budget_exhausted",
+    "policy_reasons": [
+      "budget_exhausted"
+    ],
+    "posterior": 0.8471,
+    "conflict_score": 0.0,
+    "candidate_overridden": false,
+    "tool_utilities": {
+      "probe_dino_expert": -0.25,
+      "noise_expert": -0.15
+    },
+    "redundancy_discounts": [],
+    "evidence_check_status": "pass",
+    "repeated_action_turns": 0,
+    "invalid_action_turns": 0,
+    "format_failure_turns": 1,
+    "advisory_notes": [],
+    "model_label": "Uncertain",
+    "reference_recommendation": "Fake",
+    "conclusion_source": "closing_turn",
+    "conclusion_verdict_parse": "ok",
+    "conclusion_calls_unexecuted": false,
+    "verdict_status": "model_concluded",
+    "model_abstained": true,
+    "evidence_candidates": 0,
+    "evidence_candidate_kinds": []
+  }
+}

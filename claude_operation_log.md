@@ -1691,3 +1691,22 @@
   - `README.md (Modified — §6.4 边界与验收前提、§6.5 第 3 条、新增 §6.6)、plan.md (Modified — B 段第 6 步)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**验收五项全部 PASS**（`calibration/g7_cpu_acceptance_r5.json`，策略 v3｜提示词 453342d7e16ad3c8｜校准表 3d16c70538a1d0bc / schema 2 / 拟合组 A）；**分块运行 1093 通过 + 1 跳过**。验收过程本身抓到两个真问题并已修：①校验器仍按 v2 语义要求"标签必须与后验一致"，会把每一条 v3 的模型主导判定判成错；②`validate_sample` 看不到样本的策略版本（未从 metadata 传递）
 * **置信度或遗留待办（TODO）**：①`label_report_conflict` 等候选在旧 145 条上的计数仍是**旧口径**，新批次应在 v3 下显著下降——这是小批 GPU 的验收指标之一②逐格式**概率**校准未做（只有权重按格式），真实未知来源输入回退池化权重并在记录中如实标注③下一步：申请**小批 GPU 验证（约 50–100 次会话）**，验证真实 Qwen 是否遵守单动作协议、是否减少虚构与无依据弃权，再决定新 SFT 生成
+
+### 2026-10-13 20:10:53 - G7 B 段第 7 步：v3 小批 GPU 验收（56 次会话）——协议现已成立，但 Agent 不如 PROBE 单独
+
+* **当前操作动作**：按用户授权跑 56 次会话的独立 v3 验收批次（`g7_b2`，单臂 `probe+noise`，14 源 × 4 编码格），并在过程中修复验收暴露的两处解析缺陷；产出统计报告与人工审核材料。三版本固定：策略 v3、提示词 `fd8e9307fe85afd4`（FORENSIC_SYSTEM_PROMPT sha256[:16]=f4e2eda32c60679b）、校准表 `3d16c70538a1d0bc`。
+* **对应计划锚点**：plan.md §4.17「B 段第 7 步」
+* **核心变更说明**：
+  1. **第一轮（56 次）暴露两处解析缺陷——测的是我的代码，不是模型**：56/56 会话都在 `<planning>` 里写 `<call_x>`（提示词模板把标签形式当作"专家名"示例），解析器把规划块内的标签计为一次请求 → 160 轮 `multiple_calls` + 35 轮 `call_and_verdict` 被拒 → 33/56 无可解析结案。**修复**：`Parser.strip_prose`（planning/reasoning 块内的标签是"点名/引用"，不是请求）+ `executable_calls` 供控制器记录采用调用；**提示词**改为 planning 行写裸专家名并声明"标签只在 `</planning>` 之后出现一次"（哈希 8c342dc6→f4e2eda3）。第二轮又暴露 `<reasoning>` 内引用标签的同类问题 → 一并纳入 `strip_prose`，重跑受影响的 9 条。
+  2. **两批被污染的轨迹分别归档**：`sft_data/trajectories_g7_b2_parser_bug/`（56 条）与 `..._reasoning_prose/`（9 条），各附 `ARCHIVE_NOTE.json` 说明缺陷与修复；**不参与任何统计**。
+  3. **修复后结果（56 次，全部以模型自己的合法结案结束）**：合法主动结案 **56/56**（合法弃权 9）、解析失败 **0**、外部截断 1、协议违规 0；标签 Real 24 / Fake 23 / Uncertain 9；平均 2.93 轮、1.11 次调用、成本 2.57。**证据门禁在真实数据上生效**：2 条 `evidence_check=failed`（`fabricated_value` 与 `direction_conflict` 纠正后仍在）→ 拒收，不进 SFT。
+  4. **PROBE 单独对照（同图像、用缓存分数离线计算，不额外耗 GPU）**：55 条有 probe 令牌的会话中 **53 条判对**；整条 Agent **44/56**。逐条归因：11 条与 PROBE 不一致中，**6 条是 probe≈0.52 近随机箱上的合法弃权**（符合既定政策），3 条是 **probe=1.000 强 Fake 而模型给 Real/Uncertain 的真失败**，1 条 probe=0.061 强 Real 被弃权，1 条无 probe 令牌。
+  5. **人工审核材料**：`scripts/build_review_from_trajectories.py`（单臂无 no-tool 配对，admission 必然全拒 → 直接由轨迹渲染评审样本并**标注 `admission=not_applied_review_only`**）→ 工作台 `sft_data/review/g7_b2/`（56 样本，指纹 c58fb13c074086eb，缺图 0，9 条 uncertain 与 46 条高置信被标高风险）。
+* **涉及/修改的文件清单**：
+  - `utils/parser.py (Modified — strip_prose / executable_calls)、state_machine/controller.py (Modified — 采用调用改用 executable_calls)、mllm/message_builder.py (Modified — 提示词：裸名 + 标签只出现一次)`
+  - `tests/test_single_action_protocol.py (Extended — 规划内/推理内标签两组真实输出回归)、tests/test_message_builder.py (Modified — 新哈希)`
+  - `scripts/g7_select_sources.py (Modified — --exclude-batch，候选池排除 b1 已选源)、scripts/g7_b2_report.py (Created — 六类统计 + PROBE 单独对照)、scripts/build_review_from_trajectories.py (Created)`
+  - `sft_data/variants_g7_b2/、sft_data/trajectories_g7_b2/（56 条 + 报告）、sft_data/train/batches/g7_b2/（评审样本）、sft_data/review/g7_b2/（工作台）、calibration/g7_report_g7_b2.json`
+  - `README.md (Modified — §6.6 首轮结果)、plan.md (Modified — B 段第 7 步与结果)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：56 次会话全部完成，GPU 全程 ≤ 22.8 GB、跑完释放；协议违规 0；报告的 `versions` 记录三版本；回归测试覆盖两处解析缺陷（用真实输出逐字复刻）。**这是接受验收，不是性能验收**：它证明流程按设计运行，不证明模型判断可靠——恰恰相反，PROBE 单独在同一批图像上更准。
+* **置信度或遗留待办（TODO）**：①**Qwen 主导链弱于单检测器**（44 vs 53）是本轮最重要的负结果，需要人工审核逐条看 3 条"强 Fake 被判 Real/Uncertain"与 2 条未通过证据检查的会话②9 条弃权里 6 条近随机箱属政策允许，但仍需人工确认弃权理由真实（"依据不明"问题在 v3 下是否缓解）③单臂批次没有 no-tool 配对，**无法做准入评分**；若要进入 SFT 生成，需补 no-tool 臂或接受新口径④下一步：人工审核 `sft_data/review/g7_b2/` 后再决定扩量与否

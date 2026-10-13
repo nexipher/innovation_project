@@ -1,0 +1,7 @@
+{
+  "purpose": "第一批 g7_b2 轨迹（56 次会话）——解析器缺陷留证，不用于任何统计或训练",
+  "defect": "模型在 <planning> 里写 <call_x>（提示词模板把它当作“专家名”示例），解析器把规划内的标签也计为一次请求 → 160 轮被判 multiple_calls、35 轮 call_and_verdict，全部拒绝执行；56/56 会话受影响",
+  "fix": "utils/parser.py strip_planning（规划内的标签不是请求）+ 提示词改为只写专家名并声明标签只在 </planning> 之后出现一次；回归测试 tests/test_single_action_protocol.py::TestAPlanningTagIsNotARequest",
+  "policy_version": "v3",
+  "prompt_digest_then": "453342d7e16ad3c8"
+}
