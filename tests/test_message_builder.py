@@ -6,17 +6,19 @@ protocol can be verified on CPU.
 
 from PIL import Image
 
+import pytest
+
 from mllm.message_builder import (
     FORENSIC_SYSTEM_PROMPT,
     build_messages,
     collect_images,
 )
 
+pytestmark = pytest.mark.core
 
 def _make_png(path, size=(32, 32), color=(120, 80, 40)):
     Image.new("RGB", size, color).save(path)
     return str(path)
-
 
 def _has_image(message):
     content = message.get("content", "")
@@ -25,7 +27,6 @@ def _has_image(message):
         for block in content
     )
 
-
 def _text_of(message):
     content = message.get("content", "")
     if isinstance(content, str):
@@ -33,7 +34,6 @@ def _text_of(message):
     return " ".join(
         block.get("text", "") for block in content if isinstance(block, dict)
     )
-
 
 class TestAskAttachesTheImage:
     """
@@ -68,7 +68,6 @@ class TestAskAttachesTheImage:
         messages = build_messages(image, [{"from": "user", "value": "看图"}])
         blocks = messages[-1]["content"]
         assert not any(block.get("type") == "image" for block in blocks)
-
 
 class TestBuildMessages:
     def test_no_history_attaches_original_image(self, tmp_path):
@@ -146,7 +145,6 @@ class TestBuildMessages:
         assistant = [m for m in messages if m["role"] == "assistant"]
         assert assistant[0]["content"] == "<verdict>{}</verdict>"
 
-
 class TestPromptMeasurementContract:
     """G3-a: the prompt must describe whole-image measurement truthfully."""
 
@@ -162,7 +160,6 @@ class TestPromptMeasurementContract:
 
     def test_the_read_contract_explains_the_global_scope_field(self):
         assert "measurement_scope" in FORENSIC_SYSTEM_PROMPT
-
 
 class TestToolPolicies:
     """G4-b: the prompt must describe only the tools a session will serve."""

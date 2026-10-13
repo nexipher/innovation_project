@@ -4,13 +4,12 @@ import json
 import pytest
 from state_machine.controller import ForensicStateMachine
 
-
+pytestmark = pytest.mark.slow
 
 # the scripts in this module were written against the v1 posterior
 pytestmark = pytest.mark.usefixtures("legacy_calibration")
 REAL_PATH = "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg"
 FAKE_PATH = "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"
-
 
 @pytest.fixture
 def state_machine(mock_mllm_default):
@@ -24,7 +23,6 @@ def state_machine(mock_mllm_default):
     }
     return ForensicStateMachine(mock_mllm_default, experts)
 
-
 class TestStateMachineRun:
     def test_run_returns_dict(self, state_machine):
         result = state_machine.run(REAL_PATH, "Real")
@@ -36,8 +34,9 @@ class TestStateMachineRun:
         assert "sft_data_path" in result
 
     def test_halting_reason_is_valid(self, state_machine):
-        """G3-c: v2 stops for a posterior reason, not a tag-order one."""
+        """A stop reason from the policy that is actually running."""
         from state_machine.halting_v2 import HaltingPolicyV2
+        from state_machine.halting_v3 import HaltingPolicyV3
 
         result = state_machine.run(FAKE_PATH, "Fake")
         assert result["halting_reason"] in {
@@ -45,6 +44,10 @@ class TestStateMachineRun:
             HaltingPolicyV2.BUDGET_EXHAUSTED,
             HaltingPolicyV2.MODEL_STALLED,
             HaltingPolicyV2.CANDIDATE_ACCEPTED,
+            HaltingPolicyV3.MODEL_CONCLUDED,       # the current default
+            HaltingPolicyV3.BUDGET_EXHAUSTED,
+            HaltingPolicyV3.LOOP_PROTECTION,
+            HaltingPolicyV3.FORMAT_FAILURE,
         }
 
     def test_counters_are_reported(self, state_machine):
@@ -77,7 +80,6 @@ class TestStateMachineRun:
         result = state_machine.run(REAL_PATH, "Real")
         assert result["final_verdict"]["confidence"] > 0.0
 
-
 class ScriptedMLLM:
     """Deterministic scripted client for controller-level G1 tests."""
 
@@ -101,7 +103,6 @@ class ScriptedMLLM:
     def mode(self):
         return "scripted"
 
-
 def _build_experts():
     from experts.frequency_v2 import FrequencyExpertV2
     from experts.noise import NoiseExpert
@@ -111,7 +112,6 @@ def _build_experts():
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
     }
-
 
 class TestEvidenceDeduplication:
     """G1 (§4.8): duplicate tool responses must not double-count evidence
@@ -221,7 +221,6 @@ class TestEvidenceDeduplication:
         assert result["unique_evidence_count"] == 2
         assert result["suppressed_duplicate_count"] == 0
 
-
 class TestDiagnosticRegionArtifacts:
     """G1 (§4.8): expert calls persist region crops for multi-turn images."""
 
@@ -279,7 +278,6 @@ class TestDiagnosticRegionArtifacts:
         # would mix them.  Artifact naming and persistence are pinned by
         # TestEvidenceBundleWiring, where the session is the only one running.
 
-
 class TestEvidenceBundleWiring:
     """G2 (§4.9): expert artifacts, counter-explanations and calibration
     fields flow into the evidence token and the conversation."""
@@ -320,7 +318,6 @@ class TestEvidenceBundleWiring:
         fsm = ForensicStateMachine(mllm, _build_experts())
         result = fsm.run(FAKE_PATH, "Fake")
         assert "raw_metric" in result["evidence_chain"][0]
-
 
 class TestGlobalMeasurementScope:
     """
@@ -404,7 +401,6 @@ class TestGlobalMeasurementScope:
         _, result, _ = self._run()
         token = result["evidence_chain"][0]
         assert _os.path.exists(_os.path.join(PROJECT_ROOT, token["diagnostic_region_image"]))
-
 
 class TestEvidenceInjectionModes:
     """G2-d (§4.9): the four-condition axis controls what the model sees —
@@ -500,8 +496,9 @@ class TestEvidenceInjectionModes:
             assert json.loads(turns[0]["value"])["evidence_name"]
             assert turns[0]["image_paths"]
 
-
+@pytest.mark.usefixtures("v2_policy")
 class TestAcceptedCandidateDoesNotCostAnExtraTurn:
+    """v2 semantics: the posterior owns the label and can override a candidate."""
     """A no-tool session is a single-turn measurement (G3-e cost parity)."""
 
     VERDICT = ('<reasoning>ok</reasoning>\n<verdict>'

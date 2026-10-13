@@ -11,11 +11,11 @@ import pytest
 
 from utils.weak_evidence import WEAK_HIGH, WEAK_LOW, flags, summarise, weak_tokens
 
+pytestmark = pytest.mark.core
 
 def _token(p_fake, evidence_id="E-1", source="probe_dino_expert"):
     return {"evidence_id": evidence_id, "source": source,
             "calibrated_likelihood": {"Real": round(1 - p_fake, 3), "Fake": p_fake}}
-
 
 def _sample(text, tokens, verdict=None):
     return {
@@ -24,7 +24,6 @@ def _sample(text, tokens, verdict=None):
         "conversations": [{"from": "gpt", "value": text}],
         "final_verdict": verdict or {"verdict": "Uncertain", "confidence": 0.5},
     }
-
 
 class TestTheBand:
     def test_the_middle_of_the_band_is_weak(self):
@@ -40,7 +39,6 @@ class TestTheBand:
     def test_an_uncalibrated_token_is_not_weak_it_is_absent(self):
         token = {"evidence_id": "E-x", "source": "probe_dino_expert"}
         assert weak_tokens({"evidence_chain": [token]}) == []
-
 
 class TestWhatGetsFlagged:
     def test_promoting_a_near_chance_token_is_flagged(self):
@@ -84,7 +82,6 @@ class TestWhatGetsFlagged:
                          verdict={"verdict": "Fake", "confidence": 0.95,
                                   "primary_evidence": ["E-2"]})
         assert flags(sample) == []
-
 
 class TestSummary:
     def test_the_summary_counts_samples_and_sources(self):

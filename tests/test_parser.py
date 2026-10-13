@@ -3,6 +3,7 @@
 import pytest
 from utils.parser import Parser
 
+pytestmark = pytest.mark.core
 
 class TestPlanning:
     def test_extract_planning(self):
@@ -17,7 +18,6 @@ class TestPlanning:
     def test_planning_with_extra_text(self):
         text = "prefix <planning>hello world</planning> suffix"
         assert Parser.parse_planning(text) == "hello world"
-
 
 class TestCallExtraction:
     def test_extract_freq(self):
@@ -54,7 +54,6 @@ class TestCallExtraction:
         calls = Parser.parse_call("freq", text)
         assert calls == [[100, 200, 300, 400]]
 
-
 class TestVerdict:
     def test_extract_verdict(self):
         text = '<verdict>\n{"verdict": "Fake", "confidence": 0.92}\n</verdict>'
@@ -68,7 +67,6 @@ class TestVerdict:
         assert Parser.has_verdict("<verdict>x</verdict>")
         assert not Parser.has_verdict("nothing")
 
-
 class TestReasoning:
     def test_extract_reasoning(self):
         text = "<reasoning>\n物理-语义一致性校验通过\n</reasoning>"
@@ -77,7 +75,6 @@ class TestReasoning:
 
     def test_no_reasoning(self):
         assert Parser.parse_reasoning("no tags") is None
-
 
 class TestValidation:
     def test_valid_structure(self):
@@ -94,7 +91,6 @@ class TestValidation:
         text = "<reasoning>ok</reasoning><verdict>{}</verdict>"
         valid, _ = Parser.validate_tag_structure(text)
         assert valid
-
 
 class TestFallbackBbox:
     def test_extract_bbox(self):

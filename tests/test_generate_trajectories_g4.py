@@ -6,6 +6,7 @@ import math
 import pytest
 
 from scripts.generate_trajectories_g4 import (
+
     APPLICABILITY_THRESHOLD,
     EXPERT_BY_TOOL,
     TOOL_POLICIES,
@@ -17,8 +18,9 @@ from scripts.generate_trajectories_g4 import (
     tool_applicable,
 )
 
-REAL_IMAGE = "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg"
+pytestmark = pytest.mark.slow
 
+REAL_IMAGE = "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg"
 
 def _report():
     """A miniature G2-b report: jpeg inverted, noise aligned, freq weak."""
@@ -42,13 +44,11 @@ def _report():
         }
     }
 
-
 @pytest.fixture
 def applicability(tmp_path):
     path = tmp_path / "report.json"
     path.write_text(json.dumps(_report()), encoding="utf-8")
     return load_applicability(str(path))
-
 
 class TestApplicability:
     def test_inverted_experts_are_corrected(self, applicability):
@@ -76,7 +76,6 @@ class TestApplicability:
 
     def test_the_weak_expert_is_not_applicable_anywhere(self, applicability):
         assert tool_applicable("freq", "png", applicability)[0] is False
-
 
 class TestPolicies:
     def test_no_tool_policy_serves_nothing_and_forbids_exploration(self):
@@ -108,7 +107,6 @@ class TestPolicies:
 
     def test_a_no_tool_session_gets_no_experts(self):
         assert build_experts(()) == {}
-
 
 class TestPlanning:
     def _variants(self, treatment):
@@ -145,7 +143,6 @@ class TestPlanning:
         planned, _ = plan_trajectories(variants, ["no-tool", "noise"], applicability)
         assert len(planned) == len(variants) * 2
 
-
 class TestScoring:
     def _record(self, **overrides):
         record = {
@@ -176,7 +173,6 @@ class TestScoring:
         scores = score_record(self._record(posterior=0.3))
         assert scores["posterior_error"] == pytest.approx(0.7)
 
-
 class TestAggregate:
     def _row(self, policy, verdict="Uncertain", calls=1, posterior_brier=0.25):
         return {
@@ -192,7 +188,6 @@ class TestAggregate:
         assert summary["noise"]["uncertain_rate"] == pytest.approx(0.5)
         assert summary["no-tool"]["mean_calls"] == 0
         assert summary["noise"]["mean_posterior_brier"] == pytest.approx(0.25)
-
 
 class TestDryRunEndToEnd:
     """The whole path: manifest -> plan -> (mock) session -> record -> report."""
@@ -260,7 +255,6 @@ class TestDryRunEndToEnd:
                             .read_text(encoding="utf-8"))
         assert second["already_present"] == 1
         assert second["written"] == 0
-
 
 class TestClientReuse:
     """

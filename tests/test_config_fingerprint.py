@@ -7,16 +7,15 @@ import pytest
 from scripts.qwen_gain_baseline import load_completed
 from utils import config_fingerprint as cf
 
+pytestmark = pytest.mark.core
 
 class _Expert:
     def __init__(self, polarity=1, source_name="x_expert"):
         self.metric_polarity = polarity
         self.source_name = source_name
 
-
 def _experts(polarity=1):
     return {"x_expert": _Expert(polarity)}
-
 
 class TestCompute:
     def test_covers_the_things_that_change_a_measurement(self):
@@ -53,7 +52,6 @@ class TestCompute:
         second = cf.compute({"b": _Expert(source_name="b"), "a": _Expert(source_name="a")})
         assert first["digest"] == second["digest"]
 
-
 class TestDifferences:
     def test_no_record_is_named(self):
         assert cf.differences(None, cf.compute(_experts())) == ["no fingerprint on record"]
@@ -70,7 +68,6 @@ class TestDifferences:
         monkeypatch.setattr(builder, "BASELINE_SYSTEM_PROMPT", "different")
         changed = cf.differences(stored, cf.compute(_experts()))
         assert "prompts" in changed and "digest" not in changed
-
 
 class TestResumeGuard:
     """The guard that replaces the manual --fresh."""
@@ -111,7 +108,6 @@ class TestResumeGuard:
         assert load_completed(path, "dry_run", 5, fingerprint) == {}
         assert load_completed(path, "gpu", 15, fingerprint) == {}
 
-
 class TestProvenanceIsNotIdentity:
     """
     A documentation commit must not invalidate a finished arm.
@@ -145,7 +141,6 @@ class TestProvenanceIsNotIdentity:
         live = {**stored, "git_commit": "deadbeef"}
         assert load_completed(str(path), "gpu", 15, live)["rgb"]
 
-
 class TestBackupOnColdStart:
     def test_the_previous_report_is_moved_aside(self, tmp_path):
         from scripts.qwen_gain_baseline import _backup_report
@@ -157,3 +152,27 @@ class TestBackupOnColdStart:
         assert not path.exists()
         assert backup.endswith(".json") and "superseded_" in backup
         assert json.loads(open(backup, encoding="utf-8").read())["mode"] == "gpu"
+
+
+class TestTheDefaultPolicyIsTheCurrentVersion:
+    """The docs said v3 while the code started in v2 — a run could measure the
+    wrong policy without saying so.  The default IS the current version now."""
+
+    def test_the_runtime_default_is_v3(self):
+        import config
+
+        assert config.HALTING_POLICY == "v3"
+
+    def test_replay_versions_are_still_selectable(self, monkeypatch):
+        import importlib
+
+        import config as config_module
+
+        monkeypatch.setenv("FORENSIC_HALTING_POLICY", "v2")
+        reloaded = importlib.reload(config_module)
+        try:
+            assert reloaded.HALTING_POLICY == "v2"
+        finally:
+            monkeypatch.delenv("FORENSIC_HALTING_POLICY", raising=False)
+            importlib.reload(config_module)
+        assert config_module.HALTING_POLICY == "v3"

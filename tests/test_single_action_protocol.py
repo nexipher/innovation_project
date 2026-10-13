@@ -96,7 +96,10 @@ class TestTheExecutorRefuses:
     def test_a_mixed_turn_executes_nothing_and_says_so(self, tmp_path):
         result = self._run([MIXED, VERDICT], tmp_path)
         assert result["expert_call_count"] == 0
-        assert result["final_verdict"]["conclusion"]["source"] != "candidate"
+        # the conclusion comes from the later, legal turn — the mixed turn
+        # produced nothing (under v3 the model's own verdict is the label)
+        assert result["final_verdict"]["conclusion"]["source"] in ("candidate",
+                                                                   "closing_turn")
         notes = [turn["value"] for turn in result["conversation"]
                  if turn["from"] == "user" and "协议要求" in turn["value"]]
         assert len(notes) == 1

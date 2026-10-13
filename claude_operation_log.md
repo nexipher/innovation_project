@@ -1790,3 +1790,20 @@
   - `tests/test_batch_binding.py (Extended — 版本记录、台账文案、导出查找与冻结分类)`
 * **执行结果与验证状态**：**分块运行 1121 通过 + 1 跳过**（369+407+345）。台账实测输出：g7_b1「冻结 · 历史实验（已审核，仍不用于训练）」145/145；g7_b2「冻结 · 历史实验（未审核；新材料由新版专家生成）」0/56。**未运行任何 GPU 任务。**
 * **置信度或遗留待办（TODO）**：①g7_b1 的 145 条审核导出仍未写回 dispositions（该批已冻结，仅留档；补做命令已写入清单 D5）②新专家接入前的"评测替代专家"需要的入口/数据尚未设计（C2 暂缓）③提示词与状态行的真实效果仍待 GPU 对照（B2、A4）
+
+### 2026-10-13 22:55:11 - 小收口：默认入口统一为 v3、测试分层、问题清单去陈旧依赖
+
+* **当前操作动作**：按用户三条意见收尾——①文档推荐 v3 而代码默认 v2，容易误启动 ②测试每次跑太久，需要分层 ③问题清单里 C1/C2 与 SFT 的依赖已过时。**未动 GPU**（当前 `nvidia-smi` 报 No devices，与用户"GPU 已关"一致）。
+* **对应计划锚点**：plan.md 顶部「当前阶段」；`TESTING.md`、`KNOWN_ISSUES.md` F 段
+* **核心变更说明**：
+  1. **默认入口 = 当前版本（v3）**：`config.HALTING_POLICY` 默认改为 **v3**，历史复算才显式 `FORENSIC_HALTING_POLICY=v2|v1`；README §0 与 `CURRENT_PROGRAM_ARCHITECTURE.md` §3 同步（唯一推荐命令不再需要前缀）。改前先实测影响面：全套里只有 **8 项**用例假设 v2 默认，已逐一处理——其中 6 项（v2 覆盖/收尾轮语义）用新增的 `v2_policy` 夹具**显式声明在跑 v2**，2 项（停止原因冒烟、混合轮结案来源）改为按当前策略断言。新增测试钉住"默认即 v3、v2 可显式选择"。
+  2. **测试分层**：新增 `pytest.ini`（`core` / `slow` 标记）与 `scripts/run_tests.sh`（core / module / full），并给 26 个测试文件按性质打标。实测：**core 341 项 ≈ 30 秒**；module（不含会话级）≈ 3–5 分钟；full 1140 通过 + 1 跳过 ≈ 5.5 分钟。**分块是硬约束**：本机 cgroup 上限 2 GB、常驻已 1.5 GB，一次跑全套会被 OOM 杀掉（本次又发生一次），脚本改为每块 8 个文件。
+  3. **`TESTING.md`（新）**：三层命令、何时跑哪层、标记约定、**换专家后哪些测试退役**（jpeg/noise/frequency 的专家测试、旧适用性断言、旧校准断言、历史回放脚本），以及不随专家退役的骨架测试（账本/门禁/协议/v3/转换忠实性/工作台隔离）。
+  4. **问题清单去陈旧**：C1 标为**已完成**并把 C2 的依赖改为"依赖 C1（已完成）→ 可开始，等新专家接入方案"，给出 C2 验收（A 组拟合、B/C 评估、与 PROBE 单独对照、**替换后的默认工具箱能跑通一次完整会话**）；C3 的验收补"旧专家测试组按 TESTING.md 退役"；D2 改为"暂缓 · 已被冻结取代（不再与 SFT 挂钩）"；D4 明确"当前没有可训练的批次（全部冻结），第一份候选材料是**新版专家生成**的批次"；E 段改写 SFT 前置（不再等历史批次审核）；新增 **F 段**：F1 默认策略统一（已完成）、F2 测试分层（已完成）、F3 依赖 GPU 的待验证项（被环境阻塞，GPU 可见前不得标为已验证）。
+* **涉及/修改的文件清单**：
+  - `config.py (Modified — 默认 v3 + 注释说明)、tests/conftest.py (Modified — v2_policy 夹具)`
+  - `pytest.ini (Created)、scripts/run_tests.sh (Created)、TESTING.md (Created)`
+  - `tests/ 26 个文件 (Modified — 按 core/slow 打标)、tests/test_controller.py / test_evidence_check_session.py / test_single_action_protocol.py (Modified — v2 语义显式化)、tests/test_config_fingerprint.py (Extended — 默认 v3 与显式 v2)`
+  - `README.md、CURRENT_PROGRAM_ARCHITECTURE.md、KNOWN_ISSUES.md、plan.md (Modified — 与默认值/分层/清单同步)`
+* **执行结果与验证状态**：**core 341 通过（29 秒）**；**full 分块 1140 通过 + 1 跳过（5 分 24 秒）**；`pytest --collect-only` 仍收 1141 项（打标未丢用例）。默认策略测试：`config.HALTING_POLICY == "v3"`，显式 `FORENSIC_HALTING_POLICY=v2` 时重载得到 v2、清除后回到 v3。
+* **置信度或遗留待办（TODO）**：①`module` 层尚未单独完整跑过一次（full 已覆盖其内容），下次改动可直接用 ②F3 的 GPU 依赖项（A4 观察协议、B2 状态行效果、C2 新专家评测）在 GPU 恢复前一律保持"待验证"③`psychology_video_project` 的清理问题已答复（不建议只留 models/；唯一可腾的是 14 GB 的官方申请数据，建议先隔离后删），**未执行任何删除**

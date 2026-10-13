@@ -7,12 +7,12 @@ import pytest
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from utils.reliability import ReliabilityTable
 
+pytestmark = pytest.mark.core
 
 def _write_table(tmp_path, experts):
     path = tmp_path / "reliability_table.json"
     path.write_text(json.dumps({"experts": experts}), encoding="utf-8")
     return str(path)
-
 
 class TestReliabilityTableLoading:
     def test_missing_file_returns_none(self, tmp_path):
@@ -28,7 +28,6 @@ class TestReliabilityTableLoading:
         table = ReliabilityTable.load(path)
         assert table is not None
         assert table.expert_entry("noise_expert") is not None
-
 
 class TestReliabilityLookup:
     def _table(self, tmp_path):
@@ -79,7 +78,6 @@ class TestReliabilityLookup:
         assert result["applicability"] == "inverted:high-metric-means-real"
         assert "对应 Real" in result["applicability_conditions"]
         assert result["semantics_aligned"] is False
-
 
 class TestBundleFields:
     class FakeResult:

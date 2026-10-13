@@ -14,12 +14,14 @@ import pytest
 
 from config import PROJECT_ROOT
 from scripts.g7_acceptance_review import (
+
     markdown,
     probe_artifact_sentences,
     review_session,
     session_text,
 )
 
+pytestmark = pytest.mark.slow
 
 def _trace(turns, tokens=(), metadata=None, verdict=None):
     return {
@@ -29,12 +31,10 @@ def _trace(turns, tokens=(), metadata=None, verdict=None):
         "final_verdict": verdict or {"verdict": "Fake", "posterior": 0.9},
     }
 
-
 def _token(source="probe_dino_expert", p_fake=0.97, direction="AI-generated"):
     return {"source": source, "direction": direction,
             "calibrated_likelihood": {"Real": 1 - p_fake, "Fake": p_fake},
             "applicability": "strong", "consistency": "pass"}
-
 
 class TestExtraction:
     def test_calls_are_read_from_the_assistant_turns_only(self):
@@ -49,7 +49,6 @@ class TestExtraction:
         trace = _trace([("assistant", "<reasoning>证据一致</reasoning>")])
         assistant, _, _ = session_text(trace)
         assert "证据一致" in assistant
-
 
 class TestScoreAsArtifact:
     def test_a_score_attributed_to_a_physical_finding_is_flagged(self):
@@ -87,7 +86,6 @@ class TestScoreAsArtifact:
         trace = _trace([("assistant", "<planning>…</planning><call_probe>[0, 0, 100, 100]</call_probe>")])
         _, _, calls = session_text(trace)
         assert calls == ["probe"]
-
 
 class TestReviewSession:
     def _record(self, **overrides):
@@ -161,7 +159,6 @@ class TestReviewSession:
                        [_token()], metadata={"suppressed_duplicate_count": 1})
         findings = review_session(self._record(), trace)["findings"]
         assert any(f["kind"] == "duplicate_call" for f in findings)
-
 
 class TestMarkdown:
     def test_the_sheet_says_the_flags_are_not_verdicts(self):

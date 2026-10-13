@@ -57,6 +57,21 @@ def legacy_calibration(monkeypatch):
     return pinned
 
 
+@pytest.fixture
+def v2_policy(monkeypatch):
+    """
+    Run a session under the frozen v2 policy.
+
+    The runtime default is now v3 (the current version).  Tests that assert
+    v2's own semantics — the override note, the closing-turn flow, the reused
+    candidate report — say so explicitly instead of relying on a default.
+    """
+    from state_machine import controller as controller_module
+
+    monkeypatch.setattr(controller_module, "HALTING_POLICY", "v2")
+    return "v2"
+
+
 # ---------------------------------------------------------------------------
 # Synthetic image fixtures
 # ---------------------------------------------------------------------------

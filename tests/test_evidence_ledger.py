@@ -13,12 +13,12 @@ import pytest
 
 from utils.evidence_ledger import Ledger, correction_note
 
+pytestmark = pytest.mark.core
 
 def _token(source="probe_dino_expert", raw=0.9838, p_fake=1.0, evidence_id="E-1"):
     return {"source": source, "evidence_id": evidence_id, "raw_metric": raw,
             "strength": raw, "measurement_scope": "global",
             "calibrated_likelihood": {"Real": round(1 - p_fake, 3), "Fake": p_fake}}
-
 
 class TestTheLedgerItself:
     def test_it_records_what_ran_and_what_was_served(self):
@@ -36,7 +36,6 @@ class TestTheLedgerItself:
         ledger = Ledger.from_session([_token(raw=3.091196, p_fake=0.564)])
         for value in (3.091196, 0.564, 0.436):
             assert any(abs(value - known) < 1e-6 for known in ledger.permitted_numbers())
-
 
 class TestFabricatedExpert:
     def test_a_result_for_an_unrun_expert_is_flagged(self):
@@ -57,7 +56,6 @@ class TestFabricatedExpert:
                          "尚未获得噪声专家的测量结果。"):
             assert ledger.findings(sentence) == [], sentence
 
-
 class TestFabricatedValue:
     def test_a_number_from_nowhere_is_flagged(self):
         ledger = Ledger.from_session([_token(raw=0.9838)])
@@ -72,7 +70,6 @@ class TestFabricatedValue:
         ledger = Ledger.from_session([_token()])
         assert ledger.findings("探针专家在 [0, 0, 1000, 1000] 上测量，结果为 0.98。") == []
 
-
 class TestSkippedRepeat:
     def test_a_skipped_request_reported_as_new_measurement_is_flagged(self):
         ledger = Ledger.from_session([_token()], skipped_sources=["noise_expert"])
@@ -84,7 +81,6 @@ class TestSkippedRepeat:
         assert ledger.findings("噪声残留专家再次测量显示微噪声水平较低。") != []  # 无 token 时仍是虚构
         ledger2 = Ledger.from_session([_token("noise_expert", 4.0, 0.1)])
         assert ledger2.findings("噪声残留专家再次测量显示 4.0 的水平。") == []
-
 
 class TestTheCorrectionNote:
     def test_it_states_the_ledger_and_forbids_the_defect(self):
@@ -102,7 +98,6 @@ class TestTheCorrectionNote:
         findings = ledger.findings("JPEG 压缩专家给出了 blockiness 2.5 的结果。")
         note = correction_note(ledger, findings)
         assert "JPEG" in note
-
 
 class TestFieldBinding:
     """A number belongs to one expert and one field, not to a shared pool."""
@@ -157,7 +152,6 @@ class TestFieldBinding:
         # the note must not put a label name into the model's mouth
         assert "Fake" not in summary and "Real" not in summary
 
-
 class TestToleranceAndUnits:
     """Tolerance follows the field class and the displayed precision."""
 
@@ -191,7 +185,6 @@ class TestToleranceAndUnits:
         ledger = Ledger.from_session([_token("noise_expert", raw=3.0912, p_fake=0.564)])
         assert ledger.findings("噪声残留专家显示 3.09，我给出置信度 0.77。") == []
 
-
 class TestNegationScope:
     """Negation protects the clause it is in, not the whole sentence."""
 
@@ -203,7 +196,6 @@ class TestNegationScope:
     def test_a_negated_remoteasurement_is_not_a_new_measurement(self):
         ledger = Ledger.from_session([_token()], skipped_sources=["noise_expert"])
         assert ledger.findings("噪声残留专家重复请求已跳过，没有再次测量得到新结果。") == []
-
 
 class TestSystemNumbers:
     """Numbers the system itself injected may be cited — as system numbers."""
@@ -220,7 +212,6 @@ class TestSystemNumbers:
     def test_an_expert_cannot_borrow_the_system_number(self):
         findings = self._ledger().findings("噪声残留专家的水平为 0.63。")
         assert [f["kind"] for f in findings] == ["fabricated_value"]
-
 
 class TestDirectionConsistency:
     """
@@ -284,7 +275,6 @@ class TestDirectionConsistency:
         assert [f["kind"] for f in findings] == ["direction_conflict"]
         assert findings[0]["severity"] == "candidate"
 
-
 class TestNegativeResultsAreStillClaims:
     """"No noise found" is a measurement; "not measured" is not (§4.17 1.6 B)."""
 
@@ -301,7 +291,6 @@ class TestNegativeResultsAreStillClaims:
     def test_a_missing_result_is_still_not_a_claim(self):
         ledger = Ledger.from_session([_token()], served=["probe_dino_expert", "noise_expert"])
         assert ledger.findings("本会话未获得噪声残留专家的测量结果。") == []
-
 
 class TestAttributionUsesTheNearestExpert:
     """Two experts in one sentence must not licence each other's numbers."""
@@ -322,14 +311,12 @@ class TestAttributionUsesTheNearestExpert:
         assert self._ledger().findings(
             "噪声残留专家的水平为 4.2，探针专家的原始分数为 0.9838。") == []
 
-
 class TestPerCentPrecision:
     def test_the_displayed_precision_survives_the_conversion(self):
         ledger = Ledger.from_session([_token("noise_expert", raw=3.0, p_fake=0.9387)])
         assert ledger.findings("噪声残留专家的校准概率 P(Fake) 为 93.9%。") == []
         assert [f["kind"] for f in ledger.findings(
             "噪声残留专家的校准概率 P(Fake) 为 95%。")] == ["fabricated_value"]
-
 
 class TestProseNumbersHaveARole:
     """

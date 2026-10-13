@@ -16,7 +16,7 @@ from state_machine.controller import ForensicStateMachine
 from state_machine.halting_v2 import HaltingPolicyV2
 from tests.test_controller import FAKE_PATH, ScriptedMLLM, _build_experts
 
-
+pytestmark = pytest.mark.slow
 
 # the scripts in this module were written against the v1 posterior
 pytestmark = pytest.mark.usefixtures("legacy_calibration")
@@ -34,7 +34,6 @@ CLEAN = ('<reasoning>只有噪声残留专家的测量可用，它指向真实�
          '<verdict>{"verdict": "Real", "confidence": 0.6, "primary_evidence": [],'
          ' "report": "证据有限。"}</verdict>')
 
-
 def _run(responses, tmp_path):
     from utils.logger import SessionLogger
 
@@ -42,13 +41,13 @@ def _run(responses, tmp_path):
                                logger=SessionLogger(sft_dir=str(tmp_path)))
     return fsm.run(FAKE_PATH, "Fake")
 
-
 def _trace(result):
     with open(result["sft_data_path"], encoding="utf-8") as handle:
         return json.load(handle)
 
-
+@pytest.mark.usefixtures("v2_policy")
 class TestOneCorrection:
+    """The correction flow, scripted against the v2 halt semantics."""
     def test_a_fabricated_closing_turn_is_corrected_and_recorded(self, tmp_path):
         result = _run([CALL, FAKE_VERDICT, FAKE_VERDICT, FABRICATED, CLEAN], tmp_path)
         check = result["final_verdict"]["evidence_check"]
@@ -85,7 +84,6 @@ class TestOneCorrection:
         notes = [turn for turn in trace["conversations"]
                  if turn["from"] == "user" and "不存在的证据" in turn["value"]]
         assert len(notes) == 1
-
 
 class TestTheClosingNoteIsTruthful:
     def _note(self, reason, **kwargs):
@@ -129,7 +127,6 @@ class TestTheClosingNoteIsTruthful:
                                   "all_reasons": []})()
         note = ForensicStateMachine._conclusion_note(decision, ledger)
         assert "noise_expert" in note and "jpeg_expert" in note
-
 
 class TestEveryAdoptedConclusionIsChecked:
     """

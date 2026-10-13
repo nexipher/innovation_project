@@ -18,10 +18,12 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 ## 0. 当前版本（工程收口，2026-10-13）
 
 **当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**，
-参考后验只作对照、不覆盖标签。默认配置是 **v2**，当前策略必须显式启用：
+参考后验只作对照、不覆盖标签。**默认策略就是当前版本 v3**（历史复算才显式
+`FORENSIC_HALTING_POLICY=v2`）：
 
 ```bash
-FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>     # 唯一推荐启动命令
+python main.py --image <path/to/image>                                 # 唯一推荐启动命令（v3）
+FORENSIC_HALTING_POLICY=v2 python main.py --image <path>               # 仅用于历史复算
 ```
 
 **权威文档（只描述当前代码）**：
@@ -31,14 +33,15 @@ FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>     # 唯一�
 | [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md) | 当前任务、角色分工、入口、真实可用的专家、运行时序、版本记录规则 |
 | [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) | 未完成问题清单（已实现待验证 / 尚未修复 / 暂缓），每项带验收条件 |
 | [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账：历史 / 待审核 / 合格训练三类材料与各自的版本记录 |
+| [`TESTING.md`](TESTING.md) | 测试三层（core / module / full）与"换专家后哪些测试退役" |
 
 **当前实际可用的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`
 （后三者计划退出工具箱）。`frequency`(v1)、`ela` 已退役；`trufor` 不在全局主链，仅作对照。
 
 **三条不可混淆的规则**：
 
-1. 默认 v2——**不显式设置 `FORENSIC_HALTING_POLICY=v3` 就不是当前策略**；报告必须核对策略、
-   提示词指纹与校准表身份（每个批次目录的 `VERSIONS.json`）。
+1. 默认即当前策略 v3；历史复算显式选 v2。报告必须核对策略、提示词指纹与校准表身份
+   （每个批次目录的 `VERSIONS.json`）。
 2. **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。进 SFT 的唯一路径是
    `record_review --import` → `apply_review` → `build_final_v2`（门禁）。
 3. 未审核批次（含 g7_b1、g7_b2）**不得用于 SFT**；因缺陷作废的批次归档在

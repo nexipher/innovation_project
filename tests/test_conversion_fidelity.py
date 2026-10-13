@@ -18,10 +18,10 @@ import pytest
 
 from utils.final_v2 import adopted_reasoning, audit_dialogue, render_sample
 
+pytestmark = pytest.mark.core
 
 def _trace(turns):
     return {"conversations": turns}
-
 
 def _record(**overrides):
     from tests.test_final_v2 import _record as build
@@ -30,18 +30,15 @@ def _record(**overrides):
     record["trajectory_id"] = "noise__ADM_x_png"
     return record
 
-
 def _sample(record, trace):
     return render_sample(record, "positive",
                          observation_text="模型视觉观察：纹理不一致。",
                          split_entry=None, trace=trace)
 
-
 CLOSING = ('<reasoning>噪声残留专家给出的水平为 3.0900，属于中间带，'
            '不足以单独支撑判定，因此保持不确定。</reasoning>\n'
            '<verdict>{"verdict": "Uncertain", "confidence": 0.4,'
            ' "primary_evidence": [], "report": "证据有限。"}</verdict>')
-
 
 class TestTheModelArgumentSurvives:
     def test_the_reasoning_block_carries_the_models_own_words(self):
@@ -71,7 +68,6 @@ class TestTheModelArgumentSurvives:
     def test_adopted_reasoning_reads_the_closing_turn(self):
         assert "不足以单独支撑判定" in adopted_reasoning(_trace([
             {"from": "gpt", "value": CLOSING}]))
-
 
 class TestTheWholeDialogueIsAudited:
     FABRICATED_TURN = ('<reasoning>JPEG 压缩专家显示 blockiness 为 2.5，支持伪造。'
@@ -134,7 +130,6 @@ class TestTheWholeDialogueIsAudited:
         # the trajectory itself is untouched
         assert json.loads((trajectory_dir / "t.json").read_text(encoding="utf-8"))
 
-
 class TestTheScreenerAsksTheLedger:
     def _sample_with(self, answer, tokens):
         record = _record()
@@ -196,7 +191,6 @@ class TestTheScreenerAsksTheLedger:
         sample["final_verdict"] = {"verdict": "Uncertain", "confidence": 0.4}
         assert flags(sample) == []
 
-
 class TestRepeatRequestTurnsAreMarked:
     """A re-request is a no-progress action, not a model behaviour to copy."""
 
@@ -223,7 +217,6 @@ class TestRepeatRequestTurnsAreMarked:
         findings = repeat_request_flags(sample)
         assert [f["kind"] for f in findings] == ["repeat_request_turn"]
         assert findings[0]["severity"] == "candidate"
-
 
 class TestTheReviewBuilderKeepsTheModelsAccount:
     def test_it_reads_the_planning_line_not_only_the_block(self, tmp_path):

@@ -17,6 +17,7 @@ import pytest
 
 from config import PROJECT_ROOT
 from utils.batch import (
+
     LEGACY_BATCH,
     batch_fingerprint,
     batch_paths,
@@ -25,12 +26,12 @@ from utils.batch import (
     write_manifest,
 )
 
+pytestmark = pytest.mark.slow
 
 def _sample(sample_id, text="<verdict>Fake</verdict>"):
     return {"id": sample_id, "ground_truth": "Fake", "type": "positive",
             "conversations": [{"from": "gpt", "value": text}],
             "evidence_chain": [], "metadata": {"policy": "probe"}}
-
 
 class TestContentDigest:
     def test_the_same_content_hashes_the_same(self):
@@ -57,7 +58,6 @@ class TestContentDigest:
         sample = _sample("a")
         assert content_sha256(sample) != content_sha256({**sample, "ground_truth": "Real"})
 
-
 class TestBatchFingerprint:
     def test_order_does_not_matter(self):
         samples = [_sample("a"), _sample("b")]
@@ -72,7 +72,6 @@ class TestBatchFingerprint:
         fingerprint = batch_fingerprint([_sample("a")])
         assert len(fingerprint) == 16
         assert fingerprint == batch_fingerprint([_sample("a")])
-
 
 class TestBatchPaths:
     def test_the_legacy_batch_keeps_its_historical_paths(self):
@@ -95,7 +94,6 @@ class TestBatchPaths:
         assert len(samples) == 237
         assert all("_bucket_file" in sample for sample in samples)
 
-
 class TestManifest:
     def test_the_manifest_records_the_version_it_wrote(self, tmp_path):
         samples = [_sample("a"), _sample("b")]
@@ -106,7 +104,6 @@ class TestManifest:
         with open(tmp_path / "manifest.json", encoding="utf-8") as handle:
             on_disk = json.load(handle)
         assert on_disk["fingerprint"] == manifest["fingerprint"]
-
 
 class TestTheWorkstationCarriesTheBatch:
     def _build(self, tmp_path):
@@ -198,7 +195,6 @@ class TestTheWorkstationCarriesTheBatch:
         assert 'id="export"' in page
         assert "exportButton.addEventListener('click', exportAll)" in page
 
-
 class TestGenerationIsolation:
     """
     A batch's whole pipeline is distinct, not just its reviews.
@@ -234,7 +230,6 @@ class TestGenerationIsolation:
                 [sys.executable, os.path.join(PROJECT_ROOT, "scripts", script), "--help"],
                 capture_output=True, text=True, timeout=120).stdout
             assert "--batch" in output, script
-
 
 class TestNoSharedOutputs:
     """Every script that writes a report must write it inside its batch."""
@@ -272,7 +267,6 @@ class TestNoSharedOutputs:
         with open(path, encoding="utf-8") as handle:
             report = json.load(handle)
         assert report["planned"] == 440 and report["written"] == 440
-
 
 class TestTheBuiltBatch:
     """The first training batch, checked the way the plan says to check it."""
@@ -362,7 +356,6 @@ class TestTheBuiltBatch:
         assert by_bucket["sft_tool_positive.json"]["Real"] >= 30
         assert by_bucket["sft_no_tool_positive.json"]["Real"] >= 20
 
-
 class TestTheSamplesCarryTheirImages:
     """
     G7 entry 4: a sample knows which file the model was shown.
@@ -407,7 +400,6 @@ class TestTheSamplesCarryTheirImages:
             assert "（未提供）" not in html, name
             assert "<img src=" in html, name
 
-
 class TestBatchVersionsTravelWithTheData:
     """§4.17 收口：批次必须自带代码/提示词/专家/校准四个版本。"""
 
@@ -447,7 +439,6 @@ class TestBatchVersionsTravelWithTheData:
             assert "不用于训练" in row["kind"] or "历史实验" in row["kind"]
         assert rows["g7_b2"]["policies"] == ["v3"]
         assert rows["g7_b1"]["policies"] == ["v2"]
-
 
 class TestTheInventoryFindsTheReviewThatExists:
     """A batch whose decisions sit in its own review directory is reviewed."""

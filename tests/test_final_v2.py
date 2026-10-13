@@ -7,6 +7,7 @@ import pytest
 
 from scripts.build_final_v2 import assert_not_frozen, bucket_for
 from utils.final_v2 import (
+
     SECTIONS,
     parse_sections,
     render_answer,
@@ -14,6 +15,8 @@ from utils.final_v2 import (
     validate_dataset,
     validate_sample,
 )
+
+pytestmark = pytest.mark.core
 
 APPLICABILITY = {
     "noise": {"png": 0.845, "jpeg_q70": 0.772},
@@ -25,7 +28,6 @@ SPLIT = {"hash": "h", "sources": {
     "ADM/x": {"split": "train", "resolution": [48, 64], "generator": "ADM"},
     "ADM/tested": {"split": "test", "resolution": [48, 64], "generator": "ADM"},
 }}
-
 
 def _token(evidence_id="E-1", source="noise_expert", support="AI-generated",
            likelihood=0.9, raw=1.0, region=(2, 2, 40, 40), scope="global"):
@@ -47,7 +49,6 @@ def _token(evidence_id="E-1", source="noise_expert", support="AI-generated",
         "interpretation_text": "calibration sentence",
         "counter_explanation": "重压缩也会改变该指标。",
     }
-
 
 def _record(**overrides):
     record = {
@@ -75,19 +76,15 @@ def _record(**overrides):
     record.update(overrides)
     return record
 
-
 OBSERVATION = "模型视觉观察：眼睛周围的皮肤纹理不一致，可能存在合成痕迹。"
-
 
 def _sample(**overrides):
     return render_sample(_record(**overrides), "positive",
                          observation_text=OBSERVATION,
                          split_entry=SPLIT["sources"]["ADM/x"])
 
-
 def _validate(sample, **kwargs):
     return validate_sample(sample, split=SPLIT, applicability=APPLICABILITY, **kwargs)
-
 
 class TestRendering:
     def test_all_four_sections_in_order(self):
@@ -156,7 +153,6 @@ class TestRendering:
         assert sample["conversations"][0]["value"].startswith("<image>")
         assert sample["audit"]["review_status"] == "pending_human"
 
-
 class TestLeakage:
     def test_a_training_source_passes(self):
         assert not [p for p in _validate(_sample()) if p.startswith("leakage")]
@@ -169,7 +165,6 @@ class TestLeakage:
     def test_an_unknown_source_is_caught(self):
         problems = _validate(_sample(source_id="ghost", trajectory_id="noise__ghost_png"))
         assert any("not found in the split" in p for p in problems)
-
 
 class TestStructure:
     def test_missing_section(self):
@@ -212,7 +207,6 @@ class TestStructure:
         assert any("illegal label" in p for p in problems)
         assert any("confidence out of range" in p for p in problems)
 
-
 class TestEvidenceReferences:
     def test_unknown_reference_is_caught(self):
         sample = _sample()
@@ -227,7 +221,6 @@ class TestEvidenceReferences:
             body, body + "\n- evidence_id: E-1")
         assert any("referenced twice" in p for p in _validate(sample))
 
-
 class TestScopeAndRegion:
     def test_a_region_scoped_measurement_is_caught(self):
         problems = _validate(_sample(evidence=[_token(scope="region")]))
@@ -237,12 +230,10 @@ class TestScopeAndRegion:
         problems = _validate(_sample(evidence=[_token(region=(2, 2, 400, 400))]))
         assert any("bbox outside the image" in p for p in problems)
 
-
 class TestDuplicates:
     def test_the_same_expert_twice_is_caught(self):
         problems = _validate(_sample(evidence=[_token(), _token(evidence_id="E-2")]))
         assert any("repeated expert calls" in p for p in problems)
-
 
 class TestDirection:
     def test_support_contradicting_the_calibration_is_caught(self):
@@ -251,7 +242,6 @@ class TestDirection:
 
     def test_a_consistent_token_passes(self):
         assert not [p for p in _validate(_sample()) if p.startswith("direction")]
-
 
 class TestApplicability:
     def test_a_retired_expert_is_caught(self):
@@ -277,7 +267,6 @@ class TestApplicability:
             evidence=[_token(source="frequency_expert_v2", support="Real", likelihood=0.48)]))
         assert not [p for p in problems if p.startswith("applicability")]
 
-
 class TestVerdictAgainstPosterior:
     def test_a_label_contradicting_the_posterior_is_caught(self):
         problems = _validate(_sample(final_verdict="Real", posterior=0.9))
@@ -287,7 +276,6 @@ class TestVerdictAgainstPosterior:
         problems = _validate(_sample(final_verdict="Uncertain", posterior=0.95,
                                      confidence=0.5))
         assert any("abstained although" in p for p in problems)
-
 
 class TestConfidenceSupport:
     def test_a_confident_label_with_inadmissible_evidence_is_caught(self):
@@ -299,7 +287,6 @@ class TestConfidenceSupport:
 
     def test_a_confident_label_with_admissible_evidence_passes(self):
         assert not [p for p in _validate(_sample()) if p.startswith("confidence")]
-
 
 class TestContainerReason:
     def test_a_container_used_as_the_reason_is_caught(self):
@@ -322,13 +309,11 @@ class TestContainerReason:
             "<observation>", "<observation>\n图像为 JPEG 容器。")
         assert not [p for p in _validate(sample) if p.startswith("container_reason")]
 
-
 class TestDatasetValidation:
     def test_it_reports_only_the_failing_samples(self):
         findings = validate_dataset([_sample(), _sample(final_verdict="Real", posterior=0.9)],
                                     split=SPLIT, applicability=APPLICABILITY)
         assert len(findings) == 1
-
 
 class TestBuildGuards:
     def test_writing_into_the_frozen_baseline_is_refused(self):
@@ -347,7 +332,6 @@ class TestBuildGuards:
         assert bucket_for({"tools_served": []}, "positive") == "no_tool_positive"
         assert bucket_for({"tools_served": ["noise"]}, "honest_abstention") == \
             "honest_abstention"
-
 
 class TestGroundingChecks:
     """
@@ -405,7 +389,6 @@ class TestGroundingChecks:
             OBSERVATION, "")
         assert any(p.startswith("observation:") for p in _validate(sample))
 
-
 class TestNoToolSamples:
     """A tool-free answer rests on perception, not on an evidence posterior."""
 
@@ -447,7 +430,6 @@ class TestNoToolSamples:
     def test_tool_samples_still_need_admissible_evidence(self):
         problems = _validate(_sample(evidence=[], tools_served=["noise"]))
         assert any("no evidence supports it" in p for p in problems)
-
 
 class TestTrainingConversation:
     """
@@ -561,7 +543,6 @@ class TestTrainingConversation:
                           if t["from"] == "user" and t["value"].lstrip().startswith("{")]
         assert evidence_turns == []
 
-
 class TestConversationValidation:
     def _sample_with_trace(self):
         return render_sample(_record(), "positive", observation_text=OBSERVATION,
@@ -599,7 +580,6 @@ class TestConversationValidation:
         sample["conversations"] = list(reversed(sample["conversations"]))
         problems = _validate(sample)
         assert any("must open with a user turn" in p for p in problems)
-
 
 class TestObservationExtraction:
     """
@@ -655,7 +635,6 @@ class TestObservationExtraction:
         path = self._trace(tmp_path, "<reasoning>只有结论</reasoning>")
         assert extract_observation({"trace_path": path}) == ""
 
-
 class TestTheTrainingBaseline:
     def test_the_training_prompt_asks_for_an_observation_section(self):
         from mllm.message_builder import TRAINING_BASELINE_PROMPT
@@ -672,7 +651,6 @@ class TestTheTrainingBaseline:
         assert "<observation>" not in BASELINE_SYSTEM_PROMPT
         assert hashlib.sha256(BASELINE_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
             "a81f43b97d1b3714"
-
 
 class TestTheValidatorKnowsWhichPolicyWroteTheSample:
     """§4.17 R5: under v3 the posterior is a reference, not the label's source."""
@@ -705,7 +683,6 @@ class TestTheValidatorKnowsWhichPolicyWroteTheSample:
                                "positive", observation_text=OBSERVATION,
                                split_entry=SPLIT["sources"]["ADM/x"])
         assert any("contradicts posterior" in p for p in _validate(sample))
-
 
 class TestTheObservationSectionKeepsWhatIsKnown:
     """A conversion that says "None" is worse than one that says nothing."""

@@ -18,16 +18,16 @@ import pytest
 from config import PROJECT_ROOT
 from utils.reliability import ReliabilityTable
 
+pytestmark = pytest.mark.core
+
 TABLE = os.path.join(PROJECT_ROOT, "calibration", "reliability_table.json")
 TABLE_V1 = os.path.join(PROJECT_ROOT, "calibration", "reliability_table_v1.json")
 SPLIT = os.path.join(PROJECT_ROOT, "calibration", "set", "g7_split.json")
 G2_EXPERTS = ("noise_expert", "jpeg_expert", "frequency_expert_v2", "ela_expert")
 
-
 def _table():
     with open(TABLE, encoding="utf-8") as handle:
         return json.load(handle)
-
 
 class TestTheTableDeclaresItsSource:
     def test_it_is_fitted_on_the_designated_group(self):
@@ -51,7 +51,6 @@ class TestTheTableDeclaresItsSource:
             entry = table["experts"][name]
             assert entry["n_samples"] == group_a * 4, name       # 62 sources x 4 matched cells
             assert entry["n_samples"] != 392, name
-
 
 class TestTheWeightFollowsTheFormat:
     def test_every_runtime_expert_has_per_format_separations(self):
@@ -89,7 +88,6 @@ class TestTheWeightFollowsTheFormat:
         q70 = table.lookup("jpeg_expert", 3.5, condition="jpeg_q70")["reliability"]
         assert png - q70 > 0.4, "A2 的缺陷正是把 png 的分离度用到了 q70 上"
 
-
 class TestTheOldTableSurvives:
     def test_v1_is_kept_for_replay(self):
         with open(TABLE_V1, encoding="utf-8") as handle:
@@ -102,7 +100,6 @@ class TestTheOldTableSurvives:
             new = json.load(handle)["experts"]["jpeg_expert"]
         assert entry["separation_polarity_corrected"] == 0.9720833333333333
         assert abs(new["separation_polarity_corrected"] - 0.9721) > 0.2
-
 
 class TestTheBuilderRefusesToGuessTheGroup:
     def test_a_missing_split_stops_the_build(self, monkeypatch, tmp_path):
@@ -129,7 +126,6 @@ class TestTheBuilderRefusesToGuessTheGroup:
         assert (rebuilt["experts"]["noise_expert"]["bins"]
                 == _table()["experts"]["noise_expert"]["bins"])
 
-
 class TestTheRunKnowsWhichTableItRead:
     def test_the_fingerprint_carries_the_calibration_identity(self):
         from utils.config_fingerprint import compute, calibration_identity
@@ -145,7 +141,6 @@ class TestTheRunKnowsWhichTableItRead:
 
         identity = calibration_identity(str(tmp_path / "none.json"))
         assert identity == {"digest": None, "schema": None, "fitting_group": None}
-
 
 class TestTheSessionRecordsItsCondition:
     def test_a_session_records_the_cell_it_weighted_for(self, tmp_path):

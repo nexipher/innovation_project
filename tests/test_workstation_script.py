@@ -23,6 +23,8 @@ import pytest
 
 from config import PROJECT_ROOT
 
+pytestmark = pytest.mark.slow
+
 INDEX = os.path.join(PROJECT_ROOT, "sft_data", "review", "g7_b1", "index.html")
 
 STUB = r"""
@@ -69,10 +71,8 @@ function run(script) { eval(script); }
 
 """
 
-
 def _scripts(html: str):
     return re.findall(r"<script>(.*?)</script>", html, re.S)
-
 
 @pytest.fixture(scope="module")
 def page_scripts():
@@ -80,7 +80,6 @@ def page_scripts():
         pytest.skip("审阅工作台尚未构建")
     with open(INDEX, encoding="utf-8") as handle:
         return _scripts(handle.read())
-
 
 class TestTheReviewPageRuns:
     def test_the_export_button_yields_a_payload(self, tmp_path, page_scripts):
@@ -126,7 +125,6 @@ class TestTheReviewPageRuns:
                 continue
             assert "BATCH.id" not in script or "var BATCH" in script
             assert "BATCH.fingerprint" not in script or "var BATCH" in script
-
 
 class TestTheReviewStoreIsPerBatch:
     """

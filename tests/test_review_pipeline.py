@@ -13,6 +13,7 @@ from scripts.apply_review import (
     load_samples,
 )
 from scripts.record_review import (
+
     DECISIONS,
     import_decisions,
     load_dispositions,
@@ -21,6 +22,7 @@ from scripts.record_review import (
     summary,
 )
 
+pytestmark = pytest.mark.slow
 
 def _sample(sample_id, truth="Fake", bucket="positive"):
     return {
@@ -29,7 +31,6 @@ def _sample(sample_id, truth="Fake", bucket="positive"):
         "final_verdict": {"verdict": "Fake", "confidence": 0.9},
         "metadata": {"trajectory_id": "noise__v", "tools_served": ["noise"]},
     }
-
 
 @pytest.fixture
 def final_v2(tmp_path):
@@ -44,7 +45,6 @@ def final_v2(tmp_path):
         json.dumps([_sample("s4", truth="Real", bucket="honest_abstention")]),
         encoding="utf-8")
     return str(directory)
-
 
 class TestRecording:
     def test_it_appends_a_decision(self, tmp_path, final_v2):
@@ -82,7 +82,6 @@ class TestRecording:
     def test_the_vocabulary_matches_the_g0_audit(self):
         assert set(DECISIONS) == {"accept", "format_only", "revise", "reject"}
 
-
 class TestSummary:
     def test_it_counts_progress_by_bucket(self, tmp_path, final_v2):
         path = str(tmp_path / "d.jsonl")
@@ -102,7 +101,6 @@ class TestSummary:
         report = summary(load_dispositions(path), final_v2)
         assert report["complete"] is True
         assert report["by_decision"] == {"accept": 4}
-
 
 class TestImport:
     """The workstation saves in the browser; this is how it reaches the repo."""
@@ -215,7 +213,6 @@ class TestImport:
         assert entries["s1"]["decision"] == "accept"
         assert batch["batch_fingerprint"] == ""   # a pre-G7 export
 
-
 class TestApply:
     def _dispositions(self, tmp_path, final_v2, decisions):
         path = str(tmp_path / "d.jsonl")
@@ -278,7 +275,6 @@ class TestApply:
 
     def test_load_samples_reads_all_buckets(self, final_v2):
         assert len(load_samples(final_v2)) == 4
-
 
 class TestStaleDecisions:
     """G7 entry 4: a decision is about content, not about an id."""

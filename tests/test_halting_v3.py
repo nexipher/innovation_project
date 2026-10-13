@@ -13,8 +13,9 @@ import pytest
 from config import MAX_EXPERT_CALLS, MAX_MODEL_TURNS
 from state_machine.halting_v3 import HaltingPolicyV3
 
-EXPERTS = {"frequency_expert_v2": 0.112, "noise_expert": 0.691, "jpeg_expert": 0.944}
+pytestmark = pytest.mark.core
 
+EXPERTS = {"frequency_expert_v2": 0.112, "noise_expert": 0.691, "jpeg_expert": 0.944}
 
 def _token(likelihood, reliability=0.9, source="jpeg_expert"):
     return {
@@ -22,7 +23,6 @@ def _token(likelihood, reliability=0.9, source="jpeg_expert"):
         "reliability": reliability,
         "calibrated_likelihood": {"Real": round(1 - likelihood, 3), "Fake": likelihood},
     }
-
 
 def _decide(**overrides):
     kwargs = dict(
@@ -34,7 +34,6 @@ def _decide(**overrides):
     )
     kwargs.update(overrides)
     return HaltingPolicyV3.decide(**kwargs)
-
 
 class TestTheModelOwnsTheLabel:
     def test_a_conclusion_the_reference_disagrees_with_is_kept(self):
@@ -63,7 +62,6 @@ class TestTheModelOwnsTheLabel:
         decision = _decide(candidate_verdict={"verdict": "Fake"})
         assert decision.confidence == 0.5              # the model said nothing
 
-
 class TestAdvisoryNotAuthority:
     def test_no_expected_gain_is_a_note_and_not_a_stop(self):
         decision = _decide(available_experts={"jpeg_expert": 0.0})
@@ -77,7 +75,6 @@ class TestAdvisoryNotAuthority:
     def test_with_no_evidence_there_is_no_reference_label(self):
         decision = _decide(evidence_chain=[], expert_calls=0, called_experts=set())
         assert decision.reference_label is None
-
 
 class TestStopReasonsAreSeparate:
     def test_a_repeated_action_stops_as_loop_protection(self):

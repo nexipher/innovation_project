@@ -10,13 +10,13 @@ from experts.noise import NoiseExpert
 from experts.jpeg import JPEGExpert
 from state_machine.controller import ForensicStateMachine
 
+pytestmark = pytest.mark.slow
 
 # Test images (known to exist in dataset)
 REAL_IMAGE = "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg"
 MJ_IMAGE = "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"
 SD15_IMAGE = "dataset/GenImage_Test/SD15/001_sdv5_00003.png"
 ADM_IMAGE = "dataset/GenImage_Test/ADM/0_adm_174.PNG"
-
 
 def _build_fsm(mode="two_calls"):
     mllm = MockMLLMClient(mode=mode, seed=42)
@@ -26,7 +26,6 @@ def _build_fsm(mode="two_calls"):
         "jpeg_expert": JPEGExpert(),
     }
     return ForensicStateMachine(mllm, experts)
-
 
 class TestEndToEnd:
     """Full-pipeline integration tests."""
@@ -88,7 +87,6 @@ class TestEndToEnd:
     def test_operation_log_appended(self):
         """claude_operation_log.md should exist after pipeline run."""
         assert os.path.exists("claude_operation_log.md")
-
 
 class TestTraceSemantics:
     """G1 (§4.8) completion gate: CPU Mock end-to-end trace must carry the

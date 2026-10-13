@@ -20,13 +20,12 @@ from state_machine.controller import ForensicStateMachine
 from utils.parser import Parser
 from utils.reliability import ReliabilityTable
 
-
+pytestmark = pytest.mark.slow
 
 # the scripts in this module were written against the v1 posterior
 pytestmark = pytest.mark.usefixtures("legacy_calibration")
 FAKE_PATH = "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"
 REAL_PATH = "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg"
-
 
 def _experts(with_probe=True, score=0.99):
     from experts.frequency_v2 import FrequencyExpertV2
@@ -42,7 +41,6 @@ def _experts(with_probe=True, score=0.99):
         from experts.probe_dino import MockProbeExpert
         experts["probe_dino_expert"] = MockProbeExpert(score=score)
     return experts
-
 
 @pytest.fixture
 def run_session(tmp_path):
@@ -63,7 +61,6 @@ def run_session(tmp_path):
 
     return _run
 
-
 class TestParserKnowsTheTag:
     def test_a_probe_call_is_extracted(self):
         text = "…<planning>x</planning><call_probe>[100, 200, 300, 400]</call_probe>"
@@ -78,7 +75,6 @@ class TestParserKnowsTheTag:
         """The whitelist is the hazard this wiring has to be careful about."""
         text = "<call_oracle>[1, 2, 3, 4]</call_oracle>"
         assert Parser.extract_all_calls(text) == []
-
 
 class TestCalibrationEntry:
     def test_the_table_carries_a_probe_entry_fitted_on_a(self):
@@ -101,7 +97,6 @@ class TestCalibrationEntry:
     def test_an_ambiguous_score_stays_ambiguous(self):
         lookup = ReliabilityTable.load().lookup("probe_dino_expert", 0.5)
         assert lookup["calibrated_likelihood"]["Fake"] == pytest.approx(0.52)
-
 
 class TestTheSession:
     def test_a_probe_call_lands_as_a_token(self, run_session):
@@ -172,7 +167,6 @@ class TestTheSession:
         result = run_session()
         utilities = result["final_verdict"]["tool_utilities"]
         assert utilities.get("probe_dino_expert", 0) < utilities.get("noise_expert", 0)
-
 
 class TestTheShippedRegistry:
     def test_main_pipeline_registers_probe_on_cpu(self):

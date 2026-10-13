@@ -1,7 +1,9 @@
+import pytest
 """Unit tests for Evidence Tokenizer."""
 
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 
+pytestmark = pytest.mark.core
 
 class TestStrengthMapping:
     def test_low(self):
@@ -23,7 +25,6 @@ class TestStrengthMapping:
         """Test mapping at exact boundary values."""
         assert EvidenceTokenizer.strength_to_support(0.3) == "Uncertain"
         assert EvidenceTokenizer.strength_to_support(0.7) == "AI-generated"
-
 
 class TestTokenize:
     def test_tokenize_from_result(self):
@@ -47,7 +48,6 @@ class TestTokenize:
         json_str = EvidenceTokenizer.to_json(token)
         assert '"evidence_name"' in json_str
         assert '"test"' in json_str
-
 
 class TestEvidenceId:
     """G1 (§4.8): deterministic evidence ids for deduplication."""
@@ -99,7 +99,6 @@ class TestEvidenceId:
         region_id = EvidenceTokenizer.evidence_id(
             "noise_expert", [10, 20, 30, 40], 0.5, "x", measurement_scope="region")
         assert global_id != region_id
-
 
 class TestTokenizeG1Fields:
     """G1 (§4.8): dual-space coordinates and region semantics in the token."""

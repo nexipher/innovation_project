@@ -15,21 +15,20 @@ from state_machine.controller import ForensicStateMachine
 from state_machine.halting_v2 import HaltingPolicyV2
 from tests.test_controller import FAKE_PATH, ScriptedMLLM, _build_experts
 
+pytestmark = pytest.mark.slow
+
 CALL = ("<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n"
         "<call_noise>[200, 100, 300, 280]</call_noise>")
 SECOND_CALL = ("<planning>\nSuspected Region: [400, 300, 700, 600]\n</planning>\n"
                "<call_noise>[400, 300, 700, 600]</call_noise>")
 GARBAGE = "我认为这张图片看起来很正常，没有发现明显的异常。"
 
-
 def _verdict(label, confidence=0.8, report="基于已获取的测量给出结论。"):
     return (f'<reasoning>根据现有测量。</reasoning>\n<verdict>'
             f'{{"verdict": "{label}", "confidence": {confidence},'
             f' "primary_evidence": [], "report": "{report}"}}</verdict>')
 
-
 CLOSING = _verdict("Uncertain", 0.4, "现有测量不足以判定，如实说明。")
-
 
 @pytest.fixture
 def v3(monkeypatch, tmp_path):
@@ -44,11 +43,9 @@ def v3(monkeypatch, tmp_path):
 
     return run
 
-
 def _trace(result):
     with open(result["sft_data_path"], encoding="utf-8") as handle:
         return json.load(handle)
-
 
 class TestTheLabelIsTheModels:
     def test_a_conclusion_the_reference_disagrees_with_survives(self, v3, monkeypatch):
@@ -82,7 +79,6 @@ class TestTheLabelIsTheModels:
         advisory = result["final_verdict"]["reference"]["advisory"]
         assert "model_abstained" in advisory and "reference_disagrees" not in advisory
 
-
 class TestLowGainIsOnlyAdvice:
     def test_a_call_with_no_expected_gain_still_runs(self, v3, monkeypatch):
         monkeypatch.setattr(HaltingPolicyV2, "tool_utilities",
@@ -100,7 +96,6 @@ class TestLowGainIsOnlyAdvice:
                   if turn["from"] == "user" and "参考估计" in turn["value"]]
         assert len(advice) == 1
         assert "只是参考" in advice[0]
-
 
 class TestStopReasons:
     def test_the_same_action_three_times_is_loop_protection(self, v3):
@@ -136,7 +131,6 @@ class TestStopReasons:
         conclusion = result["final_verdict"]["conclusion"]
         assert conclusion["source"] == "closing_turn"
 
-
 class TestConfidenceIsTheModelsOwnNumber:
     def test_a_zero_confidence_is_kept(self, v3):
         result = v3([CALL, _verdict("Fake", 0.0)])
@@ -150,7 +144,6 @@ class TestConfidenceIsTheModelsOwnNumber:
     def test_an_impossible_confidence_is_not_believed(self, v3):
         result = v3([CALL, _verdict("Fake", 1.9)])
         assert result["final_verdict"]["confidence"] == 0.5
-
 
 class TestAFailedConclusionIsNotAnAbstention:
     def test_it_carries_its_own_status(self, v3):
@@ -166,7 +159,6 @@ class TestAFailedConclusionIsNotAnAbstention:
         metadata = _trace(result)["metadata"]
         assert metadata["verdict_status"] == "model_concluded"
         assert metadata["model_abstained"] is True
-
 
 class TestTheSessionStateIsRestated:
     """§4.17: the model should not have to re-derive the state from a blob."""

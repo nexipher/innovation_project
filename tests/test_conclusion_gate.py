@@ -14,16 +14,16 @@ import pytest
 
 from utils.final_v2 import conclusion_gate
 
+pytestmark = pytest.mark.core
+
 PASS = {"status": "pass", "findings": [], "entry": "closing_turn"}
 OK_CONCLUSION = {"source": "closing_turn", "calls": [], "calls_executed": False,
                  "verdict_parse": "ok"}
-
 
 def _trajectory(**overrides):
     from tests.test_final_v2 import _record
 
     return _record(**overrides)
-
 
 class TestTheGateItself:
     def test_a_legacy_record_is_not_retroactively_judged(self):
@@ -67,7 +67,6 @@ class TestTheGateItself:
     def test_a_pre_r4_record_without_a_conclusion_block_still_passes(self):
         assert conclusion_gate(_trajectory(evidence_check=PASS)) is None
 
-
 class TestAdmissionRefusesAGatedRecord:
     """`failed` is a hard gate, not a footnote beside good numbers."""
 
@@ -106,7 +105,6 @@ class TestAdmissionRefusesAGatedRecord:
         summary = run(records, self.APPLICABILITY)
         assert summary["evidence_gate"] == {"evidence_check_failed": 1}
         assert summary["evidence_gate_rejects"] == 1
-
 
 class TestConversionRefusesAndKeepsTheOriginal:
     def _batch(self, tmp_path, record):
@@ -147,7 +145,6 @@ class TestConversionRefusesAndKeepsTheOriginal:
         assert metadata["gated"] == 0
         assert metadata["legacy_without_evidence_check"] == 1
         assert json.loads((out / "sft_gated.json").read_text(encoding="utf-8")) == []
-
 
 class TestTheSchemaIsEnforcedForNewBatches:
     """A missing field in a batch that declares the schema is a defect."""

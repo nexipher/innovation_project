@@ -9,6 +9,7 @@ import pytest
 from PIL import Image
 
 from scripts.build_review_workstation import (
+
     BUCKET_CHECKS,
     COMMON_CHECKS,
     build,
@@ -18,6 +19,7 @@ from scripts.build_review_workstation import (
     render_sample_page,
 )
 
+pytestmark = pytest.mark.slow
 
 def _token(**overrides):
     token = {
@@ -47,7 +49,6 @@ def _token(**overrides):
     token.update(overrides)
     return token
 
-
 def _sample(sample_id="f2_noise__ADM_x_png", verdict="Fake", confidence=0.9,
             truth="Fake", tools=("noise",), treatment="png", generator="ADM",
             bucket="tool_positive", tokens=None, conversations=None):
@@ -75,7 +76,6 @@ def _sample(sample_id="f2_noise__ADM_x_png", verdict="Fake", confidence=0.9,
         "_bucket_file": bucket,
     }
 
-
 def _trajectory(variant_id="ADM_x_png", policy="noise", conflict=0.0, brier=0.02):
     return {
         "trajectory_id": f"{policy}__{variant_id}", "policy": policy,
@@ -86,7 +86,6 @@ def _trajectory(variant_id="ADM_x_png", policy="noise", conflict=0.0, brier=0.02
         "model_probability": 0.5, "posterior": 0.9, "halting_reason": "model_stalled",
         "final_verdict": "Fake",
     }
-
 
 class TestHighRiskFlags:
     """Attention markers, not a second review — the naming is the point."""
@@ -107,7 +106,6 @@ class TestHighRiskFlags:
 
     def test_a_low_confidence_single_tool_answer_is_not(self):
         assert high_risk_reasons(_sample(verdict="Fake", confidence=0.6), _trajectory()) == []
-
 
 class TestChecklists:
     def test_every_bucket_gets_the_common_checks(self):
@@ -132,7 +130,6 @@ class TestChecklists:
     def test_every_bucket_specific_check_exists(self):
         for bucket, checks in BUCKET_CHECKS.items():
             assert checks, bucket
-
 
 class TestSamplePage:
     def _render(self, tmp_path, sample=None, source="", missing=None, high_risk=()):
@@ -254,7 +251,6 @@ class TestSamplePage:
         page = self._render(tmp_path, sample=sample)
         assert "semantics_aligned 缺失" in page
 
-
 class TestBuildEndToEnd:
     def _fixture(self, tmp_path):
         """A one-sample final_v2 plus the manifest, split and trajectories."""
@@ -337,7 +333,6 @@ class TestBuildEndToEnd:
         assert 'id="export"' in index and 'id="import"' in index
         assert 'data-row-sample="f2_noise__ADM_x_png"' in index
         assert 'id="only-pending"' in index
-
 
 class TestLoadSamples:
     def test_it_tags_the_bucket(self, tmp_path):

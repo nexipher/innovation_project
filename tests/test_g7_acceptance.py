@@ -15,6 +15,7 @@ import pytest
 
 from config import PROJECT_ROOT
 from scripts.g7_acceptance import (
+
     BATCH_PATH,
     check_sources,
     frozen_probe_mapping,
@@ -24,11 +25,11 @@ from scripts.g7_acceptance import (
     summarise,
 )
 
+pytestmark = pytest.mark.slow
 
 def _read(path):
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
-
 
 class TestBatchSelection:
     def test_the_batch_is_18_development_sources_plus_6_fresh_ones(self):
@@ -71,7 +72,6 @@ class TestBatchSelection:
         assert labels == {"Real", "Fake"}
         assert len(generators) >= 8      # B alone covers all eight
 
-
 class TestTheReferenceArm:
     def test_the_mapping_is_the_frozen_a_group_one(self):
         mapping = frozen_probe_mapping()
@@ -99,7 +99,6 @@ class TestTheReferenceArm:
         payload = mapping_for_report(frozen_probe_mapping())
         json.dumps(payload)                       # would raise on a numpy array
         assert "不合并" in payload["note"]
-
 
 class TestSummary:
     def _record(self, verdict, calls=("probe_dino_expert",), reason="candidate_matches_posterior"):
@@ -150,7 +149,6 @@ class TestSummary:
     def test_first_calls_show_what_the_model_reaches_for(self):
         summary = summarise([self._record("Fake")], {})
         assert summary["first_calls"] == {"probe": 1}
-
 
 class TestTheCommittedBatch:
     def test_the_manifest_matches_the_selection(self):

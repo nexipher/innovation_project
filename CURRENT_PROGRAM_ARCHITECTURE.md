@@ -30,9 +30,9 @@ v3 的停止原因各自独立记录：`model_concluded`（模型自主结案，
 FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>
 ```
 
-**默认配置是 v2**（`config.HALTING_POLICY`），只有显式 `FORENSIC_HALTING_POLICY=v3`
-才是当前策略；报告与批次必须核对三个版本：策略、提示词指纹、校准表身份
-（`utils/config_fingerprint`，也写进每个批次的 `VERSIONS.json`）。
+**默认配置就是当前版本 v3**（`config.HALTING_POLICY`）；历史复算才需要显式
+`FORENSIC_HALTING_POLICY=v2`（或 `v1`）。报告与批次必须核对三个版本：策略、提示词指纹、
+校准表身份（`utils/config_fingerprint`，也写进每个批次的 `VERSIONS.json`）。
 
 批量与验收（不是"启动命令"，是流程步骤）：
 
@@ -44,8 +44,8 @@ python scripts/build_review_from_trajectories.py --batch <id>                   
 python scripts/batch_inventory.py                                                 # 批次台账
 ```
 
-实验版本只能显式开启：`FORENSIC_HALTING_POLICY=v1|v2|v3`（非法值直接报错），
-无环境变量时一律 v2。
+历史版本只能显式开启：`FORENSIC_HALTING_POLICY=v1|v2`（非法值直接报错）；
+无环境变量时即当前版本 v3。
 
 ## 4. 实际可用的专家
 

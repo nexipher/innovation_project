@@ -5,6 +5,7 @@ import json
 import pytest
 
 from scripts.admit_trajectories_g4 import (
+
     CONFIDENT,
     RISK_EPSILON,
     admit,
@@ -14,12 +15,13 @@ from scripts.admit_trajectories_g4 import (
     run,
 )
 
+pytestmark = pytest.mark.slow
+
 APPLICABILITY = {
     "jpeg": {"png": 0.972, "jpeg_q70": 0.431},
     "noise": {"png": 0.845, "jpeg_q70": 0.772},
     "frequency_v2": {"png": 0.556, "jpeg_q70": 0.634},
 }
-
 
 def _record(policy, tools=(), treatment="png", verdict="Fake", confidence=0.9,
             ground_truth="Fake", brier=0.1, nll=0.2, cost=1.0, split="train",
@@ -42,7 +44,6 @@ def _record(policy, tools=(), treatment="png", verdict="Fake", confidence=0.9,
                    "posterior_error": error},
     }
 
-
 class TestTrainOnlyGuard:
     def test_train_records_pass(self):
         assert_train_only([_record("noise", ("noise",))])
@@ -55,7 +56,6 @@ class TestTrainOnlyGuard:
         records = [_record("noise", ("noise",)), _record("noise", ("noise",), split="val")]
         with pytest.raises(ValueError):
             run(records, APPLICABILITY)
-
 
 class TestConditionalLayer:
     def test_a_separating_tool_passes(self):
@@ -86,7 +86,6 @@ class TestConditionalLayer:
         decision = admit(_record("ela", ("ela",)), None, APPLICABILITY)
         assert decision["category"] == "reject"
         assert any("retired expert" in r for r in decision["reasons"])
-
 
 class TestGainLayer:
     def test_a_brier_improvement_admits_a_correct_trajectory(self):
@@ -135,7 +134,6 @@ class TestGainLayer:
         decision = admit(tool, baseline, APPLICABILITY)
         assert decision["cost_delta"] == pytest.approx(3.0)
 
-
 class TestHonestAbstention:
     def test_abstaining_where_the_baseline_was_confidently_wrong_is_kept(self):
         tool = _record("noise", ("noise",), verdict="Uncertain", confidence=0.5,
@@ -153,7 +151,6 @@ class TestHonestAbstention:
         tool = _record("noise", ("noise",), verdict="Uncertain", brier=0.25)
         baseline = _record("no-tool", verdict="Fake", confidence=0.9, brier=0.01)
         assert admit(tool, baseline, APPLICABILITY)["category"] == "reject"
-
 
 class TestRun:
     def _corpus(self):
@@ -182,7 +179,6 @@ class TestRun:
         assert report["per_policy"]["noise"]["positive"] == 1
         assert report["per_policy"]["jpeg"]["positive"] == 0
 
-
 class TestLoading:
     def test_it_reads_json_records_and_skips_junk(self, tmp_path):
         (tmp_path / "a.json").write_text(json.dumps(_record("noise", ("noise",))),
@@ -201,7 +197,6 @@ class TestLoading:
         paired = pair_by_variant(records)
         assert set(paired) == {"v1", "v2"}
         assert set(paired["v1"]) == {"no-tool", "noise"}
-
 
 class TestNoToolTrajectories:
     """

@@ -10,13 +10,15 @@ from config import (
     POLICY_CONFIDENT_POSTERIOR,
 )
 from state_machine.halting_v2 import (
+
     UNRESOLVED_CONFIDENCE,
     HaltingDecision,
     HaltingPolicyV2,
 )
 
-EXPERTS = {"frequency_expert_v2": 0.112, "noise_expert": 0.691, "jpeg_expert": 0.944}
+pytestmark = pytest.mark.core
 
+EXPERTS = {"frequency_expert_v2": 0.112, "noise_expert": 0.691, "jpeg_expert": 0.944}
 
 def _token(likelihood, reliability, source="jpeg_expert", direction=None):
     token = {
@@ -27,7 +29,6 @@ def _token(likelihood, reliability, source="jpeg_expert", direction=None):
     if direction:
         token["direction"] = direction
     return token
-
 
 class TestPosterior:
     def test_no_evidence_is_even(self):
@@ -66,7 +67,6 @@ class TestPosterior:
         assert HaltingPolicyV2.posterior(chain) != pytest.approx(0.5, abs=0.02)
         assert HaltingPolicyV2.posterior(chain) > 0.5     # the first voice is louder
 
-
 class TestConflictScore:
     def test_single_token_has_no_conflict(self):
         assert HaltingPolicyV2.conflict_score([_token(0.9, 0.9)]) == pytest.approx(0.0)
@@ -87,7 +87,6 @@ class TestConflictScore:
         # A loud voice against a whisper is a lopsided disagreement, not a tie.
         chain = [_token(0.95, 0.99), _token(0.05, 0.505)]
         assert HaltingPolicyV2.conflict_score(chain) < 0.5
-
 
 class TestRedundancy:
     """G7 entry 3: correlated experts must not spend the same evidence twice."""
@@ -124,7 +123,6 @@ class TestRedundancy:
         assert forward[1] == pytest.approx(backward[1], abs=1e-9)
         assert forward[1] < forward[0]
 
-
 class TestPerToolCost:
     """G7-3: PROBE is a network forward pass, the others are arithmetic."""
 
@@ -146,7 +144,6 @@ class TestPerToolCost:
             report["probe_dino_expert"]["estimated_gain"]
             - report["probe_dino_expert"]["cost"], abs=1e-4)
 
-
 class TestToolUtilities:
     def test_called_experts_have_no_gain(self):
         utilities = HaltingPolicyV2.tool_utilities([], EXPERTS, {"jpeg_expert"})
@@ -165,13 +162,11 @@ class TestToolUtilities:
         utilities = HaltingPolicyV2.tool_utilities([], weak_only, set())
         assert utilities["frequency_expert_v2"] < 0
 
-
 def _decide(chain, candidate=None, turns=1, calls=0, called=None):
     return HaltingPolicyV2.decide(
         model_turns=turns, expert_calls=calls, evidence_chain=chain,
         candidate_verdict=candidate, available_experts=EXPERTS,
         called_experts=called or set())
-
 
 class TestLabelConfidence:
     """
@@ -216,7 +211,6 @@ class TestLabelConfidence:
                             _token(0.95, 0.99)])
         assert decision.verdict == "Fake"
         assert decision.confidence == pytest.approx(decision.posterior, abs=1e-4)
-
 
 class TestDecisions:
     def test_empty_session_explores(self):
@@ -320,7 +314,6 @@ class TestDecisions:
             assert decision.all_reasons, decision
             assert isinstance(decision, HaltingDecision)
 
-
 class TestExpertWeights:
     def test_margin_conversion(self):
         weights = HaltingPolicyV2.expert_weights(
@@ -333,7 +326,6 @@ class TestExpertWeights:
     def test_chance_expert_gets_no_weight(self):
         weights = HaltingPolicyV2.expert_weights({"weak": 0.4})
         assert weights["weak"] == 0.0
-
 
 class TestNoToolSessions:
     """The no-tool baseline arm: no evidence can ever arrive."""
