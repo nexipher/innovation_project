@@ -185,7 +185,11 @@ class TestToolPolicies:
         of 56 sessions writing a <call_x> tag inside <planning> (the template
         offering the tag as the expert's "name"), so the template now shows a
         bare name and says the tag appears exactly once, after </planning>:
-        f4e2eda32c60679b.  Anything that moves it again has to say so in a
+        f4e2eda32c60679b.  The v3 batch then produced the generic sentence
+        "未观察到明确异常，需要统计证据" in all 56 sessions because the template
+        offered it *in place of* a description, so the planning line now asks
+        for a scene description and names the anomalies separately:
+        84bc2c766c6d712a.  Anything that moves it again has to say so in a
         commit.
         """
         import hashlib
@@ -195,7 +199,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "f4e2eda32c60679b"
+            "84bc2c766c6d712a"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

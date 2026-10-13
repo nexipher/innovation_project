@@ -46,17 +46,19 @@ def load_trace(record: dict) -> dict:
         return {}
 
 
-def _observation(trace: dict) -> str:
-    import re
+def _observation(record: dict) -> str:
+    """
+    The model's own visual account, read by the one implementation that knows
+    both shapes it can take (an <observation> block, or the planning line).
 
-    pattern = re.compile(r"<observation>\s*(.*?)\s*</observation>", re.S | re.I)
-    for turn in trace.get("conversations", []):
-        if turn.get("from") != "gpt":
-            continue
-        block = pattern.search(turn.get("value") or "")
-        if block and block.group(1).strip():
-            return f"模型视觉观察：{block.group(1).strip()}"
-    return ""
+    This script used to look only for the block, so every session of the
+    v3 batch — whose account lives in the planning line — lost its words and
+    the sample said nothing about the image.  Reading it a second way here
+    would drift from the converter; calling it keeps one definition.
+    """
+    from scripts.build_final_v2 import extract_observation
+
+    return extract_observation(record)
 
 
 def build(batch_id: str, split: Dict) -> Dict:
@@ -77,7 +79,7 @@ def build(batch_id: str, split: Dict) -> Dict:
         sample = render_sample(
             {**record, "image_path": variants.get(record.get("variant_id"), "")},
             "positive",
-            observation_text=_observation(trace),
+            observation_text=_observation({**record, "trace_path": record.get("trace_path")}),
             split_entry=(split or {}).get("sources", {}).get(record.get("source_id")),
             trace=trace)
         # Not an admitted sample: this is review material and says so.

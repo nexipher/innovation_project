@@ -74,7 +74,12 @@ def bucket_for(record: dict, category: str) -> str:
     return "honest_abstention"
 
 
-_PLANNING_ANOMALIES = re.compile(r"Visual Anomalies:\s*(.+)", re.I)
+# The planning line that carries the model's own visual account.  The v3 batch
+# wrote "Visual Anomalies:"; the next protocol asks for "Visual Observation:"
+# (what the model sees) and then "Suspected Anomalies:" (what, if anything,
+# looks off).  Both are read here, and neither is rewritten: the observation
+# section carries the model's words, never a description the converter made up.
+_PLANNING_ANOMALIES = re.compile(r"Visual (?:Observation|Anomalies):\s*(.+)", re.I)
 # The no-tool training protocol asks for an explicit section; the tool protocols
 # describe the same thing in their planning line.  Either way the model's own
 # visual description is what the observation section is for.

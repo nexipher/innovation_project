@@ -705,3 +705,51 @@ class TestTheValidatorKnowsWhichPolicyWroteTheSample:
                                "positive", observation_text=OBSERVATION,
                                split_entry=SPLIT["sources"]["ADM/x"])
         assert any("contradicts posterior" in p for p in _validate(sample))
+
+
+class TestTheObservationSectionKeepsWhatIsKnown:
+    """A conversion that says "None" is worse than one that says nothing."""
+
+    def test_the_input_size_comes_from_the_trace_when_the_field_is_empty(self):
+        record = _record(resolution=None)
+        sample = render_sample(record, "positive", observation_text="模型视觉观察：纹理不一致。",
+                               split_entry=None,
+                               trace={"metadata": {"image_size": [256, 256]},
+                                      "conversations": []})
+        observation = parse_sections(sample["conversations"][-1]["value"])["observation"]
+        assert "resolution: [256, 256]" in observation
+        assert "输入图像尺寸（模型实际所见）" in observation
+        assert "None" not in observation
+
+    def test_an_unknown_size_is_written_as_unrecorded(self):
+        from utils.final_v2 import render_observation
+
+        assert "未记录" in render_observation({"container": "png", "treatment": "png"})
+
+    def test_the_models_own_words_are_not_written_by_the_converter(self):
+        """No visual description is invented: the section carries what it got."""
+        from utils.final_v2 import render_observation
+
+        rendered = render_observation({"container": "png", "treatment": "png",
+                                       "resolution": [10, 10]})
+        assert "模型视觉观察" not in rendered
+
+    def test_the_new_planning_line_is_read(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        trace = {"conversations": [{"from": "gpt", "value":
+                 "<planning>\nVisual Observation: 一只猫坐在窗台上，毛发清晰。\n"
+                 "Suspected Anomalies: 未观察到明确异常，需要统计证据\n</planning>"}]}
+        path = tmp_path / "trace.json"
+        path.write_text(json.dumps(trace), encoding="utf-8")
+        text = extract_observation({"trace_path": str(path)})
+        assert "一只猫坐在窗台上" in text
+
+    def test_the_old_planning_line_still_reads(self, tmp_path):
+        from scripts.build_final_v2 import extract_observation
+
+        trace = {"conversations": [{"from": "gpt", "value":
+                 "<planning>\nVisual Anomalies: 眼睛周围纹理不一致\n</planning>"}]}
+        path = tmp_path / "trace.json"
+        path.write_text(json.dumps(trace), encoding="utf-8")
+        assert "眼睛周围纹理不一致" in extract_observation({"trace_path": str(path)})

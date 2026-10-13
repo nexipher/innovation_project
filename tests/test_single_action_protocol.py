@@ -154,8 +154,14 @@ class TestThePromptStatesTheProtocol:
         assert "bbox is OPTIONAL" in prompt
         assert "do NOT invent a suspicious region" in prompt
 
-    def test_a_quiet_first_turn_is_allowed(self):
-        assert "未观察到明确异常" in self._prompt()
+    def test_a_quiet_first_turn_is_allowed_without_a_template_sentence(self):
+        """The v3 batch wrote the same generic sentence 56/56 times because the
+        template offered it *in place of* a description."""
+        prompt = self._prompt()
+        assert "Visual Observation:" in prompt
+        assert "if nothing stands out, say so plainly" in prompt
+        assert "Never invent noise" in prompt
+        assert "未观察到明确异常，需要统计证据" not in prompt
 
     def test_physical_claims_need_a_measurement_first(self):
         prompt = self._prompt()

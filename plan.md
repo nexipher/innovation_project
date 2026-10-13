@@ -2599,3 +2599,10 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 - **重复轮不作为动作示范**（用户建议 4）：轨迹记录与样本的 `fidelity.dialogue_audit.repeat_request_turns` 记录轮号；弱证据筛查新增候选 `repeat_request_turn`（"无进展动作，不应作为动作示范"）；工作台在对应助手轮上打**"重复请求 · 已被跳过执行（无进展，不能作为动作示范）"**徽章；高风险原因按类型分别命名（`repeat_request_no_progress` 等），不再一律叫 `weak_evidence_promoted`。
 - **格式纠错具体化**（用户新指出）：BigGAN q95 会话连续三次把调用写在 `<planning>` 内，纠错却说"请包含 `<call_*>` 或 `<verdict>`"——让它做已经做过的事。现在 `Parser.prose_only_calls` 识别"只出现在论述块内"的标签，纠错直接点名并给出应输出的行：`<call_probe></call_probe>` 放在 `</planning>` 之后，并说明块内标签"不会被执行"。
 - **未完成**：状态行能否真正降低重复率需要 GPU 对照（用户已关闭 GPU）；已用同一批次的前 8 个变体准备好对照方案（`--output-dir sft_data/trajectories_g7_b2_statefix`），开机即可跑。
+
+### B 段第 9 步：视觉观察的两层修复（用户指出：模板化 + 转换器丢信息）
+
+- **问题 1（模型观察模板化）**：我的提示词把"未观察到明确异常，需要统计证据"写成了可替代描述的句子 → 56/56 会话照抄。**改协议（下一批生效）**：planning 行拆成两行——`Visual Observation:`（客观描述场景、主体、纹理、边缘、光照，**不是判定**）与 `Suspected Anomalies:`（有则说、无则如实说"没有明显异常"；**不得编造看不见的噪声/压缩块/传感器痕迹**）。提示词哈希 `f4e2eda32c60679b → 84bc2c766c6d712a`（`prompt_digest` `c338099c9e2b8a5f`）。
+- **问题 2（转换器丢信息）**：`render_observation` 只读 `record["resolution"]`，而该字段只有一个调用方填；追踪元数据里的 `image_size` 从未被使用 → 56/56 样本打印 `resolution: None`。现在按来源依次取：split 源图分辨率 → **追踪 `image_size`（模型实际所见）** → 证据 token；并**注明来源**；三者皆无时写"未记录"，不再写 `None`。
+- **明确不做的事**：转换器**不补写模型从未说过的视觉描述**；模型只说了通用句，样本就只保留那句（可核对）。工作台构建脚本改为调用 `build_final_v2.extract_observation`（唯一实现，避免两处漂移）——它此前只找 `<observation>` 块，导致 v3 批次的规划行原话全部丢失。
+- **审核材料已重建**：56 页样本的 observation 段现在是「模型原话 + container/quality + 真实分辨率（含来源）」，指纹 `20e7ba4c80984686`。

@@ -223,3 +223,24 @@ class TestRepeatRequestTurnsAreMarked:
         findings = repeat_request_flags(sample)
         assert [f["kind"] for f in findings] == ["repeat_request_turn"]
         assert findings[0]["severity"] == "candidate"
+
+
+class TestTheReviewBuilderKeepsTheModelsAccount:
+    def test_it_reads_the_planning_line_not_only_the_block(self, tmp_path):
+        """The v3 batch's account lives in the planning line, not a block."""
+        from scripts.build_review_from_trajectories import _observation
+
+        trace_path = tmp_path / "t.json"
+        trace_path.write_text(json.dumps({"conversations": [
+            {"from": "gpt", "value": "<planning>\nVisual Anomalies: 眼睛周围纹理不一致\n</planning>"}]}),
+            encoding="utf-8")
+        assert "眼睛周围纹理不一致" in _observation({"trace_path": str(trace_path)})
+
+    def test_a_session_without_an_account_stays_empty(self, tmp_path):
+        from scripts.build_review_from_trajectories import _observation
+
+        trace_path = tmp_path / "t.json"
+        trace_path.write_text(json.dumps({"conversations": [
+            {"from": "gpt", "value": "<planning>\nExpert Target & Hypothesis: probe\n</planning>"}]}),
+            encoding="utf-8")
+        assert _observation({"trace_path": str(trace_path)}) == ""

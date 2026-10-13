@@ -1750,3 +1750,22 @@
   - `sft_data/review/g7_b2/*.html (Regenerated — 指纹 9e2c7e5224b781da)、calibration/g7_report_g7_b2.json (Regenerated)`
 * **执行结果与验证状态**：**分块运行 1110 通过 + 1 跳过**（369+402+339）。真实数据核对：屏幕标记 `repeat_request_no_progress` **41** 条、`fidelity.repeat_request_turns` 指名轮号、工作台徽章与筛查标记均在样本上验证通过；报告口径与用户人工计数一致（103/62/41）。
 * **置信度或遗留待办（TODO）**：①**状态行是否真的降低重复率尚未验证**——需要 GPU 对照（同批次前 8 个变体，命令已备好：`--output-dir sft_data/trajectories_g7_b2_statefix`），开机即可跑②重复轮当前记为**候选**（交人工），是否需要在转换时直接排除该**会话**（而非仅标记该轮）取决于审核口径③格式纠错新文案同样只能在真实模型上验证效果
+
+### 2026-10-13 21:36:53 - 修复：视觉观察的两层问题（提示词模板化 + 转换器 resolution: None）
+
+* **当前操作动作**：按用户指出的两层问题分别修复——①模型观察模板化（下一批生成协议）②转换器丢失图像尺寸信息（本批即可修）。GPU 已关，CPU only；**不通过转换器补写模型未曾说过的视觉描述**。
+* **对应计划锚点**：plan.md §4.17「B 段第 9 步」
+* **核心变更说明**：
+  1. **提示词（下一批生效）**：planning 行由一句"Visual Anomalies（看不出就写未观察到明确异常，需要统计证据）"拆为 **`Visual Observation:`**（客观描述场景与主体、纹理/边缘/光照、色彩——"是描述不是判定"）与 **`Suspected Anomalies:`**（有异常说异常；没有就直说；**不得编造看不见的噪声/压缩块/传感器痕迹**，那些由专家测量）。旧的模板句不再出现，避免"用一句通用话替代描述"。哈希 `f4e2eda32c60679b → 84bc2c766c6d712a`，`prompt_digest=c338099c9e2b8a5f`。
+  2. **转换器（本批已修）**：新增 `_observed_size()`，按 **split 源图分辨率 → trace `image_size`（模型实际所见）→ 证据 token** 依次回退，并在 observation 段**注明来源**；三者皆无时写"未记录"，**不再输出 `None`**。重建后 56/56 显示 `resolution: [256, 256]（输入图像尺寸（模型实际所见））`。
+  3. **不补写**：observation 段 = 模型原话（`模型视觉观察：…`）+ container/quality + 尺寸；模型只说了通用句，样本就只保留那句。模型未描述时该段更少，而不是更多。
+  4. **顺带修掉一处真缺陷**：`scripts/build_review_from_trajectories.py` 自己实现了一套只认 `<observation>` 块的读取，导致 v3 批次（观察写在 planning 行）**模型原话全部丢失**；改为调用 `build_final_v2.extract_observation`（单一实现，两个行名 `Visual Observation:` / `Visual Anomalies:` 都读）。
+* **涉及/修改的文件清单**：
+  - `mllm/message_builder.py (Modified — planning 两行式描述协议)`
+  - `utils/final_v2.py (Modified — _observed_size、render_observation 来源标注与"未记录"、planning 行名兼容)`
+  - `scripts/build_final_v2.py (Modified — planning 行名兼容)`
+  - `scripts/build_review_from_trajectories.py (Modified — 复用统一的 observation 读取)`
+  - `tests/test_final_v2.py / test_message_builder.py / test_single_action_protocol.py / test_conversion_fidelity.py (Extended — 尺寸回退与来源、旧新行名、不补写、模板句已移除)`
+  - `sft_data/review/g7_b2/*.html (Regenerated — 指纹 20e7ba4c80984686)`
+* **执行结果与验证状态**：**分块运行 1115 通过 + 1 跳过**（369+407+339）。真实数据核对：样本 observation 段现为「模型视觉观察：未观察到明确异常，需要统计证据 / container: jpg, quality: jpeg_q70 / resolution: [256, 256]（输入图像尺寸（模型实际所见））」——模型原话保留、尺寸正确、无编造描述。
+* **置信度或遗留待办（TODO）**：①**"模型是否真会描述场景"只能下一批验证**（提示词改动需 GPU 重跑；本批 56 条的通用句是既成事实，保留原样）②新协议下若模型仍写通用句，可以考虑在验收指标里加一条"观察段是否包含具体可见特征"的自动检查（当前没有）③分辨率来源已标注，但**源图分辨率与模型输入尺寸可能不同**（本批恰好都是 256×256），工作台显示时按来源区分

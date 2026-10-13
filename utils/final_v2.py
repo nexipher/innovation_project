@@ -169,11 +169,40 @@ def render_evidence_block(token: dict) -> str:
     return "\n".join(lines)
 
 
+def _observed_size(record: dict):
+    """
+    The size of the image the model actually saw, and where the number came from.
+
+    The observation section printed `resolution: None` for every sample of the
+    v3 batch: the field it read is filled by one caller and not another, while
+    the number was there all along in the trace (`image_size`).  A conversion
+    that says nothing is better than one that says "None" — but the size is a
+    fact about the input, so it is carried, with its provenance.
+    """
+    if record.get("resolution"):
+        return record["resolution"], "源图分辨率（split）"
+    metadata = ((record.get("_trace") or {}).get("metadata") or {})
+    if metadata.get("image_size"):
+        return metadata["image_size"], "输入图像尺寸（模型实际所见）"
+    token = next(iter(record.get("evidence") or []), {})
+    if token.get("image_height") and token.get("image_width"):
+        return [token["image_height"], token["image_width"]], "证据 token 记录"
+    return None, "未记录"
+
+
 def render_observation(record: dict, observation_text: str = "") -> str:
-    """What can be checked in the image itself, plus how it was delivered."""
+    """
+    What can be checked in the image itself, plus how it was delivered.
+
+    The model's own words come first and are never written by this function:
+    if the session did not describe the image, the section says less, not
+    more.  (Telling the model to describe the scene is the *protocol's* job —
+    §4.17 next-batch prompt — not something to backfill here.)
+    """
+    size, provenance = _observed_size(record)
     facts = [
         f"container: {record.get('container')}, quality: {record.get('quality', record.get('treatment'))}",
-        f"resolution: {record.get('resolution')}",
+        f"resolution: {size if size else '未记录'}（{provenance}）",
     ]
     body = "\n".join(f"- {fact}" for fact in facts)
     if observation_text:
