@@ -126,3 +126,145 @@ class TestTheReviewPageRuns:
                 continue
             assert "BATCH.id" not in script or "var BATCH" in script
             assert "BATCH.fingerprint" not in script or "var BATCH" in script
+
+
+class TestTheReviewStoreIsPerBatch:
+    """
+    One shared localStorage key meant the g7_b2 page counted the reviewer's
+    145 g7_b1 decisions as its own progress, and could export them under the
+    g7_b2 fingerprint.  Storage is now keyed by batch id **and** content
+    fingerprint, progress/export only consider this batch's sample ids, and
+    import refuses a payload from another batch.
+    """
+
+    STUB_EXTRA = r"""
+let imported = null;
+global.FileReader = class {
+  readAsText() { this.result = IMPORT_TEXT; this.onload({ target: { result: IMPORT_TEXT } }); }
+};
+function loadPage(html) {
+  eval(html.match(/<script>window\.__batch[^<]*<\/script>/)[0].replace(/<\/?script>/g, ''));
+  const blocks = html.match(/<script>[\s\S]*?<\/script>/g) || [];
+  blocks.forEach((b) => {
+    const body = b.replace(/^<script>/, '').replace(/<\/script>$/, '');
+    if (body.indexOf('finalv2review') !== -1) { eval(body); }
+  });
+}
+"""
+
+    def _build(self, tmp_path, batch_id, samples):
+        import json as jsonlib
+
+        from scripts.build_review_workstation import build
+
+        samples_dir = tmp_path / f"batch_{batch_id}"
+        samples_dir.mkdir(exist_ok=True)
+        (samples_dir / "sft_tool_positive.json").write_text(
+            jsonlib.dumps(samples), encoding="utf-8")
+        (tmp_path / "none").mkdir(exist_ok=True)
+        (tmp_path / "none.json").write_text("{}", encoding="utf-8")
+        out = tmp_path / f"review_{batch_id}"
+        build(str(samples_dir), str(out), trajectories_dir=str(tmp_path / "none"),
+              variants_manifest=str(tmp_path / "none.json"), batch_id=batch_id)
+        return (out / "index.html").read_text(encoding="utf-8")
+
+    def _run(self, tmp_path, html, store=None, import_payload=None):
+        import json as jsonlib
+
+        from tests.test_batch_binding import _sample
+
+        _ = _sample  # the fixture factory lives with the batch tests
+        runner = tmp_path / "run_case.js"
+        runner.write_text(
+            "const store = " + jsonlib.dumps(store or {}) + ";\n"
+            + "const IMPORT_TEXT = " + jsonlib.dumps(jsonlib.dumps(import_payload)) + ";\n"
+            + re.sub(r"const store = \{.*?\n\};", "/* store seeded by the test */", STUB,
+                     count=1, flags=re.S)
+              .replace("global.window = { __batch: { id: 'g7_b1', fingerprint: 'TESTFINGERPRINT' } };",
+                       "global.window = {};")
+            + self.STUB_EXTRA
+            + "\ndocument.body.appendChild = () => {};"
+            + "\nconst TOTAL = " + str(len(jsonlib.loads(
+                re.search(r'window\.__samples = (\[.*?\]);', html).group(1)))) + ";"
+            + "\ndocument.body.getAttribute = (n) => (n === 'data-samples' ? String(TOTAL) : null);"
+            + "\nloadPage(PAGE);"
+            + "\nif (listeners.document && listeners.document.DOMContentLoaded)"
+            + "  listeners.document.DOMContentLoaded({});"
+            + "\nconsole.log('PROGRESS ' + (elements['save-status'] || {}).textContent);"
+            + "\nif (listeners['reviewer'] && listeners['reviewer'].change) {"
+            + " elements['reviewer'].value = 'tester'; listeners['reviewer'].change({}); }"
+            + "\nlet payload = null; global.Blob = class { constructor(parts) { payload = parts[0]; } };"
+            + "\nif (imported !== null || IMPORT_TEXT !== 'null') {"
+            + " if (listeners['import'] && listeners['import'].change)"
+            + "   listeners['import'].change({ target: { files: [{}] } }); }"
+            + "\nelements['export'].click();"
+            + "\nconsole.log('PAYLOAD ' + JSON.stringify(JSON.parse(payload)));"
+            + "\nif (IMPORT_TEXT !== 'null') {"
+            + " if (listeners['import'] && listeners['import'].change)"
+            + "   listeners['import'].change({ target: { files: [{}] } }); }"
+            + "\nconsole.log('STATUS ' + (elements['save-status'] || {}).textContent);"
+            + "\nconsole.log('KEYS ' + JSON.stringify(Object.keys(store)));"
+            + "\n",
+            encoding="utf-8")
+        environment = f"const PAGE = {json.dumps(html)};\n"
+        runner.write_text(environment + runner.read_text(encoding="utf-8"),
+                          encoding="utf-8")
+        result = subprocess.run(["node", str(runner)], capture_output=True,
+                                text=True, timeout=60)
+        assert result.returncode == 0, result.stderr[-2000:]
+        payload = json.loads([l for l in result.stdout.splitlines()
+                              if l.startswith("PAYLOAD ")][-1][len("PAYLOAD "):])
+        status = [l for l in result.stdout.splitlines() if l.startswith("STATUS ")][-1]
+        progress = [l for l in result.stdout.splitlines() if l.startswith("PROGRESS ")][-1]
+        keys = json.loads([l for l in result.stdout.splitlines()
+                           if l.startswith("KEYS ")][-1][len("KEYS "):])
+        _ = self
+        return payload, status, keys, progress
+
+    def test_the_key_contains_the_batch_and_its_fingerprint(self, tmp_path):
+        if shutil.which("node") is None:
+            pytest.skip("node 不可用")
+        from tests.test_batch_binding import _sample
+
+        html = self._build(tmp_path, "g7_b2", [_sample("a"), _sample("b")])
+        payload, _, keys, _ = self._run(tmp_path, html)
+        assert payload["batch_id"] == "g7_b2"
+        # the key the page wrote is scoped; nothing else was touched
+        assert any(key.startswith("finalv2review.v1:g7_b2:") for key in keys), keys
+
+    def test_progress_and_export_ignore_other_batches(self, tmp_path):
+        if shutil.which("node") is None:
+            pytest.skip("node 不可用")
+        from tests.test_batch_binding import _sample
+
+        html = self._build(tmp_path, "g7_b2", [_sample("a"), _sample("b")])
+        fingerprint = json.loads(re.search(
+            r'window\.__batch = (\{.*?\});', html).group(1))["fingerprint"]
+        store = {
+            f"finalv2review.v1:g7_b2:{fingerprint}": json.dumps({
+                "reviewer": "tester",
+                "decisions": {
+                    "a": {"decision": "accept", "notes": ""},
+                    "f2_probe__old_batch_png": {"decision": "reject", "notes": ""},
+                }}),
+        }
+        payload, status, _, progress = self._run(tmp_path, html, store)
+        assert set(payload["decisions"]) == {"a"}, payload["decisions"]
+        assert "另有 1 条属于其他批次" in status
+        assert "1 / 2" in progress, progress
+
+    def test_an_import_from_another_batch_is_refused(self, tmp_path):
+        if shutil.which("node") is None:
+            pytest.skip("node 不可用")
+        from tests.test_batch_binding import _sample
+
+        html = self._build(tmp_path, "g7_b2", [_sample("a")])
+        payload, status, _, _ = self._run(tmp_path, html, store={},
+                                          import_payload={
+                                           "batch_id": "g7_b1",
+                                           "batch_fingerprint": "bb64cb8ec42788df",
+                                           "decisions": {"a": {"decision": "accept"}}})
+        assert payload["decisions"] == {}
+        keys = [line for line in [status] if True]
+        assert keys  # status is read; the assertion below is the real check
+        assert "导入被拒绝" in status

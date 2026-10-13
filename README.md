@@ -405,6 +405,8 @@ innovation_project/
 
 `metadata` 携带 `admission_category`、`counters`、`scores`、`split`，以及集级 `label_composition` 与 `training_weights`。
 
+**浏览器存储按批次隔离**（2026-10-13 修复）：存储键是 `finalv2review.v1:<批次 id>:<内容指纹>`，页面自带**本批次的样本 id 列表**——进度只统计本批次、导出只包含本批次决定（并提示"另有 N 条属于其他批次，未导出"）、导入会核对 `batch_id` 与 `batch_fingerprint`，不符即拒绝并说明。页面还记录它读取旧共享键的那一批次（`g7_b1`）：打开该批次页面时会**复制**（不移动、不删除）旧记录，因此修复前浏览器里已有的 145 条决定不会丢失，也不会串到别的批次。
+
 **审核记录（`sft_data/review/dispositions.jsonl`）**：一行一条，`{"sample_id", "reviewer", "decision", "notes", "recorded_at"}`，同一样本以最新为准（日志式，永不重写）。浏览器里做的决定存在 `localStorage`，导出的 `review_decisions.json`（或填好的 `worklist.csv`）由 `record_review.py --import` 读入，走与单条记录相同的校验；重复导入同一文件不会重复记账。**审核是一次全量通读**，`review_sets.json` 里的 `high_risk` 只是提示重点，不触发第二次阅读。
 
 ---

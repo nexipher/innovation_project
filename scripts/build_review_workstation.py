@@ -547,13 +547,26 @@ REVIEW_SCRIPT = r"""
      `BATCH`, which is undefined — so the export button threw on click and the
      page looked like it simply ignored the user. */
   var BATCH = window.__batch || { id: '', fingerprint: '' };
-  var KEY = 'finalv2review.v1';
+  var SAMPLES = window.__samples || [];
+  var LEGACY_KEY = 'finalv2review.v1';
+  /* Batch-scoped storage: id and content fingerprint both go into the key, so
+     two batches cannot share progress or leak decisions into each other's
+     export.  (The old shared key is only ever read, never written or
+     removed.) */
+  var KEY = LEGACY_KEY + ':' + (BATCH.id || 'batch') + ':' + (BATCH.fingerprint || 'nofp');
   var state = load();
   var storageOk = true;
 
   function load() {
     try {
-      var parsed = JSON.parse(localStorage.getItem(KEY)) || {};
+      var raw = localStorage.getItem(KEY);
+      if (raw === null && BATCH.id && BATCH.id === window.__legacy_batch) {
+        // The reviewer's work on the batch that used the shared key: copy it
+        // in (once), so progress does not look erased.  The old entry stays.
+        raw = localStorage.getItem(LEGACY_KEY);
+        if (raw !== null) { console.log('已从旧的共享存储键迁移本批次决定（旧数据保留）'); }
+      }
+      var parsed = JSON.parse(raw) || {};
       if (!parsed.decisions) { parsed.decisions = {}; }
       if (!parsed.reviewer) { parsed.reviewer = ''; }
       return parsed;
@@ -569,15 +582,33 @@ REVIEW_SCRIPT = r"""
     var box = document.getElementById('save-status');
     if (box) { box.textContent = message; }
   }
-  function count() {
-    return Object.keys(state.decisions || {}).filter(function (k) {
-      return state.decisions[k] && state.decisions[k].decision;
-    }).length;
+  function isOurs(id) {
+    return SAMPLES.length === 0 || SAMPLES.indexOf(id) !== -1;
   }
+  function ownDecisions() {
+    var out = {};
+    Object.keys(state.decisions || {}).forEach(function (id) {
+      if (isOurs(id) && state.decisions[id] && state.decisions[id].decision) {
+        out[id] = state.decisions[id];
+      }
+    });
+    return out;
+  }
+  function foreignCount() {
+    var n = 0;
+    Object.keys(state.decisions || {}).forEach(function (id) {
+      if (!isOurs(id) && state.decisions[id] && state.decisions[id].decision) { n += 1; }
+    });
+    return n;
+  }
+  function count() { return Object.keys(ownDecisions()).length; }
   function refreshStatus() {
     var total = document.body.getAttribute('data-samples');
     var decided = count();
-    flash('本地已记录 ' + decided + (total ? ' / ' + total : '') + ' 条（导出后才写入仓库）');
+    var foreign = foreignCount();
+    flash('本地已记录 ' + decided + (total ? ' / ' + total : '') + ' 条本批次决定'
+          + (foreign ? '（另有 ' + foreign + ' 条属于其他批次，不计入本页）' : '')
+          + '（导出后才写入仓库）');
     var progress = document.getElementById('progress');
     if (progress && total) { progress.textContent = decided + ' / ' + total; }
   }
@@ -592,7 +623,9 @@ REVIEW_SCRIPT = r"""
       exported_at: new Date().toISOString(),
       batch_id: BATCH.id,
       batch_fingerprint: BATCH.fingerprint,
-      decisions: state.decisions || {}
+      // Only this batch's decisions: another batch's entries under the same
+      // store would otherwise be exported under this batch's fingerprint.
+      decisions: ownDecisions()
     };
     var text = JSON.stringify(payload, null, 2);
     var blob = new Blob([text], { type: 'application/json' });
@@ -604,21 +637,41 @@ REVIEW_SCRIPT = r"""
     // indistinguishable from a broken button, and a blocked download on a
     // file:// page looks exactly the same to the person clicking.
     console.log('导出的决定（可在此复制）：\n' + text);
-    flash('已导出 ' + Object.keys(payload.decisions).length + ' 条决定到 '
-          + link.download + '（控制台也留了一份）');
+    var foreign = foreignCount();
+    flash('已导出 ' + Object.keys(payload.decisions).length + ' 条本批次决定到 '
+          + link.download + '（控制台也留了一份）'
+          + (foreign ? '；另有 ' + foreign + ' 条属于其他批次，未导出' : ''));
   }
 
   function importFile(file) {
     var reader = new FileReader();
     reader.onload = function () {
-      try {
-        var parsed = JSON.parse(reader.result);
-        var incoming = parsed.decisions || parsed;
-        Object.keys(incoming).forEach(function (id) { state.decisions[id] = incoming[id]; });
-        if (parsed.reviewer) { state.reviewer = parsed.reviewer; }
-        persist(); refreshStatus(); renderIndex();
-        flash('已导入 ' + Object.keys(incoming).length + ' 条');
-      } catch (e) { flash('导入失败：不是有效的 JSON'); }
+      var parsed;
+      try { parsed = JSON.parse(reader.result); }
+      catch (e) { flash('导入失败：不是有效的 JSON（' + e.message + '）'); return; }
+      // An import is only valid for the batch it was exported from; applying
+      // another batch's file here would attach its decisions to this batch's
+      // fingerprint.
+      if (!parsed || !parsed.decisions || typeof parsed.decisions !== 'object') {
+        flash('导入失败：文件里没有 decisions 字段（旧格式的共享存储不能直接导入）');
+        return;
+      }
+      if (parsed.batch_id !== BATCH.id || parsed.batch_fingerprint !== BATCH.fingerprint) {
+        flash('导入被拒绝：该文件属于批次 ' + (parsed.batch_id || '未知') + '（指纹 '
+              + (parsed.batch_fingerprint || '未知') + '），当前页面是 '
+              + BATCH.id + '（指纹 ' + BATCH.fingerprint + '）。请打开对应批次的工作台再导入。');
+        return;
+      }
+      var incoming = parsed.decisions;
+      var applied = 0, ignored = 0;
+      Object.keys(incoming).forEach(function (id) {
+        if (!isOurs(id)) { ignored += 1; return; }
+        state.decisions[id] = incoming[id]; applied += 1;
+      });
+      if (parsed.reviewer) { state.reviewer = parsed.reviewer; }
+      persist(); refreshStatus(); renderIndex();
+      flash('已导入 ' + applied + ' 条本批次决定'
+            + (ignored ? '（忽略 ' + ignored + ' 条不在本批次内）' : ''));
     };
     reader.readAsText(file);
   }
@@ -865,17 +918,38 @@ def render_sample_page(sample: dict, trajectory: Optional[dict],
 <h2>本页的修改历史（浏览器本地）</h2>
 <ul id="history" class="note"></ul>
 <script>window.__review = {{sample: {json.dumps(sample['id'], ensure_ascii=False)}}};</script>
-{batch_script(batch["id"], batch["fingerprint"])}
+{batch_script(batch["id"], batch["fingerprint"], batch.get("sample_ids") or [sample["id"]])}
 <script>{REVIEW_SCRIPT}</script>
 </body></html>
 """
 
 
-def batch_script(batch_id: str, fingerprint: str) -> str:
-    """The page carries which batch it is showing; the export repeats it."""
+# The key the first review pages used, before batches were separated.  Pages
+# built for this batch may *copy* those decisions into their own key (the
+# reviewer's work is not lost); nothing ever deletes the old entry.
+LEGACY_STORE_BATCH = "g7_b1"
+
+
+def batch_script(batch_id: str, fingerprint: str,
+                 sample_ids: Optional[List[str]] = None) -> str:
+    """
+    The page carries which batch it is showing, which samples are its own, and
+    which store the pre-separation pages used.
+
+    One localStorage key shared by every batch meant the progress readout
+    counted the reviewer's 145 g7_b1 decisions against the 56 g7_b2 samples,
+    and an export from the new page could carry the old decisions under the
+    new fingerprint.  The page therefore knows its own sample ids: progress
+    counts only those, export emits only those, and import refuses anything
+    that does not name this batch and this fingerprint.
+    """
     return ("<script>window.__batch = "
             + json.dumps({"id": batch_id, "fingerprint": fingerprint},
                          ensure_ascii=False)
+            + ";window.__samples = "
+            + json.dumps(sorted(sample_ids or []), ensure_ascii=False)
+            + ";window.__legacy_batch = "
+            + json.dumps(LEGACY_STORE_BATCH, ensure_ascii=False)
             + ";</script>")
 
 
@@ -931,7 +1005,7 @@ def render_index(samples: List[dict], sets: dict, page_path: str,
 <table><thead><tr><th>样本</th><th>桶</th><th>真值</th><th>策略</th><th>处理</th><th>生成器</th>
 <th>模型判定</th><th>后验 P(Fake)</th><th>高风险</th><th>你的结论</th><th>备注</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table>
-{batch_script(batch["id"], batch["fingerprint"])}
+{batch_script(batch["id"], batch["fingerprint"], batch.get("sample_ids"))}
 <script>{REVIEW_SCRIPT}</script>
 </body></html>
 """
@@ -952,7 +1026,8 @@ def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
     # G7 entry 4: the page says which batch (and which version of it) it is
     # showing, and the export repeats it — an export made against different
     # content is refused at import rather than applied to whatever is there.
-    batch = {"id": batch_id, "fingerprint": batch_fingerprint(samples)}
+    batch = {"id": batch_id, "fingerprint": batch_fingerprint(samples),
+             "sample_ids": [sample["id"] for sample in samples]}
     trajectories = load_trajectories(trajectories_dir)
     variants = load_variant_entries(variants_manifest)
     split = load_split(split_path)
