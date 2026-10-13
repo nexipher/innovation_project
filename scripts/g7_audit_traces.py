@@ -46,15 +46,10 @@ NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 TAG_TO_SOURCE = {"probe": "probe_dino_expert", "noise": "noise_expert",
                  "jpeg": "jpeg_expert", "freq": "frequency_expert_v2"}
-# The expert vocabulary lives with the ledger so the audit and the runtime
-# check cannot drift apart.
-
-SOURCE_WORDS = {
-    "probe_dino_expert": ("probe", "鉴别器", "判别分数", "判别器", "检测器", "aigi"),
-    "noise_expert": ("噪声", "noise"),
-    "jpeg_expert": ("jpeg", "压缩"),
-    "frequency_expert_v2": ("频域", "频率", "频谱", "freq"),
-}
+# The expert vocabulary comes from `utils.evidence_ledger` (imported above).
+# A local copy used to sit here and shadow the import, so the audit and the
+# runtime check *did* drift — the audit could not see "探针" at all.  One
+# definition, one behaviour.
 
 # A sentence *claims a measurement* when it pairs a subject with a result verb
 # and something value-like.  Advice, absence and hypotheses are excluded by the
