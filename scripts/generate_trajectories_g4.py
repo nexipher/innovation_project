@@ -52,6 +52,7 @@ from mllm.mock_client import MockMLLMClient
 from scripts.qwen_gain_baseline import _pseudo_probability
 from state_machine.controller import ForensicStateMachine
 from utils import config_fingerprint
+from utils.final_v2 import RECORD_SCHEMA
 from utils.logger import SessionLogger
 
 VARIANTS_MANIFEST = os.path.join(PROJECT_ROOT, "sft_data", "variants", "manifest.json")
@@ -287,6 +288,10 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
         # §4.17 R3: what the evidence ledger said about the closing turn —
         # carried here so the conversion step can refuse a session whose
         # fabrication survived its one correction instead of rendering it away.
+        # The schema this record was written under: the conversion gate
+        # requires the ledger fields from `g7_r4` on, and treats absent keys
+        # in *older* records as legacy rather than as failures.
+        "record_schema": RECORD_SCHEMA,
         "evidence_check": verdict.get("evidence_check"),
         # §4.17 R4: which turn the adopted conclusion came from, whether it
         # parsed, and whether any call in it was left unexecuted — the

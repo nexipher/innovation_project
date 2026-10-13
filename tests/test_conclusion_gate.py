@@ -147,3 +147,23 @@ class TestConversionRefusesAndKeepsTheOriginal:
         assert metadata["gated"] == 0
         assert metadata["legacy_without_evidence_check"] == 1
         assert json.loads((out / "sft_gated.json").read_text(encoding="utf-8")) == []
+
+
+class TestTheSchemaIsEnforcedForNewBatches:
+    """A missing field in a batch that declares the schema is a defect."""
+
+    def test_a_declared_record_without_the_fields_is_refused(self):
+        record = _trajectory(record_schema="g7_r4")
+        record.pop("evidence_check", None)
+        assert conclusion_gate(record) == "evidence_check_missing_for_schema"
+        record = _trajectory(record_schema="g7_r4", evidence_check=PASS)
+        assert conclusion_gate(record) == "conclusion_missing_for_schema"
+
+    def test_a_declared_record_with_the_fields_passes(self):
+        record = _trajectory(record_schema="g7_r4", evidence_check=PASS,
+                             conclusion=OK_CONCLUSION)
+        assert conclusion_gate(record) is None
+
+    def test_an_undeclared_record_keeps_the_legacy_path(self):
+        """History is not retroactively re-judged — but it is counted."""
+        assert conclusion_gate(_trajectory()) is None

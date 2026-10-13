@@ -201,11 +201,15 @@ class ForensicStateMachine:
                     system_texts=self._system_texts(conversation),
                 )
                 v1_findings = v1_ledger.findings(raw_output)
+                v1_defects = [f for f in v1_findings
+                              if f.get("severity", "defect") == "defect"]
                 candidate_verdict["evidence_check"] = {
-                    "status": "pass" if not v1_findings else "failed",
-                    "findings": v1_findings,
+                    "status": "pass" if not v1_defects else "failed",
+                    "findings": v1_defects,
+                    "candidates": [f for f in v1_findings if f not in v1_defects],
                     "entry": "v1_candidate",
                     "note": "v1 协议冻结：只标注不纠正",
+                    "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式",
                 }
                 candidate_verdict["conclusion"] = {
                     "source": "v1_candidate",
@@ -481,20 +485,38 @@ class ForensicStateMachine:
                     adopted_calls = [name for name, _ in Parser.extract_all_calls(final_output)]
                     adopted_calls_executed = False
                 findings = ledger.findings(final_output)
-                evidence_check = {"status": "pass", "findings": [], "entry": adopted_from}
-                if findings:
-                    correction = correction_note(ledger, findings)
+                # §4.17 R5: only *defects* are corrected automatically.  A
+                # candidate finding (a direction read out of a near-chance
+                # value, a number that only exists in an expert's prose) is a
+                # judgement call: it is recorded for a person and never spent
+                # on the single correction the session gets.
+                defects = [f for f in findings if f.get("severity", "defect") == "defect"]
+                candidates = [f for f in findings
+                              if f.get("severity", "defect") != "defect"]
+                evidence_check = {
+                    "status": "pass", "findings": [], "candidates": findings,
+                    "entry": adopted_from,
+                    "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式",
+                }
+                if defects:
+                    correction = correction_note(ledger, defects)
                     corrected = self._request_conclusion(
                         image_path, conversation, correction)
                     model_turn_count += 1
                     remaining = ledger.findings(corrected)
+                    remaining_defects = [f for f in remaining
+                                         if f.get("severity", "defect") == "defect"]
                     evidence_check = {
-                        "status": "pass_after_correction" if not remaining else "failed",
-                        "findings": findings,
-                        "after_correction": remaining,
+                        "status": "pass_after_correction" if not remaining_defects else "failed",
+                        "findings": defects,
+                        "after_correction": remaining_defects,
+                        "candidates": candidates + [
+                            f for f in remaining
+                            if f.get("severity", "defect") != "defect"],
                         "correction_note": correction,
                         "original_closing": final_output[-4000:],
                         "entry": adopted_from,
+                        "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式",
                     }
                     final_output = corrected
                     # Calls written into a correction turn are never executed:
@@ -807,5 +829,10 @@ class ForensicStateMachine:
                 "conclusion_verdict_parse": conclusion.get("verdict_parse"),
                 "conclusion_calls_unexecuted": bool(
                     conclusion.get("calls") and not conclusion.get("calls_executed")),
+                # Findings a person still has to look at (§4.17 R5)
+                "evidence_candidates": len((evidence_check or {}).get("candidates") or []),
+                "evidence_candidate_kinds": sorted({
+                    finding.get("kind") for finding in
+                    (evidence_check or {}).get("candidates") or []}),
             })
         return counters

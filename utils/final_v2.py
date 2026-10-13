@@ -34,6 +34,9 @@ from config import PROJECT_ROOT
 
 SECTIONS = ("observation", "forensic_evidence", "reasoning", "verdict")
 SCHEMA_VERSION = "final_v2"
+# The trajectory schema that carries the evidence ledger's fields.  A record
+# declaring it must have them; records without the declaration are legacy.
+RECORD_SCHEMA = "g7_r4"
 
 # Confidence at which a label has to be backed by admissible evidence.
 CONFIDENT_THRESHOLD = 0.8
@@ -95,6 +98,13 @@ def conclusion_gate(record: dict) -> Optional[str]:
     `evidence_check` key at all; they are not retroactively re-judged here —
     the audit of those trajectories is a separate, recorded exercise.
     """
+    if record.get("record_schema") == RECORD_SCHEMA:
+        # A batch that declares the schema must carry its fields: a missing
+        # one is a defect in that batch, not a legacy trajectory, and must
+        # never be waved through by the compatibility path.
+        for field_name in ("evidence_check", "conclusion"):
+            if record.get(field_name) is None:
+                return f"{field_name}_missing_for_schema"
     if "evidence_check" not in record:
         return None
     check = record.get("evidence_check") or {}

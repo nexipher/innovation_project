@@ -472,7 +472,19 @@ v1 的"标签顺序 + 跨专家 strength 比较"已被替换：回放 1191 条�
 
 **四种状态各自记录，不再共用一个 `pass`**：`evidence_check.status`（检查：pass / pass_after_correction / **failed**）、`conclusion.verdict_parse`（格式）、`conclusion.calls` + `calls_executed`（结案是否混入未执行调用）、转换端 **trainable**（硬门禁）。`failed` 在**准入评分**（`admit_trajectories_g4`）与**转换**（`build_final_v2`，另写 `sft_gated.json`）两处拒收且**保留原始记录**；缺少 `evidence_check` 字段的历史轨迹按"未受该检查"计，不回溯改写。
 
-**真实数据回放**（`scripts/g7_ledger_replay.py`，只读）：g7_b1 的 210 条已落盘会话中 **20 条**会被账本拦下（19 条与 A1 审计的 `fabricated_expert_result` 会话重合；多出 1 条为 A1 漏报的真阳性，A1 的 1 条误报未被重复），**149 条已准入样本中 19 条**至少要经过一次纠正（其中多少最终判 failed 需模型在场才能确定）。
+**方向一致性**（§4.17 第 1.6 步，用户复现的漏洞）：账本此前只校验"数值属于谁"，不校验"用它推出什么方向"。`PROBE raw=0.3431、校准 P(Fake)=0.52` 被写成"表明图像更可能真实"曾完整通过。现在按**分句**读取方向断言，且要求同句含推断连接词（表明/说明/指向/支持/意味着…）、不含否定或保留措辞、且不同时提两个方向：
+
+| 发现 | 判定 | 严重度 |
+|------|------|--------|
+| `direction_conflict` | 校准方向明确（在近随机带之外）而断言相反；按最近提及的专家归属 | **defect**（触发一次纠正；未改则 failed） |
+| `direction_conflict`（basis = support 标签） | 同上但无校准，方向来自未校准的 support 标签 | candidate（基础弱，交人工） |
+| `direction_overread` | 近随机箱（[0.4, 0.6]）上断言明确方向 | candidate（人工裁决） |
+
+**发现分级**：只有 `defect` 触发自动纠正与 failed；`candidate`（方向过度解读、自由文本数值的角色问题）只记录进 trace/计数器（`evidence_candidates`），交人工。**未命中不等于已证明忠实**——该限制写进 `evidence_check.caveat`。
+
+**其余边界**：①数值归属按**最近提及**的专家（同句多专家不再互相借用）；②只命中 token 自由文本的数值记为 `text_value_as_measurement`（候选）——但专家自己带名字的子指标（`blockiness=0.8779`）算其自述，可引用；③"93.9%"按 **d+2** 位换算容差；④非陈述标记只保留"未执行／未获得结果"类——"noise 专家显示没有相机噪声"是**阴性测量**，仍受检；⑤声明 `record_schema="g7_r4"` 的新批次必须携带 `evidence_check`/`conclusion`，缺失即拒，历史记录不回溯判定。
+
+**真实数据回放**（`scripts/g7_ledger_replay.py`，只读）：g7_b1 的 210 条已落盘会话中 **21 条含 defect**（`fabricated_expert_result` 44、`direction_conflict` 3、`fabricated_value` 1；其中 20 条在已准入样本里），**2 条只有 candidate**（`direction_overread` 2、`text_value_as_measurement` 2）。与 A1 审计的 `fabricated_expert_result` 会话 19/20 重合（多出 1 条 A1 漏报的真阳性，A1 的 1 条误报未重复）。方向检查在真实数据上最初报 22 条、逐条复核后修掉误报（跨句归属、否定与保留措辞、"AI 生成探测器"被读成方向词），收敛到 3 条真阳性（同一会话中把 PROBE 低分读成"更可能是伪造"）。
 
 v2 的 stall 措辞如实描述其真实条件（**连续无新证据**，不是"文字相同"，并附真实轮数）；"重复 / 无效动作"的严格语义属于 v3。
 
