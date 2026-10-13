@@ -1807,3 +1807,17 @@
   - `README.md、CURRENT_PROGRAM_ARCHITECTURE.md、KNOWN_ISSUES.md、plan.md (Modified — 与默认值/分层/清单同步)`
 * **执行结果与验证状态**：**core 341 通过（29 秒）**；**full 分块 1140 通过 + 1 跳过（5 分 24 秒）**；`pytest --collect-only` 仍收 1141 项（打标未丢用例）。默认策略测试：`config.HALTING_POLICY == "v3"`，显式 `FORENSIC_HALTING_POLICY=v2` 时重载得到 v2、清除后回到 v3。
 * **置信度或遗留待办（TODO）**：①`module` 层尚未单独完整跑过一次（full 已覆盖其内容），下次改动可直接用 ②F3 的 GPU 依赖项（A4 观察协议、B2 状态行效果、C2 新专家评测）在 GPU 恢复前一律保持"待验证"③`psychology_video_project` 的清理问题已答复（不建议只留 models/；唯一可腾的是 14 GB 的官方申请数据，建议先隔离后删），**未执行任何删除**
+
+### 2026-10-13 23:02:23 - 同步：计划顶部与验收脚本文案仍写"默认 v2"（用户指出）
+
+* **当前操作动作**：修掉默认策略改 v3 后遗留的三处过时表述，并加防漂移测试。
+* **对应计划锚点**：plan.md 顶部「当前阶段」（本次修正处）；KNOWN_ISSUES F1
+* **核心变更说明**：
+  1. **plan.md 顶部「当前阶段」**："默认仍是 v2；当前策略必须显式启用" → "**默认策略就是当前版本 v3**；历史复算才显式 `FORENSIC_HALTING_POLICY=v2`（或 v1）"。
+  2. **README §6.4**（当前说明区）同一句同步；§0 与架构文档此前已改。
+  3. **脚本文案**：`scripts/g7_acceptance.py` 的 `--expect-policy` 提示与注释改为"当前默认已是 v3；v2 只在历史复算时显式选择"，并说明该参数的意义变为**显式声明**（比"碰巧是默认值"可靠，历史复算误留 v2 时也能挡下）；`scripts/cpu_acceptance_r5.py` 的说明改为"把策略钉在 v3 是为了不继承遗留的 v2 环境变量"，并保留自我重入。
+  4. **防漂移测试**（`tests/test_config_fingerprint.py`）：断言**当前文档区**（plan.md 历史档案分界之前、README 历史档案横幅之前、架构文档、KNOWN_ISSUES、TESTING）不出现"默认仍是 v2 / 默认是 v2 / 默认配置是 v2"等旧表述，并断言架构文档写明"默认配置就是当前版本 v3"。反向漂移（代码改回 v2 而文档说 v3）由同文件的默认值测试守住。
+  5. 历史档案区（plan.md 第 2600 行以后、操作日志）**不改**：那里的"默认仍是 v2"记录的是当时事实。
+* **涉及/修改的文件清单**：`plan.md`、`README.md`、`scripts/g7_acceptance.py`、`scripts/cpu_acceptance_r5.py`、`tests/test_config_fingerprint.py (Extended — 2 项)`
+* **执行结果与验证状态**：**core 343 通过（26 秒）**；全仓再 grep，"默认 v2"只存在于历史档案与已改写的新表述中。
+* **置信度或遗留待办（TODO）**：无新增；GPU 依赖项（F3）仍待环境恢复。

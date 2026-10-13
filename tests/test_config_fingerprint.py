@@ -176,3 +176,36 @@ class TestTheDefaultPolicyIsTheCurrentVersion:
             monkeypatch.delenv("FORENSIC_HALTING_POLICY", raising=False)
             importlib.reload(config_module)
         assert config_module.HALTING_POLICY == "v3"
+
+
+class TestTheCurrentDocsAgreeWithTheDefault:
+    """The docs said v3 while the code started in v2; the reverse drift is
+    just as easy, so the current sections are checked against the code."""
+
+    STALE = ("默认仍是 v2", "默认是 v2", "默认配置是 **v2**", "default is still v2")
+
+    def _current_text(self, path, stop_marker=None):
+        from config import PROJECT_ROOT
+
+        import os
+        with open(os.path.join(PROJECT_ROOT, path), encoding="utf-8") as handle:
+            text = handle.read()
+        if stop_marker and stop_marker in text:
+            text = text.split(stop_marker)[0]
+        return text
+
+    def test_no_current_doc_claims_the_old_default(self):
+        current = [
+            self._current_text("plan.md", "# 历史计划档案"),
+            self._current_text("README.md", "以下为历史档案"),
+            self._current_text("CURRENT_PROGRAM_ARCHITECTURE.md"),
+            self._current_text("KNOWN_ISSUES.md"),
+            self._current_text("TESTING.md"),
+        ]
+        for text in current:
+            for stale in self.STALE:
+                assert stale not in text, f"过时表述仍在当前文档中：{stale}"
+
+    def test_the_architecture_doc_states_the_default_correctly(self):
+        text = self._current_text("CURRENT_PROGRAM_ARCHITECTURE.md")
+        assert "默认配置就是当前版本 v3" in text

@@ -493,10 +493,11 @@ def main() -> None:
                         help="只选源、生成图像、写批次清单（CPU），不跑会话")
     parser.add_argument("--expect-policy", default=None,
                         help="运行策略必须与给定值一致（例如 v3）；不一致直接退出。"
-                             "默认仍是 v2，必须显式设置 FORENSIC_HALTING_POLICY 才是新策略")
+                             "（当前默认已是 v3；v2 只在历史复算时显式选择）")
     args = parser.parse_args()
 
-    # §4.17 验收前提：策略默认是 v2，新实验必须显式选择并对得上版本
+    # §4.17 验收前提：策略默认即当前版本（v3），但**必须与期望值对上**——
+    # 显式声明比“碰巧是默认值”可靠，历史复算误留 v2 时也能挡下。
     if args.expect_policy and HALTING_POLICY != args.expect_policy:
         raise SystemExit(
             f"运行策略是 {HALTING_POLICY}，期望 {args.expect_policy}；"

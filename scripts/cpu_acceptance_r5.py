@@ -19,9 +19,9 @@ run → record → conversion → workstation — rather than per module:
      files are byte-identical before and after, and a new batch carries a
      different fingerprint.
 
-The script re-executes itself with FORENSIC_HALTING_POLICY=v3 when the
-environment does not say so: the default is still v2, and an acceptance run
-that silently used v2 rules would prove nothing.
+The script pins the policy to v3 for its own run: v3 is the default now, but
+an acceptance run that inherited a leftover FORENSIC_HALTING_POLICY=v2 would
+be measuring the wrong policy and prove nothing.
 
 Usage:
   python scripts/cpu_acceptance_r5.py

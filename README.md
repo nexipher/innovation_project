@@ -543,7 +543,7 @@ v2 由策略拥有标签：候选与后验不一致会被驳回直到模型重�
 
 后验、冲突度、工具效用仍计算，但只作**参考**记录：`final_verdict.reference = {recommendation, advisory}`、计数器 `model_label` / `reference_recommendation`。**`no_expected_gain` 降为建议**——不否决合法调用、不作为停止理由，只以一条标注"只是参考"的系统提示发送一次。模型弃权记 `model_abstained`（不是与后验"一致"）。v3 的 `confidence` 是模型自述，**不是**校准概率。
 
-**默认仍是 v2**——新实验必须显式 `FORENSIC_HALTING_POLICY=v3`，并核对报告里的策略版本、提示词指纹与校准表身份（`schema`/`fitting_group`/`digest`，已进配置指纹）；`scripts/g7_acceptance.py --expect-policy v3` 会在策略不符时直接退出，避免"用新提示词与新校准、却仍在跑旧停止规则"。
+**默认即当前版本 v3**（`config.HALTING_POLICY`）；只有历史复算才显式 `FORENSIC_HALTING_POLICY=v2`。报告必须核对策略版本、提示词指纹与校准表身份（`schema`/`fitting_group`/`digest`，已进配置指纹）；`scripts/g7_acceptance.py --expect-policy v3` 在策略不符时直接退出，避免"用新提示词与新校准、却仍在跑旧停止规则"。
 
 **状态与数值的边界**：`verdict_status` 区分 `model_concluded`（模型的合法结案，**即最终标签**，含合法 Uncertain）与 `no_parseable_conclusion`（**结案失败，不是弃权**，计数器 `model_abstained` 只认前者，校验器直接拒收）；`confidence` 是模型自报值（写 0.0 就记 0.0，缺失/越界/非有限值才回退 0.5，并视作缺失），**不是**校准概率。
 
