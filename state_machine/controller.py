@@ -30,6 +30,7 @@ from utils.parser import Parser
 from utils.reliability import ReliabilityTable
 from utils.logger import SessionLogger, log_operation
 from state_machine.evidence_rectifier import EvidenceRectifier
+from utils.evidence_ledger import Ledger as EvidenceLedger, correction_note
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 from state_machine.halting_v2 import HaltingPolicyV2
@@ -162,6 +163,8 @@ class ForensicStateMachine:
         expert_call_count = 0
         suppressed_duplicate_count = 0
         skipped_duplicate_calls = 0
+        evidence_check: dict = {"status": "not_run", "findings": []}
+        skipped_sources: List[str] = []
         measured_sources: Dict[str, str] = {}     # source_name → evidence_id
         seen_evidence_ids: set = set()
         evidence_chain: List[dict] = []
@@ -221,6 +224,8 @@ class ForensicStateMachine:
                     # buys measurements, not repetitions).
                     if source_name in measured_sources:
                         skipped_duplicate_calls += 1
+                        if source_name not in skipped_sources:
+                            skipped_sources.append(source_name)
                         notice = (
                             f"[System: {source_name} 已在本会话对整图测量过"
                             f"（{measured_sources[source_name]}），整图测量与区域无关，"
@@ -422,11 +427,35 @@ class ForensicStateMachine:
                 if accepted and (candidate_verdict or {}).get("report"):
                     model_candidate = candidate_verdict
                 else:
-                    note = self._conclusion_note(decision)
+                    # §4.17 R3: the ledger is the only authority on what was
+                    # measured, and the closing turn is where fabrications have
+                    # been appearing (45 sentences in the audit).  One
+                    # correction is allowed; both the original and the
+                    # correction are recorded, never silently dropped.
+                    ledger = EvidenceLedger.from_session(
+                        evidence_chain, skipped_sources=skipped_sources,
+                        served=list(self._experts))
+                    note = self._conclusion_note(decision, ledger)
                     final_output = self._request_conclusion(
                         image_path, conversation, note
                     )
                     model_turn_count += 1
+                    findings = ledger.findings(final_output)
+                    evidence_check = {"status": "pass", "findings": []}
+                    if findings:
+                        correction = correction_note(ledger, findings)
+                        corrected = self._request_conclusion(
+                            image_path, conversation, correction)
+                        model_turn_count += 1
+                        remaining = ledger.findings(corrected)
+                        evidence_check = {
+                            "status": "pass_after_correction" if not remaining else "failed",
+                            "findings": findings,
+                            "after_correction": remaining,
+                            "correction_note": correction,
+                            "original_closing": final_output[-4000:],
+                        }
+                        final_output = corrected
                     model_candidate = Parser.parse_verdict(final_output) or {}
                 final_verdict = {
                     "verdict": decision.verdict,
@@ -443,6 +472,7 @@ class ForensicStateMachine:
                     "policy_reason": decision.primary_reason,
                     "policy_reasons": list(decision.all_reasons),
                     "model_candidate": model_candidate.get("verdict"),
+                    "evidence_check": evidence_check,
                 }
                 break
 
@@ -505,6 +535,7 @@ class ForensicStateMachine:
             skipped_duplicate_calls=skipped_duplicate_calls,
             policy_decision=policy_decision,
             available_experts=list(self._experts),
+            evidence_check=evidence_check,
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -594,24 +625,29 @@ class ForensicStateMachine:
         return HaltingPolicyV2.expert_weights(separations)
 
     @staticmethod
-    def _conclusion_note(decision) -> str:
-        """Frame the forced-closing turn differently per halting reason."""
+    def _conclusion_note(decision, ledger=None) -> str:
+        """
+        Frame the closing turn truthfully (§4.17 R2).
+
+        The old default asked the model to "explain why the existing tools
+        cannot reduce the uncertainty further" — a leading question, and the
+        phrasing it invited is all over the audit's `other` bucket.  The note
+        now names the real reason, states what the ledger contains, and asks
+        for a conclusion from those measurements or a plain statement of what
+        is missing.  It never suggests a label.
+        """
+        summary = ledger.summary() if ledger is not None else ""
+        tail = ("请只使用已执行的专家返回过的数值给出结论；若这些测量不足以判定，"
+                "如实说明还缺哪种测量。")
         if decision.primary_reason == HaltingPolicyV2.BUDGET_EXHAUSTED:
-            return (
-                "[System: 取证资源（Budget）已耗尽。请基于已获取的全部证据撰写"
-                "最终报告；结论标签由系统按校准后验给出，你只需如实描述证据与不确定性。]"
-            )
-        if HaltingPolicyV2.CONFLICT_UNRESOLVED in decision.all_reasons:
-            return (
-                "[System: 法证证据出现强冲突且无法继续取证（疑罪从无 — Conflict Halting）。"
-                "请进行双向反思，说明冲突双方的物理依据与不确定性。]"
-            )
-        return (
-            # "no expected gain" is the policy's *estimate*, not a proof that no
-            # tool could help; the wording has to say so (plan.md §4.11 E).
-            "[System: 当前策略估计继续调用收益不足（no_expected_gain）。请基于已获取"
-            "的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]"
-        )
+            head = "[System: 取证预算已耗尽，本次会话到此结束。"
+        elif HaltingPolicyV2.CONFLICT_UNRESOLVED in decision.all_reasons:
+            head = "[System: 证据之间存在未解决的冲突，且不再有新的取证。"
+        elif decision.primary_reason == HaltingPolicyV2.MODEL_STALLED:
+            head = "[System: 你连续给出了相同的内容而没有新的测量或新的动作，会话到此结束。"
+        else:
+            head = "[System: 当前策略估计继续调用收益不足（这是策略的估计，不是对工具能力的定论）。"
+        return f"{head}{summary}。{tail}]"
 
     def _request_conclusion(
         self, image_path: str, conversation: List[Dict[str, str]], note: str
@@ -634,6 +670,7 @@ class ForensicStateMachine:
         skipped_duplicate_calls: int = 0,
         policy_decision=None,
         available_experts: Optional[List[str]] = None,
+        evidence_check: Optional[dict] = None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -672,5 +709,7 @@ class ForensicStateMachine:
                 # Which tokens were read at less than full weight, and after whom.
                 "redundancy_discounts": HaltingPolicyV2.discount_report(
                     evidence_chain or []),
+                # The evidence ledger's verdict on the closing turn (§4.17 R3).
+                "evidence_check_status": (evidence_check or {}).get("status"),
             })
         return counters

@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
 from utils.batch import load_trajectory_records
+from utils.evidence_ledger import SOURCE_WORDS
 
 DEFAULT_TRACES = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1")
 OUTPUT_PATH = os.path.join(PROJECT_ROOT, "calibration", "g7_audit_raw_traces.json")
@@ -45,6 +46,9 @@ NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 TAG_TO_SOURCE = {"probe": "probe_dino_expert", "noise": "noise_expert",
                  "jpeg": "jpeg_expert", "freq": "frequency_expert_v2"}
+# The expert vocabulary lives with the ledger so the audit and the runtime
+# check cannot drift apart.
+
 SOURCE_WORDS = {
     "probe_dino_expert": ("probe", "鉴别器", "判别分数", "判别器", "检测器", "aigi"),
     "noise_expert": ("噪声", "noise"),
