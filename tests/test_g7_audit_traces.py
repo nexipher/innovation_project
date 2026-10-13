@@ -161,3 +161,78 @@ class TestTheAdjudicationFile:
         for cls, entries in adj["adjudication"].items():
             for status, rows in entries.items():
                 assert adj["summary"][cls][status] == len(rows), (cls, status)
+
+
+class TestAbstentionDiagnosis:
+    """G7 §4.17 A3: the four moments stay apart, and reasons are candidates."""
+
+    def test_the_verdicts_of_every_turn_are_collected_in_order(self):
+        from scripts.g7_abstention_diagnosis import parse_verdicts
+
+        trace = {"conversations": [
+            {"from": "gpt", "value": '<verdict>{"verdict": "Uncertain"}</verdict>'},
+            {"from": "user", "value": "x"},
+            {"from": "gpt", "value": '<reasoning>…</reasoning>\n'
+                                    '<verdict>{"verdict": "Fake"}</verdict>'}]}
+        verdicts, failures = parse_verdicts(trace)
+        assert verdicts == ["Uncertain", "Fake"] and failures == 0
+
+    def test_an_unparseable_verdict_is_counted_not_swallowed(self):
+        from scripts.g7_abstention_diagnosis import parse_verdicts
+
+        trace = {"conversations": [{"from": "gpt", "value": "<verdict>{broken</verdict>"}]}
+        verdicts, failures = parse_verdicts(trace)
+        assert verdicts == [] and failures == 1
+
+    def test_a_near_neutral_session_is_attributed_to_the_calibration(self):
+        from scripts.g7_abstention_diagnosis import classify
+
+        trace = _trace("该分数接近随机，不足以支撑判定。")
+        findings = classify(trace, _record(_token(raw=0.5, p_fake=0.52)))
+        assert "near_chance_calibration" in findings
+
+    def test_demanding_another_expert_with_a_decisive_signal_is_suspicious(self):
+        from scripts.g7_abstention_diagnosis import classify
+
+        trace = _trace("由于没有其他专家可以提供额外验证，我们无法进一步降低不确定性。")
+        findings = classify(trace, _record(_token(raw=0.98, p_fake=1.0)))
+        assert "demands_second_expert" in findings
+
+    def test_a_colour_mismatch_is_not_an_evidentiary_conflict(self):
+        from scripts.g7_abstention_diagnosis import classify
+
+        trace = _trace("眼睛周围的毛发颜色不一致，可能存在合成痕迹。")
+        findings = classify(trace, _record(_token(raw=0.9, p_fake=0.95)))
+        assert "real_conflict_or_limit" not in findings
+
+    def test_denying_a_conflict_is_not_a_conflict(self):
+        from scripts.g7_abstention_diagnosis import classify
+
+        trace = _trace("两个专家的测量在各自领域内都合理，且没有直接冲突。")
+        findings = classify(trace, _record(_token(raw=0.9, p_fake=0.95)))
+        assert "real_conflict_or_limit" not in findings
+
+    def test_a_real_applicability_limit_is_recognised(self):
+        from scripts.g7_abstention_diagnosis import classify
+
+        trace = _trace("单独的 JPEG 压缩痕迹不能确定真实性，重压缩后该证据近乎无效，"
+                       "不得作为独立判据。")
+        findings = classify(trace, _record(_token("jpeg_expert", 2.2, 0.449)))
+        assert "real_conflict_or_limit" in findings
+
+    def test_global_task_refused_for_want_of_a_region(self):
+        from scripts.g7_abstention_diagnosis import classify
+
+        trace = _trace("虽然证据指向真实，但测量覆盖整个图像，没有提供具体的可疑区域。")
+        findings = classify(trace, _record(_token(raw=0.1, p_fake=0.02)))
+        assert "global_local_confusion" in findings
+
+    def test_the_rationale_quote_is_not_a_verdict_fragment(self):
+        """The fallback used to quote `</verdict>`, which tells a reader nothing."""
+        from scripts.g7_abstention_diagnosis import rationale_sentence
+
+        trace = _trace('<reasoning>证据不足，无法确定方向。</reasoning>\n'
+                       '<verdict>{"verdict": "Uncertain"}</verdict>')
+        sentence = rationale_sentence(trace)
+        assert "无法确定" in sentence
+        assert "</verdict>" not in sentence

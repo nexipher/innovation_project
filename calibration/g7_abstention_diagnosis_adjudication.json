@@ -1,0 +1,224 @@
+{
+ "adjudicated_at": "2026-10-13",
+ "method": "逐条阅读机器分类给出的原句",
+ "moments": {
+  "sessions": 210,
+  "first_Fake": 10,
+  "last_Fake": 10,
+  "system_Fake": 57,
+  "first_Uncertain": 120,
+  "last_Uncertain": 123,
+  "system_Uncertain": 62,
+  "first_Real": 71,
+  "last_Real": 68,
+  "system_Real": 91,
+  "sessions_with_parse_failure": 12,
+  "first_None": 9,
+  "last_None": 9
+ },
+ "abstentions": 62,
+ "abstentions_admitted": 27,
+ "by_reason": {
+  "other": 24,
+  "real_conflict_or_limit": 9,
+  "near_chance_calibration": 29,
+  "score_layer_misuse": 2,
+  "global_local_confusion": 1
+ },
+ "by_reason_admitted_subset": {
+  "other": 13,
+  "real_conflict_or_limit": 3,
+  "near_chance_calibration": 11
+ },
+ "other_split": {
+  "no_tool_protocol": {
+   "count": 7
+  },
+  "decisive_token_present": 1,
+  "generic_rationale": 16,
+  "details": {
+   "no_tool_protocol": [
+    {
+     "trajectory_id": "no-tool__ADM_977_adm_174_jpeg_q85",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "此外，天空中的云朵虽然看起来很自然，但它们的位置和形状也可能暗示了某种数字合成的可能性",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    },
+    {
+     "trajectory_id": "no-tool__ADM_977_adm_174_png",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "这张图片展示了一个海滩场景，前景是沙滩，中景是清澈的海水，背景是山脉和蓝天",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    },
+    {
+     "trajectory_id": "no-tool__BigGAN_999_biggan_00020_png",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "然而，仅凭视觉检查无法确定图像是否为AI生成或篡改",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    },
+    {
+     "trajectory_id": "no-tool__Glide_GLIDE_1000_200_06_674_glide_00127_jpeg_q85",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "然而，仅凭这些观察无法确定图像是否为AI生成或真实拍摄",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    },
+    {
+     "trajectory_id": "no-tool__Glide_GLIDE_1000_200_06_674_glide_00127_png",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "然而，由于缺乏更详细的视觉信息和无法访问外部工具，我们无法确定图像是否经过了编辑或合成",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    },
+    {
+     "trajectory_id": "no-tool__Real_1309de72-d92d-4106-bce0-e833a411f3fa_jpeg_q70",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "小狗的眼睛是黑色的，鼻子是黑色的，耳朵是棕色的，毛发主要是浅棕色和白色相间",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    },
+    {
+     "trajectory_id": "no-tool__SD15_174_sdv5_00135_jpeg_q70",
+     "policy": "no-tool",
+     "calls": 0,
+     "sentence": "从观察中可以看出，小狗的毛发、耳朵和眼睛都具有自然的质感和细节，没有明显的合成或编辑痕迹",
+     "reading": "无工具协议下的弃权，但未见“本图为何不能凭视觉判定”的论证"
+    }
+   ],
+   "decisive_token_present": [
+    {
+     "trajectory_id": "noise+jpeg__SD14_616_sdv4_00035_jpeg_q85",
+     "policy": "noise+jpeg",
+     "calls": 2,
+     "sentence": "同时，由于两个专家的测量结果在各自的领域内都是合理的，且没有直接冲突，因此无法通过现有工具进一步降低不确定性",
+     "reading": "有决定性校准信号，却称工具无法再降低不确定性——按 R8 可疑类待查"
+    }
+   ],
+   "generic_rationale": [
+    {
+     "trajectory_id": "noise+jpeg__ADM_977_adm_174_jpeg_q85",
+     "policy": "noise+jpeg",
+     "calls": 1,
+     "sentence": "此外，由于没有其他有效的工具或证据可以提供额外的信息来降低不确定性，因此无法进一步降低图像的真实性判断的不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__ADM_977_adm_174_jpeg_q95",
+     "policy": "noise+jpeg",
+     "calls": 2,
+     "sentence": "因此，现有工具无法进一步降低不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__BigGAN_999_biggan_00020_jpeg_q95",
+     "policy": "noise+jpeg",
+     "calls": 2,
+     "sentence": "此外，现有的工具无法提供足够的信息来进一步降低不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Glide_GLIDE_1000_200_06_674_glide_00127_jpeg_q85",
+     "policy": "noise+jpeg",
+     "calls": 1,
+     "sentence": "因此，现有工具无法进一步降低不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Midjourney_132_midjourney_198_jpeg_q85",
+     "policy": "noise+jpeg",
+     "calls": 1,
+     "sentence": "因此，基于现有证据，我们无法得出图像真实性的明确结论",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Real_1309de72-d92d-4106-bce0-e833a411f3fa_jpeg_q95",
+     "policy": "noise+jpeg",
+     "calls": 1,
+     "sentence": "现有工具无法进一步降低不确定性，因为它们只能提供关于图像噪声水平的信息，而无法解释图像中眼睛周围的毛发看起来不自然的原因",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Real_1309de72-d92d-4106-bce0-e833a411f3fa_png",
+     "policy": "noise+jpeg",
+     "calls": 2,
+     "sentence": "因此，现有工具无法进一步降低不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Real_4267f8b2-3c25-4920-913b-25696e99e3e3_jpeg_q85",
+     "policy": "noise+jpeg",
+     "calls": 2,
+     "sentence": "因此，根据现有证据，我们无法确定图像的真实性和伪造性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Real_e1d5eb10-29f2-4018-ad94-a0901e94bdf1_jpeg_q85",
+     "policy": "noise+jpeg",
+     "calls": 2,
+     "sentence": "然而，由于没有其他更具体的证据来进一步缩小可能性范围，我们无法得出一个明确的结论",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__SD15_174_sdv5_00135_jpeg_q95",
+     "policy": "noise+jpeg",
+     "calls": 1,
+     "sentence": "综合考虑现有证据，我们倾向于认为图像的真实性存在不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "noise+jpeg__Wukong_479_wukong_image188_jpeg_q95",
+     "policy": "noise+jpeg",
+     "calls": 1,
+     "sentence": "因此，现有工具无法进一步降低不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "probe+noise__ADM_977_adm_174_jpeg_q85",
+     "policy": "probe+noise",
+     "calls": 2,
+     "sentence": "由于现有工具仅能提供相对较低的不确定性，且没有新的工具能够提供额外的诊断信息来降低不确定性，因此无法得出更明确的结论",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "probe+noise__Real_1309de72-d92d-4106-bce0-e833a411f3fa_jpeg_q95",
+     "policy": "probe+noise",
+     "calls": 2,
+     "sentence": "Expert Target & Hypothesis: <call_probe>[0, 0, 504, 336]</call_probe> — 检查整体图像的AI生成概率",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "probe+noise__Real_1309de72-d92d-4106-bce0-e833a411f3fa_png",
+     "policy": "probe+noise",
+     "calls": 2,
+     "sentence": "综合考虑以上两点，现有的工具不足以提供足够的证据来确定图像的真实性和伪造性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "probe+noise__Real_e1d5eb10-29f2-4018-ad94-a0901e94bdf1_jpeg_q95",
+     "policy": "probe+noise",
+     "calls": 2,
+     "sentence": "综合来看，现有工具提供的信息不足以得出明确结论",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    },
+    {
+     "trajectory_id": "probe+noise__VQDM_VQDM_1000_200_04_495_vqdm_00035_png",
+     "policy": "probe+noise",
+     "calls": 2,
+     "sentence": "因此，现有工具无法进一步降低不确定性",
+     "reading": "泛化措辞（未引用校准值），归“依据不明”，需人工判读"
+    }
+   ]
+  }
+ },
+ "notes": {
+  "near_chance_calibration": "29 条由 token 判据机械认定（全部 |2p−1|≤0.2），成立",
+  "real_conflict_or_limit": "9 条逐条读过：8 条是真实冲突陈述，1 条引用“重压缩后近乎无效，不得作为独立判据”属范例；其中一条同时含逻辑错误（冲突⇒两类都不是）",
+  "global_local_confusion": "1 条，教科书级：“测量覆盖整图，没有提供具体的可疑区域”被当作不能判定全局的原因",
+  "score_layer_misuse": "2 条，与 A1 的确认集合一致",
+  "other": "24 条三分：7 无工具协议、1 有决定性信号（可疑）、16 泛化措辞（依据不明）",
+  "moments": "首次候选 Uncertain 120 / 最后候选 123 / 系统标签 62：**61 个会话里模型最终说 Uncertain 而系统给了标签**；另有 12 个会话存在无法解析的 verdict 标签"
+ }
+}
