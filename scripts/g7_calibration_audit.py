@@ -147,11 +147,23 @@ def sample_series(g2_name: str, group: str) -> Tuple[List[float], List[int], Lis
     return values, labels, sources
 
 
+PROBE_CELLS = ("png", "jpeg_q95", "jpeg_q85", "jpeg_q70")
+
+
 def probe_series(group: str) -> Tuple[List[float], List[int], List[str]]:
+    """
+    PROBE scores on the same cells the runtime table uses.
+
+    The first version took every row of the report — native and the seven
+    perturbations included, 464 rows against the table's 248 — so the mapping
+    comparison was between different sample sets and its numbers could not be
+    read as a statement about the table.  Version must match before anything is
+    compared.
+    """
     path = PROBE_TEMPLATE.format(group=group)
     if not os.path.exists(path):
         return [], [], []
-    rows = _load(path)["rows"]
+    rows = [r for r in _load(path)["rows"] if r.get("treatment") in PROBE_CELLS]
     values = [float(r["score"]) for r in rows]
     labels = [1 if r["label"] == "Fake" else 0 for r in rows]
     sources = [r["source_id"] for r in rows]
@@ -265,6 +277,8 @@ def compare_mappings() -> dict:
 
         entry = {
             "fit_on": "A", "evaluated_on": "B",
+            "fit_cells": (list(PROBE_CELLS) if g2_name == "probe_dino"
+                          else list(MATCHED_CELLS)),
             "fit_samples": len(a_values), "eval_samples": len(b_values),
             "empirical_bins": evaluate_mapping(
                 b_values, b_labels, b_sources, lambda v: bin_probability(bins, v)),

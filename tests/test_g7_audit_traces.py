@@ -236,3 +236,42 @@ class TestAbstentionDiagnosis:
         sentence = rationale_sentence(trace)
         assert "无法确定" in sentence
         assert "</verdict>" not in sentence
+
+
+class TestLabelTransitions:
+    """G7 §4.17 correction 1: the matrix, never a subtraction."""
+
+    def test_the_matrix_counts_every_direction(self):
+        from scripts.g7_label_transitions import transitions
+
+        report = transitions()
+        matrix = report["matrix"]
+        assert sum(matrix.values()) == 210
+        headline = report["headline"]
+        # the four movements are counted separately and cannot be derived from
+        # each other by arithmetic on aggregates
+        assert headline["uncertain_overridden_to_label"] == 68
+        assert headline["label_overridden_to_uncertain"] == 7
+        assert headline["label_overridden_to_other_label"] == 1
+        assert headline["no_parseable_verdict_but_labeled"] == 9
+        assert headline["uncertain_kept"] == 55
+
+    def test_every_cell_has_the_ids_behind_it(self):
+        from scripts.g7_label_transitions import transitions
+
+        report = transitions()
+        for cell, count in report["matrix"].items():
+            if count:
+                assert len(report["ids"][cell]) == count, cell
+
+    def test_the_headline_is_not_a_subtraction(self):
+        """123 model-Uncertains minus 62 system-Uncertains = 61, and it is wrong."""
+        from scripts.g7_label_transitions import transitions
+
+        report = transitions()
+        matrix = report["matrix"]
+        model_uncertain = sum(v for k, v in matrix.items() if k.startswith("Uncertain->"))
+        system_uncertain = sum(v for k, v in matrix.items() if k.endswith("->Uncertain"))
+        assert model_uncertain == 123 and system_uncertain == 62
+        assert model_uncertain - system_uncertain == 61
+        assert report["headline"]["uncertain_overridden_to_label"] == 68 != 61
