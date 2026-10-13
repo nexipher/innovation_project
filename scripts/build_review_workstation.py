@@ -134,6 +134,18 @@ def load_samples(final_v2_dir: str = FINAL_V2_DIR) -> List[dict]:
     return samples
 
 
+def load_trace(record: Optional[dict]) -> Optional[dict]:
+    """The raw session a trajectory record came from (None when unavailable)."""
+    path = (record or {}).get("trace_path")
+    if not path:
+        return None
+    try:
+        with open(os.path.join(PROJECT_ROOT, path), encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return None
+
+
 def load_trajectories(directory: str = TRAJECTORIES_DIR) -> Dict[str, dict]:
     """Trajectory records by id (the batch directory also holds summaries)."""
     from utils.batch import load_trajectory_records
@@ -267,6 +279,54 @@ def conversation_html(sample: dict, page_path: str, missing: set) -> Tuple[str, 
         "masked": len(turns) - assistant,
     }
     return "".join(blocks), summary
+
+
+def fidelity_html(sample: dict, trace: Optional[dict]) -> str:
+    """
+    The raw assistant turns beside the training dialogue (§4.17 R6).
+
+    A reviewer has to be able to see what the converter did to the session:
+    which turns went in untouched, which one was replaced by the four-section
+    answer, and what was inserted into that answer.  "Faithful conversion" is
+    a claim about this view, not a property of the file.
+    """
+    if not trace:
+        return ('<h2>原始助手轮 vs 训练对话（忠实性）</h2>'
+                '<p class="note">该样本没有可用的原始轨迹（历史批次或无 trace_path）；'
+                '忠实性无法在此页核对。</p>')
+    raw_turns = [(index, turn.get("value") or "")
+                 for index, turn in enumerate(trace.get("conversations", []))
+                 if (turn.get("from") or "") == "gpt"]
+    training_turns = [turn.get("value") or "" for turn in sample.get("conversations") or []
+                      if (turn.get("from") or "").lower() in ("gpt", "assistant")]
+    fidelity = sample.get("fidelity") or {}
+    audit = (fidelity.get("dialogue_audit") or {})
+    rows = []
+    for order, (index, value) in enumerate(raw_turns):
+        if order < len(training_turns) - 1:
+            status, css = "原样进入训练对话", "keep"
+        elif order == len(training_turns) - 1:
+            status, css = "被四段式答案替换（其文本不进训练）", "replace"
+        else:
+            status, css = "收尾答案之后，未进入训练", "drop"
+        rows.append(
+            f'<div class="turn gpt"><div class="turnhead">原始助手轮 {index} ｜ '
+            f'<span class="badge {css}">{status}</span></div>'
+            f'<pre class="turnbody">{html.escape(_pretty(value))}</pre></div>')
+    if not raw_turns:
+        rows.append('<p class="note">原始轨迹中没有助手轮。</p>')
+    reasoning_source = fidelity.get("reasoning_source", "未知")
+    verbatim = fidelity.get("model_reasoning_verbatim")
+    summary = (
+        f'<p class="note">训练答案的 reasoning 来源：<strong>{html.escape(str(reasoning_source))}</strong>'
+        f'（{"模型原文保留" if verbatim else "无模型原文可保留，仅证据簿记"}）；'
+        f'整条监督对话审计：监督轮 {audit.get("supervised_turns", "?")}，'
+        f'缺陷 {audit.get("defect_count", "?")}（{", ".join(audit.get("defect_kinds") or []) or "无"}），'
+        f'候选 {audit.get("candidate_count", "?")}。</p>')
+    return ('<h2>原始助手轮 vs 训练对话（忠实性）</h2>'
+            + summary + "".join(rows)
+            + '<p class="note">插入：四段式答案中的 &lt;observation&gt; / &lt;forensic_evidence&gt; 与'
+              '证据簿记由转换器写入；模型原文之外的文字不冒充模型论证。</p>')
 
 
 # ---------------------------------------------------------------------------
@@ -672,6 +732,9 @@ STYLE = """
  .badge { font-size: 11px; padding: 1px 6px; border-radius: 8px; }
  .badge.sup { background: #e6f4ea; color: #137333; border: 1px solid #b7e1c4; }
  .badge.mask { background: #eee; color: #666; border: 1px solid #ddd; }
+ .badge.keep { background: #e6f4ea; color: #137333; border: 1px solid #b7e1c4; }
+ .badge.replace { background: #fff3e0; color: #a15c00; border: 1px solid #ffd699; }
+ .badge.drop { background: #fdecea; color: #a12622; border: 1px solid #f5c6c2; }
  .turn { border: 1px solid #e5e5e5; border-radius: 4px; margin: 8px 0; }
  .turn.gpt { border-left: 4px solid #137333; }
  .turn.user { border-left: 4px solid #9aa0a6; }
@@ -722,7 +785,8 @@ def render_sample_page(sample: dict, trajectory: Optional[dict],
                        prev_id: Optional[str] = None,
                        next_id: Optional[str] = None,
                        total_samples: int = 0,
-                       batch: Optional[dict] = None) -> str:
+                       batch: Optional[dict] = None,
+                       trace: Optional[dict] = None) -> str:
     metadata = sample.get("metadata") or {}
     verdict = sample.get("final_verdict") or {}
     tokens = sample.get("evidence_chain") or []
@@ -757,6 +821,8 @@ def render_sample_page(sample: dict, trajectory: Optional[dict],
 
 <h2>判定与置信度（各自的含义不同，别混用）</h2>
 {verdict_html(sample, trajectory, baseline)}
+
+{fidelity_html(sample, trace)}
 
 <h2>完整训练对话（共 {turns['turns']} 轮：助手 {turns['assistant']} 轮参与训练，用户/系统 {turns['masked']} 轮掩码）</h2>
 <p class="note">训练脚本只对助手轮计算 loss（<code>assistant_spans</code>）：绿色左边框的轮次就是模型要学的内容。
@@ -892,7 +958,8 @@ def build(final_v2_dir: str = FINAL_V2_DIR, output_dir: str = OUTPUT_DIR,
         with open(page_path, "w", encoding="utf-8") as handle:
             handle.write(render_sample_page(sample, trajectory, baseline, source_path,
                                             index_path, page_path, missing, reasons,
-                                            previous, following, len(ordered), batch))
+                                            previous, following, len(ordered), batch,
+                                            load_trace(trajectory)))
 
     sets = {
         "protocol": "single_pass",

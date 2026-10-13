@@ -60,6 +60,9 @@ CONTAINER_DENIALS = ("不代表", "不能作为", "不能据此", "与伪造无�
                      "不应", "不得", "不能", "而非", "而不是", "不意味着")
 
 _SECTION_PATTERN = re.compile(r"<(observation|forensic_evidence|reasoning|verdict)>(.*?)</\1>", re.S)
+# The model's own reasoning block, as it wrote it (the rendered answer uses it
+# verbatim rather than replacing it with a template).
+_REASONING_BLOCK = re.compile(r"<reasoning>\s*(.*?)\s*</reasoning>", re.S | re.I)
 _SENTENCE_SPLIT = re.compile(r"[。.;；\n]")
 
 # Grounding (2026-10-11): the assistant may cite an expert's *results* only if
@@ -178,9 +181,24 @@ def render_observation(record: dict, observation_text: str = "") -> str:
     return body
 
 
-def render_reasoning(record: dict) -> str:
-    """Support, counter-evidence, why an expert may fail, what stays uncertain."""
+def render_reasoning(record: dict, model_reasoning: str = "") -> str:
+    """
+    The model's own argument, then the evidence bookkeeping.
+
+    The section used to be built entirely from token metadata: a clean,
+    well-formed paragraph that could sit on top of an answer the model never
+    reasoned that way through — the audit found answers whose *rendered*
+    reasoning was better than the session's.  The model's own words come
+    first and verbatim; the structured blocks below are what the pipeline
+    knows about the evidence (support, counter-explanations, failure
+    conditions, the posterior), labelled as such.  Nothing is smoothed over:
+    a session whose argument is defective is refused upstream, not rewritten
+    here.
+    """
     tokens = record.get("evidence") or []
+    head = ""
+    if model_reasoning.strip():
+        head = "模型自身论证（原文，未经改写）：\n" + model_reasoning.strip() + "\n\n"
     supporting = [t for t in tokens if t.get("support") in ("Real", "AI-generated")]
     lines = []
     if supporting:
@@ -195,6 +213,8 @@ def render_reasoning(record: dict) -> str:
     if caveats:
         lines.append("专家失效条件：")
         lines += [f"- {text}" for text in caveats[:3]]
+    if head:
+        lines.insert(0, "证据簿记（由 token 生成，不是对模型论证的改写）：")
     if tokens:
         lines.append(
             f"剩余不确定性：后验 P(Fake)={record.get('posterior')}，"
@@ -208,10 +228,11 @@ def render_reasoning(record: dict) -> str:
             "剩余不确定性：本轨迹未获得工具证据（无工具协议），结论来自模型的直接视觉判断，"
             "没有测量后验可引用。"
         )
-    return "\n".join(lines)
+    return head + "\n".join(lines)
 
 
-def render_answer(record: dict, observation_text: str = "") -> str:
+def render_answer(record: dict, observation_text: str = "",
+                  model_reasoning: str = "") -> str:
     """The structured assistant turn final_v2 trains on."""
     tokens = record.get("evidence") or []
     evidence_blocks = "\n".join(render_evidence_block(t) for t in tokens)
@@ -227,7 +248,7 @@ def render_answer(record: dict, observation_text: str = "") -> str:
     return (
         f"<observation>\n{render_observation(record, observation_text)}\n</observation>\n\n"
         f"<forensic_evidence>\n{evidence_blocks or '- 本轨迹未调用工具'}\n</forensic_evidence>\n\n"
-        f"<reasoning>\n{render_reasoning(record)}\n</reasoning>\n\n"
+        f"<reasoning>\n{render_reasoning(record, model_reasoning)}\n</reasoning>\n\n"
         f"<verdict>\n{json.dumps(verdict, ensure_ascii=False)}\n</verdict>"
     )
 
@@ -255,6 +276,23 @@ def _closing_index(trace_turns: List[dict]) -> int:
     assistant = [index for index, turn in enumerate(trace_turns)
                  if turn.get("from") == "gpt"]
     return assistant[-1] if assistant else -1
+
+
+def adopted_reasoning(trace: Optional[dict]) -> str:
+    """
+    The model's own reasoning, from the turn the pipeline adopted.
+
+    `_closing_index` names that turn; its <reasoning> block is what the model
+    actually argued.  Empty when the trace predates the block or the block is
+    empty — in which case the rendered section says so instead of dressing a
+    template up as the model's reasoning.
+    """
+    trace_turns = (trace or {}).get("conversations", [])
+    index = _closing_index(trace_turns)
+    if index < 0:
+        return ""
+    block = _REASONING_BLOCK.search(trace_turns[index].get("value") or "")
+    return block.group(1).strip() if block else ""
 
 
 def render_conversation(record: dict, trace: Optional[dict] = None,
@@ -286,6 +324,7 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
                         if t.get("from") == "user"), "<image>\n请分析这张图像的真实性。")
 
     closing = _closing_index(trace_turns)
+    model_reasoning = adopted_reasoning(trace)
     turns: List[dict] = [{"from": "user", "value": task_prompt}]
     delivered = 0
     for index, turn in enumerate(trace_turns):
@@ -295,7 +334,8 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
         if not value:
             continue
         if index == closing:
-            turns.append({"from": "gpt", "value": render_answer(record, observation_text)})
+            turns.append({"from": "gpt", "value": render_answer(
+                record, observation_text, model_reasoning)})
             break
         if turn.get("from") == "gpt":
             turns.append({"from": "gpt", "value": value})
@@ -316,8 +356,47 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
         turns.append({"from": "user", "value": value})   # question or correction
     else:
         # No closing turn in the trace: end the conversation with the answer.
-        turns.append({"from": "gpt", "value": render_answer(record, observation_text)})
+        turns.append({"from": "gpt", "value": render_answer(
+            record, observation_text, model_reasoning)})
     return turns
+
+
+def audit_dialogue(record: dict) -> dict:
+    """
+    Every supervised assistant turn, judged by the same ledger (§4.17 R6).
+
+    The runtime check covers the *adopted* conclusion; the training
+    conversation keeps every earlier assistant turn as it was written, and a
+    fabrication in one of those is supervised just as much.  The turn that
+    `render_answer` replaces is excluded — its text does not survive into the
+    sample — and everything else is judged with the final ledger, so a value
+    that arrived later is still a legal quotation.
+    """
+    from utils.evidence_ledger import Ledger
+
+    trace = record.get("_trace") or {}
+    trace_turns = trace.get("conversations", [])
+    closing = _closing_index(trace_turns)
+    turns = [(index, turn.get("value") or "")
+             for index, turn in enumerate(trace_turns)
+             if (turn.get("from") or "") == "gpt" and index != closing]
+    if not turns:
+        return {"turns": 0, "defects": [], "candidates": []}
+
+    ledger = Ledger.from_session(
+        record.get("evidence") or [],
+        served=record.get("tools_served") or [],
+        system_texts=[turn.get("value") or "" for turn in trace_turns
+                      if (turn.get("from") or "") == "user"
+                      and (turn.get("value") or "").startswith("[System:")],
+    )
+    defects, candidates = [], []
+    for index, value in turns:
+        for finding in ledger.findings(value):
+            entry = {"turn": index, **finding}
+            (defects if finding.get("severity", "defect") == "defect"
+             else candidates).append(entry)
+    return {"turns": len(turns), "defects": defects, "candidates": candidates}
 
 
 def render_sample(record: dict, category: str, observation_text: str = "",
@@ -326,6 +405,8 @@ def render_sample(record: dict, category: str, observation_text: str = "",
     """Assemble a final_v2 sample from one admitted trajectory."""
     image_path = record.get("image_path") or record.get("variant_path", "")
     record = {**record, "_trace": trace}
+    model_reasoning = adopted_reasoning(trace)
+    dialogue = audit_dialogue(record)
     sample = {
         "id": f"f2_{record['trajectory_id']}",
         "image_path": image_path,
@@ -358,6 +439,19 @@ def render_sample(record: dict, category: str, observation_text: str = "",
         },
         "type": category,
         "source": "g4_admitted",
+        # Fidelity, recorded rather than assumed (§4.17 R6): whether the
+        # reasoning section carries the model's own argument verbatim, and
+        # what the whole-dialogue audit found in the supervised turns.
+        "fidelity": {
+            "model_reasoning_verbatim": bool(model_reasoning),
+            "reasoning_source": "model+bookkeeping" if model_reasoning else "bookkeeping_only",
+            "dialogue_audit": {
+                "supervised_turns": dialogue["turns"],
+                "defect_count": len(dialogue["defects"]),
+                "candidate_count": len(dialogue["candidates"]),
+                "defect_kinds": sorted({finding["kind"] for finding in dialogue["defects"]}),
+            },
+        },
         "audit": {"review_status": "pending_human", "review_method": "automated_validator"},
     }
     return sample

@@ -1648,3 +1648,23 @@
   - `tests/test_calibration_source.py (Created — 12 项)、tests/conftest.py (Modified — legacy_calibration 夹具)、tests/test_controller.py / test_evidence_check_session.py / test_probe_wiring.py (Modified — 会话机制类测试固定 pin v1 后验)`
 * **执行结果与验证状态**：**分块运行 1077 通过 + 1 跳过**（整包一次跑会被 cgroup 杀掉：本机 2 GB 且当前占用 1.6 GB，改为三块跑，全部通过）。新增测试覆盖：表自述拟合组与 split hash；G2 专家 n_samples=248（且 ≠392）；每个运行时专家都有 per-cell 分离度；已知格式用自己的格、未知格式回退池化；**png 与 q70 的权重差 > 0.4**（即 A2 缺陷的反证）；v1 表保留且仍记录旧值；构建脚本缺分组声明即失败且可复现；会话记录 `calibration_condition`
 * **置信度或遗留待办（TODO）**：①**历史批次不受影响但新批次的后验会变**——q70/q85 图上 jpeg/noise 的权重下降，参考后验与停止点会与旧批次不同；v1 表保留使对照复算可行②`scripts/g7_acceptance.py` 的旧报告仍是 v1 表下的结果，新的小批 GPU 运行才有可比的新数据③**会话机制类测试已固定 pin v1 后验**（明确记录在 conftest 注释里），新表行为由 `test_calibration_source.py` 覆盖④下一步：**忠实转换与审核**（检查整条监督对话，不用模板覆盖模型论证；把原始助手轮与训练对话并排展示）
+
+### 2026-10-13 14:29:03 - G7 §4.17 B 段第 5 步：忠实转换与整对话审计（不用模板覆盖模型论证）
+
+* **当前操作动作**：按用户第三次给定顺序第 4 项——转换端不再用模板替换模型论证；审计**整条被监督对话**（不只被采用的结案）；弱证据筛查接入账本；工作台并排展示原始助手轮与训练对话。CPU only，不生成新数据、不训练、不动 GPU。
+* **对应计划锚点**：plan.md §4.17（B 段第 5 步；对应交接文档 B5 与用户顺序第 4 项）
+* **核心变更说明**：
+  1. **模型论证原样保留（`render_reasoning`）**：`<reasoning>` 段现在以"**模型自身论证（原文，未经改写）**"开头，取自被采用结案轮的 `<reasoning>` 块（`adopted_reasoning(trace)`）；其余内容以"**证据簿记（由 token 生成，不是对模型论证的改写）**"单独标注。样本记录 `fidelity.model_reasoning_verbatim` / `reasoning_source`；轨迹无原文时如实写 `bookkeeping_only`，不把模板当成模型的话
+  2. **整对话审计（`audit_dialogue`）**：以**最终证据链**为账本，逐轮检查 trace 中**所有助手轮**（排除被四段式答案替换的那一轮——它的文本不进样本），并处理"先前轮次引用了后续才返回的数值"这类时序问题（用最终账本判定）。`build_final_v2` 在渲染前调用：任何 defect → **拒收**，`sft_gated.json` 记 `reason=supervised_turn_fabrication`、轮号与类型；**原始轨迹不改写**
+  3. **筛查器接入账本（`utils/weak_evidence.py`）**：新增 `ledger_flags`（分数层次混用 / 数值归属 / 虚构工具 / 虚构数值 / 校准方向误读 / 自由文本数值 / 跳过请求当新测量）、`localisation_flags`（**整图测量被写成区域结论**）、`label_report_flags`（**标签与结案文本方向相反**；结案 JSON 先剥离，避免标签自身抵消检测）。旧的近随机"拔高"检查原样保留，两类叠加返回
+  4. **工作台并排展示（`fidelity_html`）**：样本页新增"**原始助手轮 vs 训练对话（忠实性）**"，逐轮标注"原样进入训练 / 被四段式答案替换 / 未进入训练"，并显示 reasoning 来源（模型原文保留 / 仅证据簿记）与整对话审计计数；无轨迹时如实说明无法核对
+  5. **旧批次实测（只读）**：对已落盘的 g7_b1 的 145 条样本跑扩展筛查 → **19 条被标记**：`global_evidence_localised` 17、`text_value_as_measurement` 7、`label_report_conflict` 5、`direction_conflict` 2（与 A 段"68 条模型结论被静默覆盖"的结论同向——该批次正是 v2 时代产物）
+* **涉及/修改的文件清单**：
+  - `utils/final_v2.py (Modified — adopted_reasoning、render_reasoning 保留原文并标注簿记、audit_dialogue、样本 fidelity 块)`
+  - `scripts/build_final_v2.py (Modified — 整对话门禁、复用同一条 trace、元数据 fidelity 计数)`
+  - `utils/weak_evidence.py (Modified — ledger_flags / localisation_flags / label_report_flags / _stated_direction)`
+  - `scripts/build_review_workstation.py (Modified — load_trace + fidelity_html + 徽章样式)`
+  - `tests/test_conversion_fidelity.py (Created — 14 项)、tests/test_batch_binding.py (Modified — 提升守卫拆分为"拔高检查"与"扩展筛查"，并新增旧批次缺陷类别断言)`
+  - `README.md (Modified — §6.5)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**分块运行 1079 通过 + 1 跳过**（三块分别 360/383/336；整包一次跑受 2 GB cgroup 限制）。新增测试覆盖：模型原文进入答案且簿记被标注；无原文时如实降级；中间轮虚构被审计发现且**被替换轮不重复审计**；转换拒收并把原因、轮号、类型写入 `sft_gated.json`（原轨迹不变）；五类筛查各类一例 + 一致样本不误报；工作台页面出现原始轮文本与"被四段式答案替换"标记
+* **置信度或遗留待办（TODO）**：①`label_report_flags` 在旧批次上触发 5 例，属**预期**（v2 时代标签由策略决定），新批次应在 v3 下不再出现——这将是小批 GPU 运行的一个验收指标②`global_evidence_localised` 17 例是**候选**（"该区域…"措辞），需人工确认是措辞习惯还是真的把整图测量当局部结论③工作台视图尚未在人工审核流程中试用（下一次审核批次时一并验证）④**四项已全部完成**；下一步按计划：CPU 回归（含交接文档 §4 的 11 项验收）→ 申请小批 GPU 验证

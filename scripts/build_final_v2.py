@@ -40,6 +40,7 @@ from scripts.generate_trajectories_g4 import load_applicability
 from utils.final_v2 import (
     RETIRED_EXPERTS,
     SCHEMA_VERSION,
+    audit_dialogue,
     conclusion_gate,
     load_split,
     render_sample,
@@ -184,6 +185,22 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
                           "category": decision["category"], "reason": reason})
             gate_reasons[reason] += 1
             continue
+        # §4.17 R6: the whole supervised dialogue, not just the conclusion.
+        # Every assistant turn before the one the answer replaces survives
+        # into the sample, so a fabrication in one of them is supervised — it
+        # is refused here (and the trajectory kept) rather than rendered away.
+        trace = load_trace(record)
+        dialogue = audit_dialogue({**record, "_trace": trace})
+        if dialogue["defects"]:
+            gated.append({
+                "trajectory_id": record["trajectory_id"],
+                "category": decision["category"],
+                "reason": "supervised_turn_fabrication",
+                "turns": [finding["turn"] for finding in dialogue["defects"]],
+                "kinds": sorted({finding["kind"] for finding in dialogue["defects"]}),
+            })
+            gate_reasons["supervised_turn_fabrication"] += 1
+            continue
         if "evidence_check" not in record:
             legacy_without_check += 1
         record = {**record,
@@ -194,7 +211,7 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
         sample = render_sample(record, decision["category"],
                                observation_text=extract_observation(record),
                                split_entry=split_entry,
-                               trace=load_trace(record))
+                               trace=trace)
 
         problems = validate_sample(sample, split=split, applicability=applicability)
         if problems:
@@ -256,6 +273,17 @@ def build(trajectory_dir: str = TRAJECTORIES_DIR,
         "invalid": len(invalid),
         "gated": len(gated),
         "gate_reasons": dict(gate_reasons),
+        "fidelity": {
+            "model_reasoning_verbatim": sum(
+                1 for samples in buckets.values() for sample in samples
+                if sample["fidelity"]["model_reasoning_verbatim"]),
+            "bookkeeping_only": sum(
+                1 for samples in buckets.values() for sample in samples
+                if not sample["fidelity"]["model_reasoning_verbatim"]),
+            "dialogue_candidates": sum(
+                sample["fidelity"]["dialogue_audit"]["candidate_count"]
+                for samples in buckets.values() for sample in samples),
+        },
         "legacy_without_evidence_check": legacy_without_check,
         "total": sum(len(samples) for samples in buckets.values()),
     }

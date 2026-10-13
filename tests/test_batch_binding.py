@@ -124,6 +124,45 @@ class TestTheWorkstationCarriesTheBatch:
               variants_manifest=str(tmp_path / "none.json"), batch_id="g7_small")
         return samples, out
 
+    def test_the_page_shows_the_raw_turns_against_the_training_dialogue(self, tmp_path):
+        """§4.17 R6: the reviewer can see what the converter did to the session."""
+        import json as jsonlib
+
+        from scripts.build_review_workstation import build
+
+        samples_dir = tmp_path / "batch"
+        samples_dir.mkdir()
+        sample = _sample("a")
+        sample["fidelity"] = {"model_reasoning_verbatim": True,
+                              "reasoning_source": "model+bookkeeping",
+                              "dialogue_audit": {"supervised_turns": 1,
+                                                 "defect_count": 0,
+                                                 "candidate_count": 0}}
+        sample["conversations"] = [{"from": "user", "value": "分析。"},
+                                   {"from": "gpt", "value": "四段式答案"}]
+        sample.setdefault("metadata", {})["trajectory_id"] = "noise__ADM_x_png"
+        (samples_dir / "sft_tool_positive.json").write_text(
+            jsonlib.dumps([sample]), encoding="utf-8")
+
+        trajectories = tmp_path / "trajectories"
+        trajectories.mkdir()
+        trace = {"conversations": [
+            {"from": "user", "value": "分析。"},
+            {"from": "gpt", "value": "原始助手轮：我倾向于伪造。"}]}
+        trace_path = tmp_path / "trace.json"
+        trace_path.write_text(jsonlib.dumps(trace), encoding="utf-8")
+        record = {"trajectory_id": "noise__ADM_x_png", "trace_path": str(trace_path)}
+        (trajectories / "t.json").write_text(jsonlib.dumps(record), encoding="utf-8")
+
+        out = tmp_path / "review"
+        build(str(samples_dir), str(out), trajectories_dir=str(trajectories),
+              variants_manifest=str(tmp_path / "none.json"), batch_id="g7_small")
+        page = (out / "samples" / "a.html").read_text(encoding="utf-8")
+        assert "原始助手轮 vs 训练对话" in page
+        assert "原始助手轮：我倾向于伪造。" in page
+        assert "被四段式答案替换" in page
+        assert "模型原文保留" in page
+
     def test_the_page_declares_which_batch_it_shows(self, tmp_path):
         samples, out = self._build(tmp_path)
         fingerprint = batch_fingerprint(samples)
@@ -277,14 +316,37 @@ class TestTheBuiltBatch:
         assert all(split["sources"][key]["split"] == "train" for key in chosen)
 
     def test_near_chance_evidence_is_not_promoted_anywhere(self):
+        """The promotion guard this batch was built to satisfy."""
         from utils.batch import load_samples
         from utils.weak_evidence import flags
 
         samples = load_samples("g7_b1")
         if not samples:
             pytest.skip("批次尚未构建")
-        promoted = {s["id"]: flags(s) for s in samples if flags(s)}
+        # the promotion flags are the ones the band-checker produces (no
+        # `kind`); the ledger-derived families are asserted separately below
+        promoted = {s["id"]: [f for f in flags(s) if "kind" not in f]
+                    for s in samples}
+        promoted = {key: value for key, value in promoted.items() if value}
         assert promoted == {}, promoted
+
+    def test_the_extended_screener_finds_the_known_v2_defect(self):
+        """
+        This batch predates the repair: under v2 the policy owned the label,
+        so samples whose own prose argues the other way are expected — the
+        A-segment counted them (68 overridden).  The screener now finds that
+        class at the sample layer; the batch is not re-scored by this test.
+        """
+        from utils.batch import load_samples
+        from utils.weak_evidence import flags
+
+        samples = load_samples("g7_b1")
+        if not samples:
+            pytest.skip("批次尚未构建")
+        conflicts = [s["id"] for s in samples
+                     if any(f.get("kind") == "label_report_conflict" for f in flags(s))]
+        assert conflicts, "v2 批次应当体现被覆盖的模型结论"
+        assert len(conflicts) < len(samples)
 
     def test_the_no_tool_arm_exists_in_both_classes(self):
         """The shortcut this batch must not teach: tools mean Fake."""
