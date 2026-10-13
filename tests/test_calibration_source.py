@@ -130,6 +130,23 @@ class TestTheBuilderRefusesToGuessTheGroup:
                 == _table()["experts"]["noise_expert"]["bins"])
 
 
+class TestTheRunKnowsWhichTableItRead:
+    def test_the_fingerprint_carries_the_calibration_identity(self):
+        from utils.config_fingerprint import compute, calibration_identity
+
+        identity = calibration_identity()
+        assert identity["schema"] == 2 and identity["fitting_group"] == "A"
+        live = compute({})
+        assert live["calibration"] == identity
+        assert live["halting_policy"]
+
+    def test_a_missing_table_is_reported_as_missing(self, tmp_path):
+        from utils.config_fingerprint import calibration_identity
+
+        identity = calibration_identity(str(tmp_path / "none.json"))
+        assert identity == {"digest": None, "schema": None, "fitting_group": None}
+
+
 class TestTheSessionRecordsItsCondition:
     def test_a_session_records_the_cell_it_weighted_for(self, tmp_path):
         from state_machine.controller import ForensicStateMachine

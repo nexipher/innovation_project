@@ -9,6 +9,7 @@ Pure Python while-loop; no external agent framework dependency.
 """
 
 import json
+import math
 import os
 from typing import Dict, List, Optional
 
@@ -34,7 +35,28 @@ from utils.evidence_ledger import Ledger as EvidenceLedger, correction_note
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 from state_machine.halting_v2 import HaltingPolicyV2
-from state_machine.halting_v3 import HaltingPolicyV3
+from state_machine.halting_v3 import MODEL_CONFIDENCE_FALLBACK, HaltingPolicyV3
+
+
+def _model_confidence(value) -> float:
+    """
+    The model's own confidence, as it wrote it.
+
+    `value or 0.5` treats a legitimate 0.0 as missing — it did, and the
+    repaired confidence was reported instead.  The check is on the field
+    being absent, and the number is then bounded and checked for finiteness:
+    a NaN, an infinity or a 7 from the model is a missing value, not a
+    confidence, and is recorded as the documented fallback.
+    """
+    if value is None:
+        return MODEL_CONFIDENCE_FALLBACK
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return MODEL_CONFIDENCE_FALLBACK
+    if not math.isfinite(number) or not 0.0 <= number <= 1.0:
+        return MODEL_CONFIDENCE_FALLBACK
+    return round(number, 4)
 
 
 class ForensicStateMachine:
@@ -227,6 +249,7 @@ class ForensicStateMachine:
                     "note": "v1 协议冻结：只标注不纠正",
                     "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式",
                 }
+                candidate_verdict.setdefault("verdict_status", "model_concluded")
                 candidate_verdict["conclusion"] = {
                     "source": "v1_candidate",
                     "calls": [name for name, _ in Parser.extract_all_calls(raw_output)],
@@ -638,19 +661,32 @@ class ForensicStateMachine:
                 # §4.17 R5: in v3 the label is whatever the adopted conclusion
                 # says — `Real`, `Fake`, `Uncertain` or nothing parseable.
                 # The posterior is recorded beside it and never becomes it.
+                # A session with no parseable conclusion is *not* an
+                # abstention: it is a failed conclusion, and the two are
+                # counted apart (`verdict_status`).
                 if HALTING_POLICY == "v3":
-                    final_label = model_candidate.get("verdict") or "Uncertain"
-                    final_confidence = round(float(
-                        model_candidate.get("confidence") or 0.5), 4)
+                    proposed = model_candidate.get("verdict")
+                    if proposed in HaltingPolicyV3.LEGAL_LABELS:
+                        final_label = proposed
+                        verdict_status = "model_concluded"
+                    else:
+                        final_label = "Uncertain"
+                        verdict_status = "no_parseable_conclusion"
+                    final_confidence = _model_confidence(model_candidate.get("confidence"))
                 else:
                     final_label = decision.verdict
                     final_confidence = decision.confidence
+                    verdict_status = "policy_label"
                 final_verdict = {
                     "verdict": final_label,
+                    # Was this label the model's own conclusion, or the
+                    # fallback for a conclusion that never parsed?  Merging
+                    # the two would inflate the abstention rate.
+                    "verdict_status": verdict_status,
                     "confidence": final_confidence,
                     "report": model_candidate.get("report") or (
                         "取证后仍未形成可判定方向，按疑罪从无输出 Uncertain。"
-                        if final_label == "Uncertain"
+                        if verdict_status == "no_parseable_conclusion"
                         else "基于校准后验与已获取证据的判定。"
                     ),
                     "posterior": round(decision.posterior, 4),
@@ -722,6 +758,8 @@ class ForensicStateMachine:
             halting_reason = halting_reason or HaltingChecker.BUDGET_EXHAUSTED
             final_verdict = {
                 "verdict": "Uncertain",
+                # the loop never produced a conclusion: not an abstention
+                "verdict_status": "no_parseable_conclusion",
                 "confidence": 0.5,
                 "report": "分析过程异常终止，无法做出确定结论。",
             }
@@ -749,6 +787,8 @@ class ForensicStateMachine:
             v3_signals=v3_signals,
             protocol_violations=protocol_violations,
             condition=self._condition,
+            verdict_status=(final_verdict or {}).get("verdict_status"),
+            verdict_label=(final_verdict or {}).get("verdict"),
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -808,6 +848,7 @@ class ForensicStateMachine:
         if not calibration:
             return None
         provenance = calibration.get("provenance") or {}
+        metadata = calibration.get("condition_metadata") or {}
         return {
             "table": "calibration/reliability_table.json",
             "fitted_on": provenance.get("fitted_on"),
@@ -816,6 +857,13 @@ class ForensicStateMachine:
             "samples": provenance.get("samples"),
             "split_hash": provenance.get("split_hash"),
             "weights_sha256": provenance.get("weights_sha256"),
+            # The mapping stays a pooled quantile lookup; only the *weight* is
+            # per format.  Saying that here keeps "per-format calibration"
+            # from being read into the probabilities (§4.17 acceptance).
+            "mapping_scope": "pooled_quantile_bins",
+            "weight_basis": metadata.get("weight_basis"),
+            "weight": metadata.get("weight"),
+            "condition": metadata.get("condition"),
         }
 
     def _expert_weights(self) -> Dict[str, float]:
@@ -923,6 +971,8 @@ class ForensicStateMachine:
         v3_signals: Optional[dict] = None,
         protocol_violations: int = 0,
         condition: Optional[str] = None,
+        verdict_status: Optional[str] = None,
+        verdict_label: Optional[str] = None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -972,6 +1022,7 @@ class ForensicStateMachine:
         if v3_signals:
             counters.update(v3_signals)
         if conclusion is not None:
+            pass
             # §4.17 R4: one `pass` cannot stand for four different things.
             # These are the check and the format/purity of the adopted
             # conclusion; `trainable` is decided by the conversion gate.
@@ -981,6 +1032,11 @@ class ForensicStateMachine:
                 "conclusion_calls_unexecuted": bool(
                     conclusion.get("calls") and not conclusion.get("calls_executed")),
                 # Findings a person still has to look at (§4.17 R5)
+                # A conclusion that never parsed is not an abstention: the
+                # abstention rate must not absorb it (§4.17 R5).
+                "verdict_status": verdict_status,
+                "model_abstained": bool(
+                    verdict_status == "model_concluded" and verdict_label == "Uncertain"),
                 "evidence_candidates": len((evidence_check or {}).get("candidates") or []),
                 "evidence_candidate_kinds": sorted({
                     finding.get("kind") for finding in

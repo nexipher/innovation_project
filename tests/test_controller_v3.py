@@ -127,3 +127,34 @@ class TestStopReasons:
         assert result["final_verdict"]["verdict"] == "Real"
         conclusion = result["final_verdict"]["conclusion"]
         assert conclusion["source"] == "closing_turn"
+
+
+class TestConfidenceIsTheModelsOwnNumber:
+    def test_a_zero_confidence_is_kept(self, v3):
+        result = v3([CALL, _verdict("Fake", 0.0)])
+        assert result["final_verdict"]["confidence"] == 0.0
+
+    def test_a_missing_confidence_uses_the_documented_fallback(self, v3):
+        result = v3([CALL, '<verdict>{"verdict": "Fake", "primary_evidence": [],'
+                           ' "report": "没有写置信度。"}</verdict>'])
+        assert result["final_verdict"]["confidence"] == 0.5
+
+    def test_an_impossible_confidence_is_not_believed(self, v3):
+        result = v3([CALL, _verdict("Fake", 1.9)])
+        assert result["final_verdict"]["confidence"] == 0.5
+
+
+class TestAFailedConclusionIsNotAnAbstention:
+    def test_it_carries_its_own_status(self, v3):
+        result = v3([GARBAGE, GARBAGE, GARBAGE, GARBAGE, GARBAGE, GARBAGE])
+        assert result["final_verdict"]["verdict_status"] == "no_parseable_conclusion"
+
+    def test_the_abstention_counter_ignores_it(self, v3):
+        result = v3([GARBAGE, GARBAGE, GARBAGE, GARBAGE, GARBAGE, GARBAGE])
+        assert _trace(result)["metadata"]["model_abstained"] is False
+
+    def test_a_legal_uncertain_does_count_as_abstention(self, v3):
+        result = v3([CALL, _verdict("Uncertain", 0.4)])
+        metadata = _trace(result)["metadata"]
+        assert metadata["verdict_status"] == "model_concluded"
+        assert metadata["model_abstained"] is True

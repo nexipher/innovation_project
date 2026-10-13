@@ -288,6 +288,10 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
         "ground_truth": variant["label"],
         "model_candidate": verdict.get("model_candidate"),
         "final_verdict": verdict.get("verdict"),
+        # Was the label the model's own conclusion, or the fallback for one
+        # that never parsed?  Reports must not merge the two (§4.17 R5).
+        "verdict_status": verdict.get("verdict_status"),
+        "reference": verdict.get("reference"),
         # §4.17 R3: what the evidence ledger said about the closing turn —
         # carried here so the conversion step can refuse a session whose
         # fabrication survived its one correction instead of rendering it away.

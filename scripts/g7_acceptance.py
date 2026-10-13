@@ -41,7 +41,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import PROJECT_ROOT
+from config import HALTING_POLICY, PROJECT_ROOT
 from mllm.message_builder import build_forensic_prompt
 from state_machine.controller import ForensicStateMachine
 from utils import config_fingerprint
@@ -491,7 +491,19 @@ def main() -> None:
                         help="只跑前 N 个样本（冒烟用；报告里会写明）")
     parser.add_argument("--build-only", action="store_true",
                         help="只选源、生成图像、写批次清单（CPU），不跑会话")
+    parser.add_argument("--expect-policy", default=None,
+                        help="运行策略必须与给定值一致（例如 v3）；不一致直接退出。"
+                             "默认仍是 v2，必须显式设置 FORENSIC_HALTING_POLICY 才是新策略")
     args = parser.parse_args()
+
+    # §4.17 验收前提：策略默认是 v2，新实验必须显式选择并对得上版本
+    if args.expect_policy and HALTING_POLICY != args.expect_policy:
+        raise SystemExit(
+            f"运行策略是 {HALTING_POLICY}，期望 {args.expect_policy}；"
+            f"请设置 FORENSIC_HALTING_POLICY={args.expect_policy} 后重跑（"
+            f"否则会用新提示词/新校准却仍跑旧停止规则）")
+    if HALTING_POLICY != "v2":
+        print(f"策略：{HALTING_POLICY}（显式选择）")
 
     sources = select_sources(args.seed)
     problems = check_sources(sources)

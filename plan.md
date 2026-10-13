@@ -2566,3 +2566,14 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 5. **Uncertain 不是同意**：模型弃权时记 `model_abstained`（而非 `reference_disagrees`），最终标签就是 Uncertain。
 6. **控制器**：v2/v3 共用同一结案入口与账本检查；v3 标签取自被采用的结案文本（`model_candidate`），置信度取自模型自述，**不得**与校准概率混淆。
 
+
+### B 段第 6 步：跨模块 CPU 验收（R5；用户列出的五项在验收前确认）
+
+用户指出五处需在验收前确认的问题，逐条修正并写入回归测试：
+1. **默认仍是 v2**（不能误以为运行即新策略）：`FORENSIC_HALTING_POLICY=v3` 是唯一入口；验收脚本**自动以 v3 重入**（未显式设置时 `os.execv` 带上环境变量，标记防循环）；`scripts/g7_acceptance.py` 新增 `--expect-policy v3`，不一致直接退出。**版本三件套**进入报告与记录：策略版本、`prompt_digest`、校准表身份（`schema`/`fitting_group`/`digest`/`split_hash`，已进配置指纹的 `calibration` 组件）。
+2. **解析失败不再伪装成弃权**：新增 `final_verdict.verdict_status`（`model_concluded` / `no_parseable_conclusion` / `policy_label`）；计数器新增 `verdict_status` 与 `model_abstained`（仅当合法 Uncertain 才为真）；轨迹记录与转换样本同步携带；校验器对 `no_parseable_conclusion` 直接拒收。
+3. **置信度 0 不再被替换**：`value or 0.5` 改为"字段缺失/None → 回退"，并做范围与有限性检查（NaN/inf/越界 → 记为回退值 0.5）。
+4. **转换后的 verdict 语义**：v3 记录 `basis="model_judgement"`、`reference_posterior` 与 `reference_recommendation` 单列，**不再输出 `posterior`**；v2 历史记录保留原语义并另存 `reference_posterior`。校验器**按策略区分**：v3 允许模型标签与参考后验不一致（但必须在 `reference.advisory` 记录），v2 仍按旧规则强制一致。
+5. **映射口径如实标注**：逐格式只改**权重**；`raw_metric → P(Fake)` 仍是**池化分位分箱**。token 的 `calibration.mapping_scope="pooled_quantile_bins"` + `weight_basis`（`condition:<cell>` 或 `pooled`）随 token 传递；会话计数器记录 `calibration_condition`（未知来源输入回退池化并如实记 None）；README 与报告需区分"已知编码条件"与"真实未知来源"。
+
+**验收脚本 `scripts/cpu_acceptance_r5.py`（只读 + 临时目录）**：五项检查端到端跑通"运行 → 记录 → 转换 → 工作台"，产物 `calibration/g7_cpu_acceptance_r5.json`。

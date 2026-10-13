@@ -453,6 +453,14 @@ def verdict_html(sample: dict, trajectory: Optional[dict],
         posterior = None
     model_probability = (trajectory or {}).get("model_probability")
     model_candidate = metadata.get("model_candidate") or (trajectory or {}).get("model_candidate")
+    # §4.17 R5: under v3 the label and its confidence are the model's own; the
+    # posterior is a reference.  The page must not read one as the other.
+    policy_version = ((trajectory or {}).get("policy_version")
+                      or metadata.get("policy_version"))
+    model_led = policy_version == "v3"
+    verdict_status = ((trajectory or {}).get("verdict_status")
+                      or verdict.get("verdict_status"))
+    reference = (trajectory or {}).get("reference") or verdict.get("reference") or {}
 
     if posterior is None:
         likelihood_rows = (
@@ -461,11 +469,17 @@ def verdict_html(sample: dict, trajectory: Optional[dict],
             _probability_row("停止后验 P(Real)", None, "同上"))
         confidence_note = "无工具轨迹：所选标签置信度是模型自报值（basis=model_perception），不是校准概率"
     else:
+        posterior_note = ("Youden 加权 log-odds 后验" if not model_led
+                          else "参考后验（v3 只作参考，不决定标签）")
         likelihood_rows = (
-            _probability_row("停止后验 P(Fake)", posterior, "Youden 加权 log-odds 后验") +
-            _probability_row("停止后验 P(Real)", round(1 - float(posterior), 4),
-                             "1 − P(Fake)"))
-        confidence_note = ("工具轨迹：所选标签置信度取自停止后验（与 P(Fake)/P(Real) 同源）")
+            _probability_row("停止后验 P(Fake)" if not model_led else "参考后验 P(Fake)",
+                             posterior, posterior_note) +
+            _probability_row("停止后验 P(Real)" if not model_led else "参考后验 P(Real)",
+                             round(1 - float(posterior), 4), "1 − P(Fake)"))
+        confidence_note = ("工具轨迹：所选标签置信度取自停止后验（与 P(Fake)/P(Real) 同源）"
+                           if not model_led else
+                           "v3：置信度是模型自报值，不是校准概率；校准概率见各 token 的 "
+                           "calibrated_likelihood")
 
     delta = ""
     if scores.get("model_brier") is not None and scores.get("posterior_brier") is not None and not tool_free:
@@ -473,7 +487,19 @@ def verdict_html(sample: dict, trajectory: Optional[dict],
         delta = _probability_row("ΔBrier（模型 → 后验）", delta_value,
                                  "负值 = 证据让预测更接近真值；这是工具轨迹的增益判据")
 
+    label_rows = ""
+    if model_led:
+        status_note = {
+            "model_concluded": "模型给出的合法结案，即为最终标签",
+            "no_parseable_conclusion": "结案不可解析：这不是弃权，是结案失败（统计上必须分开）",
+        }.get(verdict_status, verdict_status)
+        label_rows = (
+            _probability_row("标签来源", verdict_status, status_note) +
+            _probability_row("参考建议（不决定标签）", reference.get("recommendation"),
+                             " / ".join(reference.get("advisory") or []) or
+                             "策略参考：" + str(reference.get("note", ""))))
     rows = (
+        label_rows +
         _probability_row("原始模型判定", f"{model_candidate}（p={model_probability}）",
                          "模型自己选的标签与自报概率，未受后验约束") +
         likelihood_rows +

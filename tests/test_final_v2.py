@@ -125,9 +125,28 @@ class TestRendering:
         assert "后验 P(Fake)" in reasoning
 
     def test_verdict_section_is_json(self):
+        """The record here is a v2 one, so the label *was* the posterior's."""
         verdict = json.loads(parse_sections(render_answer(_record()))["verdict"])
         assert verdict == {"verdict": "Fake", "confidence": 0.9, "posterior": 0.9,
+                           "reference_posterior": 0.9, "verdict_status": "policy_label",
                            "basis": "evidence_posterior"}
+
+    def test_a_v3_record_says_the_label_is_the_models_judgement(self):
+        """§4.17 R5: the posterior is a reference, never the label's source."""
+        record = _record(policy_version="v3", verdict_status="model_concluded",
+                         reference={"recommendation": "Real", "advisory": []})
+        verdict = json.loads(parse_sections(render_answer(record))["verdict"])
+        assert verdict["basis"] == "model_judgement"
+        assert verdict["verdict_status"] == "model_concluded"
+        assert verdict["reference_recommendation"] == "Real"
+        assert verdict["reference_posterior"] == 0.9
+        assert "posterior" not in verdict
+
+    def test_an_unparseable_conclusion_is_not_written_as_an_abstention(self):
+        record = _record(policy_version="v3", verdict_status="no_parseable_conclusion",
+                         verdict="Uncertain")
+        verdict = json.loads(parse_sections(render_answer(record))["verdict"])
+        assert verdict["verdict_status"] == "no_parseable_conclusion"
 
     def test_sample_shape_matches_the_frozen_format(self):
         sample = _sample()
@@ -173,18 +192,22 @@ class TestStructure:
 
     def test_invalid_verdict_json(self):
         sample = _sample()
-        sample["conversations"][1]["value"] = sample["conversations"][1]["value"].replace(
-            '{"verdict": "Fake", "confidence": 0.9, "basis": "evidence_posterior", '
-            '"posterior": 0.9}', "{not json}")
+        import re
+
+        sample["conversations"][1]["value"] = re.sub(
+            r"<verdict>.*?</verdict>", "<verdict>{not json}</verdict>",
+            sample["conversations"][1]["value"], flags=re.S)
         assert any("not valid JSON" in p for p in _validate(sample))
 
     def test_illegal_label_and_confidence(self):
         sample = _sample()
-        sample["conversations"][1]["value"] = sample["conversations"][1]["value"].replace(
-            '{"verdict": "Fake", "confidence": 0.9, "basis": "evidence_posterior", '
-            '"posterior": 0.9}',
-            '{"verdict": "Probably", "confidence": 1.9, "basis": "evidence_posterior", '
-            '"posterior": 0.9}')
+        import re
+
+        sample["conversations"][1]["value"] = re.sub(
+            r"<verdict>.*?</verdict>",
+            '<verdict>{"verdict": "Probably", "confidence": 1.9, '
+            '"basis": "evidence_posterior", "posterior": 0.9}</verdict>',
+            sample["conversations"][1]["value"], flags=re.S)
         problems = _validate(sample)
         assert any("illegal label" in p for p in problems)
         assert any("confidence out of range" in p for p in problems)
@@ -649,3 +672,36 @@ class TestTheTrainingBaseline:
         assert "<observation>" not in BASELINE_SYSTEM_PROMPT
         assert hashlib.sha256(BASELINE_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
             "a81f43b97d1b3714"
+
+
+class TestTheValidatorKnowsWhichPolicyWroteTheSample:
+    """§4.17 R5: under v3 the posterior is a reference, not the label's source."""
+
+    def _v3_sample(self, **overrides):
+        record = _record(policy_version="v3", verdict_status="model_concluded",
+                         final_verdict="Real", confidence=0.8,
+                         reference={"recommendation": "Fake",
+                                    "advisory": ["reference_disagrees"]})
+        record.update(overrides)
+        sample = render_sample(record, "positive", observation_text=OBSERVATION,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+        return sample
+
+    def test_a_model_led_label_may_disagree_with_the_reference(self):
+        problems = _validate(self._v3_sample())
+        assert not any("contradicts posterior" in p for p in problems), problems
+        assert not any("confidence:" in p for p in problems), problems
+
+    def test_an_undisclosed_disagreement_is_still_a_problem(self):
+        sample = self._v3_sample(reference={"recommendation": "Fake", "advisory": []})
+        assert any("reference.advisory" in p for p in _validate(sample))
+
+    def test_an_unparsed_conclusion_may_not_be_trained_on(self):
+        sample = self._v3_sample(verdict_status="no_parseable_conclusion")
+        assert any("不可解析" in p for p in _validate(sample))
+
+    def test_a_v2_sample_still_has_to_agree_with_its_posterior(self):
+        sample = render_sample(_record(final_verdict="Real", confidence=0.8),
+                               "positive", observation_text=OBSERVATION,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+        assert any("contradicts posterior" in p for p in _validate(sample))

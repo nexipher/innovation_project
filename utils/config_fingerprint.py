@@ -84,6 +84,27 @@ def expert_specs(experts: Dict[str, object]) -> Dict[str, dict]:
     }
 
 
+def calibration_identity(path: str = RELIABILITY_TABLE_PATH) -> dict:
+    """
+    The calibration table's own version statement.
+
+    `schema` and `fitting_group` are absent for the pre-repair table, which is
+    itself the fact worth recording: a run must be able to say which table it
+    read and how that table was fitted.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            table = json.load(handle)
+    except (OSError, ValueError):
+        return {"digest": None, "schema": None, "fitting_group": None}
+    return {
+        "digest": _file_digest(path),
+        "schema": table.get("schema"),
+        "fitting_group": table.get("fitting_group"),
+        "split_hash": table.get("fitting_split_hash"),
+    }
+
+
 def compute(experts: Dict[str, object], adapter_path: Optional[str] = None) -> dict:
     """Assemble the fingerprint for one evaluation configuration."""
     components = {
@@ -93,6 +114,10 @@ def compute(experts: Dict[str, object], adapter_path: Optional[str] = None) -> d
         "experts": expert_specs(experts),
         "prompts": prompt_digest(),
         "reliability_table": _file_digest(RELIABILITY_TABLE_PATH),
+        # Which table, fitted how: the schema and the fitting group change the
+        # numbers a session reads, so they belong to its identity, not to a
+        # footnote in a report (§4.17 acceptance prerequisites).
+        "calibration": calibration_identity(),
         "rectifier": RECTIFIER_VERSION,
         "tokenizer": TOKENIZER_VERSION,
         "halting_policy": HALTING_POLICY,

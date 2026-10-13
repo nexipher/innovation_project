@@ -1668,3 +1668,26 @@
   - `README.md (Modified — §6.5)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**分块运行 1079 通过 + 1 跳过**（三块分别 360/383/336；整包一次跑受 2 GB cgroup 限制）。新增测试覆盖：模型原文进入答案且簿记被标注；无原文时如实降级；中间轮虚构被审计发现且**被替换轮不重复审计**；转换拒收并把原因、轮号、类型写入 `sft_gated.json`（原轨迹不变）；五类筛查各类一例 + 一致样本不误报；工作台页面出现原始轮文本与"被四段式答案替换"标记
 * **置信度或遗留待办（TODO）**：①`label_report_flags` 在旧批次上触发 5 例，属**预期**（v2 时代标签由策略决定），新批次应在 v3 下不再出现——这将是小批 GPU 运行的一个验收指标②`global_evidence_localised` 17 例是**候选**（"该区域…"措辞），需人工确认是措辞习惯还是真的把整图测量当局部结论③工作台视图尚未在人工审核流程中试用（下一次审核批次时一并验证）④**四项已全部完成**；下一步按计划：CPU 回归（含交接文档 §4 的 11 项验收）→ 申请小批 GPU 验证
+
+### 2026-10-13 18:45:11 - G7 B 段第 6 步：五处验收前确认 + 跨模块 CPU 验收（全部通过）
+
+* **当前操作动作**：按用户点名的五处问题逐条修正并加回归测试，然后做跨模块 CPU 验收（运行→记录→转换→工作台），**不生成数据、不训练、不动 GPU**
+* **对应计划锚点**：plan.md §4.17「B 段第 6 步」（用户给定顺序第 5 项）
+* **核心变更说明**：
+  1. **默认策略仍是 v2（用户第 1 点）**：`FORENSIC_HALTING_POLICY=v3` 为唯一入口；`scripts/g7_acceptance.py` 新增 `--expect-policy`，策略不符直接退出（提示"否则会用新提示词/新校准却仍跑旧停止规则"）；**版本三件套**入报告与记录——策略版本、`prompt_digest`、校准表身份（`schema=2` / `fitting_group=A` / `digest` / `split_hash`，作为 `calibration` 组件进入配置指纹）。验收脚本在未显式设置时**自动以 v3 重入**（`os.execv` + 标记防循环）
+  2. **解析失败不冒充弃权（用户第 2 点）**：新增 `final_verdict.verdict_status`（`model_concluded` / `no_parseable_conclusion` / `policy_label`），计数器新增 `verdict_status` 与 `model_abstained`（**仅合法 Uncertain 为真**）；轨迹记录、转换样本、工作台三处同步；校验器对 `no_parseable_conclusion` 直接拒收
+  3. **置信度 0 不再被替换（用户第 3 点）**：`value or 0.5` → 先判字段缺失/None，再做范围与有限性检查（NaN/inf/越界按缺失处理并记回退值 0.5）；测试覆盖 0.0 / 缺失 / 1.9
+  4. **转换后 verdict 语义（用户第 4 点）**：v3 记录 `basis="model_judgement"`、`reference_posterior` 与 `reference_recommendation` 单列，**不再输出 `posterior`**；v2 历史记录保留旧语义并另存参考。**校验器按策略区分**：v3 允许模型标签与参考后验不一致（但必须出现在 `reference.advisory`，否则报错），v2 仍强制一致。工作台的置信度说明随策略变化（v3："模型自报值，不是校准概率"），并新增"标签来源/参考建议"行
+  5. **映射口径如实标注（用户第 5 点）**：逐格式只改**权重**；`raw_metric → P(Fake)` 仍是**池化分位分箱**。token 的 `calibration.mapping_scope="pooled_quantile_bins"` 与 `weight_basis`（`condition:<cell>` / `pooled`）随 token 传递；会话记 `calibration_condition`（未知来源回退池化并如实记 None）；README 明确"概率映射尚未逐格式校准"
+  6. **验收脚本 `scripts/cpu_acceptance_r5.py`（新）**：五项端到端检查，产物 `calibration/g7_cpu_acceptance_r5.json`
+* **涉及/修改的文件清单**：
+  - `state_machine/controller.py (Modified — verdict_status、_model_confidence、计数器、calibration 块加 mapping_scope/weight_basis)`
+  - `utils/final_v2.py (Modified — render_answer 语义随策略、样本 final_verdict 带 status/reference、校验器按策略区分)`
+  - `utils/config_fingerprint.py (Modified — calibration 身份组件)`
+  - `scripts/generate_trajectories_g4.py (Modified — 记录 verdict_status/reference)、scripts/g7_acceptance.py (Modified — --expect-policy)`
+  - `scripts/build_review_workstation.py (Modified — 标签来源/参考建议/置信度含义随策略)`
+  - `scripts/cpu_acceptance_r5.py (Created)、calibration/g7_cpu_acceptance_r5.json (Created)`
+  - `tests/test_controller_v3.py / tests/test_final_v2.py / tests/test_calibration_source.py (Extended — 本轮 +15 项)`
+  - `README.md (Modified — §6.4 边界与验收前提、§6.5 第 3 条、新增 §6.6)、plan.md (Modified — B 段第 6 步)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：**验收五项全部 PASS**（`calibration/g7_cpu_acceptance_r5.json`，策略 v3｜提示词 453342d7e16ad3c8｜校准表 3d16c70538a1d0bc / schema 2 / 拟合组 A）；**分块运行 1093 通过 + 1 跳过**。验收过程本身抓到两个真问题并已修：①校验器仍按 v2 语义要求"标签必须与后验一致"，会把每一条 v3 的模型主导判定判成错；②`validate_sample` 看不到样本的策略版本（未从 metadata 传递）
+* **置信度或遗留待办（TODO）**：①`label_report_conflict` 等候选在旧 145 条上的计数仍是**旧口径**，新批次应在 v3 下显著下降——这是小批 GPU 的验收指标之一②逐格式**概率**校准未做（只有权重按格式），真实未知来源输入回退池化权重并在记录中如实标注③下一步：申请**小批 GPU 验证（约 50–100 次会话）**，验证真实 Qwen 是否遵守单动作协议、是否减少虚构与无依据弃权，再决定新 SFT 生成

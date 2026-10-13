@@ -233,18 +233,41 @@ def render_reasoning(record: dict, model_reasoning: str = "") -> str:
 
 def render_answer(record: dict, observation_text: str = "",
                   model_reasoning: str = "") -> str:
-    """The structured assistant turn final_v2 trains on."""
+    """
+    The structured assistant turn final_v2 trains on.
+
+    The verdict block says where the label came from, and the answer differs
+    by policy because the policies do.  Under v3 the label is the model's own
+    conclusion; the posterior is the *reference* the session recorded beside
+    it.  Writing `basis: evidence_posterior` there (which is what the
+    converter did) would tell the next model that a rule decided the label —
+    the exact confusion the repair removed.
+    """
     tokens = record.get("evidence") or []
     evidence_blocks = "\n".join(render_evidence_block(t) for t in tokens)
+    model_led = record.get("policy_version") == "v3"
+    if not tokens:
+        # A tool-free conclusion rests on the model's perception; the 0.5 in
+        # the record is the prior, and calling it a posterior claims a
+        # measurement that never happened.
+        basis = "model_perception"
+    else:
+        basis = "model_judgement" if model_led else "evidence_posterior"
     verdict = {
         "verdict": record.get("final_verdict"),
+        "verdict_status": record.get("verdict_status") or (
+            "model_concluded" if model_led else "policy_label"),
         "confidence": record.get("confidence"),
-        # A tool-free conclusion rests on the model's perception, not on an
-        # evidence posterior — which is 0.5 by construction and says nothing.
-        "basis": "model_perception" if not tokens else "evidence_posterior",
+        "basis": basis,
     }
     if tokens:
-        verdict["posterior"] = record.get("posterior")
+        # The reference lives apart from the label under v3.
+        verdict["reference_posterior"] = record.get("posterior")
+        if model_led:
+            reference = record.get("reference") or {}
+            verdict["reference_recommendation"] = reference.get("recommendation")
+        else:
+            verdict["posterior"] = record.get("posterior")
     return (
         f"<observation>\n{render_observation(record, observation_text)}\n</observation>\n\n"
         f"<forensic_evidence>\n{evidence_blocks or '- 本轨迹未调用工具'}\n</forensic_evidence>\n\n"
@@ -414,8 +437,11 @@ def render_sample(record: dict, category: str, observation_text: str = "",
         "source_model": record.get("generator"),
         "final_verdict": {
             "verdict": record.get("final_verdict"),
+            # where the label came from, and the reference beside it (§4.17 R5)
+            "verdict_status": record.get("verdict_status"),
             "confidence": record.get("confidence"),
             "posterior": record.get("posterior") if record.get("evidence") else None,
+            "reference": record.get("reference"),
             "policy_reasons": record.get("policy_reasons"),
         },
         "conversations": render_conversation(record, record.get("_trace"),
@@ -500,6 +526,10 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         **sample,
         "evidence": sample.get("evidence_chain") or [],
         "policy_reasons": (sample.get("final_verdict") or {}).get("policy_reasons"),
+        # which policy produced this sample decides which verdict rules apply
+        "policy_version": metadata.get("policy_version") or sample.get("policy_version"),
+        "verdict_status": (sample.get("final_verdict") or {}).get("verdict_status"),
+        "reference": (sample.get("final_verdict") or {}).get("reference"),
         "posterior": (sample.get("final_verdict") or {}).get("posterior"),
         "confidence": (sample.get("final_verdict") or {}).get("confidence"),
         "final_verdict": (sample.get("final_verdict") or {}).get("verdict"),
@@ -649,8 +679,17 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
                 f"but the model said {candidate}")
 
     # 8. verdict agrees with its own posterior (evidence-based conclusions)
+    #
+    # Under v3 the posterior is a *reference*: the label is the model's own
+    # conclusion and its confidence is the model's own statement, so a
+    # disagreement with the reference is recorded, not an error.  These rules
+    # bound the v2 records, where the posterior really did decide the label —
+    # applying them to v3 samples would call every model-led decision wrong.
     posterior = record.get("posterior") if uses_tools else None
-    if posterior is not None:
+    model_led = (record.get("policy_version") == "v3"
+                 or record.get("verdict_status") in ("model_concluded",
+                                                     "no_parseable_conclusion"))
+    if posterior is not None and not model_led:
         expected = "Fake" if posterior >= 0.5 else "Real"
         if record["final_verdict"] in ("Real", "Fake") and record["final_verdict"] != expected:
             problems.append(
@@ -669,6 +708,19 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
                     f"confidence: {record['final_verdict']} reported at {reported} "
                     f"but P({record['final_verdict']}) is "
                     f"{round(expected_confidence, 4)}")
+    if model_led:
+        # What still has to hold: the confidence is a number in range, and the
+        # disagreement (if any) is on the record rather than hidden.
+        reported = record.get("confidence")
+        if reported is not None and not 0.0 <= float(reported) <= 1.0:
+            problems.append(f"confidence: {reported} 不在 [0,1]")
+        if record.get("verdict_status") == "no_parseable_conclusion":
+            problems.append("verdict: 结案不可解析，不能作为训练样本")
+        reference = record.get("reference") or {}
+        if (posterior is not None and record["final_verdict"] in ("Real", "Fake")
+                and ("Fake" if posterior >= 0.5 else "Real") != record["final_verdict"]
+                and "reference_disagrees" not in (reference.get("advisory") or [])):
+            problems.append("verdict: 与参考后验不一致但未在 reference.advisory 记录")
 
     # 9. confident labels need admissible evidence
     confidence = record.get("confidence") or 0.0

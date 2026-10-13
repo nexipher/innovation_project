@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-10-13T18:40:04",
+  "versions": {
+    "halting_policy": "v3",
+    "prompt_digest": "453342d7e16ad3c8",
+    "calibration": {
+      "digest": "3d16c70538a1d0bc",
+      "schema": 2,
+      "fitting_group": "A",
+      "split_hash": "37bf2f1db22ccdef"
+    }
+  },
+  "checks": [
+    {
+      "status": "pass",
+      "problems": [],
+      "evidence": {
+        "verdict": "Fake",
+        "confidence": 0.0,
+        "verdict_status": "model_concluded",
+        "basis": "model_judgement",
+        "reference": {
+          "recommendation": "Real",
+          "advisory": [
+            "reference_no_expected_gain",
+            "reference_disagrees"
+          ],
+          "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+        }
+      },
+      "check": "check_1_v3_semantics"
+    },
+    {
+      "status": "pass",
+      "problems": [],
+      "evidence": {
+        "verdict_status": "no_parseable_conclusion",
+        "model_abstained": false,
+        "gate": "conclusion_without_parseable_verdict"
+      },
+      "check": "check_2_unparsed_is_not_abstention"
+    },
+    {
+      "status": "pass",
+      "problems": [],
+      "evidence": {
+        "mixed_calls": 0,
+        "protocol_violations": 1,
+        "bare_call_tokens": 1,
+        "region_normalized_1000": null
+      },
+      "check": "check_3_protocol_accounting"
+    },
+    {
+      "status": "pass",
+      "problems": [],
+      "evidence": {
+        "gated": 1,
+        "reasons": [
+          "supervised_turn_fabrication"
+        ],
+        "trajectory_unchanged": true
+      },
+      "check": "check_4_dialogue_defects_are_not_hidden"
+    },
+    {
+      "status": "pass",
+      "problems": [],
+      "evidence": {
+        "legacy_fingerprint": "bb64cb8ec42788df",
+        "legacy_samples": 145,
+        "new_fingerprint": "68d949ccebd9f186",
+        "legacy_tree_unchanged": true
+      },
+      "check": "check_5_batch_isolation"
+    }
+  ],
+  "status": "pass"
+}
