@@ -16,6 +16,10 @@ from state_machine.controller import ForensicStateMachine
 from state_machine.halting_v2 import HaltingPolicyV2
 from tests.test_controller import FAKE_PATH, ScriptedMLLM, _build_experts
 
+
+
+# the scripts in this module were written against the v1 posterior
+pytestmark = pytest.mark.usefixtures("legacy_calibration")
 CALL = ("<planning>\nSuspected Region: [200, 100, 300, 280]\n</planning>\n"
         "<call_noise>[200, 100, 300, 280]</call_noise>")
 FAKE_VERDICT = ('<reasoning>看起来是伪造。</reasoning>\n<verdict>'

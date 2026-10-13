@@ -78,6 +78,7 @@ class ForensicStateMachine:
         logger: Optional[SessionLogger] = None,
         evidence_injection: str = "text+image",
         allow_exploration: bool = True,
+        condition: Optional[str] = None,
     ):
         """
         Args:
@@ -93,6 +94,10 @@ class ForensicStateMachine:
                     by a neutral marker (no numbers are shown to the model);
                   - "none": nothing is surfaced (RGB baseline); calls are still
                     executed and recorded for audit.
+            condition: The image's format cell ("png" / "jpeg_q95" / ...) when
+                the caller knows it — the calibration table's per-format
+                separations are then used as the token weights instead of the
+                pooled value (G7 A2).  None keeps the pooled weight.
             allow_exploration: False when the session's protocol forbids tool
                 calls (the no-tool baseline).  The halting policy then judges
                 the model's own verdict instead of demanding evidence that
@@ -100,6 +105,7 @@ class ForensicStateMachine:
                 abstains on everything, which measures the policy rather than
                 the model.
         """
+        self._condition = condition
         if evidence_injection not in ("text+image", "text", "image", "none"):
             raise ValueError(f"unknown evidence_injection: {evidence_injection}")
 
@@ -318,7 +324,8 @@ class ForensicStateMachine:
                     calibration = None
                     if self._reliability_table is not None:
                         calibration = self._reliability_table.lookup(
-                            expert_result.source, expert_result.raw_metric
+                            expert_result.source, expert_result.raw_metric,
+                            condition=self._condition,
                         )
 
                     # Build Evidence Token
@@ -741,6 +748,7 @@ class ForensicStateMachine:
             conclusion=(final_verdict or {}).get("conclusion"),
             v3_signals=v3_signals,
             protocol_violations=protocol_violations,
+            condition=self._condition,
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -824,9 +832,12 @@ class ForensicStateMachine:
             entry = None
             if self._reliability_table is not None:
                 entry = self._reliability_table.expert_entry(source_name)
-            separations[source_name] = (
-                (entry or {}).get("separation_polarity_corrected")
-            )
+            if entry is None:
+                separations[source_name] = None
+                continue
+            # The format's own measured separation when it is known (A2).
+            separations[source_name] = self._reliability_table.weight_of(
+                entry, self._condition)[0]
         return HaltingPolicyV2.expert_weights(separations)
 
     @staticmethod
@@ -911,6 +922,7 @@ class ForensicStateMachine:
         conclusion: Optional[dict] = None,
         v3_signals: Optional[dict] = None,
         protocol_violations: int = 0,
+        condition: Optional[str] = None,
     ) -> dict:
         """Assemble the observable counter block recorded in the trace."""
         counters = {
@@ -933,6 +945,8 @@ class ForensicStateMachine:
             # reasons and the trace looked identical (0 of 3237 traces
             # recorded this before 2026-10-11).
             "available_experts": sorted(available_experts or []),
+            # Which format cell the calibration weights were read for (A2).
+            "calibration_condition": condition,
             # §4.17 R9: how many turns carried more than one action and were
             # refused unexecuted.
             "protocol_violations": protocol_violations,

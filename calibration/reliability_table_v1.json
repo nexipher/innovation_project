@@ -1,0 +1,272 @@
+{
+  "generated_at": "2026-10-11T13:46:40",
+  "source_raw_values": "calibration/set/raw_values.json",
+  "cells_used": [
+    "real_png",
+    "fake_png",
+    "real_jpeg_q95",
+    "fake_jpeg_q95",
+    "real_jpeg_q85",
+    "fake_jpeg_q85",
+    "real_jpeg_q70",
+    "fake_jpeg_q70"
+  ],
+  "bins": 5,
+  "experts": {
+    "frequency_expert": {
+      "g2_name": "frequency_v1",
+      "semantics_aligned": true,
+      "separation_polarity_corrected": 0.5047916666666666,
+      "confound_drop_png_to_q70": -0.03645833333333337,
+      "applicability": "disabled:no-signal",
+      "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
+      "n_samples": 392,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 6.47542575924367e-06,
+          "n": 231,
+          "p_fake": 0.4675324675324675
+        },
+        {
+          "lo": 6.47542575924367e-06,
+          "hi": 0.00010367528899486807,
+          "n": 77,
+          "p_fake": 0.5194805194805194
+        },
+        {
+          "lo": 0.00010367528899486807,
+          "hi": null,
+          "n": 84,
+          "p_fake": 0.5238095238095238
+        }
+      ]
+    },
+    "frequency_expert_v2": {
+      "g2_name": "frequency_v2",
+      "semantics_aligned": true,
+      "separation_polarity_corrected": 0.5558333333333333,
+      "confound_drop_png_to_q70": -0.07833333333333337,
+      "applicability": "weak:marginally-above-chance",
+      "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
+      "n_samples": 392,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 0.0002594522035059057,
+          "n": 79,
+          "p_fake": 0.3924050632911392
+        },
+        {
+          "lo": 0.0002594522035059057,
+          "hi": 0.00038143603093239686,
+          "n": 78,
+          "p_fake": 0.44871794871794873
+        },
+        {
+          "lo": 0.00038143603093239686,
+          "hi": 0.0005959191463167152,
+          "n": 78,
+          "p_fake": 0.48717948717948717
+        },
+        {
+          "lo": 0.0005959191463167152,
+          "hi": 0.0009957944868030021,
+          "n": 78,
+          "p_fake": 0.41025641025641024
+        },
+        {
+          "lo": 0.0009957944868030021,
+          "hi": null,
+          "n": 79,
+          "p_fake": 0.7088607594936709
+        }
+      ]
+    },
+    "noise_expert": {
+      "g2_name": "noise",
+      "semantics_aligned": false,
+      "separation_polarity_corrected": 0.8454166666666667,
+      "confound_drop_png_to_q70": -0.07333333333333333,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
+      "n_samples": 392,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 1.6217467108638735,
+          "n": 79,
+          "p_fake": 0.8481012658227848
+        },
+        {
+          "lo": 1.6217467108638735,
+          "hi": 2.5307666397442974,
+          "n": 78,
+          "p_fake": 0.6410256410256411
+        },
+        {
+          "lo": 2.5307666397442974,
+          "hi": 3.2180342581729713,
+          "n": 78,
+          "p_fake": 0.5641025641025641
+        },
+        {
+          "lo": 3.2180342581729713,
+          "hi": 4.104055949189497,
+          "n": 78,
+          "p_fake": 0.28205128205128205
+        },
+        {
+          "lo": 4.104055949189497,
+          "hi": null,
+          "n": 79,
+          "p_fake": 0.11392405063291139
+        }
+      ]
+    },
+    "jpeg_expert": {
+      "g2_name": "jpeg",
+      "semantics_aligned": false,
+      "separation_polarity_corrected": 0.9720833333333333,
+      "confound_drop_png_to_q70": -0.5408333333333333,
+      "applicability": "inverted:high-metric-means-real",
+      "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
+      "n_samples": 392,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 2.0496542637365613,
+          "n": 79,
+          "p_fake": 0.8607594936708861
+        },
+        {
+          "lo": 2.0496542637365613,
+          "hi": 2.3660049401426875,
+          "n": 78,
+          "p_fake": 0.44871794871794873
+        },
+        {
+          "lo": 2.3660049401426875,
+          "hi": 2.745046349006237,
+          "n": 78,
+          "p_fake": 0.38461538461538464
+        },
+        {
+          "lo": 2.745046349006237,
+          "hi": 3.3645527201840073,
+          "n": 78,
+          "p_fake": 0.2948717948717949
+        },
+        {
+          "lo": 3.3645527201840073,
+          "hi": null,
+          "n": 79,
+          "p_fake": 0.45569620253164556
+        }
+      ]
+    },
+    "ela_expert": {
+      "g2_name": "ela",
+      "semantics_aligned": true,
+      "separation_polarity_corrected": 0.9483333333333334,
+      "confound_drop_png_to_q70": 0.4443750000000001,
+      "applicability": "shortcut-prone:compression-history",
+      "applicability_conditions": "仅适用于未压缩或高质量来源（PNG / JPEG q≥85）；统一重压缩后（q70 校准）分离度降至随机（0.504）。",
+      "n_samples": 392,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 1.3333333730697632,
+          "n": 51,
+          "p_fake": 0.29411764705882354
+        },
+        {
+          "lo": 1.3333333730697632,
+          "hi": 1.6666666269302368,
+          "n": 50,
+          "p_fake": 0.26
+        },
+        {
+          "lo": 1.6666666269302368,
+          "hi": 2.3333332538604736,
+          "n": 123,
+          "p_fake": 0.2845528455284553
+        },
+        {
+          "lo": 2.3333332538604736,
+          "hi": 4.333333492279053,
+          "n": 84,
+          "p_fake": 0.5595238095238095
+        },
+        {
+          "lo": 4.333333492279053,
+          "hi": null,
+          "n": 84,
+          "p_fake": 0.9761904761904762
+        }
+      ]
+    },
+    "probe_dino_expert": {
+      "g2_name": null,
+      "semantics_aligned": true,
+      "separation_polarity_corrected": 0.98359375,
+      "confound_drop_png_to_q70": 0.021874999999999978,
+      "applicability": "strong",
+      "applicability_conditions": "五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。",
+      "n_samples": 248,
+      "bins": [
+        {
+          "lo": null,
+          "hi": 0.00218074475415051,
+          "n": 50,
+          "p_fake": 0.0
+        },
+        {
+          "lo": 0.00218074475415051,
+          "hi": 0.1354539424180985,
+          "n": 49,
+          "p_fake": 0.061224489795918366
+        },
+        {
+          "lo": 0.1354539424180985,
+          "hi": 0.9576619863510133,
+          "n": 50,
+          "p_fake": 0.52
+        },
+        {
+          "lo": 0.9576619863510133,
+          "hi": 0.9997815012931823,
+          "n": 49,
+          "p_fake": 1.0
+        },
+        {
+          "lo": 0.9997815012931823,
+          "hi": null,
+          "n": 50,
+          "p_fake": 1.0
+        }
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "treatments": [
+          "png",
+          "jpeg_q95",
+          "jpeg_q85",
+          "jpeg_q70"
+        ],
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g7_external_probe_dino_A.json",
+        "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "per_treatment_separation": {
+          "png": 0.9729,
+          "jpeg_q95": 0.9771,
+          "jpeg_q85": 0.9865,
+          "jpeg_q70": 0.9948
+        }
+      }
+    }
+  }
+}

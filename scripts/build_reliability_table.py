@@ -45,6 +45,14 @@ TABLE_PATH = os.path.join(PROJECT_ROOT, "calibration", "reliability_table.json")
 
 MATCHED_CELLS = ("real_png", "fake_png", "real_jpeg_q95", "fake_jpeg_q95",
                  "real_jpeg_q85", "fake_jpeg_q85", "real_jpeg_q70", "fake_jpeg_q70")
+MATCHED_TREATMENTS = ("png", "jpeg_q95", "jpeg_q85", "jpeg_q70")
+
+# G7 A/B/C: fitting reads group A and nothing else.  The G2 experts used to be
+# binned on all 392 matched samples — A+B+C, the very groups a later scheme is
+# judged on — and their single weight was the png cell's separation applied to
+# every format (jpeg's q70 cell is 0.569, not 0.972).  Both are fixed here;
+# the previous table is kept as reliability_table_v1.json for replay.
+FITTING_GROUP = "A"
 
 # G2 report name -> expert source_name used at runtime.
 # Both frequency versions share source_name "frequency_expert"; v1 is what the
@@ -228,6 +236,11 @@ def external_entry(name: str, config: dict, splits: dict, bins: int) -> Optional
         "applicability_conditions": conditions,
         "n_samples": len(values),
         "bins": quantile_bins(values, labels, bins),
+        # Same shape as the G2 entries: the runtime weights a token by its own
+        # format's measurement whenever the format is known.
+        "per_cell_separation": {
+            key: (None if value is None else round(float(value), 4))
+            for key, value in per_treatment.items()},
         "provenance": {
             "fitted_on": config["group"],
             "mapping": "quantile_bins",
@@ -265,11 +278,24 @@ def main() -> None:
         sample["sample_id"]: sample for sample in manifest["samples"]
     }
 
+    # The fitting group is a declaration, not a default: without it the
+    # builder would silently fit on everything the manifest holds.
+    if not os.path.exists(SPLIT_PATH):
+        raise SystemExit(
+            f"the fitting split is required (fit on group {FITTING_GROUP} only): "
+            f"missing {SPLIT_PATH}")
+    with open(SPLIT_PATH, encoding="utf-8") as handle:
+        splits = json.load(handle)
+    fitting_sources = set(splits["groups"][FITTING_GROUP])
+
     table: Dict[str, Any] = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "schema": 2,
         "source_raw_values": os.path.relpath(RAW_VALUES_PATH, PROJECT_ROOT),
         "cells_used": list(MATCHED_CELLS),
         "bins": args.bins,
+        "fitting_group": FITTING_GROUP,
+        "fitting_split_hash": splits.get("hash"),
         "experts": {},
     }
 
@@ -279,20 +305,37 @@ def main() -> None:
             continue
         report_entry = report.get("experts", {}).get(g2_name, {})
 
-        values, labels = [], []
+        values, labels, treatments = [], [], []
         for sample_id, raw in entry["raw"].items():
             meta = sample_meta.get(sample_id)
             if meta is None or meta["cell"] not in MATCHED_CELLS:
                 continue
+            if meta["source_id"] not in fitting_sources:
+                continue                      # fitting reads group A only
             values.append(float(raw))
             labels.append(meta["label"])
+            treatments.append(meta["treatment"])
 
         if len(values) < 20:
             continue
 
-        separation = report_entry.get("separation_polarity_corrected")
-        aligned = bool(report_entry.get("semantics_aligned", True))
-        drop = report_entry.get("confound_drop_png_to_q70", {}).get("drop")
+        # The separation is measured on the fitting samples, per format as well
+        # as pooled: the single number the G2 report carried was its png cell,
+        # and using it for a q70 image over-weights the expert by 0.4.
+        overall = _auroc(values, labels)
+        aligned = bool(overall is not None and overall >= 0.5)
+        separation = None if overall is None else round(
+            overall if aligned else 1.0 - overall, 4)
+        per_cell: Dict[str, Optional[float]] = {}
+        for treatment in MATCHED_TREATMENTS:
+            subset = [(v, y) for v, y, t in zip(values, labels, treatments)
+                      if t == treatment]
+            auroc = _auroc([v for v, _ in subset], [y for _, y in subset])
+            per_cell[treatment] = None if auroc is None else round(
+                auroc if aligned else 1.0 - auroc, 4)
+        drop = None
+        if per_cell.get("png") is not None and per_cell.get("jpeg_q70") is not None:
+            drop = round(per_cell["jpeg_q70"] - per_cell["png"], 4)
 
         label = applicability_label(
             aligned, separation if separation is not None else 0.5, drop
@@ -301,6 +344,9 @@ def main() -> None:
             "g2_name": g2_name,
             "semantics_aligned": aligned,
             "separation_polarity_corrected": separation,
+            # The weight to use when the format is known; `pooled` when it is
+            # not.  Never a single cell's value applied to every format.
+            "per_cell_separation": per_cell,
             "confound_drop_png_to_q70": drop,
             "applicability": label,
             "applicability_conditions": EXPERT_CONDITION_OVERRIDES.get(
@@ -308,25 +354,35 @@ def main() -> None:
             ),
             "n_samples": len(values),
             "bins": quantile_bins(values, labels, args.bins),
+            "provenance": {
+                "fitted_on": FITTING_GROUP,
+                "mapping": "quantile_bins",
+                "sources": len({sample_meta[sid]["source_id"]
+                                for sid in entry["raw"]
+                                if sid in sample_meta
+                                and sample_meta[sid]["source_id"] in fitting_sources}),
+                "samples": len(values),
+                "split_hash": splits.get("hash"),
+                "report": os.path.relpath(REPORT_PATH, PROJECT_ROOT),
+                "report_separation_png_cell": report_entry.get(
+                    "separation_polarity_corrected"),
+            },
         }
         print(f"  {source:22s} separation={separation} aligned={aligned} "
-              f"drop={drop if drop is None else round(drop, 3)} "
+              f"drop={drop} per-cell={per_cell} "
               f"applicability={table['experts'][source]['applicability']}")
 
     # G7: external experts, fitted on their fitting group only.
-    if os.path.exists(SPLIT_PATH):
-        with open(SPLIT_PATH, encoding="utf-8") as handle:
-            splits = json.load(handle)
-        for name, config in EXTERNAL_EXPERTS.items():
-            entry = external_entry(name, config, splits, args.bins)
-            if entry is None:
-                continue
-            table["experts"][name] = entry
-            print(f"  {name:22s} separation={entry['separation_polarity_corrected']:.4f} "
-                  f"aligned={entry['semantics_aligned']} "
-                  f"applicability={entry['applicability']} "
-                  f"（拟合组 {entry['provenance']['fitted_on']}，"
-                  f"{entry['provenance']['sources']} 源 / {entry['n_samples']} 样本）")
+    for name, config in EXTERNAL_EXPERTS.items():
+        entry = external_entry(name, config, splits, args.bins)
+        if entry is None:
+            continue
+        table["experts"][name] = entry
+        print(f"  {name:22s} separation={entry['separation_polarity_corrected']:.4f} "
+              f"aligned={entry['semantics_aligned']} "
+              f"applicability={entry['applicability']} "
+              f"（拟合组 {entry['provenance']['fitted_on']}，"
+              f"{entry['provenance']['sources']} 源 / {entry['n_samples']} 样本）")
 
     with open(TABLE_PATH, "w", encoding="utf-8") as handle:
         json.dump(table, handle, ensure_ascii=False, indent=2)

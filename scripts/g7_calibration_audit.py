@@ -89,20 +89,37 @@ def provenance() -> dict:
                            for sid in fit_ids)
         labels = Counter(manifest[sid]["label"] for sid in fit_ids)
 
+        provenance_entry = entry.get("provenance") or {}
         output[source] = {
             "g2_name": g2_name,
             "fits_on_cells": list(MATCHED_CELLS),
-            "n_fit_samples": len(fit_ids),
+            # What the runtime table says about itself now (repair 2026-10-13):
+            # fitted on the fitting group, weighted by the format's own cell.
+            "fitted_on": provenance_entry.get("fitted_on"),
+            "n_fit_samples": entry["n_samples"],
             "fit_labels": dict(labels),
-            "fit_by_g7_group": dict(by_group),
             "bins": [{"lo": b["lo"], "hi": b["hi"], "n": b["n"],
                       "p_fake": round(b["p_fake"], 4)} for b in entry["bins"]],
-            # Which single number the runtime weight comes from: `png` only,
-            # because evaluate_experts_g2.py sets
-            # separation_polarity_corrected = max(png, 1 - png).
-            "weight": {"source_cell": "png",
-                       "value": round(float(entry["separation_polarity_corrected"]), 4),
-                       "youden_margin": round(max(0.0, 2.0 * entry["separation_polarity_corrected"] - 1.0), 4)},
+            "weight": {
+                "basis": "per-format cell when known, pooled otherwise",
+                "pooled": round(float(entry["separation_polarity_corrected"]), 4),
+                "per_cell": entry.get("per_cell_separation"),
+            },
+            # The defect this section was written to expose, kept as evidence:
+            # the mapping was fitted on every matched cell (A+B+C) and the
+            # weight was the png cell's separation used for every format
+            # (evaluate_experts_g2.py sets separation_polarity_corrected =
+            # max(png, 1 - png)).  Corrected in build_reliability_table.py;
+            # the old table is kept as reliability_table_v1.json.
+            "before_2026_10_13": {
+                "n_fit_samples": len(fit_ids),
+                "fit_by_g7_group": dict(by_group),
+                "weight_source_cell": "png",
+                "weight_value": round(float(g2.get("experts", {})
+                                            .get(g2_name, {})
+                                            .get("separation_polarity_corrected")
+                                            or entry["separation_polarity_corrected"]), 4),
+            },
             "per_cell_separation": per_cell,
             "applicability": entry["applicability"],
         }
@@ -114,14 +131,23 @@ def provenance() -> dict:
         output["probe_dino_expert"] = {
             "g2_name": None,
             "fits_on_cells": provenance_block.get("treatments"),
+            "fitted_on": provenance_block.get("fitted_on"),
             "n_fit_samples": probe_entry["n_samples"],
             "fit_labels": None,
             "fit_by_g7_group": {"A": probe_entry["n_samples"]},
+            "weight": {
+                "basis": "per-format cell when known, pooled otherwise",
+                "pooled": round(float(probe_entry["separation_polarity_corrected"]), 4),
+                "per_cell": probe_entry.get("per_cell_separation"),
+            },
+            "before_2026_10_13": {
+                "n_fit_samples": probe_entry["n_samples"],
+                "fit_by_g7_group": {"A": probe_entry["n_samples"]},
+                "weight_source_cell": "pooled matched cells",
+                "weight_value": round(float(probe_entry["separation_polarity_corrected"]), 4),
+            },
             "bins": [{"lo": b["lo"], "hi": b["hi"], "n": b["n"],
                       "p_fake": round(b["p_fake"], 4)} for b in probe_entry["bins"]],
-            "weight": {"source_cell": "pooled matched cells",
-                       "value": round(float(probe_entry["separation_polarity_corrected"]), 4),
-                       "youden_margin": round(max(0.0, 2.0 * probe_entry["separation_polarity_corrected"] - 1.0), 4)},
             "per_cell_separation": {k: {"separation_polarity_corrected": v}
                                     for k, v in (provenance_block.get("per_treatment_separation") or {}).items()},
             "applicability": probe_entry["applicability"],
@@ -353,9 +379,12 @@ def main() -> None:
 
     print("== 拟合来源与权重来源 ==")
     for source, block in report["provenance"].items():
-        groups = block["fit_by_g7_group"]
-        print(f"  {source:22s} n={block['n_fit_samples']:4d} 分组={groups} "
-              f"权重来自 {block['weight']['source_cell']}={block['weight']['value']}")
+        weight = block["weight"]
+        before = block["before_2026_10_13"]
+        print(f"  {source:22s} 拟合组={block['fitted_on']} n={block['n_fit_samples']:4d} "
+              f"权重={weight['basis']}（pooled {weight['pooled']}） "
+              f"｜修复前 n={before['n_fit_samples']} "
+              f"权重来自 {before['weight_source_cell']}={before['weight_value']}")
     print("\n== 三种映射（A 拟合 → B 评估）Brier / 可靠性差 ==")
     header = f"  {'专家':22s} {'经验分箱':>18s} {'平滑分箱':>18s} {'逻辑回归':>18s}"
     print(header)

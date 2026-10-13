@@ -28,6 +28,36 @@ def isolated_sft_dir(tmp_path_factory, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# Calibration fixture for session-mechanics tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def legacy_calibration(monkeypatch):
+    """
+    Pin the pre-repair calibration table (v1) for session-mechanics tests.
+
+    Those tests script a conversation and assert what the pipeline did with
+    it; their scripts were written against the v1 posterior, and the repair of
+    2026-10-13 legitimately moves the posteriors (the mappings are fitted on
+    group A, and each format now uses its own cell's weight) — a different
+    posterior accepts a candidate at a different turn.  Pinning v1 keeps them
+    testing the ledger/protocol logic they are about.  The repaired table has
+    its own tests (tests/test_calibration_source.py).
+    """
+    import os
+
+    from config import PROJECT_ROOT
+    from utils.reliability import ReliabilityTable
+
+    pinned = ReliabilityTable.load(
+        os.path.join(PROJECT_ROOT, "calibration", "reliability_table_v1.json"))
+    assert pinned is not None
+    monkeypatch.setattr(ReliabilityTable, "load",
+                        classmethod(lambda cls, path=None: pinned))
+    return pinned
+
+
+# ---------------------------------------------------------------------------
 # Synthetic image fixtures
 # ---------------------------------------------------------------------------
 

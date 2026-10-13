@@ -364,7 +364,9 @@ def run_agent(samples: List[dict], experts: Dict[str, Any],
         image_path = os.path.join(PROJECT_ROOT, sample["path"])
         fsm = ForensicStateMachine(
             client, experts,
-            logger=SessionLogger(sft_dir=sft_dir) if sft_dir else None)
+            logger=SessionLogger(sft_dir=sft_dir) if sft_dir else None,
+            # the sample's format cell drives the calibration weights (A2)
+            condition=sample.get("treatment"))
         started = time.perf_counter()
         result = fsm.run(image_path, ground_truth=sample["label"])
         elapsed = time.perf_counter() - started

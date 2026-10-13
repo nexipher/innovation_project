@@ -1627,3 +1627,24 @@
   - `claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：**1065 项测试通过**（基线 1051 → 本轮 +14）。协议测试覆盖：解析层三类判定；混合轮/双调用轮**均不执行**（`expert_call_count == 0`、`unique_evidence_count == 0`）且提示明确；无 bbox 调用按整图测量且 `region_normalized_1000 is None`；提示词包含单动作、bbox 可选、不许编造区域、"未观察到明确异常"与调用前证据规则
 * **置信度或遗留待办（TODO）**：①协议由**提示词 + 解析器 + 执行器**三层共同约束，但真实模型是否遵守只能在小批 GPU 运行中观察（本轮无 GPU 授权）②`scripts/g7_acceptance.py` 的会话记账（调用-坐标恒等式）在 bbox 可选后需按新语义重核——它校验的是"模型声明的调用都被执行"，仍成立，但**无 bbox 调用**的坐标恒等式需在 CPU 回归时补一条③下一步：**校准修正**（只用指定开发来源、修正跨格式权重，保留旧表供复算）
+
+### 2026-10-13 14:20:43 - G7 §4.17 B 段第 4 步：校准修正（只用指定开发来源 + 修正跨格式权重，保留旧表供复算）
+
+* **当前操作动作**：按用户第三次给定顺序第 3 项修正 A2 审计确认的两处校准缺陷——①旧专家映射拟合集含 B/C（392 = A+B+C）②权重只取 png 单格却用于所有格式；保留旧表供历史复算，运行时改为**按格式取权重**。CPU only，全部用缓存分数重算，未做任何新推理。
+* **对应计划锚点**：plan.md §4.17（B 段第 4 步；对应交接文档 B4 与用户顺序第 3 项）
+* **核心变更说明**：
+  1. **拟合来源（只用 A 组）**：`build_reliability_table.py` 现在**强制要求**分组声明文件（缺失即 `SystemExit`，不再默默拟合全部样本），三个 G2 专家（noise / jpeg / frequency_v2）与 ela 的映射**只读 A 组**：n_samples 392 → **248**（62 源 × 4 匹配格式），`provenance.fitted_on="A"`、`split_hash=37bf2f1db22ccdef`；表头新增 `schema: 2`、`fitting_group`、`fitting_split_hash`
+  2. **跨格式权重（不再用 png 单格）**：每个专家新增 `per_cell_separation`（png / jpeg_q95 / jpeg_q85 / jpeg_q70 各自的极性校正分离度，按 A 组实测）；`separation_polarity_corrected` 改为**A 组池化值**而非 G2 报告里的 png 单格。实测差异：jpeg_expert **0.9721 → 池化 0.6623**（png 0.9594、q95 0.7000、q85 0.7219、**q70 0.4010**，即 q70 上按池化极性几乎没有可用信号）；noise 0.8454 → 0.7940（q70 0.7625）；frequency_v2 0.5558 → **0.6570**（A 组上更强）；PROBE 0.9836 不变（本就按 A 拟合），其 `per_cell_separation` 一并补齐
+  3. **运行时按格式取权重**：`ReliabilityTable.weight_of(entry, condition)` 与 `lookup(..., condition=...)`——知道格式就用该格实测分离度，否则用池化值；`condition_metadata` 记录 `condition` / `weight_basis` / `weight`。控制器新增 `condition` 参数（写入 `metadata.calibration_condition`），`_expert_weights()` 同步按格式取值；生成脚本传 `variant["treatment"]`、验收脚本传 `sample["treatment"]`
+  4. **旧表保留**：`calibration/reliability_table_v1.json`（原样，含 392 拟合与 png 权重）供历史批次复算；新表为 `reliability_table.json`
+  5. **A2 审计报告更新为"修复后状态 + 保留缺陷证据"**：provenance 段现在读表自述（fitted_on=A、n=248、per-cell 权重），并把缺陷前的数字放进 `before_2026_10_13` 子块（n=392、权重来自 png=0.9721）——审计产物既能说明现状也不抹掉当时的发现
+* **涉及/修改的文件清单**：
+  - `scripts/build_reliability_table.py (Modified — A 组强制、按格式分离度、provenance、缺失分组即报错)`
+  - `utils/reliability.py (Modified — weight_of + condition 参数 + condition_metadata)`
+  - `state_machine/controller.py (Modified — condition 参数、按格式权重、计数器 calibration_condition)`
+  - `scripts/generate_trajectories_g4.py / scripts/g7_acceptance.py (Modified — 传入 variant/sample 的 treatment)`
+  - `calibration/reliability_table.json (Regenerated — schema 2, A 组拟合, per-cell) 、calibration/reliability_table_v1.json (Created — 旧表原样保留)`
+  - `scripts/g7_calibration_audit.py (Modified — 报告修复后来源并保留 before 证据)、calibration/g7_calibration_audit.json (Regenerated)`
+  - `tests/test_calibration_source.py (Created — 12 项)、tests/conftest.py (Modified — legacy_calibration 夹具)、tests/test_controller.py / test_evidence_check_session.py / test_probe_wiring.py (Modified — 会话机制类测试固定 pin v1 后验)`
+* **执行结果与验证状态**：**分块运行 1077 通过 + 1 跳过**（整包一次跑会被 cgroup 杀掉：本机 2 GB 且当前占用 1.6 GB，改为三块跑，全部通过）。新增测试覆盖：表自述拟合组与 split hash；G2 专家 n_samples=248（且 ≠392）；每个运行时专家都有 per-cell 分离度；已知格式用自己的格、未知格式回退池化；**png 与 q70 的权重差 > 0.4**（即 A2 缺陷的反证）；v1 表保留且仍记录旧值；构建脚本缺分组声明即失败且可复现；会话记录 `calibration_condition`
+* **置信度或遗留待办（TODO）**：①**历史批次不受影响但新批次的后验会变**——q70/q85 图上 jpeg/noise 的权重下降，参考后验与停止点会与旧批次不同；v1 表保留使对照复算可行②`scripts/g7_acceptance.py` 的旧报告仍是 v1 表下的结果，新的小批 GPU 运行才有可比的新数据③**会话机制类测试已固定 pin v1 后验**（明确记录在 conftest 注释里），新表行为由 `test_calibration_source.py` 覆盖④下一步：**忠实转换与审核**（检查整条监督对话，不用模板覆盖模型论证；把原始助手轮与训练对话并排展示）

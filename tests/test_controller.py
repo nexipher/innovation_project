@@ -4,6 +4,10 @@ import json
 import pytest
 from state_machine.controller import ForensicStateMachine
 
+
+
+# the scripts in this module were written against the v1 posterior
+pytestmark = pytest.mark.usefixtures("legacy_calibration")
 REAL_PATH = "dataset/Real/002baac0-bacd-496c-981c-a4a9d66b8472.jpg"
 FAKE_PATH = "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"
 

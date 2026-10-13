@@ -1,5 +1,6 @@
 {
-  "generated_at": "2026-10-11T13:46:40",
+  "generated_at": "2026-10-13T14:02:26",
+  "schema": 2,
   "source_raw_values": "calibration/set/raw_values.json",
   "cells_used": [
     "real_png",
@@ -12,199 +13,276 @@
     "fake_jpeg_q70"
   ],
   "bins": 5,
+  "fitting_group": "A",
+  "fitting_split_hash": "37bf2f1db22ccdef",
   "experts": {
     "frequency_expert": {
       "g2_name": "frequency_v1",
       "semantics_aligned": true,
-      "separation_polarity_corrected": 0.5047916666666666,
-      "confound_drop_png_to_q70": -0.03645833333333337,
+      "separation_polarity_corrected": 0.5273,
+      "per_cell_separation": {
+        "png": 0.5,
+        "jpeg_q95": 0.5193,
+        "jpeg_q85": 0.5302,
+        "jpeg_q70": 0.5594
+      },
+      "confound_drop_png_to_q70": 0.0594,
       "applicability": "disabled:no-signal",
       "applicability_conditions": "无有效信号（png 分离度 0.505，q70 0.541）；停用，不进入运行时工具箱。",
-      "n_samples": 392,
+      "n_samples": 248,
       "bins": [
         {
           "lo": null,
-          "hi": 6.47542575924367e-06,
-          "n": 231,
-          "p_fake": 0.4675324675324675
+          "hi": 1.6139510278815376e-05,
+          "n": 149,
+          "p_fake": 0.5167785234899329
         },
         {
-          "lo": 6.47542575924367e-06,
-          "hi": 0.00010367528899486807,
-          "n": 77,
-          "p_fake": 0.5194805194805194
+          "lo": 1.6139510278815376e-05,
+          "hi": 0.0001380080048305984,
+          "n": 49,
+          "p_fake": 0.4489795918367347
         },
         {
-          "lo": 0.00010367528899486807,
+          "lo": 0.0001380080048305984,
           "hi": null,
-          "n": 84,
-          "p_fake": 0.5238095238095238
+          "n": 50,
+          "p_fake": 0.58
         }
-      ]
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g2_expert_report.json",
+        "report_separation_png_cell": 0.5047916666666666
+      }
     },
     "frequency_expert_v2": {
       "g2_name": "frequency_v2",
       "semantics_aligned": true,
-      "separation_polarity_corrected": 0.5558333333333333,
-      "confound_drop_png_to_q70": -0.07833333333333337,
+      "separation_polarity_corrected": 0.657,
+      "per_cell_separation": {
+        "png": 0.6219,
+        "jpeg_q95": 0.65,
+        "jpeg_q85": 0.6615,
+        "jpeg_q70": 0.6865
+      },
+      "confound_drop_png_to_q70": 0.0646,
       "applicability": "weak:marginally-above-chance",
       "applicability_conditions": "弱信号（png 0.556，q70 0.634）——唯一在压缩配平后仍略升的专家；仅作辅助线索，不得单独支撑判定。",
-      "n_samples": 392,
+      "n_samples": 248,
       "bins": [
         {
           "lo": null,
-          "hi": 0.0002594522035059057,
-          "n": 79,
-          "p_fake": 0.3924050632911392
+          "hi": 0.00030739042434596055,
+          "n": 48,
+          "p_fake": 0.375
         },
         {
-          "lo": 0.0002594522035059057,
-          "hi": 0.00038143603093239686,
-          "n": 78,
-          "p_fake": 0.44871794871794873
+          "lo": 0.00030739042434596055,
+          "hi": 0.0004478055276488566,
+          "n": 51,
+          "p_fake": 0.43137254901960786
         },
         {
-          "lo": 0.00038143603093239686,
-          "hi": 0.0005959191463167152,
-          "n": 78,
-          "p_fake": 0.48717948717948717
+          "lo": 0.0004478055276488566,
+          "hi": 0.0006501866467879206,
+          "n": 50,
+          "p_fake": 0.5
         },
         {
-          "lo": 0.0005959191463167152,
-          "hi": 0.0009957944868030021,
-          "n": 78,
-          "p_fake": 0.41025641025641024
+          "lo": 0.0006501866467879206,
+          "hi": 0.001061146266611652,
+          "n": 49,
+          "p_fake": 0.4897959183673469
         },
         {
-          "lo": 0.0009957944868030021,
+          "lo": 0.001061146266611652,
           "hi": null,
-          "n": 79,
-          "p_fake": 0.7088607594936709
+          "n": 50,
+          "p_fake": 0.78
         }
-      ]
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g2_expert_report.json",
+        "report_separation_png_cell": 0.5558333333333333
+      }
     },
     "noise_expert": {
       "g2_name": "noise",
       "semantics_aligned": false,
-      "separation_polarity_corrected": 0.8454166666666667,
-      "confound_drop_png_to_q70": -0.07333333333333333,
+      "separation_polarity_corrected": 0.794,
+      "per_cell_separation": {
+        "png": 0.8365,
+        "jpeg_q95": 0.8063,
+        "jpeg_q85": 0.774,
+        "jpeg_q70": 0.7625
+      },
+      "confound_drop_png_to_q70": -0.074,
       "applicability": "inverted:high-metric-means-real",
       "applicability_conditions": "高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。",
-      "n_samples": 392,
+      "n_samples": 248,
       "bins": [
         {
           "lo": null,
-          "hi": 1.6217467108638735,
-          "n": 79,
-          "p_fake": 0.8481012658227848
+          "hi": 1.602385973641752,
+          "n": 50,
+          "p_fake": 0.86
         },
         {
-          "lo": 1.6217467108638735,
-          "hi": 2.5307666397442974,
-          "n": 78,
-          "p_fake": 0.6410256410256411
+          "lo": 1.602385973641752,
+          "hi": 2.589420190873378,
+          "n": 49,
+          "p_fake": 0.6530612244897959
         },
         {
-          "lo": 2.5307666397442974,
-          "hi": 3.2180342581729713,
-          "n": 78,
-          "p_fake": 0.5641025641025641
+          "lo": 2.589420190873378,
+          "hi": 3.1937517230549224,
+          "n": 50,
+          "p_fake": 0.56
         },
         {
-          "lo": 3.2180342581729713,
-          "hi": 4.104055949189497,
-          "n": 78,
-          "p_fake": 0.28205128205128205
+          "lo": 3.1937517230549224,
+          "hi": 4.085608105079007,
+          "n": 49,
+          "p_fake": 0.3469387755102041
         },
         {
-          "lo": 4.104055949189497,
+          "lo": 4.085608105079007,
           "hi": null,
-          "n": 79,
-          "p_fake": 0.11392405063291139
+          "n": 50,
+          "p_fake": 0.16
         }
-      ]
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g2_expert_report.json",
+        "report_separation_png_cell": 0.8454166666666667
+      }
     },
     "jpeg_expert": {
       "g2_name": "jpeg",
       "semantics_aligned": false,
-      "separation_polarity_corrected": 0.9720833333333333,
-      "confound_drop_png_to_q70": -0.5408333333333333,
+      "separation_polarity_corrected": 0.6623,
+      "per_cell_separation": {
+        "png": 0.9594,
+        "jpeg_q95": 0.7,
+        "jpeg_q85": 0.7219,
+        "jpeg_q70": 0.401
+      },
+      "confound_drop_png_to_q70": -0.5584,
       "applicability": "inverted:high-metric-means-real",
       "applicability_conditions": "高 strength 统计上对应 Real（原生 JPEG 照片）；q70 配平后分离度仅 0.57。仅当来源无压缩历史时可反向参考。",
-      "n_samples": 392,
+      "n_samples": 248,
       "bins": [
         {
           "lo": null,
-          "hi": 2.0496542637365613,
-          "n": 79,
-          "p_fake": 0.8607594936708861
+          "hi": 2.027363269668981,
+          "n": 50,
+          "p_fake": 0.86
         },
         {
-          "lo": 2.0496542637365613,
-          "hi": 2.3660049401426875,
-          "n": 78,
-          "p_fake": 0.44871794871794873
+          "lo": 2.027363269668981,
+          "hi": 2.3065791265416578,
+          "n": 49,
+          "p_fake": 0.5102040816326531
         },
         {
-          "lo": 2.3660049401426875,
-          "hi": 2.745046349006237,
-          "n": 78,
-          "p_fake": 0.38461538461538464
+          "lo": 2.3065791265416578,
+          "hi": 2.6459617606266668,
+          "n": 50,
+          "p_fake": 0.4
         },
         {
-          "lo": 2.745046349006237,
-          "hi": 3.3645527201840073,
-          "n": 78,
-          "p_fake": 0.2948717948717949
+          "lo": 2.6459617606266668,
+          "hi": 3.2850781416770793,
+          "n": 49,
+          "p_fake": 0.30612244897959184
         },
         {
-          "lo": 3.3645527201840073,
+          "lo": 3.2850781416770793,
           "hi": null,
-          "n": 79,
-          "p_fake": 0.45569620253164556
+          "n": 50,
+          "p_fake": 0.5
         }
-      ]
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g2_expert_report.json",
+        "report_separation_png_cell": 0.9720833333333333
+      }
     },
     "ela_expert": {
       "g2_name": "ela",
       "semantics_aligned": true,
-      "separation_polarity_corrected": 0.9483333333333334,
-      "confound_drop_png_to_q70": 0.4443750000000001,
-      "applicability": "shortcut-prone:compression-history",
+      "separation_polarity_corrected": 0.7747,
+      "per_cell_separation": {
+        "png": 0.9365,
+        "jpeg_q95": 0.9292,
+        "jpeg_q85": 0.8714,
+        "jpeg_q70": 0.4708
+      },
+      "confound_drop_png_to_q70": -0.4657,
+      "applicability": "weak:marginally-above-chance",
       "applicability_conditions": "仅适用于未压缩或高质量来源（PNG / JPEG q≥85）；统一重压缩后（q70 校准）分离度降至随机（0.504）。",
-      "n_samples": 392,
+      "n_samples": 248,
       "bins": [
         {
           "lo": null,
           "hi": 1.3333333730697632,
-          "n": 51,
-          "p_fake": 0.29411764705882354
+          "n": 35,
+          "p_fake": 0.4
         },
         {
           "lo": 1.3333333730697632,
           "hi": 1.6666666269302368,
-          "n": 50,
-          "p_fake": 0.26
+          "n": 33,
+          "p_fake": 0.21212121212121213
         },
         {
           "lo": 1.6666666269302368,
           "hi": 2.3333332538604736,
-          "n": 123,
-          "p_fake": 0.2845528455284553
+          "n": 79,
+          "p_fake": 0.3037974683544304
         },
         {
           "lo": 2.3333332538604736,
           "hi": 4.333333492279053,
-          "n": 84,
-          "p_fake": 0.5595238095238095
+          "n": 49,
+          "p_fake": 0.673469387755102
         },
         {
           "lo": 4.333333492279053,
           "hi": null,
-          "n": 84,
-          "p_fake": 0.9761904761904762
+          "n": 52,
+          "p_fake": 0.9615384615384616
         }
-      ]
+      ],
+      "provenance": {
+        "fitted_on": "A",
+        "mapping": "quantile_bins",
+        "sources": 62,
+        "samples": 248,
+        "split_hash": "37bf2f1db22ccdef",
+        "report": "calibration/g2_expert_report.json",
+        "report_separation_png_cell": 0.9483333333333334
+      }
     },
     "probe_dino_expert": {
       "g2_name": null,
@@ -246,6 +324,12 @@
           "p_fake": 1.0
         }
       ],
+      "per_cell_separation": {
+        "png": 0.9729,
+        "jpeg_q95": 0.9771,
+        "jpeg_q85": 0.9865,
+        "jpeg_q70": 0.9948
+      },
       "provenance": {
         "fitted_on": "A",
         "mapping": "quantile_bins",

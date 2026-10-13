@@ -261,6 +261,9 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
         logger=SessionLogger(sft_dir=sft_dir) if sft_dir else None,
         evidence_injection="text+image",
         allow_exploration=policy.get("allow_exploration", True),
+        # The variant knows its format cell: the calibration weights then come
+        # from that cell's own measurement (G7 A2), not from the png cell.
+        condition=variant.get("treatment"),
     )
 
     started = time.perf_counter()

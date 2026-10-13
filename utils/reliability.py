@@ -53,13 +53,33 @@ class ReliabilityTable:
     def expert_entry(self, source: str) -> Optional[dict]:
         return self._experts.get(source)
 
-    def lookup(self, source: str, raw_metric: float) -> Optional[dict]:
+    @staticmethod
+    def weight_of(entry: dict, condition: Optional[str]) -> "tuple":
+        """
+        The measured separation to weight this expert's token by.
+
+        With a known format, that format's own cell; otherwise the pooled
+        value fitted on the same (fitting-group) samples.  The png cell is
+        never applied to another format: a JPEG expert weighted 0.97 on a
+        q70 image was weighted 0.40 by its own measurement (G7 A2).
+        """
+        per_cell = entry.get("per_cell_separation") or {}
+        if condition and per_cell.get(condition) is not None:
+            return float(per_cell[condition]), f"condition:{condition}"
+        pooled = entry.get("separation_polarity_corrected")
+        return (None if pooled is None else float(pooled)), "pooled"
+
+    def lookup(self, source: str, raw_metric: float,
+               condition: Optional[str] = None) -> Optional[dict]:
         """
         Look up calibration for one measurement.
 
         Args:
             source: Expert source name, e.g. "noise_expert".
             raw_metric: The expert's raw metric for this analysis.
+            condition: The image's format cell ("png" / "jpeg_q95" / ...) when
+                the session knows it.  The weight is then that cell's measured
+                separation instead of the pooled one.
 
         Returns:
             dict with keys `reliability`, `calibrated_likelihood`,
@@ -91,8 +111,9 @@ class ReliabilityTable:
             "Real": 1.0 - probability_fake,
             "Fake": probability_fake,
         }
+        separation, basis = self.weight_of(entry, condition)
         return {
-            "reliability": float(entry.get("separation_polarity_corrected", 0.5)),
+            "reliability": float(separation if separation is not None else 0.5),
             "calibrated_likelihood": likelihood,
             "semantics_aligned": bool(entry.get("semantics_aligned", True)),
             "applicability": entry.get("applicability", "unknown"),
@@ -101,6 +122,11 @@ class ReliabilityTable:
                 "bin_samples": bin_note,
                 "confound_drop_png_to_q70": entry.get("confound_drop_png_to_q70"),
                 "separation_polarity_corrected": entry.get("separation_polarity_corrected"),
+                # Which measurement the weight came from (A2): a format cell
+                # or the pooled fitting-group value.
+                "condition": condition,
+                "weight_basis": basis,
+                "weight": separation,
             },
             # G7: which group fitted this mapping, on what, with which weights.
             # Absent for the G2 experts (they predate the discipline); present
