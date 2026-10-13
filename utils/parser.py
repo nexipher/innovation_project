@@ -201,6 +201,35 @@ class Parser:
                 results.append((expert_name, [int(m.group(i)) for i in range(2, 6)]))
         return results
 
+    # A call tag *inside* the planning block is the model naming the tool it
+    # is about to consult ("Expert Target & Hypothesis: <call_probe>"), not a
+    # second request.  The acceptance batch showed every one of 56 sessions
+    # doing this — and the strict reading refused all 160 such turns as
+    # "multiple calls", which measured the parser rather than the model.
+    _RE_PLANNING_BLOCK = re.compile(r"<planning>.*?</planning>", re.S | re.I)
+    _RE_REASONING_BLOCK = re.compile(r"<reasoning>.*?</reasoning>", re.S | re.I)
+
+    @classmethod
+    def strip_prose(cls, text: str) -> str:
+        """
+        The text the executor acts on: prose blocks removed.
+
+        A <call_x> inside <planning> or <reasoning> is the model *referring*
+        to a tool it used or intends to use ("1. <call_probe> 的结果表明…"),
+        not a second request.  The acceptance batch showed both shapes in real
+        output; the strict reading refused the turns and measured the parser.
+        """
+        stripped = cls._RE_PLANNING_BLOCK.sub(" ", text or "")
+        return cls._RE_REASONING_BLOCK.sub(" ", stripped)
+
+    # kept for callers written before the reasoning block was included
+    strip_planning = strip_prose
+
+    @classmethod
+    def executable_calls(cls, text: str):
+        """Calls a session may execute: those outside the prose blocks."""
+        return cls.extract_all_calls(cls.strip_prose(text))
+
     @classmethod
     def protocol_action(cls, text: str) -> dict:
         """
@@ -211,8 +240,9 @@ class Parser:
         quietly picking a half), so the controller can answer it with a
         protocol correction and execute nothing.
         """
-        calls = cls.extract_all_calls(text)
-        verdict = cls.has_verdict(text)
+        actionable = cls.strip_prose(text)
+        calls = cls.extract_all_calls(actionable)
+        verdict = cls.has_verdict(actionable)
         violation = None
         if calls and verdict:
             violation = "call_and_verdict"

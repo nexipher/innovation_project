@@ -252,7 +252,7 @@ class ForensicStateMachine:
                 candidate_verdict.setdefault("verdict_status", "model_concluded")
                 candidate_verdict["conclusion"] = {
                     "source": "v1_candidate",
-                    "calls": [name for name, _ in Parser.extract_all_calls(raw_output)],
+                    "calls": [name for name, _ in Parser.executable_calls(raw_output)],
                     "calls_executed": False,
                     "verdict_parse": "ok",
                 }
@@ -608,7 +608,7 @@ class ForensicStateMachine:
                     # A closing turn's calls are never executed (the controller
                     # does not run the measurement engine from this entry), so
                     # any call written here is recorded as unexecuted.
-                    adopted_calls = [name for name, _ in Parser.extract_all_calls(final_output)]
+                    adopted_calls = [name for name, _ in Parser.executable_calls(final_output)]
                     adopted_calls_executed = False
                 findings = ledger.findings(final_output)
                 # §4.17 R5: only *defects* are corrected automatically.  A
@@ -649,7 +649,7 @@ class ForensicStateMachine:
                     # a training sample must not show a call as part of the
                     # answer that produced a verdict.
                     adopted_from = "correction"
-                    adopted_calls = [name for name, _ in Parser.extract_all_calls(final_output)]
+                    adopted_calls = [name for name, _ in Parser.executable_calls(final_output)]
                     adopted_calls_executed = False
                 model_candidate = Parser.parse_verdict(final_output) or {}
                 conclusion = {

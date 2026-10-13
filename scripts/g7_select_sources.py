@@ -97,9 +97,34 @@ def band_of(probability: float) -> str:
     return "unknown"
 
 
-def used_paths() -> set:
+def prior_batch_sources(batches) -> set:
+    """
+    Source paths already chosen for an earlier batch.
+
+    A new batch must be independent of the reviewed one: re-drawing from the
+    same pool with a different seed overlaps by construction, and a batch that
+    re-runs sources a reviewer already judged would spend the GPU budget on
+    material that cannot be counted as fresh evidence (§4.17).
+    """
+    with open(SPLIT_PATH, encoding="utf-8") as handle:
+        split = json.load(handle)
+    blocked = set()
+    for batch in batches:
+        path = os.path.join(batch_paths(batch)["samples"], "selection.json")
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8") as handle:
+            chosen = json.load(handle)["chosen"]      # source ids, by name
+        for source_id in chosen:
+            source = split["sources"].get(source_id)
+            if source:
+                blocked.add(source["path"])
+    return blocked
+
+
+def used_paths(exclude_batches=("g7_b1",)) -> set:
     """Every image that belongs to a group that has already been decided."""
-    used = set()
+    used = prior_batch_sources(exclude_batches)
     for path in (MANIFEST_D_PATH, ACCEPTANCE_PATH):
         if not os.path.exists(path):
             continue
@@ -115,11 +140,12 @@ def used_paths() -> set:
     return used
 
 
-def select_candidates(seed: int = DEFAULT_SEED) -> List[dict]:
+def select_candidates(seed: int = DEFAULT_SEED,
+                      exclude_batches=("g7_b1",)) -> List[dict]:
     """Train-partition sources, excluding everything already spoken for."""
     with open(SPLIT_PATH, encoding="utf-8") as handle:
         split = json.load(handle)
-    blocked = used_paths()
+    blocked = used_paths(exclude_batches)
     rng = random.Random(seed)
 
     train = {key: entry for key, entry in split["sources"].items()
@@ -138,12 +164,12 @@ def select_candidates(seed: int = DEFAULT_SEED) -> List[dict]:
     return candidates
 
 
-def check_candidates(candidates: List[dict]) -> List[str]:
+def check_candidates(candidates: List[dict], exclude_batches=("g7_b1",)) -> List[str]:
     problems = []
     with open(SPLIT_PATH, encoding="utf-8") as handle:
         split = json.load(handle)
     test_paths = {e["path"] for e in split["sources"].values() if e["split"] == "test"}
-    blocked = used_paths()
+    blocked = used_paths(exclude_batches)
     for source in candidates:
         if source["split"] != "train":
             problems.append(f"{source['source_id']} 不在训练分区")
@@ -319,11 +345,14 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--dry-run", action="store_true",
                         help="只建候选池与变体（CPU），不打分、不选源")
+    parser.add_argument("--exclude-batch", default="g7_b1",
+                        help="已审核批次的 id（逗号分隔），其已选源不再进入候选池")
     args = parser.parse_args()
+    exclude_batches = tuple(b.strip() for b in args.exclude_batch.split(",") if b.strip())
 
     paths = batch_paths(args.batch)
-    candidates = select_candidates(args.seed)
-    problems = check_candidates(candidates)
+    candidates = select_candidates(args.seed, exclude_batches)
+    problems = check_candidates(candidates, exclude_batches)
     if problems:
         raise SystemExit("候选池不合法：" + "；".join(problems))
     print(f"候选池：{len(candidates)} 源（Real "

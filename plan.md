@@ -2577,3 +2577,12 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 5. **映射口径如实标注**：逐格式只改**权重**；`raw_metric → P(Fake)` 仍是**池化分位分箱**。token 的 `calibration.mapping_scope="pooled_quantile_bins"` + `weight_basis`（`condition:<cell>` 或 `pooled`）随 token 传递；会话计数器记录 `calibration_condition`（未知来源输入回退池化并如实记 None）；README 与报告需区分"已知编码条件"与"真实未知来源"。
 
 **验收脚本 `scripts/cpu_acceptance_r5.py`（只读 + 临时目录）**：五项检查端到端跑通"运行 → 记录 → 转换 → 工作台"，产物 `calibration/g7_cpu_acceptance_r5.json`。
+
+### B 段第 7 步：v3 小批 GPU 验收（用户授权 2026-10-13；先冒烟，再 56 次会话）
+
+- **三版本固定**：策略 `FORENSIC_HALTING_POLICY=v3`、提示词 `453342d7e16ad3c8`、校准表 `3d16c70538a1d0bc`（schema 2、拟合组 A）——记录进 `calibration/g7_report_g7_b2.json` 的 `versions`。
+- **独立新批次 `g7_b2`**：选源在候选池阶段即**排除 b1 已选的 14 源**（`--exclude-batch g7_b1`，写进 `prior_batch_sources`），并照旧与 B/C/D、验收集、最终测试断言互斥；新目录（`sft_data/trajectories_g7_b2/`、`variants_g7_b2/`、批次目录）不覆盖任何旧产物。
+- **冒烟 4 次**（`--limit 4`）：v3 记录正常、`verdict_status=model_concluded`、账本全 pass、三类停止原因（自主结案/预算/防循环）都出现过，显存 16.6 GB。
+- **正式小批**：单臂 `probe+noise`，14 源 × 4 编码格 = **56 次会话**（用户"50 个左右、大致看一下"）。
+- **统计口径（`scripts/g7_b2_report.py`）**：合法主动结案、合法弃权、**解析失败（单独计，不并入弃权）**、外部截断（预算/防循环/格式）、证据纠正与缺陷/候选类型、协议违规、平均轮数/调用/成本，以及**用缓存分数离线计算的 PROBE 单独对照臂**（同一批图像，读同一张表）。
+- **人工检查材料（`scripts/build_review_from_trajectories.py`）**：单臂批次没有 no-tool 配对，admission 必然全拒；因此直接由轨迹渲染评审样本（明确标注 `admission=not_applied_review_only`）并建工作台，供"原始回答 vs 最终训练对话"并排查看。

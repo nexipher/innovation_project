@@ -181,7 +181,11 @@ class TestToolPolicies:
         rule explicit rather than advisory; the repair pass (B segment step 2)
         added the single-action rule, the optional bbox, the "no clear
         anomaly" planning line and the pre-call claim rule, moving it to
-        8c342dc61db40df7.  Anything that moves it again has to say so in a
+        8c342dc61db40df7; the first v3 acceptance batch then showed every one
+        of 56 sessions writing a <call_x> tag inside <planning> (the template
+        offering the tag as the expert's "name"), so the template now shows a
+        bare name and says the tag appears exactly once, after </planning>:
+        f4e2eda32c60679b.  Anything that moves it again has to say so in a
         commit.
         """
         import hashlib
@@ -191,7 +195,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "8c342dc61db40df7"
+            "f4e2eda32c60679b"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

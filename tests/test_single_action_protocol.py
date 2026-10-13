@@ -51,6 +51,40 @@ class TestTheParserDecides:
         assert action["calls"] == []
 
 
+class TestAPlanningTagIsNotARequest:
+    """The acceptance batch's real output: the tag named in the planning prose."""
+
+    REAL_TURN = ("<planning>\n"
+                 "Suspected Region: 未观察到明确异常，需要统计证据\n"
+                 "Visual Anomalies: 未观察到明确异常，需要统计证据\n"
+                 "Expert Target & Hypothesis: <call_probe> 用于检测整体图像的生成器特征\n"
+                 "</planning>\n<call_probe>")
+
+    def test_it_is_one_call_and_no_violation(self):
+        action = Parser.protocol_action(self.REAL_TURN)
+        assert action["violation"] is None
+        assert action["calls"] == [("probe", None)]
+
+    def test_a_tag_only_inside_planning_is_not_a_call(self):
+        action = Parser.protocol_action(
+            "<planning>Expert Target & Hypothesis: <call_noise> 噪声</planning>")
+        assert action["calls"] == [] and action["violation"] is None
+
+    def test_strip_planning_leaves_the_real_request(self):
+        stripped = Parser.strip_planning(self.REAL_TURN)
+        assert "call_probe" in stripped and "Expert Target" not in stripped
+
+    def test_two_real_calls_outside_planning_are_still_refused(self):
+        assert Parser.protocol_action(TWO_CALLS)["violation"] == "multiple_calls"
+
+    def test_the_prompt_says_the_tag_appears_once_after_planning(self):
+        from mllm.message_builder import build_forensic_prompt
+
+        prompt = build_forensic_prompt(["probe", "noise"])
+        assert "The call tag appears EXACTLY ONCE, AFTER </planning>" in prompt
+        assert "a <call_x> tag here is read as a second request" in prompt
+
+
 class TestTheExecutorRefuses:
     def _run(self, responses, tmp_path):
         from utils.logger import SessionLogger
@@ -126,3 +160,24 @@ class TestThePromptStatesTheProtocol:
     def test_physical_claims_need_a_measurement_first(self):
         prompt = self._prompt()
         assert "SRM residuals" in prompt and "cannot see" in prompt
+
+
+class TestAReasoningTagIsNotARequest:
+    """The second real shape: the model *refers* to a tool inside <reasoning>."""
+
+    REAL_TURN = ("<reasoning>\n综合分析两个专家的反馈：\n"
+                 "1. <call_probe> 的结果表明图像高度可能是 AI 生成的。\n"
+                 "2. <call_noise> 的结果表明图像中的微噪声水平较低。\n</reasoning>\n"
+                 '<verdict>{"verdict": "Uncertain", "confidence": 0.4}</verdict>')
+
+    def test_it_is_a_conclusion_and_not_two_calls(self):
+        action = Parser.protocol_action(self.REAL_TURN)
+        assert action["violation"] is None
+        assert action["calls"] == [] and action["verdict"] is True
+
+    def test_executable_calls_ignores_prose_references(self):
+        assert Parser.executable_calls(self.REAL_TURN) == []
+
+    def test_a_real_request_outside_the_blocks_is_still_seen(self):
+        text = self.REAL_TURN + "\n<call_jpeg></call_jpeg>"
+        assert Parser.executable_calls(text) == [("jpeg", None)]
