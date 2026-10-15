@@ -151,36 +151,79 @@ def check_image_enters_multimodal(image: str, client) -> dict:
 def check_one_call_executed(result: dict) -> dict:
     executed = [entry.get("source") for entry in result.get("evidence_chain") or []
                 if entry.get("source")]
-    counters = result.get("counters") or {}
-    return {"ok": len(executed) >= 1 and counters.get("executions", len(executed)) >= 1,
+    # The result carries these as top-level keys, not under "counters" (an
+    # empty dict there read as "no counters recorded" when they were right here).
+    counters = {key: result[key] for key in
+                ("expert_call_count", "unique_evidence_count",
+                 "skipped_duplicate_calls", "suppressed_duplicate_count",
+                 "weighted_cost") if key in result}
+    return {"ok": len(executed) >= 1 and counters.get("expert_call_count", len(executed)) >= 1,
             "executed_sources": executed,
             "counters": counters,
-            "detail": f"执行 {len(executed)} 次工具调用"}
+            "detail": f"执行 {len(executed)} 次工具调用（记账 {counters.get('expert_call_count')}）"}
 
 
-def check_result_is_referenced(trace: dict, expected: Optional[float]) -> dict:
+def token_needles(result: dict) -> List:
     """
-    The tool's number must reappear in a later assistant turn.
+    What a later turn could legitimately quote from an executed tool: its
+    evidence id, its evidence name, or one of its numbers.
 
-    The stub's score is chosen by this script (0.4242), so finding it later is
-    a fact about the session.  Several renderings are accepted because a model
-    may quote it as `0.4242`, `0.42` or `42.4%`; a match on any of them is
-    reported with the form that matched, and the *absence* of all three is the
-    failure this check exists for.
+    Reading only `raw_value` found nothing (the token stores `raw_metric` and
+    `strength`), and reading only numbers is too strict — the real model wrote
+    "probe_dino_expert 的测量结果明确指向 AI 生成（P(Fake)=1.0）", naming the
+    evidence and quoting a rounded value.  Both are accurate references, so
+    both are accepted; the report says which one matched.  The fixed stub value
+    goes first when it was used, because that match is unambiguous.
+    """
+    needles: List = []
+    for entry in result.get("evidence_chain") or []:
+        if entry.get("source") == "noise_expert":
+            value = entry.get("raw_metric", entry.get("strength"))
+            if isinstance(value, (int, float)):
+                needles.insert(0, float(value))
+        for key in ("evidence_id", "evidence_name", "source"):
+            if entry.get(key):
+                needles.append(str(entry[key]))
+        for key in ("raw_metric", "strength", "calibrated_likelihood", "probability"):
+            value = entry.get(key)
+            if isinstance(value, (int, float)):
+                needles.append(float(value))
+    return needles
+
+
+def check_result_is_referenced(trace: dict, needles: List) -> dict:
+    """
+    The tool's result must come back in a later assistant turn.
+
+    The first assistant turn is where the tool was *requested*; the reference
+    has to be in a turn after the tool answer arrived.  A reference counts as
+    accurate when the later turn names the evidence (id or name) or quotes one
+    of its numbers in a recognisable rendering.
     """
     turns = [turn.get("value", "") for turn in (trace.get("conversations") or [])
              if turn.get("from") == "gpt" and isinstance(turn.get("value"), str)]
-    # the first assistant turn asked for the tool; later ones must use it
     later = "\n".join(turns[1:]) if len(turns) > 1 else ""
-    if expected is None:
-        return {"ok": False, "needle": None, "matched_form": None,
-                "detail": "工具没有给出可比对的数值"}
-    forms = [f"{expected}", f"{expected:.4f}", f"{expected:.2f}", f"{expected * 100:.1f}%"]
-    matched = next((form for form in forms if form in later), None)
-    return {"ok": matched is not None, "needle": expected, "matched_form": matched,
-            "checked_forms": forms,
-            "detail": (f"后续轮准确引用了工具数值（{matched}）" if matched
-                       else f"后续轮找不到工具数值（试过 {forms}）")}
+    if not needles:
+        return {"ok": False, "needles": [], "matched": None,
+                "detail": "工具没有给出可比对的证据或数值"}
+
+    tried = []
+    for needle in needles:
+        if isinstance(needle, str):
+            tried.append(needle)
+            if needle and needle in later:
+                return {"ok": True, "needles": needles, "matched": needle,
+                        "kind": "evidence_id_or_name", "tried": tried,
+                        "detail": f"后续轮引用了证据 {needle}"}
+            continue
+        for form in (f"{needle}", f"{needle:.4f}", f"{needle:.2f}", f"{needle * 100:.1f}%"):
+            tried.append(form)
+            if form in later:
+                return {"ok": True, "needles": needles, "matched": form,
+                        "kind": "number", "tried": tried,
+                        "detail": f"后续轮引用了工具数值 {form}"}
+    return {"ok": False, "needles": needles, "matched": None, "tried": tried,
+            "detail": f"后续轮找不到该工具的证据或数值（试过 {tried}）"}
 
 
 def check_conclusion_parses(image: str, result: dict, client) -> dict:
@@ -216,6 +259,47 @@ def check_conclusion_parses(image: str, result: dict, client) -> dict:
                           ("，但模型输入**没有**图像 token" if model_ok is False
                            else "（CPU Mock：模型输入无此概念）"))
                        if parsed else "结案不可解析")}
+
+
+def check_first_turn_description(trace: dict, client_kind: str) -> dict:
+    """
+    The first turn must carry a *specific* visual account (proposal §8).
+
+    Mechanical part: a `Visual Observation:` line exists, is not empty, and is
+    not one of the stock sentences the g7 batch produced ("图像为合成或经过处理的
+    自然图像…").  Specificity itself is a human judgement, so the text is quoted
+    into the report verbatim — the proposal asks for a small manual read of raw
+    input and reply before scaling generation, and this is where that read
+    starts.  The observation and the suspected anomalies are reported apart,
+    because the protocol asks for exactly that separation.
+    """
+    if client_kind != "qwen3":
+        # The mock's planning line is a protocol template, not a visual account;
+        # judging it here would either fail every CPU run or teach the reader to
+        # ignore the check.  A check that cannot be evaluated says so.
+        return {"ok": None, "applicable": False, "observation": "", "anomalies": "",
+                "chars": 0,
+                "detail": "不适用：Mock 不产生视觉观察（该项只在真模型上判）"}
+    turns = [turn.get("value", "") for turn in (trace.get("conversations") or [])
+             if turn.get("from") == "gpt" and isinstance(turn.get("value"), str)]
+    first = turns[0] if turns else ""
+    observation = ""
+    anomalies = ""
+    for line in first.splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("visual observation:"):
+            observation = stripped.split(":", 1)[1].strip()
+        elif stripped.lower().startswith("suspected anomalies:"):
+            anomalies = stripped.split(":", 1)[1].strip()
+    stock = ("图像为合成或经过处理的自然图像", "无法判断", "无异常")
+    ok = (len(observation) >= 15 and not any(phrase in observation for phrase in stock))
+    return {"ok": ok, "applicable": True,
+            "observation": observation, "anomalies": anomalies,
+            "chars": len(observation),
+            "detail": (f"首轮视觉观察 {len(observation)} 字，另列疑似异常"
+                       if ok else
+                       ("首轮没有可读的视觉观察" if not observation
+                        else f"视觉观察疑似模板套话：{observation[:40]}"))}
 
 
 def check_three_records_kept(trace: dict, result: dict) -> dict:
@@ -325,7 +409,16 @@ def run(image: str, client_kind: str, experts: List[str], inference_mode: str,
     client, identity_client = build_client(client_kind, system_prompt, inference_mode,
                                            greedy, local_files_only)
 
-    fsm = ForensicStateMachine(client, toolbox)
+    # Resolve the destination first: the session logger writes the *complete*
+    # record (evidence chain included) and it must land beside the report, not
+    # in `traces/sft_sessions/` where smoke sessions would mix with real ones
+    # and every test run would add files to the repository.
+    out_dir = out_dir or os.path.join(
+        OUTPUT_ROOT, datetime.now().strftime("%Y%m%d_%H%M%S"))
+    os.makedirs(out_dir, exist_ok=True)
+    from utils.logger import SessionLogger
+
+    fsm = ForensicStateMachine(client, toolbox, SessionLogger(sft_dir=out_dir))
     started = time.perf_counter()
     result = fsm.run(image)
     elapsed = time.perf_counter() - started
@@ -335,18 +428,18 @@ def run(image: str, client_kind: str, experts: List[str], inference_mode: str,
         trace = result.get("session") or {"conversations": result.get("conversation") or [],
                                           "messages": result.get("messages") or []}
 
-    expected = None
-    for entry in result.get("evidence_chain") or []:
-        if entry.get("source") == "noise_expert" and entry.get("raw_value") is not None:
-            expected = entry["raw_value"]
-            break
+    # the stub's value first (unambiguous), then every other executed tool's
+    needles = token_needles(result)
+    if STUB_SCORE not in needles:
+        needles.append(STUB_SCORE)      # the stub may never have been called
 
     checks = {
         "1_image_enters_the_multimodal_message": check_image_enters_multimodal(image, client),
         "2_one_legal_call_executed": check_one_call_executed(result),
-        "3_result_referenced_later": check_result_is_referenced(trace, expected or STUB_SCORE),
+        "3_result_referenced_later": check_result_is_referenced(trace, needles),
         "4_conclusion_parses_with_image_context": check_conclusion_parses(image, result, client),
         "5_three_records_kept_separately": check_three_records_kept(trace, result),
+        "6_first_turn_has_a_specific_visual_account": check_first_turn_description(trace, client_kind),
     }
     report = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -358,16 +451,18 @@ def run(image: str, client_kind: str, experts: List[str], inference_mode: str,
         "vram_peak_gb": (round(__import__("torch").cuda.max_memory_allocated() / 1e9, 2)
                          if client_kind == "qwen3" else None),
         "checks": checks,
-        "passed": all(check["ok"] for check in checks.values()),
+        # A not-applicable check is neither a pass nor a failure: `passed` asks
+        # only about the checks this run could actually make.
+        "passed": all(check["ok"] for check in checks.values()
+                      if check.get("applicable", True)),
+        "not_applicable": [name for name, check in checks.items()
+                           if not check.get("applicable", True)],
     }
 
-    out_dir = out_dir or os.path.join(
-        OUTPUT_ROOT, datetime.now().strftime("%Y%m%d_%H%M%S"))
-    os.makedirs(out_dir, exist_ok=True)
+    # The logger already wrote the full session record next to the report.
+    report["session_record"] = result.get("sft_data_path")
     with open(os.path.join(out_dir, "smoke_report.json"), "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)
-    with open(os.path.join(out_dir, "session_trace.json"), "w", encoding="utf-8") as handle:
-        json.dump(trace, handle, ensure_ascii=False, indent=1)
     report["report_path"] = os.path.relpath(os.path.join(out_dir, "smoke_report.json"),
                                             PROJECT_ROOT)
     return report
@@ -406,7 +501,8 @@ def main() -> None:
                  args.inference_mode, args.greedy, args.out_dir,
                  local_files_only=args.local_files_only)
     for name, check in report["checks"].items():
-        print(f"  {'✅' if check['ok'] else '❌'} {name}：{check['detail']}")
+        mark = "—" if not check.get("applicable", True) else ("✅" if check["ok"] else "❌")
+        print(f"  {mark} {name}：{check['detail']}")
     print(f"\n通过：{report['passed']}｜耗时 {report['elapsed_s']}s"
           + (f"｜峰值显存 {report['vram_peak_gb']} GB" if report["vram_peak_gb"] else ""))
     print(f"报告：{report['report_path']}")

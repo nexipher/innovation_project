@@ -247,13 +247,17 @@ class Qwen3VLClient(QwenVLClient):
             "image_tokens": image_tokens,
             "pil_images_attached": len(images),
         }
+        # `temperature` only when sampling: passing it with do_sample=False
+        # makes transformers warn that the flag is ignored, and a warning that
+        # says "ignored" is exactly the kind of noise that hides a real one.
+        sampling = ({"temperature": self._temperature} if self._do_sample else {})
         with torch.no_grad():
             generated = self._model.generate(
                 **inputs,
                 max_new_tokens=self._max_new_tokens,
-                temperature=self._temperature,
                 do_sample=self._do_sample,
                 pad_token_id=getattr(self._processor.tokenizer, "pad_token_id", None),
+                **sampling,
             )
         return self._processor.decode(
             generated[0, inputs["input_ids"].shape[1]:],

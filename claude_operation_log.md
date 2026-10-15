@@ -105,3 +105,17 @@
 * **执行结果与验证状态**：**CPU 协议测试五项全过**（图像以 PIL 进入消息、2 次合法调用 probe→noise、后续轮准确引用 0.4242、结案可解析且收尾轮仍带图像、三类记录分别留存）；`core` **357 通过**、`module` **937 通过**；下载进行中（11:07 起，已落地约 4 GB，`/` 余 17 GB，看门狗在跑）。**尚未加载任何权重、未做 GPU 推理。**
 * **置信度或遗留待办（TODO）**：①权重下完后才做 GPU 五项验证与显存实测（授权已获，入口 `FORENSIC_ALLOW_GPU=1 python scripts/g8_smoke.py --client qwen3`）②`inference_mode` 的模板开关要在真模板上验证一次（代码里写了断言，尚未在真实模板上跑过）③`SFT_DATA/GENERATIONS.json` 与 README 的模型表要随 revision 一并更新④用户随后会删除 2.5-VL 旧模型腾空间给专家组——我不代删
 
+### 2026-10-15 - 阶段 2 完成：Qwen3-VL 冒烟六项全过（真模型 + 真 PROBE，含实测显存）
+
+* **当前操作动作**：权重下载完成后，按用户四项指令收尾——①依赖/磁盘/目录核实（含清理授权过的中断缓存）②下载并固定 revision ③CPU 冒烟与协议测试 ④GPU 授权后验证图像输入、具体视觉描述、一次工具调用、结果引用、自主结案，并实测显存。
+* **对应计划锚点**：`plan.md` §3b（执行细则 + 结果表）
+* **核心变更说明**：
+  1. **下载**：`Qwen/Qwen3-VL-8B-Instruct`@`0c351dd0…` 17.55 GB 全部落地（exit 0、**0 个不完整分片**），只进 HF 缓存、无 `--local-dir`（不产生第二份）。第一次失败于 **Xet**（镜像不代理 `cas-server.xethub.hf.co`，权重分片 401）→ `HF_HUB_DISABLE_XET=1` 后成功；看门狗全程在跑，`/` 最终余 3.3 GB。
+  2. **CPU 预验证（省下 GPU 时间的部分）**：真实 processor 走通"图 → token"——2602 输入 token 中 1024 个图像占位 token，`pixel_values` [4096,1536]，`config.json` 与 tokenizer 两处 `image_token_id` 一致。另由产物确认 **Instruct 版模板无 `enable_thinking`**（⇒ non-thinking，不是选择而是事实）。
+  3. **GPU 冒烟（真 Qwen3-VL + 真 PROBE）六项全过**：图像进输入（3817/1024 图像 token）、一次合法调用（模型自主只调 probe，并在 reasoning 里写明"probe 已足够决定性，无需额外调用"）、后续轮引用证据 `aigi_discriminator_score`、结案可解析且收尾轮仍有图像 token、三类记录分别留存、首轮视觉观察 125 字并另列疑似异常。**实测**：权重显存 17.53 GB、整轮峰值 18.6 GB、加载 7.2 s、会话 53.4 s。单例判定正确（Midjourney → Fake，confidence 0.984）。
+  4. **三处检查自身的缺陷（都是我的检查错，不是系统错）**：①检查 3 只认桩专家的固定值 → 模型合法地只调 probe 就"失败"；②字段名写成 `raw_value`，实际是 `raw_metric`/`strength`；③真模型引用的是**证据名/工具名**而非小数。最终判据＝"后续轮引用该工具的证据 id、名称、工具名或数值任一"，并报出匹配到的是哪一个。另修：检查 4 一度在字符串转录里找图像部件（按构造永远没有），改为问消息构造者＋读真模型的收尾调用输入统计。
+  5. **会话记录归位**：冒烟原先经 `SessionLogger` 把会话写进 `traces/sft_sessions/`（与真实会话混住，且测试每跑一次就多几份文件）——改为 `SessionLogger(sft_dir=<冒烟目录>)`，完整记录（含证据链）与报告同处；手工 dump 的 `session_trace.json` 不再作为主记录（它没有证据链）。已把本次 GPU 的 6 份完整记录移入 `sft_data/g8_smoke/gpu_sessions_20261015/`，删掉测试产生的 mock 残留。
+* **涉及/修改的文件清单**：`mllm/qwen3_client.py (Created/Modified — dtype=、采样参数、last_input_stats)`、`scripts/g8_smoke.py (Created/Modified — 六项检查 + processor 预验证 + 授权闸门 + 会话记录定向)`、`tests/test_g8_smoke.py (Created — 11 项，core)`、`mllm/__init__.py (Modified — 懒导出)`、`plan.md (Modified — §3b 结果表)`、`README.md (Modified — §3.7b 冒烟用法 + 模型行)`、`sft_data/GENERATIONS.json (Modified — revision/许可/模式)`、`sft_data/g8_smoke/** (Created — 报告与 GPU 会话记录)`；数据侧：删除中断缓存一项（用户批准）、下载 17.55 GB。
+* **执行结果与验证状态**：CPU：`core` 358、`module` 938 通过；GPU：六项全过（报告 `sft_data/g8_smoke/20261015_121549/smoke_report.json`）。**未做**：多会话批量、思考模式（模板没有该开关）、prompt 大规模对比。
+* **置信度或遗留待办（TODO）**：①单例通过 ≠ 泛化；下一批要按 §3 步骤 5 做小批端到端（含人工查看原始图像与投递证据包）②v3 目前**仍计算参考后验与预计收益**（报告里能看到 `posterior`、`tool_utilities`）——阶段 4 的解耦尚未做③`inference_mode` 的 thinking 分支在真模板上会正确报错（无开关），该分支本身仍未被真实模板覆盖④噪声桩只是工具链验证，noise/NPR/UnivFD 的真实评测属阶段 3⑤用户将删除 2.5-VL 旧模型腾空间，未代删
+

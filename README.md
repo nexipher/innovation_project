@@ -281,6 +281,19 @@ python main.py --image path/to/img.png --mode explore_all    # 遍历 3 个专�
 python main.py --image path/to/img.png --mode conflict       # 制造证据冲突
 ```
 
+### 3.7b G8 最小冒烟（新工具箱 + Qwen3-VL）
+
+```bash
+python scripts/g8_smoke.py --client mock                 # CPU：协议六项检查（不需权重）
+python scripts/g8_smoke.py --processor-check             # 只用 processor 验证图像→token（CPU）
+FORENSIC_ALLOW_GPU=1 PROBE_WEIGHTS=<probe.pth> \
+  python scripts/g8_smoke.py --client qwen3 --local-files-only --greedy   # GPU（需授权）
+```
+
+产物写 `sft_data/g8_smoke/<时间戳>/`（不是批次目录）。六项检查＝图像真进多模态消息、一次合法调用被执行、
+结果被后续轮准确引用、结案可解析且收尾轮仍有图像、原始回复/采纳回复/外部控制原因分别留存、
+首轮有具体的视觉观察与另列疑似异常。GPU 项需 `FORENSIC_ALLOW_GPU=1`，否则在加载权重前退出。
+
 ### 3.8 运行测试
 
 三层（详见 [`docs/development/TESTING.md`](docs/development/TESTING.md)）；本机 shell 处于 2 GB cgroup，`full` 层建议用分块运行器：

@@ -47,8 +47,16 @@ def smoke_report(tmp_path_factory):
 class TestTheFiveChecks:
     def test_every_check_passes_on_the_mock(self, smoke_report):
         failed = {name: check["detail"] for name, check in smoke_report["checks"].items()
-                  if not check["ok"]}
+                  if check.get("applicable", True) and not check["ok"]}
         assert failed == {}, failed
+
+    def test_the_visual_account_check_is_not_applicable_to_the_mock(self, smoke_report):
+        """Only the real model makes a visual account; the mock's line is a
+        template, so the check reports "not applicable" instead of passing."""
+        assert smoke_report["checks"]["6_first_turn_has_a_specific_visual_account"][
+            "applicable"] is False
+        assert smoke_report["not_applicable"] == [
+            "6_first_turn_has_a_specific_visual_account"]
 
     def test_the_image_is_inside_the_message_not_a_path(self, smoke_report):
         """A message carrying a path is not a message carrying a picture."""
@@ -61,7 +69,9 @@ class TestTheFiveChecks:
 
         check = smoke_report["checks"]["3_result_referenced_later"]
         assert check["ok"] is True
-        assert check["needle"] == pytest.approx(STUB_SCORE)
+        # the stub's fixed score is offered first, so a match names it
+        assert check["needles"][0] == pytest.approx(STUB_SCORE)
+        assert check["matched"]
 
     def test_the_three_records_are_separate(self, smoke_report):
         check = smoke_report["checks"]["5_three_records_kept_separately"]
@@ -87,8 +97,13 @@ class TestTheReportSaysWhatItWas:
         with open(report_path, encoding="utf-8") as handle:
             on_disk = json.load(handle)
         assert on_disk["passed"] is True
-        trace = os.path.join(os.path.dirname(report_path), "session_trace.json")
-        assert os.path.exists(trace)
+        # the full session record (evidence chain included) lands beside it
+        assert smoke_report["session_record"]
+        record = os.path.join(PROJECT_ROOT, smoke_report["session_record"])
+        assert os.path.exists(record)
+        with open(record, encoding="utf-8") as handle:
+            logged = json.load(handle)
+        assert logged["evidence_chain"], "会话记录里应当有证据链"
 
     def test_the_default_destination_is_the_smoke_directory_not_a_batch(self):
         """Products go to `sft_data/g8_smoke/` — no batch identity, no freeze gate."""

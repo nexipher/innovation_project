@@ -130,6 +130,20 @@
 | 落地文件系统 | `/`（overlay）：清理中断残留后 21.08 GB 可用，模型 17.55 GB，余约 3.5 GB；下载脚本带**看门狗**，可用空间低于 1.5 GB 即停止 |
 | 用户后续动作 | 之后会删除 2.5-VL 旧模型（16 GB）给专家组腾位置——**未经确认不代删** |
 
+**执行结果（2026-10-15 当日完成）**：
+
+| 项 | 结果 |
+|----|------|
+| 权重下载 | ✅ 17.55 GB 全部落地（exit 0，0 个不完整分片），固定 revision，只进 HF 缓存 |
+| CPU 协议测试 | ✅ 六项全过（Mock 客户端）；`core` 358 通过、`module` 938 通过 |
+| **processor 预验证** | ✅ 真实 processor：2602 输入 token 中 **1024 个图像占位 token**，`pixel_values` [4096,1536]，两处 `image_token_id` 一致（151655） |
+| **GPU 冒烟（真模型 + 真 PROBE）** | ✅ **六项全过**：①图像进输入（3817 token / 1024 图像 token）②一次合法调用（probe）③后续轮引用证据 `aigi_discriminator_score` ④结案可解析且收尾轮仍有图像 token ⑤三类记录分别留存 ⑥首轮视觉观察 125 字并另列疑似异常 |
+| **实测显存** | 模型加载 **7.2 s**、权重显存 **17.53 GB**；整轮峰值 **18.6 GB**（4090 24 GB）；单会话 **53.4 s** |
+| 判定正确性（单例） | Midjourney 图：PROBE P(Fake)=1.0，模型结案 Fake、confidence 0.984 ✓（真值 Fake） |
+
+产物：`sft_data/g8_smoke/<时间戳>/{smoke_report.json,session_record.json}`；
+`gpu_sessions_20261015/` 保存 GPU 会话的完整记录（含证据链）。
+
 **实现清单（本阶段交付）**：
 
 1. `mllm/qwen3_client.py`：`Qwen3VLClient`，复用既有协议实现（消息构建、格式纠错环、`ask()`），只替换模型类与处理器；

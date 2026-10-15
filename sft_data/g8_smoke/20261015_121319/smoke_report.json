@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-10-15T12:13:19",
+  "client": "qwen3",
+  "model": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "licence": "apache-2.0",
+    "dtype": "bfloat16",
+    "inference_mode": "non-thinking",
+    "thinking_supported_by_template": false,
+    "generation": {
+      "temperature": 0.0,
+      "do_sample": false,
+      "max_new_tokens": 1024
+    },
+    "snapshot": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "shards": [
+      "model-00001-of-00004.safetensors",
+      "model-00002-of-00004.safetensors",
+      "model-00003-of-00004.safetensors",
+      "model-00004-of-00004.safetensors"
+    ],
+    "shard_bytes": 17534339512,
+    "index_sha256": "520b2e05079402e9",
+    "local_files_only": true
+  },
+  "experts": [
+    "noise_expert",
+    "probe_dino_expert"
+  ],
+  "image": "dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+  "elapsed_s": 60.95,
+  "vram_peak_gb": 18.6,
+  "checks": {
+    "1_image_enters_the_multimodal_message": {
+      "ok": true,
+      "builder_image_parts": 1,
+      "builder_payload_types": [
+        "Image"
+      ],
+      "model_input_stats": {
+        "input_tokens": 3817,
+        "image_tokens": 1024,
+        "pil_images_attached": 1
+      },
+      "model_received_image_tokens": true,
+      "detail": "消息里带 PIL 图像；模型输入含图像 token"
+    },
+    "2_one_legal_call_executed": {
+      "ok": true,
+      "executed_sources": [
+        "probe_dino_expert"
+      ],
+      "counters": {},
+      "detail": "执行 1 次工具调用"
+    },
+    "3_result_referenced_later": {
+      "ok": false,
+      "needles": [
+        0.4242
+      ],
+      "matched": null,
+      "tried": [
+        "0.4242",
+        "0.4242",
+        "0.42",
+        "42.4%"
+      ],
+      "detail": "后续轮找不到任何已执行工具的数值（试过 ['0.4242', '0.4242', '0.42', '42.4%']）"
+    },
+    "4_conclusion_parses_with_image_context": {
+      "ok": true,
+      "verdict": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.984,
+        "report": "图像经AI生成检测器判定为AI生成，置信度0.984。鱼体表面过于平滑，缺乏真实水下摄影的传感器噪声与微小瑕疵，背景与前景景深关系不自然，符合AI生成图像特征。",
+        "posterior": 0.8103,
+        "tool_utilities": {
+          "probe_dino_expert": -0.25,
+          "noise_expert": -0.038459954522370415
+        },
+        "conflict_score": 0.0,
+        "redundancy_discounts": [],
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "pass",
+          "findings": [],
+          "candidates": [],
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "candidate",
+          "calls": [],
+          "calls_executed": true,
+          "verdict_parse": "ok"
+        },
+        "reference": {
+          "recommendation": "Fake",
+          "advisory": [
+            "reference_no_expected_gain"
+          ],
+          "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+        }
+      },
+      "halting_reason": "model_concluded",
+      "builder_image_parts_on_final_turn": 1,
+      "closing_call_input_stats": {
+        "input_tokens": 3817,
+        "image_tokens": 1024,
+        "pil_images_attached": 1
+      },
+      "detail": "结案可解析；收尾轮的构造消息仍带图像，模型输入含图像 token"
+    },
+    "5_three_records_kept_separately": {
+      "ok": true,
+      "raw_reply": "<reasoning>\nprobe_dino_expert 的测量结果明确指向 AI 生成（P(Fake)=1.0），其校准分离度高达 0.9836，且在五种格式下均适用。该分数是整图判别器输出，不指向任何区域，但其高置信度（reliability=0.984）与强适用性（applicability=strong）使其成为决定性证据。视觉观察中鱼体表面过于平滑、缺乏真实水下摄影的传感器噪声或微小瑕疵，背景与前景景深关系不自然，与 AI 生成图像的典型特征高度吻合。噪声专家虽可补充验证，但 probe 的结论已足够决定性，无需额外调用。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.984, \"primary_evidence\": [\"aigi_discriminator_score\"], \"report\": \"图像经AI生成检测器判定为AI生成，置信度0.984。鱼体表面过于平滑，缺乏真实水下摄影的传感器噪声与微小瑕疵，背景与前景景深关系不自然，符合AI生成图像特征。\"}\n</verdict>",
+      "adopted": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.984,
+        "report": "图像经AI生成检测器判定为AI生成，置信度0.984。鱼体表面过于平滑，缺乏真实水下摄影的传感器噪声与微小瑕疵，背景与前景景深关系不自然，符合AI生成图像特征。",
+        "posterior": 0.8103,
+        "tool_utilities": {
+          "probe_dino_expert": -0.25,
+          "noise_expert": -0.038459954522370415
+        },
+        "conflict_score": 0.0,
+        "redundancy_discounts": [],
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "pass",
+          "findings": [],
+          "candidates": [],
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "candidate",
+          "calls": [],
+          "calls_executed": true,
+          "verdict_parse": "ok"
+        },
+        "reference": {
+          "recommendation": "Fake",
+          "advisory": [
+            "reference_no_expected_gain"
+          ],
+          "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+        }
+      },
+      "control_reason": "model_concluded",
+      "detail": "三类记录分别留存"
+    }
+  },
+  "passed": false
+}
