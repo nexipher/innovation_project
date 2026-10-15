@@ -91,6 +91,11 @@ SOURCE_WORDS: Dict[str, tuple] = {
     # meant eight of the audit's sentences were invisible to the check.
     "probe_dino_expert": ("probe", "探针", "鉴别器", "判别分数", "判别器", "检测器",
                           "探测器", "aigi"),
+    # 阶段 4.4 起 NPR / UnivFD 就是默认工具箱里的工具，而这里曾经只有旧四家：
+    # 模型写"NPR 的分数是 0.93"时，整句话对账本是**不可见**的——不查数字、不查方向、
+    # 不查编造。名字按提示词给模型的写法收（display_name 里的那些词）。
+    "npr_expert": ("npr", "邻域", "上采样", "upsampling", "neighboring pixel"),
+    "univfd_expert": ("univfd", "univ-fd", "clip", "线性头"),
     "noise_expert": ("噪声", "noise"),
     "jpeg_expert": ("jpeg", "压缩"),
     "frequency_expert_v2": ("频域", "频率", "频谱", "freq"),
@@ -220,6 +225,60 @@ class ExpertRecord:
                 if not name.startswith("calibrated_likelihood.")}
 
 
+def _registry_field(source: str) -> str:
+    """登记表说这个专家的哪一个字段是"那个数"（未登记则退回 raw_metric）。"""
+    try:
+        from utils.score_semantics import entry
+
+        return entry(source)["raw_score"]["field"]
+    except Exception:
+        return "raw_metric"
+
+
+def is_slim_pack(token: dict) -> bool:
+    """这条记录是不是**给模型看的**精简包（阶段 4.3）：字段名不同，数值在 score 里。"""
+    return (isinstance(token, dict) and isinstance(token.get("expert"), str)
+            and "source" not in token
+            and ("score" in token or "reading" in token or "status" in token))
+
+
+def ledger_view(token: dict) -> dict:
+    """
+    一条**投递记录** → 账本看的形状。
+
+    运行时喂进来的是证据链上的完整 token（`source`/`raw_metric`/…），转换器的
+    `audit_dialogue` 喂的却是 trace 里**当时真正投递的那段 JSON**——阶段 4.3 起
+    那是一份精简包，用的是给模型看的字段名（`expert`/`scope`/`score.value`），而且
+    没有 `support`/`calibrated_likelihood` 可读方向。账本只认完整 token 的话，
+    精简会话里的每一条记录都会在 `source` 上落空、整条被跳过；于是同一句完全正确的
+    引用（"PROBE 的分数 0.93 指向 AI 生成"）被判成 `fabricated_expert_result`
+    ——实测如此，新主线的每一个样本都会倒在审核这一关。
+
+    所以这里把精简包翻成内部形状：`expert`→`source`，`score.value`→登记表指定的那个
+    字段（不是写死的 raw_metric），方向取自**登记表逐值规则**（比 support 标签硬）。
+    失败包的形状同样要认：它没有 score，于是 `delivered` 为空——"跑过但什么都没给"
+    与"根本没跑"是两件事，账本必须分得开。
+    """
+    if not is_slim_pack(token):
+        return token
+    source = str(token["expert"])
+    score = token.get("score") if isinstance(token.get("score"), dict) else {}
+    view = {
+        "source": source,
+        "evidence_id": token.get("evidence_id"),
+        "evidence_name": score.get("name") or token.get("measurement"),
+        "measurement_scope": token.get("scope"),
+        "status": token.get("status", "measured"),
+        "model_delivered": "slim",          # 投递方式就写在投递记录里
+        "direction_for_this_value": score.get("direction_for_this_value"),
+        "phenomenon": token.get("reading") or "",
+    }
+    value = score.get("value")
+    if isinstance(value, (int, float)):
+        view[_registry_field(source)] = float(value)
+    return {key: item for key, item in view.items() if item is not None}
+
+
 def _delivered_fields(token: dict) -> Optional[Dict[str, float]]:
     """
     模型当时能看到的数值字段。
@@ -264,6 +323,7 @@ class Ledger:
                      system_texts: Iterable[str] = ()) -> "Ledger":
         measured: Dict[str, ExpertRecord] = {}
         for token in evidence_chain or []:
+            token = ledger_view(token)
             source = token.get("source")
             if not source:
                 continue
@@ -440,17 +500,35 @@ class Ledger:
         findings: List[dict] = []
         for source in cited:
             record = self.measured.get(source)
-            if record is None or record.direction is None or record.direction == asserted:
+            if record is None:
+                continue
+            if record.direction is None:
+                # 数值**不承载方向**（登记表逐值规则判 Uncertain，例如 JPEG 格里的
+                # NPR 低分），句子却从它推出了方向。这正是用户 2026-10-15 划的那条
+                # 界线："低分不得解释成强 Real 证据"——交人工裁决，不自动改。
+                if record.direction_basis == "registry_rule:no_direction":
+                    findings.append({
+                        "kind": "direction_from_neutral_value", "source": source,
+                        "severity": CANDIDATE, "asserted": asserted,
+                        "evidence_id": record.evidence_id,
+                        "sentence": sentence[:220],
+                        "why": (f"{source} 的这个数值在登记表里不承载方向"
+                                f"（Uncertain），句子却断言了 {asserted}；交人工裁决"),
+                    })
+                continue
+            if record.direction == asserted:
                 continue
             gap = record.direction_gap
             if record.direction_basis != "calibrated_likelihood":
+                basis = ("登记表的逐值方向规则" if record.direction_basis == "registry_rule"
+                         else "support 标签（未经校准）")
                 findings.append({
                     "kind": "direction_conflict", "source": source,
                     "severity": CANDIDATE, "asserted": asserted,
                     "evidence_id": record.evidence_id,
                     "sentence": sentence[:220],
-                    "why": (f"{source} 的方向来自 support 标签（未经校准），"
-                            f"与句中断言的 {asserted} 相反；基础较弱，交人工裁决"),
+                    "why": (f"{source} 的方向来自{basis}，"
+                            f"与句中断言的 {asserted} 相反；交人工裁决"),
                 })
                 continue
             if gap is not None and gap < (NEAR_CHANCE_HIGH - NEAR_CHANCE_LOW):
@@ -689,6 +767,14 @@ def _token_direction(token: dict) -> Tuple[Optional[str], Optional[float], str]:
     own support label is used, polarity-corrected by `semantics_aligned`, and
     marked as the weaker basis it is.
     """
+    # 精简包（阶段 4.3）：方向来自登记表的**逐值规则**（`direction_for_this_value`）。
+    # 这是我们自己核过的判读，比专家自报的 support 标签硬；但它不是校准概率，
+    # 所以自成一类基础，冲突仍交人工裁决。`Uncertain` 是"这个数值不承载方向"。
+    pack_direction = token.get("direction_for_this_value")
+    if pack_direction:
+        if pack_direction == "Uncertain":
+            return None, None, "registry_rule:no_direction"
+        return ("Fake" if pack_direction == "AI-generated" else "Real"), None, "registry_rule"
     likelihood = token.get("calibrated_likelihood") or {}
     real = likelihood.get("Real")
     fake = likelihood.get("Fake")

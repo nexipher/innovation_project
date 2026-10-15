@@ -60,6 +60,41 @@ def _model_confidence(value) -> float:
     return round(number, 4)
 
 
+def _state_line(token: dict) -> str:
+    """
+    One expert, one line — and **only what the model actually received**.
+
+    This line used to be unconditional: `P(Fake)=…（方向 …），raw_metric=…，适用 …`.
+    That was right for full delivery (those fields were in the token the model
+    got) and wrong the moment stage 4.3 started delivering the slim pack: it
+    put the background fields straight back into the next turn and *contradicted*
+    the pack — a probe score of 0.7478 read "方向 —" one line under a pack that
+    says `direction_for_this_value: AI-generated`.
+
+    So the line follows the token's own delivery stamp: slim restates the one
+    score and the direction that travels with it; anything else (v2 replays,
+    older batches) keeps the old wording, because those sessions did deliver
+    those fields.
+    """
+    if token.get("model_delivered") == "slim":
+        pack = EvidenceTokenizer.model_visible(token)
+        score = pack.get("score") or {}
+        if pack.get("status") == "failed":
+            return (f"  - {pack.get('expert')}（{pack.get('evidence_id')}）："
+                    "执行失败，**没有数值**（不是中性结果）")
+        return (f"  - {pack.get('expert')}（{pack.get('evidence_id')}）："
+                f"{score.get('name')}={score.get('value')}"
+                f"（该值的方向：{score.get('direction_for_this_value') or score.get('direction')}）")
+    likelihood = token.get("calibrated_likelihood") or {}
+    p_fake = likelihood.get("Fake")
+    direction = "—"
+    if p_fake is not None:
+        direction = "Fake" if float(p_fake) >= 0.5 else "Real"
+    return (f"  - {token.get('source')}（{token.get('evidence_id')}）："
+            f"P(Fake)={p_fake}（方向 {direction}），raw_metric={token.get('raw_metric')}，"
+            f"适用 {token.get('applicability')}")
+
+
 class ForensicStateMachine:
     """
     Central state machine that orchestrates the MLLM-Expert interaction loop.
@@ -1029,18 +1064,12 @@ class ForensicStateMachine:
         re-derive the state from a JSON blob: the executed experts, their key
         fields, and what is still available, restated after every measurement.
         The full token stays in the conversation above this line.
+
+        What "their key fields" means depends on what that session delivered
+        (`_state_line`): under slim delivery the note must not put back the
+        fields the pack just withheld.
         """
-        lines = []
-        for token in evidence_chain:
-            likelihood = token.get("calibrated_likelihood") or {}
-            p_fake = likelihood.get("Fake")
-            direction = "—"
-            if p_fake is not None:
-                direction = "Fake" if float(p_fake) >= 0.5 else "Real"
-            lines.append(
-                f"  - {token.get('source')}（{token.get('evidence_id')}）："
-                f"P(Fake)={p_fake}（方向 {direction}），raw_metric={token.get('raw_metric')}，"
-                f"适用 {token.get('applicability')}")
+        lines = [_state_line(token) for token in evidence_chain]
         remaining = [source for source in (served or []) if source not in measured_sources]
         return (
             "[System: 本会话状态 —— 已执行的专家：\n" + "\n".join(lines) +

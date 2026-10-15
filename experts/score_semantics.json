@@ -59,12 +59,14 @@
       "direction_rules": [
         {
           "when": "raw >= threshold",
-          "direction": "AI-generated"
+          "direction": "AI-generated",
+          "prompt_note": "A high score points to AI-generated."
         },
         {
           "when": "raw < threshold",
           "direction": "Real",
-          "note": "格式鲁棒（四格 AUROC 0.975–0.988），低分可以作 Real 证据"
+          "note": "格式鲁棒（四格 AUROC 0.975–0.988），低分可以作 Real 证据",
+          "prompt_note": "A low score points to Real; this expert holds across formats."
         }
       ],
       "prompt_note": "Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area."
@@ -108,8 +110,9 @@
       },
       "threshold": {
         "value": 0.5,
-        "chosen_on": "G2 校准集（格式配平）",
-        "note": "仅作参考带中心"
+        "chosen_on": "本项目格式配平校准集",
+        "note": "仅作参考带中心",
+        "chosen_on_note": "该字符串会原样进提示词与精简包，故不写内部阶段名（原值含 G2）；阶段出处见 status.evaluated。"
       },
       "status": {
         "evaluated": "g2/g7 旧口径",
@@ -156,14 +159,16 @@
       "direction_rules": [
         {
           "when": "raw >= threshold",
-          "direction": "Real"
+          "direction": "Real",
+          "prompt_note": "A high value points to Real (camera sensor noise)."
         },
         {
           "when": "raw < threshold",
-          "direction": "AI-generated"
+          "direction": "AI-generated",
+          "prompt_note": "A low value points to a smooth, generated image."
         }
       ],
-      "prompt_note": "Retired from the default toolbox; kept for replay only."
+      "prompt_note": "Scores come from a format-balanced calibration set in this project; do not compare it across image formats."
     },
     "npr_expert": {
       "variant": "npr",
@@ -273,12 +278,14 @@
       "direction_rules": [
         {
           "when": "raw >= threshold",
-          "direction": "AI-generated"
+          "direction": "AI-generated",
+          "prompt_note": "A high score points to AI-generated."
         },
         {
           "when": "raw < threshold",
           "direction": "Uncertain",
-          "note": "**低分不得解释成强 Real 证据**（用户 2026-10-15）：JPEG 格几乎全低且 AUROC 0.47–0.56，低分只说明它没看到上采样痕迹。只有在本轮 val 的 PNG 编码条件下，低分才勉强算弱 Real 信号，且仍不足以单独定方向"
+          "note": "**低分不得解释成强 Real 证据**（用户 2026-10-15）：JPEG 格几乎全低且 AUROC 0.47–0.56，低分只说明它没看到上采样痕迹。只有在本轮 val 的 PNG 编码条件下，低分才勉强算弱 Real 信号，且仍不足以单独定方向",
+          "prompt_note": "A low score means this expert did not find the up-sampling artefacts it looks for; **it does not indicate a real photograph.**"
         }
       ],
       "prompt_note": "Validated under this collection's PNG encoding. Under JPEG its scores are near zero: that only means it did not see the up-sampling artefacts it looks for — a low score there is NOT evidence of a real photograph."
@@ -349,12 +356,14 @@
       "direction_rules": [
         {
           "when": "raw >= threshold",
-          "direction": "AI-generated"
+          "direction": "AI-generated",
+          "prompt_note": "A high score points to AI-generated."
         },
         {
           "when": "raw < threshold",
           "direction": "Real",
-          "note": "各格 0.817–0.893，低分可以作 Real 证据；但测量只覆盖中心裁剪的 224×224"
+          "note": "各格 0.817–0.893，低分可以作 Real 证据；但测量只覆盖中心裁剪的 224×224",
+          "prompt_note": "A low score points to Real; remember this measures a centre crop only."
         }
       ],
       "prompt_note": "Measures a 224x224 centre crop: it never sees the image edges."
@@ -397,6 +406,7 @@
       }
     ]
   },
-  "direction_rules_note": "方向规则：分数 → 证据方向的**唯一权威**（阶段 4.2b）。按已知条件逐条列，表达“该情形下不构成方向”时写 Uncertain——不允许把“专家没看到它擅长的东西”读成反向证据。",
-  "prompt_note_note": "`prompt_note` 是**给模型看的一句话适用条件**，与 `usage_conditions`（内部说明，含 bootstrap 数值与写法备注）分开：内部笔记不该出现在提示词里。提示词由本字段生成（阶段 4.4）。"
+  "direction_rules_note": "方向规则：分数 → 证据方向的**唯一权威**（阶段 4.2b）。按已知条件逐条列，表达“该情形下不构成方向”时写 Uncertain——不允许把“专家没看到它擅长的东西”读成反向证据。每条规则另有 `prompt_note`（给模型看的一句话）：`note` 是内部说明（含统计数值），**不进模型输入**。",
+  "prompt_note_note": "`prompt_note` 是**给模型看的一句话适用条件**，与 `usage_conditions`（内部说明，含 bootstrap 数值与写法备注）分开：内部笔记不该出现在提示词里。提示词由本字段生成（阶段 4.4）。",
+  "prompt_note_contract": "`prompt_note` 与 `direction_rules[].prompt_note` 是**给模型看**的句子：只写这条测量是什么、怎么读、在什么条件下可读。我们的流程状态（是否退役、批次、阶段编号）、统计数值（bootstrap/CI/AUROC）与写法要求，一律写在 `role`/`retirement`/`usage_conditions`/`limits` 里。"
 }

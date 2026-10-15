@@ -85,6 +85,47 @@ class TestTheCpuPathStaysLight:
         assert fsm is not None
 
 
+class TestTheRealEntryRefusesToDegradeToMock:
+    """
+    用户 2026-10-15 点名的第二件事：真实入口**不得**在没有 GPU 时静默换成 Mock。
+
+    曾经的写法是 `print("Warning: CUDA not available. Falling back to
+    MockMLLMClient.")` 然后继续跑——产出的 trace、证据链与落盘记录与真实会话
+    无异，验收会把它当成真结果。这是"看起来跑通"里最贵的一种。
+    """
+
+    def test_a_real_client_without_cuda_raises(self):
+        import main
+        from unittest import mock
+
+        with mock.patch("torch.cuda.is_available", return_value=False):
+            with pytest.raises(RuntimeError) as caught:
+                main.build_pipeline("qwen")
+        assert "mock" in str(caught.value).lower()       # 说清楚 CPU 该显式选 mock
+
+    def test_the_historical_client_is_held_to_the_same_rule(self):
+        import main
+        from unittest import mock
+
+        with mock.patch("torch.cuda.is_available", return_value=False):
+            with pytest.raises(RuntimeError):
+                main.build_pipeline("qwen25")
+
+    def test_the_message_says_how_to_run_on_cpu(self):
+        import main
+        from unittest import mock
+
+        with mock.patch("torch.cuda.is_available", return_value=False):
+            with pytest.raises(RuntimeError) as caught:
+                main.build_pipeline("qwen")
+        assert "--mllm mock" in str(caught.value)
+
+    def test_the_mock_path_is_still_explicitly_available(self):
+        import main
+
+        assert main.build_pipeline("mock") is not None
+
+
 class TestProbesMockChoiceFollowsTheClientKind:
     def test_a_mock_session_gets_the_mock_probe(self):
         import main

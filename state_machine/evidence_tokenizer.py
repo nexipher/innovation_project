@@ -234,6 +234,22 @@ class EvidenceTokenizer:
         from utils.score_semantics import SemanticsError, direction_for_value, entry
 
         source = token.get("source") or ""
+        if token.get("status") == "failed":
+            # 失败的测量**没有分数，也没有尺度与方向**。留一个 value=None 的分数槽
+            # （还带着 range/direction/threshold），模型会把它读成"一次中性的测量"，
+            # 正是提案禁止的那件事——这里不给它这个槽。
+            failed = {
+                "evidence_id": token.get("evidence_id"),
+                "expert": source,
+                "measurement": token.get("evidence_name"),
+                "status": "failed",
+                "reading": ("本次测量执行失败，**没有任何数值**。"
+                            "这不是中性结果，也不是证据——请改用别的工具或直接给出结论。"),
+            }
+            reason = token.get("reason")
+            if reason:
+                failed["reason"] = str(reason)
+            return failed
         record = None
         try:
             record = entry(source)
@@ -266,13 +282,18 @@ class EvidenceTokenizer:
             # 判定**这个值**所用的那条规则的说明排在最前：适用限制要跟着分数走，
             # 而不是躺在一段没人更新的提示词里。
             try:
-                _direction, rule = direction_for_value(source, float(raw))
-                if rule.get("note"):
-                    reading_parts.append(rule["note"])
+                value_direction, rule = direction_for_value(source, float(raw))
+                # 该值的**结论**进 score（模型据此判断这个数值能不能定方向）
+                score["direction_for_this_value"] = value_direction
+                if rule.get("prompt_note"):
+                    reading_parts.append(rule["prompt_note"])
             except (SemanticsError, TypeError, ValueError):
                 pass
-            reading_parts.extend(record.get("usage_conditions") or [])
-            reading_parts.extend((record.get("limits") or [])[:2])
+            # 只有给模型看的那一句（prompt_note）进包。`usage_conditions` 与
+            # `limits` 是**内部**说明（含 bootstrap 数值、写法要求），把它们拼进
+            # 模型输入就是把我们写给自己的话当成证据条件——这一处曾经就是这样。
+            if record.get("prompt_note"):
+                reading_parts.append(record["prompt_note"])
 
         visible = {
             "evidence_id": token.get("evidence_id"),

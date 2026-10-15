@@ -20,9 +20,13 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 代码默认态即当前版本，不需要额外开关：
 
 ```bash
-python main.py --image <path/to/image>                    # 单张（CPU 用 Mock，GPU 加 --mllm qwen）
+python main.py --image <path/to/image> --mllm mock        # 单张（CPU：显式选 Mock）
+python main.py --image <path/to/image> --mllm qwen        # 单张（GPU：Qwen3-VL-8B）
 FORENSIC_HALTING_POLICY=v2 python main.py --image <path>  # 仅用于历史复算（v2 已冻结）
 ```
+
+**真实入口不会静默降级**：`--mllm qwen`（或 `qwen25`）在没有可用 CUDA 时**直接报错**，不会换成 Mock
+（假会话产出的 trace 与真实会话无异，验收会把它当成真结果）。要跑 CPU 就显式写 `--mllm mock`。
 
 **当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**；
 参考后验只作对照、不覆盖标签。默认策略是 **v3**（`config.HALTING_POLICY`）。
@@ -293,6 +297,16 @@ FORENSIC_ALLOW_GPU=1 PROBE_WEIGHTS=<probe.pth> \
 产物写 `sft_data/g8_smoke/<时间戳>/`（不是批次目录）。六项检查＝图像真进多模态消息、一次合法调用被执行、
 结果被后续轮准确引用、结案可解析且收尾轮仍有图像、原始回复/采纳回复/外部控制原因分别留存、
 首轮有具体的视觉观察与另列疑似异常。GPU 项需 `FORENSIC_ALLOW_GPU=1`，否则在加载权重前退出。
+
+### 3.7c 打印模型实际看到的输入（小批前必查）
+
+```bash
+python scripts/g8_dump_model_inputs.py     # 产物：sft_data/g8_model_inputs/<时间戳>/model_inputs.md
+```
+
+内容：系统提示词原文、一次真实会话的全部对话（CPU/Mock）、逐值证据包（含 NPR 低分＝`Uncertain` 的边界、
+失败包没有分数）、内部标记词表扫描（bootstrap/AUROC/CI[/阶段编号/台账措辞）。**扫描必须 0 命中**，
+命中即退出码 1——判据是词表，不是"我检查过了"。
 
 ### 3.8 运行测试
 

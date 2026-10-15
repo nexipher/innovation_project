@@ -268,6 +268,28 @@
 - 调用规则：保留单动作协议、请求去重、预算与超时；**判据不能用"证据不足"兜底**——工具缺席要如实呈现。
 - 验收：默认工具箱身份明确；不加载未启用专家；完整 Agent 会话可运行；提示词里出现的每个专家都在注册表中。
 
+### 4.5a 小批前的 CPU 核查（2026-10-15 完成，先于小批）
+
+用户点名的三项，逐项做完并留下机械检查；**每一处都是先复现再修**：
+
+| 用户要求 | 复查结果（修前） | 处置 |
+| --- | --- | --- |
+| 转换器适配精简包 | 账本只认完整 token 的字段名（`source`/`raw_metric`）。转换器喂给它的是 trace 里**当时投递的那段 JSON**，即精简包 → 整条被跳过：一次完全如实的引用被判 `fabricated_expert_result`（DEFECT）。**新主线的每个样本都会倒在审核这一关** | 账本认识两种形状（`ledger_view`：`expert`→`source`、`score.value`→登记表指定字段、方向取自逐值规则）；`_delivered_fields` 仍按投递戳算"模型能看到哪些字段" |
+| 原始 `report` 不丢失 | 推理提示词要求 `<verdict>` JSON 带 `report`，而转换器渲染的答案里**没有这个字段**——训练出来的模型被教成写一个不含 report 的判决，与自己的说明相反 | 答案里带上**被采纳那一轮**的 `report` 原文（`adopted_report`，与 reasoning 同源）；那一轮没写就不含此字段，绝不代写 |
+| 训练对话不重新注入后台字段 | 转换器用 `to_json(token)` 注入**完整 token**（`strength`/`raw_metric`/`calibrated_likelihood`/`reasoning`），即把模型没看过的字段塞回训练数据 | 按 token 自己的 `model_delivered` 重建投递形状；旧批次（无戳/`full`）保持不变以保证回放一致 |
+
+复查过程中另外抓到的问题（都属"看起来跑通"这一类）：
+
+1. **账本认不出新工具的名字**：`SOURCE_WORDS` 里没有 `npr`/`univfd`，模型写"NPR 的分数是 0.93"时整句话对账本**不可见**——不查数字、不查方向、不查编造。已补名字（与 probe/noise 同约定）。
+2. **交付轮按次序对齐**：4.4 起会话可以在一次执行失败后继续，失败记录进证据链但**没有投递轮**，按次序对齐会把下一个 token 顶到上一轮的位置。改为按 `evidence_id` 认领（认不到时退回"第一个**可投递**的 token"）。
+3. **状态小结把后台字段放回模型输入**：`_state_note` 原写 `P(Fake)=…／raw_metric=…／适用 …`，在精简包下面正好是被收起来的那些字段，而且与包**冲突**（包说 AI-generated，这行说"方向 —"，实测如此）。改为按投递形状说话（`_state_line`）。
+4. **失败包带着"带方向的空分数槽"**：`model_visible` 对失败 token 仍给出 `score`（`value: None` 却带 `range`/`direction`/`threshold`），读起来就是一次中性测量。失败包现在**没有分数、没有尺度与方向**。
+5. **登记表里混着两类读者**：`prompt_note` 与内部说明（`usage_conditions`/`limits`/阶段编号）曾经同格；noise 的"退役…仅供回放"与 `G7 fitting group` 这类台账词汇会随提示词送到模型面前。已按字段分家，并加**机械扫描**（`test_score_semantics.py` 的两类读者 + `scripts/g8_dump_model_inputs.py` 的词表扫描）。
+6. **空段头描述着本次看不到的工具**：当前工具组全部由登记表供词，手写的 `WHAT EACH TOOL ACTUALLY MEASURES` 段正文为空，段头却还在（且带阶段编号）。空段现在整段不出现。
+
+**证据（用户要的"打印几份实际模型输入"）**：`python scripts/g8_dump_model_inputs.py` →
+`sft_data/g8_model_inputs/<时间戳>/model_inputs.md`，内容为系统提示词原文、一次真实会话的全部对话（CPU/mock）、逐值证据包（含 NPR 低分＝`Uncertain` 的边界与失败包）、内部标记词表扫描。**当前扫描结果：0 命中。**
+
 ### 4.5 小批 Agent 人工验收（test 之前）
 
 - 小批（先 8–16 源 × 4 格式）跑真实 Qwen3-VL + 新工具箱，产出**最小审阅视图**：原始图像、实际投递的证据包、

@@ -193,7 +193,14 @@ class TestToolPolicies:
         84bc2c766c6d712a.  Stage 4.4 moved it again, twice over: the tool
         sections are now generated from the score-semantics registry (so each
         expert's conditions travel with it), and the reading contract describes
-        the slim pack the model actually receives — b6d8a47c514dfe6c.  Anything
+        the slim pack the model actually receives — b6d8a47c514dfe6c.  The
+        pre-batch review then split the registry's notes into model-facing and
+        internal ones and put the per-value verdict in the pack itself
+        (`direction_for_this_value`: a low NPR score under JPEG is `Uncertain`,
+        not "Real"), so the contract gained that field, the score's documented
+        keys grew `threshold_chosen_on`, and the legacy measures section is now
+        omitted when empty instead of leaving a header that describes tools the
+        session cannot call — 8143461c167d31ed → a01272f96bbd66c7.  Anything
         that moves it again has to say so in a commit.
         """
         import hashlib
@@ -203,7 +210,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "b6d8a47c514dfe6c"
+            "a01272f96bbd66c7"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER
@@ -244,9 +251,24 @@ class TestToolPolicies:
         assert "<call_npr>" not in prompt
         assert "<call_univfd>" not in prompt
         assert "<call_jpeg>" not in prompt
-        # 旧工具仍走手写段，子集过滤照旧生效
-        legacy = build_forensic_prompt(["noise"])
-        assert "<call_jpeg>" not in legacy.split("WHAT EACH TOOL ACTUALLY MEASURES")[1]
+        # 旧工具（无登记条目）仍走手写段，子集过滤照旧生效
+        legacy = build_forensic_prompt(["jpeg"])
+        section = legacy.split("WHAT EACH TOOL ACTUALLY MEASURES")[1]
+        assert "<call_jpeg>" in section
+        assert "<call_freq>" not in legacy and "<call_noise>" not in legacy
+
+    def test_the_legacy_measures_section_disappears_when_it_is_empty(self):
+        """
+        当前工具组全部由登记表供词，手写段正文是空的。留下段头，就是在提示词里
+        向模型描述一批它这次看不到的工具——而段头里原本还带着我们的阶段编号
+        （"the G7 fitting group of 62 sources"）。它是对我们才有意义的台账词汇。
+        """
+        from mllm.message_builder import build_forensic_prompt
+
+        prompt = build_forensic_prompt(["probe", "npr", "univfd"])
+        assert "WHAT EACH TOOL ACTUALLY MEASURES" not in prompt
+        for internal in ("G7", "700-sample", "bootstrap", "AUROC"):
+            assert internal not in prompt, internal
 
     def test_subset_says_other_tools_do_not_exist(self):
         from mllm.message_builder import build_forensic_prompt

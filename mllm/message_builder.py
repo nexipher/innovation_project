@@ -149,15 +149,19 @@ PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe
 PROMPT_TAIL_BASE = (
     "\nEach evidence token you receive has EXACTLY these fields:\n"
     "  `evidence_id`, `expert`, `measurement`, `status`, `scope`,\n"
-    "  `score` = {`name`, `value`, `range`, `direction`, `threshold`,\n"
+    "  `score` = {`name`, `value`, `range`, `direction`, `direction_for_this_value`,\n"
+    "             `threshold`, `threshold_chosen_on`,\n"
     "             `is_calibrated_probability`: always false},\n"
     "  `reading` = a short account of what was measured and the conditions under which\n"
-    "              the number may be read, and optionally `visual_artifacts`.\n"
+    "              the number may be read,\n"
+    "  and, when the expert rendered one, `visual_artifacts` + `artifact_meaning`.\n"
     "\n1. There is ONE score per token. Its `direction` says which side means what —\n"
     "   follow it, never your own expectation about the expert. Scores from different\n"
     "   experts are NOT comparable and must not be averaged or ranked against each other.\n"
-    "2. Read the `reading` before using the number: it states the conditions. A score\n"
-    "   outside those conditions carries no direction — say so instead of forcing one.\n"
+    "2. Read the `reading` before using the number: it states the conditions. `direction`\n"
+    "   is the expert's scale; `direction_for_this_value` is what THIS number means under\n"
+    "   those conditions. When it is `Uncertain`, the number carries no direction here:\n"
+    "   say so instead of forcing one.\n"
     "3. The number is not a probability, even when it lies between 0 and 1.\n"
     "4. `status` tells you whether a measurement happened: a `failed` or missing\n"
     "   measurement is NOT a neutral result, and must never be reported as one.\n"
@@ -213,17 +217,23 @@ def build_forensic_prompt(allowed_tools: Optional[Iterable[str]] = None) -> str:
     if len(tools) < len(TOOL_ORDER):
         actions = actions + "\n" + SUBSET_NOTE
     # 登记表已把"测什么、怎么读、什么条件"写进了 action 段，故旧的两段仅用于
-    # 没有登记条目的旧工具（freq/jpeg/noise），且只在被允许时才出现。
-    measures = "\n".join(TOOL_MEASURES[t] for t in tools if t not in REGISTRY_TAGS)
+    # 没有登记条目的旧工具（freq/jpeg），且只在被允许时才出现。
+    #
+    # 段头只在段里有内容时才写：当前工具组（probe/npr/univfd）全部由登记表生成，
+    # 这一段的正文是空的——留下段头，就是在提示词里向模型描述一批它这次根本看不到
+    # 的工具，而段头里原本还带着我们的阶段编号（"G7 fitting group"）。校准出处
+    # 该说的部分（格式配平、带标注来源）留下，内部编号不留给模型。
+    measures_text = "\n".join(TOOL_MEASURES[t] for t in tools if t not in REGISTRY_TAGS)
+    measures = ("WHAT EACH TOOL ACTUALLY MEASURES (empirical calibration on this "
+                "project's own format-balanced, labelled sources):\n"
+                + measures_text + "\n\n") if measures_text else ""
     read_notes = "".join(TOOL_READ_NOTES[t] for t in tools
                          if t in TOOL_READ_NOTES and t not in REGISTRY_TAGS)
 
     return (PROMPT_HEAD
             + "AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):\n"
             + actions + "\n\nFORBIDDEN:" + PROMPT_MID
-            + "WHAT EACH TOOL ACTUALLY MEASURES (empirical calibration; the three "
-              "statistical experts on the format-balanced 700-sample set, `probe` on the "
-              "G7 fitting group of 62 sources):\n" + measures + "\n\nHOW TO READ AN EVIDENCE TOKEN:"
+            + measures + "HOW TO READ AN EVIDENCE TOKEN:"
             + PROMPT_TAIL_BASE + read_notes + PROMPT_TAIL_RULES)
 
 

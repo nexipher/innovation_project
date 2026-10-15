@@ -49,9 +49,32 @@ def build_probe_expert(mllm_type: str):
     expert = ProbeDinoExpert()
     reason = expert.unavailable_reason()
     if reason:
-        print(f"Warning: PROBE 不可用（{reason}）——按旧工具箱运行。")
+        # 不是 Mock 替换（不会造假分数），但**主检测器缺席**必须说清楚：这次会话
+        # 的工具箱只剩 npr/univfd，任何"g8 工具箱"的结论都不适用于它。
+        print(f"Warning: PROBE 不可用（{reason}）。本次会话不提供主检测器 PROBE，"
+              "工具箱只剩 npr/univfd——该会话的结果不得按 g8 工具箱口径解读。")
         return None
     return expert
+
+
+def require_cuda_for_real_sessions(mllm_type: str) -> None:
+    """
+    真实入口的第一道门：没有可用的 GPU 就**拒绝**，而不是换成 Mock。
+
+    曾经的写法是 `print("Warning: CUDA not available. Falling back to
+    MockMLLMClient.")` 然后继续跑（用户 2026-10-15 点名禁止）：产出的 trace、
+    证据链与落盘记录与真实会话无异，验收会把它当成真结果——"看起来跑通"里最贵
+    的一种。这道门放在**加载任何权重之前**：拒绝要快，不留半个已初始化的会话。
+    """
+    import torch                          # 只有真会话分支才需要它
+
+    if torch.cuda.is_available():
+        return
+    raise RuntimeError(
+        f"--mllm {mllm_type} 需要 CUDA，但这台机器上没有可用的 GPU。\n"
+        "真实会话不会退回 Mock（那会让验收看起来跑通）：\n"
+        "  * 想在 CPU 上跑协议/管道：显式用 `--mllm mock`\n"
+        "  * 想跑真实模型：换到有 GPU 的机器，或申请 GPU 后再跑")
 
 
 def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
@@ -62,6 +85,8 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> Foren
     noise are retired from the default toolbox (their code and results stay, for
     replay); a session that still wants them registers them explicitly.
     """
+    if mllm_type in ("qwen", "qwen25"):
+        require_cuda_for_real_sessions(mllm_type)   # 先拒，再加载任何权重
     if mllm_type == "mock":
         from experts.npr import MockNPRExpert
         from experts.univfd import MockUnivFDExpert
@@ -89,12 +114,7 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> Foren
     system_prompt = build_forensic_prompt(tags)
 
     if mllm_type in ("qwen", "qwen25"):
-        import torch                      # 只有真会话分支才需要它
-
-        if not torch.cuda.is_available():
-            print("Warning: CUDA not available. Falling back to MockMLLMClient.")
-            mllm = MockMLLMClient(mode=mode)
-        elif mllm_type == "qwen":
+        if mllm_type == "qwen":
             # 当前版本：Qwen3-VL-8B-Instruct（固定 revision，见 mllm/qwen3_client.py）
             from mllm.qwen3_client import Qwen3VLClient
 

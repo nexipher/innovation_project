@@ -60,7 +60,8 @@ class _WorkingExpert:
         from experts.base import ExpertResult
 
         return ExpertResult(source=self.source_name, evidence_name=self.evidence_name,
-                            strength=0.9, raw_metric=0.9, support="AI-generated",
+                            region=REGION, strength=0.9, raw_metric=0.9,
+                            support="AI-generated",
                             phenomenon="整图判别分数 0.9。", reasoning="分数偏高。",
                             interpretation_text="指向生成。")
 
@@ -72,6 +73,8 @@ class _BrokenExpert(_WorkingExpert):
     def analyze(self, patch):
         raise RuntimeError("权重文件不存在")
 
+
+REGION = "patch_coordinates_[0, 0, 64, 64]"
 
 CALL_UNKNOWN = ("<planning>\nSuspected Region: none\n</planning>\n"
                 "<call_jpeg></call_jpeg>")

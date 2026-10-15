@@ -63,6 +63,9 @@ _SECTION_PATTERN = re.compile(r"<(observation|forensic_evidence|reasoning|verdic
 # The model's own reasoning block, as it wrote it (the rendered answer uses it
 # verbatim rather than replacing it with a template).
 _REASONING_BLOCK = re.compile(r"<reasoning>\s*(.*?)\s*</reasoning>", re.S | re.I)
+# The verdict JSON the model wrote, read back for the one field the rendered
+# answer used to drop (`report`) — see `adopted_report`.
+_VERDICT_JSON = re.compile(r"<verdict>\s*(\{.*?\})\s*</verdict>", re.S | re.I)
 _SENTENCE_SPLIT = re.compile(r"[。.;；\n]")
 
 # Grounding (2026-10-11): the assistant may cite an expert's *results* only if
@@ -289,6 +292,12 @@ def render_answer(record: dict, observation_text: str = "",
         "confidence": record.get("confidence"),
         "basis": basis,
     }
+    # 模型自己写的那段 `report` 原文带上：推理提示词要求它出现在判决 JSON 里，
+    # 而转换曾经把它整段丢掉——训练出来的模型于是被教成写一个不含 report 的判决，
+    # 与它手上的说明相反。没有 trace（或那一轮没写）时不含此字段，绝不代写。
+    model_report = adopted_report(record.get("_trace"))
+    if model_report:
+        verdict["report"] = model_report
     if tokens:
         # The reference lives apart from the label under v3.
         verdict["reference_posterior"] = record.get("posterior")
@@ -347,6 +356,29 @@ def adopted_reasoning(trace: Optional[dict]) -> str:
     return block.group(1).strip() if block else ""
 
 
+def adopted_report(trace: Optional[dict]) -> str:
+    """
+    The model's own `report`, from the same adopted turn the reasoning comes from.
+
+    推理提示词要求判决 JSON 里带 `report`，而渲染出的答案里**没有这个字段**——训练
+    出来的模型因此被教成"写一个不含 report 的判决"，与它自己的说明相反。这里把它
+    原样取回来（同一个被采纳的轮次，绝不用别的轮次补齐）。
+    """
+    trace_turns = (trace or {}).get("conversations", [])
+    index = _closing_index(trace_turns)
+    if index < 0:
+        return ""
+    block = _VERDICT_JSON.search(trace_turns[index].get("value") or "")
+    if not block:
+        return ""
+    try:
+        parsed = json.loads(block.group(1))
+    except ValueError:
+        return ""
+    report = parsed.get("report") if isinstance(parsed, dict) else None
+    return str(report).strip() if isinstance(report, str) else ""
+
+
 def render_conversation(record: dict, trace: Optional[dict] = None,
                         observation_text: str = "") -> List[dict]:
     """
@@ -364,7 +396,10 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
     A tool sample's answer cites evidence ids, so the conversation has to
     contain the turns that delivered them.  Those turns are rebuilt from the
     record's (rectified) tokens rather than copied from the trace, so the text
-    the model trains on is the text the pipeline actually injects.  Turns after
+    the model trains on is the text the pipeline actually injects — in the
+    shape it was actually delivered in (the slim pack on the g8 mainline, the
+    whole token for full-delivery sessions), matched to its turn by
+    `evidence_id` so a failed call cannot shift the alignment.  Turns after
     the closing answer are dropped: the sample's verdict is the one derived
     from that last answer.
     """
@@ -375,10 +410,51 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
     task_prompt = next((t["value"] for t in trace_turns
                         if t.get("from") == "user"), "<image>\n请分析这张图像的真实性。")
 
+    # 交付轮按 **evidence_id** 对回 token，而不是按出现次序。阶段 4.4 起会话可以在
+    # 一次执行失败后继续：失败记录也进证据链，但它**没有投递轮**。按次序对齐会把
+    # 下一个 token 顶到上一轮的位置，训练对话里就会出现模型当时没拿到的测量。
+    by_id = {token.get("evidence_id"): token for token in evidence
+             if isinstance(token, dict) and token.get("evidence_id")}
+    claimed: set = set()
+
+    def _deliverable(token: dict) -> bool:
+        """
+        这个 token 当时**投递给模型了吗**。
+
+        失败记录与 `model_delivered: "none"` 的记录都在证据链上，但模型什么都没
+        拿到——它们没有投递轮，也不能顶替别人的位置。
+        """
+        return (token.get("status") != "failed"
+                and token.get("model_delivered") != "none")
+
+    def _claim(carried: dict) -> Optional[dict]:
+        """
+        这一段投递对应哪个 token。
+
+        先认 `evidence_id`（真实 trace 里投递的就是链上那个 token，id 必然相同）。
+        认不到时（旧 trace、或 id 在整流后变过）退回按次序取第一个**可投递**的
+        token——跳过失败记录与从未投递的记录，它们没有投递轮，不该顶替别人的位置。
+        """
+        carried_id = (carried or {}).get("evidence_id")
+        token = by_id.get(carried_id)
+        if token is not None and carried_id not in claimed:
+            if not _deliverable(token):
+                return None              # 这一条当时没投递给模型
+            claimed.add(carried_id)
+            return token
+        for candidate in evidence:
+            if not isinstance(candidate, dict) or not _deliverable(candidate):
+                continue
+            candidate_id = candidate.get("evidence_id")
+            if not candidate_id or candidate_id in claimed:
+                continue
+            claimed.add(candidate_id)
+            return candidate
+        return None
+
     closing = _closing_index(trace_turns)
     model_reasoning = adopted_reasoning(trace)
     turns: List[dict] = [{"from": "user", "value": task_prompt}]
-    delivered = 0
     for index, turn in enumerate(trace_turns):
         if index == 0 and turn.get("from") == "user":
             continue                       # the task prompt is already in place
@@ -393,17 +469,23 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
             turns.append({"from": "gpt", "value": value})
             continue
         if _is_evidence_turn(value):
-            if delivered < len(evidence):
-                token = evidence[delivered]
-                delivered += 1
-                entry = {"from": "user", "value": EvidenceTokenizer.to_json(token)}
-                paths = [path for path in
-                         ([token.get("diagnostic_region_image")]
-                          + list(token.get("visual_artifacts") or [])) if path]
-                if paths:
-                    # Inference attaches at most two images per turn; mirror it.
-                    entry["image_paths"] = paths[:2]
-                turns.append(entry)
+            token = _claim(_parse_evidence_turn(value))
+            if token is None:
+                # 记录里已经没有可交付的 token（例如记录说本轨迹没调工具）：
+                # 这一段不属于这个样本，丢掉而不是照抄一个账上不存在的东西。
+                continue
+            # 按**当时投递的形状**重建：精简包就是精简包（阶段 4.3 起的主线），
+            # 旧批次与完整投递仍是整个 token——训练与推理必须看到同一种字段。
+            payload = (EvidenceTokenizer.model_visible(token)
+                       if token.get("model_delivered") == "slim" else token)
+            entry = {"from": "user", "value": EvidenceTokenizer.to_json(payload)}
+            paths = [path for path in
+                     ([token.get("diagnostic_region_image")]
+                      + list(token.get("visual_artifacts") or [])) if path]
+            if paths:
+                # Inference attaches at most two images per turn; mirror it.
+                entry["image_paths"] = paths[:2]
+            turns.append(entry)
             continue
         turns.append({"from": "user", "value": value})   # question or correction
     else:

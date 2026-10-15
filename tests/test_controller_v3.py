@@ -183,7 +183,20 @@ class TestTheSessionStateIsRestated:
                  if turn["from"] == "user" and "本会话状态" in turn["value"]]
         assert len(notes) == 1
         assert "已执行的专家" in notes[0] and "noise_expert" in notes[0]
-        assert "P(Fake)" in notes[0] and "尚可调用" in notes[0]
+        assert "尚可调用" in notes[0]
+
+    def test_the_note_repeats_only_what_the_pack_delivered(self, v3):
+        """
+        这一行曾经无条件写 `P(Fake)/raw_metric/适用`：完整投递下没错，精简投递下
+        却是把包刚收起来的后台字段又放回去，还和包的方向打架（实测：包说
+        AI-generated，这行说"方向 —"）。所以它按投递形状说话。
+        """
+        result = v3([CALL, _verdict("Fake", 0.8)])
+        note = next(turn["value"] for turn in result["conversation"]
+                    if turn["from"] == "user" and "本会话状态" in turn["value"])
+        assert "该值的方向：" in note
+        for background in ("P(Fake)", "raw_metric", "适用 "):
+            assert background not in note, background
 
     def test_the_state_note_lists_what_is_still_available(self, v3):
         result = v3([CALL, _verdict("Fake", 0.8)])

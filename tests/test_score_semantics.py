@@ -211,6 +211,59 @@ class TestTheDirectionRules:
         assert direction_for_value("noise_expert", 0.1)[0] == "AI-generated"
 
 
+class TestTheTwoAudiencesAreSeparate:
+    """
+    登记表里住着两类读者，界线必须留在字段名上：
+
+    * 给模型的：`display_name`、`prompt_note`、`direction_rules[].prompt_note`；
+    * 给我们自己的：`role`、`retirement`、`usage_conditions`、`limits`、`note`、
+      `direction_history`（含 bootstrap 数值、阶段编号、用户日期、写法要求）。
+
+    越界的两种方向都发生过：内部说明被拼进模型输入（模型读到的是我们的台账），
+    以及模型可见文字里带着阶段编号（"G7 fitting group"）。这里机械地钉住界线。
+    """
+
+    INTERNAL_MARKERS = ("bootstrap", "CI[", "AUROC", "G2 ", "G7", "阶段", "退役",
+                        "用户 2026", "登记表", "本轮 val", "Retired", "replay only",
+                        "700-sample")
+
+    def _model_facing(self):
+        for source, record in load()["experts"].items():
+            yield source, "display_name", record["display_name"]
+            if record.get("prompt_note"):
+                yield source, "prompt_note", record["prompt_note"]
+            for rule in record.get("direction_rules", []):
+                if rule.get("prompt_note"):
+                    yield source, f"direction_rules[{rule['when']}]", rule["prompt_note"]
+
+    def test_no_model_facing_string_carries_an_internal_marker(self):
+        for source, field, value in self._model_facing():
+            for marker in self.INTERNAL_MARKERS:
+                assert marker not in value, f"{source} 的 {field} 含内部措辞 {marker!r}：{value}"
+
+    def test_every_current_tool_says_something_model_facing(self):
+        """非空集检查：界线两边都得有东西，否则这条界线是空的。"""
+        from state_machine.controller import ForensicStateMachine
+
+        facing = {source for source, _f, _v in self._model_facing()}
+        for tag in ForensicStateMachine.CURRENT_TOOL_TAGS:
+            assert ForensicStateMachine.EXPERT_KEY_MAP[tag] in facing, tag
+
+    def test_the_internal_notes_are_where_the_statistics_live(self):
+        """统计数值不是被删掉了，而是被放在我们这一侧。"""
+        notes = json.dumps({s: load()["experts"][s] for s in THE_FOUR
+                            if s in load()["experts"]}, ensure_ascii=False)
+        assert "bootstrap" in notes
+
+    def test_the_assembled_prompts_carry_no_internal_marker(self):
+        from mllm.message_builder import TOOL_ORDER, build_forensic_prompt
+
+        for policy in (None, list(TOOL_ORDER), ["probe", "npr", "univfd"]):
+            prompt = build_forensic_prompt(policy)
+            for marker in self.INTERNAL_MARKERS:
+                assert marker not in prompt, f"{policy} 的提示词含 {marker!r}"
+
+
 class TestTheRectifierTakesItsDirectionFromTheRegistry:
     def _token(self, source, raw):
         return {"source": source, "raw_metric": raw, "strength": raw,
