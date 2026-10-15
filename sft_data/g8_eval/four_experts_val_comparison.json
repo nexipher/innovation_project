@@ -1,0 +1,222 @@
+{
+  "splits": [
+    "val"
+  ],
+  "runs": [
+    "/root/autodl-tmp/innovation_project/sft_data/g8_eval/20261015_125949_npr-a_val",
+    "/root/autodl-tmp/innovation_project/sft_data/g8_eval/20261015_130530_npr-b_val",
+    "/root/autodl-tmp/innovation_project/sft_data/g8_eval/20261015_131138_probe_val",
+    "/root/autodl-tmp/innovation_project/sft_data/g8_eval/20261015_131332_univfd_val",
+    "/root/autodl-tmp/innovation_project/sft_data/g8_eval/20261015_131501_noise_val"
+  ],
+  "images": 1136,
+  "experts": [
+    "npr-a",
+    "npr-b",
+    "probe",
+    "univfd",
+    "noise"
+  ],
+  "per_format": {
+    "jpeg_q70": {
+      "n": 284,
+      "auroc": {
+        "npr-a": 0.4699960325332276,
+        "npr-b": 0.39250644713350524,
+        "probe": 0.9879488196786352,
+        "univfd": 0.845417575877802,
+        "noise": 0.6323646101963897
+      }
+    },
+    "jpeg_q85": {
+      "n": 284,
+      "auroc": {
+        "npr-a": 0.5115056536401508,
+        "npr-b": 0.4570025788534021,
+        "probe": 0.9822455861932157,
+        "univfd": 0.8168022217813925,
+        "noise": 0.6237849633009324
+      }
+    },
+    "jpeg_q95": {
+      "n": 284,
+      "auroc": {
+        "npr-a": 0.5643721483832573,
+        "npr-b": 0.5073398135290618,
+        "probe": 0.9781789327514382,
+        "univfd": 0.8431858758182901,
+        "noise": 0.6816107915096211
+      }
+    },
+    "png": {
+      "n": 284,
+      "auroc": {
+        "npr-a": 0.9974707399325532,
+        "npr-b": 0.9986609799642927,
+        "probe": 0.9754017060107122,
+        "univfd": 0.893423923824638,
+        "noise": 0.7007042253521126
+      }
+    }
+  },
+  "pairwise": [
+    {
+      "pair": [
+        "npr-a",
+        "npr-b"
+      ],
+      "agreement": 0.9867957746478874,
+      "both_wrong_rate": 0.37059859154929575,
+      "independent_expectation": 0.1422755281690141,
+      "overlap_ratio": 2.604795050270688,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    },
+    {
+      "pair": [
+        "npr-a",
+        "probe"
+      ],
+      "agreement": 0.5950704225352113,
+      "both_wrong_rate": 0.022887323943661973,
+      "independent_expectation": 0.027052389158897048,
+      "overlap_ratio": 0.8460370656813038,
+      "note": "重合低于独立预期 ⇒ 错误互补"
+    },
+    {
+      "pair": [
+        "npr-a",
+        "univfd"
+      ],
+      "agreement": 0.8195422535211268,
+      "both_wrong_rate": 0.2746478873239437,
+      "independent_expectation": 0.1329240850029756,
+      "overlap_ratio": 2.066201074980471,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    },
+    {
+      "pair": [
+        "npr-a",
+        "noise"
+      ],
+      "agreement": 0.5721830985915493,
+      "both_wrong_rate": 0.1637323943661972,
+      "independent_expectation": 0.1426095082820869,
+      "overlap_ratio": 1.148116954742796,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    },
+    {
+      "pair": [
+        "npr-b",
+        "probe"
+      ],
+      "agreement": 0.5977112676056338,
+      "both_wrong_rate": 0.022007042253521125,
+      "independent_expectation": 0.02673855633802817,
+      "overlap_ratio": 0.8230452674897119,
+      "note": "重合低于独立预期 ⇒ 错误互补"
+    },
+    {
+      "pair": [
+        "npr-b",
+        "univfd"
+      ],
+      "agreement": 0.8204225352112676,
+      "both_wrong_rate": 0.272887323943662,
+      "independent_expectation": 0.13138204225352113,
+      "overlap_ratio": 2.0770519262981577,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    },
+    {
+      "pair": [
+        "npr-b",
+        "noise"
+      ],
+      "agreement": 0.5783450704225352,
+      "both_wrong_rate": 0.16461267605633803,
+      "independent_expectation": 0.1409551056338028,
+      "overlap_ratio": 1.1678376268540203,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    },
+    {
+      "pair": [
+        "probe",
+        "univfd"
+      ],
+      "agreement": 0.6311619718309859,
+      "both_wrong_rate": 0.02640845070422535,
+      "independent_expectation": 0.024981092541162465,
+      "overlap_ratio": 1.0571375395495999,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    },
+    {
+      "pair": [
+        "probe",
+        "noise"
+      ],
+      "agreement": 0.5845070422535211,
+      "both_wrong_rate": 0.01584507042253521,
+      "independent_expectation": 0.026801322902201948,
+      "overlap_ratio": 0.5912047879260993,
+      "note": "重合低于独立预期 ⇒ 错误互补"
+    },
+    {
+      "pair": [
+        "univfd",
+        "noise"
+      ],
+      "agreement": 0.5748239436619719,
+      "both_wrong_rate": 0.1505281690140845,
+      "independent_expectation": 0.13169045080341202,
+      "overlap_ratio": 1.143045437962647,
+      "note": "重合不低于独立预期 ⇒ 未显示互补"
+    }
+  ],
+  "naive_average": {
+    "auroc": 0.9860952687958738,
+    "per_expert": {
+      "npr-a": 0.6362778342590756,
+      "npr-b": 0.5870146052370562,
+      "probe": 0.9808352757389406,
+      "univfd": 0.8492703580638763,
+      "noise": 0.659566554255108
+    },
+    "per_format": {
+      "jpeg_q70": {
+        "n": 284,
+        "auroc_average": 0.9848244395953184,
+        "npr-a": 0.4699960325332276,
+        "npr-b": 0.39250644713350524,
+        "probe": 0.9879488196786352,
+        "univfd": 0.845417575877802,
+        "noise": 0.6323646101963897
+      },
+      "jpeg_q85": {
+        "n": 284,
+        "auroc_average": 0.977930966078159,
+        "npr-a": 0.5115056536401508,
+        "npr-b": 0.4570025788534021,
+        "probe": 0.9822455861932157,
+        "univfd": 0.8168022217813925,
+        "noise": 0.6237849633009324
+      },
+      "jpeg_q95": {
+        "n": 284,
+        "auroc_average": 0.9809065661575085,
+        "npr-a": 0.5643721483832573,
+        "npr-b": 0.5073398135290618,
+        "probe": 0.9781789327514382,
+        "univfd": 0.8431858758182901,
+        "noise": 0.6816107915096211
+      },
+      "png": {
+        "n": 284,
+        "auroc_average": 0.9997520333267209,
+        "npr-a": 0.9974707399325532,
+        "npr-b": 0.9986609799642927,
+        "probe": 0.9754017060107122,
+        "univfd": 0.893423923824638,
+        "noise": 0.7007042253521126
+      }
+    }
+  }
+}

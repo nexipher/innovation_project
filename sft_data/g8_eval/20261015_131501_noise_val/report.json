@@ -1,0 +1,76 @@
+{
+  "generated_at": "2026-10-15T13:16:39",
+  "expert": "noise",
+  "source_name": "noise_expert",
+  "mock": false,
+  "split": "val",
+  "formats": [
+    "png",
+    "q70",
+    "q85",
+    "q95"
+  ],
+  "device": "cpu",
+  "sources": 284,
+  "images": 1136,
+  "identity": {
+    "expert": "noise_expert",
+    "weights_file": "无（确定性算法）",
+    "weights_sha256": null,
+    "code_repo": "本仓库 experts/noise.py",
+    "preprocess": "整图 SRM 高通 + 局部方差不一致度",
+    "preprocess_detail": "RGB → 灰度 → SRM 高通滤波 → 分块方差 → 不一致度标量 → 到 strength 的 sigmoid 归一化",
+    "measurement_scope": "global",
+    "licence": "本仓库"
+  },
+  "semantics": {
+    "field": "strength",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "direction": "higher_is_real",
+    "is_calibrated_probability": false
+  },
+  "threshold_policy": {
+    "value": 0.5,
+    "chosen_on": "G2 校准集（格式配平）",
+    "searched_on_val": false
+  },
+  "metrics": {
+    "n": 1136,
+    "direction": "higher_is_real",
+    "threshold_on_raw": 0.5,
+    "errors": 0,
+    "auroc": 0.659566554255108,
+    "accuracy@0.5": 0.6241197183098591,
+    "per_format": {
+      "jpeg_q70": {
+        "n": 284,
+        "auroc": 0.6323646101963897,
+        "mean_fake_score": 0.4713855714251652,
+        "mean_real_score": 0.6150665586152487
+      },
+      "jpeg_q85": {
+        "n": 284,
+        "auroc": 0.6237849633009324,
+        "mean_fake_score": 0.47859131744189676,
+        "mean_real_score": 0.613179613912861
+      },
+      "jpeg_q95": {
+        "n": 284,
+        "auroc": 0.6816107915096211,
+        "mean_fake_score": 0.41081223302046,
+        "mean_real_score": 0.6133766898147562
+      },
+      "png": {
+        "n": 284,
+        "auroc": 0.7007042253521126,
+        "mean_fake_score": 0.38693905510993565,
+        "mean_real_score": 0.6119494312946611
+      }
+    },
+    "mean_elapsed_ms": 63.31
+  },
+  "failures": []
+}

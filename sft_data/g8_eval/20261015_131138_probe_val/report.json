@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-10-15T13:13:31",
+  "expert": "probe",
+  "source_name": "probe_dino_expert",
+  "mock": false,
+  "split": "val",
+  "formats": [
+    "png",
+    "q70",
+    "q85",
+    "q95"
+  ],
+  "device": "cuda",
+  "sources": 284,
+  "images": 1136,
+  "identity": {
+    "expert": "probe_dino_expert",
+    "weights_file": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+    "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+    "code_repo": "本仓库 experts/probe_dino.py（复刻 Detector/evaluate_dino.py 的推理序）",
+    "preprocess": "pad→336 滑窗均值",
+    "preprocess_detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+    "measurement_scope": "global",
+    "licence": "上游未声明（仓库无 LICENSE）；仅本地研究，不再分发"
+  },
+  "semantics": {
+    "field": "raw_metric",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "direction": "higher_is_fake",
+    "is_calibrated_probability": false
+  },
+  "threshold_policy": {
+    "value": 0.5,
+    "chosen_on": "外部默认",
+    "searched_on_val": false
+  },
+  "metrics": {
+    "n": 1136,
+    "direction": "higher_is_fake",
+    "threshold_on_raw": 0.5,
+    "errors": 0,
+    "auroc": 0.9808352757389406,
+    "accuracy@0.5": 0.9286971830985915,
+    "accuracy@threshold": 0.9286971830985915,
+    "per_format": {
+      "jpeg_q70": {
+        "n": 284,
+        "auroc": 0.9879488196786352,
+        "mean_fake_score": 0.9264422760568034,
+        "mean_real_score": 0.09207599348017435
+      },
+      "jpeg_q85": {
+        "n": 284,
+        "auroc": 0.9822455861932157,
+        "mean_fake_score": 0.9277185428703965,
+        "mean_real_score": 0.11875042663583807
+      },
+      "jpeg_q95": {
+        "n": 284,
+        "auroc": 0.9781789327514382,
+        "mean_fake_score": 0.9229440459617558,
+        "mean_real_score": 0.1127366286688722
+      },
+      "png": {
+        "n": 284,
+        "auroc": 0.9754017060107122,
+        "mean_fake_score": 0.9020029481690587,
+        "mean_real_score": 0.09836196810155484
+      }
+    },
+    "mean_elapsed_ms": 74.76
+  },
+  "failures": []
+}

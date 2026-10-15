@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+"Does the second expert actually add?" — paired bootstrap on one partition.
+
+The comparison script reports overlap and a naive average; this puts a
+confidence interval on the *difference*, because on a 284-source cell a +0.02
+AUROC can be an artefact or a fact and the point estimate alone cannot say
+which.  Pairing matters: the same images are scored by both experts, so the
+resample draws images, not scores.
+
+Equal weights, no fitting: an unfitted rule can be frozen as-is, whereas a
+fitted one would have to be fitted on train/val and only then tested.
+
+Usage:
+  python scripts/g8_gain_bootstrap.py --base probe --add npr-a univfd noise \
+      --split val --out sft_data/g8_eval/gain_bootstrap_val.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from typing import Dict, List
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import numpy as np
+
+from config import PROJECT_ROOT
+from utils.score_semantics import entry as semantics_entry
+
+
+def latest_run(expert: str, split: str) -> str:
+    base = os.path.join(PROJECT_ROOT, "sft_data", "g8_eval")
+    matches = []
+    for name in sorted(os.listdir(base)):
+        report = os.path.join(base, name, "report.json")
+        if not os.path.exists(report) or not name.endswith(f"_{split}"):
+            continue
+        with open(report, encoding="utf-8") as handle:
+            data = json.load(handle)
+        if data["expert"] == expert and not data.get("mock"):
+            matches.append(os.path.join(base, name))
+    if not matches:
+        raise SystemExit(f"没有 {expert} 在 {split} 上的评测运行")
+    return matches[-1]
+
+
+def load_scores(run_dir: str) -> Dict[str, dict]:
+    rows = {}
+    with open(os.path.join(run_dir, "scores.jsonl"), encoding="utf-8") as handle:
+        for line in handle:
+            row = json.loads(line)
+            if row.get("status") == "ok" and row.get("raw_score") is not None:
+                rows[row["variant_id"]] = row
+    return rows
+
+
+def decision_scores(expert: str, run_dir: str, ids: List[str]) -> np.ndarray:
+    rows = load_scores(run_dir)
+    with open(os.path.join(run_dir, "report.json"), encoding="utf-8") as handle:
+        source_name = json.load(handle)["source_name"]
+    direction = semantics_entry(source_name)["raw_score"]["direction"]
+    raw = np.array([rows[i]["raw_score"] for i in ids], dtype=float)
+    return raw if direction == "higher_is_fake" else 1.0 - raw
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--base", default="probe")
+    parser.add_argument("--add", nargs="+", required=True)
+    parser.add_argument("--split", default="val")
+    parser.add_argument("--resamples", type=int, default=2000)
+    parser.add_argument("--seed", type=int, default=20261015)
+    parser.add_argument("--out", default=None)
+    args = parser.parse_args()
+
+    from sklearn.metrics import roc_auc_score
+
+    base_dir = latest_run(args.base, args.split)
+    runs = {name: latest_run(name, args.split) for name in args.add}
+    base_rows = load_scores(base_dir)
+    ids = sorted(set(base_rows) & set.intersection(
+        *[set(load_scores(path)) for path in runs.values()]))
+    if not ids:
+        raise SystemExit("运行之间没有共同图像")
+
+    labels = np.array([1 if base_rows[i]["label"] == "Fake" else 0 for i in ids])
+    treatments = np.array([base_rows[i]["treatment"] for i in ids])
+    base = decision_scores(args.base, base_dir, ids)
+    cells = ["ALL"] + sorted(set(treatments.tolist()))
+    rng = np.random.default_rng(args.seed)
+
+    report = {"split": args.split, "base": args.base, "images": len(ids),
+              "base_auroc": float(roc_auc_score(labels, base)), "cells": {}}
+    for name in args.add:
+        added = decision_scores(name, runs[name], ids)
+        report["cells"][name] = {}
+        for cell in cells:
+            mask = np.ones(len(ids), bool) if cell == "ALL" else (treatments == cell)
+            y, a, b = labels[mask], base[mask], added[mask]
+            deltas = []
+            for _ in range(args.resamples):
+                index = rng.integers(0, len(y), len(y))
+                if len(set(y[index].tolist())) < 2:
+                    continue
+                deltas.append(roc_auc_score(y[index], (a[index] + b[index]) / 2)
+                              - roc_auc_score(y[index], a[index]))
+            values = np.array(deltas)
+            report["cells"][name][cell] = {
+                "n": int(mask.sum()),
+                "base_auroc": float(roc_auc_score(y, a)),
+                "average_auroc": float(roc_auc_score(y, (a + b) / 2)),
+                "delta_mean": float(values.mean()),
+                "ci95": [float(np.percentile(values, 2.5)),
+                         float(np.percentile(values, 97.5))],
+                "p_delta_le_zero": float((values <= 0).mean()),
+            }
+            row = report["cells"][name][cell]
+            print(f"  {args.base}+{name:8} {cell:9} n={row['n']:4} "
+                  f"Δ={row['delta_mean']:+.4f} CI[{row['ci95'][0]:+.4f},{row['ci95'][1]:+.4f}] "
+                  f"P(Δ≤0)={row['p_delta_le_zero']:.3f}")
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as handle:
+            json.dump(report, handle, ensure_ascii=False, indent=2)
+        print(f"报告：{os.path.relpath(args.out, PROJECT_ROOT)}")
+
+
+if __name__ == "__main__":
+    main()

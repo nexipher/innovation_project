@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-10-15T13:14:47",
+  "expert": "univfd",
+  "source_name": "univfd_expert",
+  "mock": false,
+  "split": "val",
+  "formats": [
+    "png",
+    "q70",
+    "q85",
+    "q95"
+  ],
+  "device": "cuda",
+  "sources": 284,
+  "images": 1136,
+  "identity": {
+    "expert": "univfd_expert",
+    "head_file": "/root/autodl-tmp/third_party/univfd/weights/fc_weights.pth",
+    "head_bytes": 4083,
+    "head_sha256": "477100745713bcc957beb2b40859536859b6483fd6301b3b9293151b194c7847",
+    "backbone_file": "/root/autodl-tmp/third_party/univfd/clip_cache/ViT-L-14.pt",
+    "backbone_url": "https://openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt",
+    "backbone_sha256_from_url": "b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836",
+    "backbone_loader": "torch.jit.load",
+    "backbone_dtype": "torch.float32",
+    "repo_commit": null,
+    "preprocess": "CenterCrop(224)（**无 Resize**）",
+    "preprocess_detail": "RGB → CenterCrop(224) → ToTensor → CLIP 归一化（mean [0.48145466,0.4578275,0.40821073], std [0.26862954,0.26130258,0.27577711]）；官方流程没有 resize，替换成 CLIP 通用 resize+crop 属改变配方，必须另记",
+    "measurement_scope": "center_crop",
+    "licence": "仓库 MIT（WAIV 2025）；主干与权重条款归 OpenAI，另行留档"
+  },
+  "semantics": {
+    "field": "raw_metric",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "direction": "higher_is_fake",
+    "is_calibrated_probability": false
+  },
+  "threshold_policy": {
+    "value": 0.5,
+    "chosen_on": "官方默认（acc.txt）",
+    "searched_on_val": false
+  },
+  "metrics": {
+    "n": 1136,
+    "direction": "higher_is_fake",
+    "threshold_on_raw": 0.5,
+    "errors": 0,
+    "auroc": 0.8492703580638763,
+    "accuracy@0.5": 0.6496478873239436,
+    "accuracy@threshold": 0.6496478873239436,
+    "per_format": {
+      "jpeg_q70": {
+        "n": 284,
+        "auroc": 0.845417575877802,
+        "mean_fake_score": 0.29998606263710775,
+        "mean_real_score": 0.026650699306269992
+      },
+      "jpeg_q85": {
+        "n": 284,
+        "auroc": 0.8168022217813925,
+        "mean_fake_score": 0.2716142111327961,
+        "mean_real_score": 0.02722526788008415
+      },
+      "jpeg_q95": {
+        "n": 284,
+        "auroc": 0.8431858758182901,
+        "mean_fake_score": 0.31901785432118757,
+        "mean_real_score": 0.028625451620844383
+      },
+      "png": {
+        "n": 284,
+        "auroc": 0.893423923824638,
+        "mean_fake_score": 0.43975673577900215,
+        "mean_real_score": 0.028727598013544582
+      }
+    },
+    "mean_elapsed_ms": 38.72
+  },
+  "failures": []
+}

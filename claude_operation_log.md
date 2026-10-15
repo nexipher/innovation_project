@@ -146,3 +146,17 @@
 * **执行结果与验证状态**：NPR A/B 全量 val 完成（1136 张 ×2，0 错误）；`tests/test_score_semantics.py` **18 通过**。**PROBE 与 UnivFD 的 val 全量评测在 GPU 上运行中**，结果出来补齐四专家对照表。
 * **置信度或遗留待办（TODO）**：①A 的优势（0.05 量级 AUROC）只在单一 val 分区上验证过；若后续全量评测推翻，登记表按同样格式记录"改选"与理由 ②四专家表还缺 PROBE/UnivFD ③NPR 许可未明确，仍需用户确认 ④尚需判断"互补信息"——要等四专家数字齐了才能谈（错误重合度、成本）
 
+### 2026-10-15 - 阶段 3：四专家在 val 全量上评测完毕，增益用配对 bootstrap 判定
+
+* **当前操作动作**：跑完四专家（PROBE / noise / NPR-A / NPR-B / UnivFD）在 **val 全量**上的评测（各 284 源 × 4 格式 = 1136 张，错误 0），并把"新增专家是否提供互补信息"做成可复现的统计判定（错误重合 + 等权平均的配对 bootstrap），而不是看单专家指标拍脑袋。
+* **对应计划锚点**：`plan.md` §3c（第 3 步"确定实际保留集合"）
+* **核心变更说明**：
+  1. **单专家（val，1136 张）**：PROBE 整体 AUROC **0.981**、acc@0.5 0.929，**四个格式格 0.975–0.988（不挑格式）**，GPU 74.8 ms/图；UnivFD **0.849**（0.817–0.893），38.7 ms/图且是最便宜的一个；noise **0.660**（0.624–0.701），63.3 ms/图；NPR-A 0.636（**PNG 0.997**，JPEG 格 0.470–0.564），271 ms/图；NPR-B 0.587。
+  2. **错误重合**（同时错的频率 vs 独立预期）：npr-a×probe 0.023 vs 0.027、probe×noise 0.016 vs 0.027 → 错误互补；probe×univfd 0.026 vs 0.025 → 未显示；npr-a×univfd 0.275 vs 0.133 → 冗余。
+  3. **增益判定（等权平均的配对 bootstrap，2000 次重采样，按图像配对）**：**npr-a**：整体 **+0.0061** CI[+0.0029,+0.0102] P(Δ≤0)=0.000，**PNG 格 +0.0223** CI[+0.0096,+0.0387] P=0.000，JPEG 格持平（CI 跨 0）→ **成立，且增益集中在 PROBE 最弱的 PNG 格**；**univfd**：整体 +0.0032 CI[−0.0026,+0.0090] P=0.135、PNG +0.0091 P=0.071 → **未成立（倾向正、从不伤害）**；**noise**：整体 **−0.0070** P(Δ≤0)=0.976、各格皆负 → **拖后腿**。
+  4. **等权、不拟合**：组合规则是固定的等权平均，没有任何在 val 上拟合的参数——因此它可以被原样冻结，不需要再担心"在测试集上选参数"。
+  5. 新增 `scripts/g8_gain_bootstrap.py`（配对 bootstrap，可复现），产物 `sft_data/g8_eval/gain_bootstrap_val.json` 与 `four_experts_val_comparison.json`。
+* **涉及/修改的文件清单**：`scripts/g8_compare_experts.py (Created)`、`scripts/g8_gain_bootstrap.py (Created)`、`tests/test_g8_compare_experts.py (Created — 7 项)`、`sft_data/g8_eval/{four_experts_val_comparison.json,gain_bootstrap_val.json} 与 5 份全量报告 (Created)`
+* **执行结果与验证状态**：五份全量报告（probe/univfd/noise/npr-a/npr-b）各 1136 张、错误 0；对照与 bootstrap 均可复跑；`core`/`module` 全绿（含新增 7 项对照测试）。**未触碰 test 分区**。
+* **置信度或遗留待办（TODO）**：①以上全部是 **val** 结果，冻结后仍需在 **test** 上做最终验收（用户口径）②建议的保留集合需用户确认（PROBE 保留主检测器；NPR-A 作 PNG 格条件性线索；UnivFD 便宜且从不伤害但增益未成立；**noise 建议退出**——提案 §4.1 明确允许"缺乏收益时可退出"）③这是**检测器层面**的数字；模型看到的是证据 token，不是平均分——证据接口与呈现属阶段 4
+
