@@ -290,8 +290,15 @@ def check_4_dialogue_defects_are_not_hidden(work: str) -> dict:
 
 def check_5_batch_isolation(work: str) -> dict:
     """The new material must not touch, or be confused with, the 145-sample batch."""
+    from utils.batch import resolve_path
+
     paths = batch_paths(LEGACY_BATCH)
-    batch_dir = paths["samples"]          # sft_data/train/batches/g7_b1
+    # Archived 2026-10-15.  Without following the mapping this check compared
+    # the digest of a directory that is no longer there with the digest of the
+    # directory that is still not there: trivially equal, vacuously green.
+    batch_dir, from_archive = resolve_path(paths["samples"])
+    if not os.path.isdir(batch_dir):
+        raise SystemExit(f"隔离检查的参照批次不存在：{batch_dir}")
     before = _tree_digest(batch_dir)
 
     result = run_session([CALL, _verdict("Fake", 0.7)], os.path.join(work, "s5"))
@@ -318,7 +325,8 @@ def check_5_batch_isolation(work: str) -> dict:
             "evidence": {"legacy_fingerprint": legacy,
                          "legacy_samples": manifest["samples"],
                          "new_fingerprint": new_fingerprint,
-                         "legacy_tree_unchanged": before == after}}
+                         "legacy_tree_unchanged": before == after,
+                         "reference_batch_from_archive": bool(from_archive)}}
 
 
 # ---------------------------------------------------------------------------

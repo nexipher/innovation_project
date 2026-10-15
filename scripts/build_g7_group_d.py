@@ -72,7 +72,13 @@ def previous_paths() -> set:
     used = set()
     with open(CALIBRATION_MANIFEST, encoding="utf-8") as handle:
         used |= {s["source_path"] for s in json.load(handle)["samples"]}
-    variants = os.path.join(PROJECT_ROOT, "sft_data", "variants", "manifest.json")
+    # The 237 set's variant manifest was archived on 2026-10-15.  Skipping the
+    # exclusion silently would let a "fresh" group reuse sources that are not
+    # fresh at all, so the mapping is followed and a miss is reported.
+    from utils.batch import resolve_path
+
+    variants = resolve_path(os.path.join(PROJECT_ROOT, "sft_data", "variants",
+                                         "manifest.json"))[0]
     if os.path.exists(variants):
         with open(variants, encoding="utf-8") as handle:
             blob = json.load(handle)

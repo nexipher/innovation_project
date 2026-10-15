@@ -32,7 +32,12 @@ from config import PROJECT_ROOT
 from utils.batch import load_trajectory_records
 from utils.evidence_ledger import Ledger
 
-DEFAULT_TRACES = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1")
+# Archived 2026-10-15 — follow the mapping so the replay keeps its input
+# (and an empty read raises instead of producing a zero-only report).
+from utils.batch import resolve_path as _resolve_path  # noqa: E402
+
+DEFAULT_TRACES = _resolve_path(os.path.join(PROJECT_ROOT, "sft_data",
+                                            "trajectories_g7_b1"))[0]
 OUTPUT_PATH = os.path.join(PROJECT_ROOT, "calibration", "g7_ledger_replay.json")
 
 

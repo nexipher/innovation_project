@@ -16,7 +16,7 @@ section), the evidence tokens, the ledger's findings, and the verdict with
 its `verdict_status`.
 
 Usage:
-  python scripts/build_review_from_trajectories.py --batch g7_b2
+  python scripts/build_review_from_trajectories.py --generation g8 --batch b1
 """
 
 from __future__ import annotations
@@ -31,7 +31,8 @@ from typing import Dict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import batch_paths, load_trajectory_records, write_batch_versions
+from utils.batch import (assert_not_frozen_batch, batch_paths,
+                         load_trajectory_records, write_batch_versions)
 from utils.final_v2 import render_sample
 
 
@@ -61,8 +62,8 @@ def _observation(record: dict) -> str:
     return extract_observation(record)
 
 
-def build(batch_id: str, split: Dict) -> Dict:
-    paths = batch_paths(batch_id)
+def build(batch_id: str, split: Dict, generation: str) -> Dict:
+    paths = batch_paths(batch_id, generation)
     records = list(load_trajectory_records(paths["trajectories"]).values())
     if not records:
         raise SystemExit(f"{paths['trajectories']} 里没有轨迹")
@@ -117,20 +118,26 @@ def build(batch_id: str, split: Dict) -> Dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--batch", default="g7_b2")
+    # This script writes the batch's review samples, its `review_only.json` and
+    # its VERSIONS stamp, and it can build the workstation — so it is a batch
+    # writer like the others and takes the same required generation (§ 阶段 1).
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--no-workstation", action="store_true")
     args = parser.parse_args()
+    assert_not_frozen_batch(args.batch, "评审样本生成", args.generation)
 
     split_path = os.path.join(PROJECT_ROOT, "sft_data", "split_v2.json")
     with open(split_path, encoding="utf-8") as handle:
         split = json.load(handle)
-    note = build(args.batch, split)
+    paths = batch_paths(args.batch, args.generation)
+    note = build(args.batch, split, args.generation)
     print(f"review samples: {note['samples']} -> "
-          f"{os.path.relpath(batch_paths(args.batch)['samples'], PROJECT_ROOT)}")
+          f"{os.path.relpath(paths['samples'], PROJECT_ROOT)}")
 
     if not args.no_workstation:
         from scripts.build_review_workstation import build as build_workstation
 
-        paths = batch_paths(args.batch)
         out = paths["review"]
         result = build_workstation(paths["samples"], out,
                                    trajectories_dir=paths["trajectories"],

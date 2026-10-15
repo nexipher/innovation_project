@@ -18,7 +18,7 @@
 | 当前代次 | `g8`（`sft_data/g8/`，模型 Qwen3-VL-8B **待确认版本**；`g7` 及更早已冻结） |
 | 默认策略 | `v3`（Qwen 主导；`config.HALTING_POLICY`，可用 `FORENSIC_HALTING_POLICY` 选择 v1/v2 复算） |
 | 数据布局 | 代次是目录、批次名是纯名字：`sft_data/<generation>/{trajectories,variants,review,train/batches}/<batch>/`；三个写入入口的 `--generation` **必填** |
-| 冻结 | `sft_data/FROZEN.json` 以 **(代次, 批次)** 为身份，代码层拒收（三个写入入口 + 轨迹生成） |
+| 冻结 | `sft_data/FROZEN.json` 以 **(代次, 批次)** 为身份，代码层拒收；**两级**：未登记代次一律拒、冻结代次下不得新建任何批次、已登记冻结批次走 `--allow-frozen` 复算。九个写入入口同一函数 |
 | 归档 | v1 全部产物已移入 `archive/legacy_v1_20261015/`（34 项、2141 个文件），逐文件核对通过 |
 | 上一批实测 | `g7_b2`（56 会话，v3）：协议合规 56/56、0 违规、0 解析失败；但 **PROBE 单专家 53/55 优于 Agent 44/56** —— 这是换代的直接依据，不是待修的小问题 |
 
@@ -29,7 +29,8 @@
 
 - [x] 1. `utils/batch.py`：`batch_paths(batch, generation=None)` 支持嵌套布局；`assert_not_frozen_batch` 要求显式代次；`frozen_batches()` 返回 `{(generation, batch): entry}`；`resolve_path()` 查 `archive/PATH_MAP.json`
 - [x] 2. `sft_data/FROZEN.json` 加 `generations` 索引；新建 `sft_data/GENERATIONS.json`；建 `sft_data/g8/` 空骨架
-- [x] 3. 三个写入入口（`generate_trajectories_g4` / `build_final_v2` / `apply_review`）加**必填** `--generation`；发现 `build_variants_g4.py` 也写批次目录，一并加上
+- [x] 3. 写入入口加**必填** `--generation`：`generate_trajectories_g4` / `build_final_v2` / `apply_review` 之后，逐次补齐 `build_variants_g4`、`admit_trajectories_g4`、`build_review_workstation`、`record_review`、`build_review_from_trajectories`、`g7_select_sources`——**共九个**，清单写在测试里（`tests/test_batch_binding.py` 的 `WRITERS`），漏一个就红
+- [x] 3b. 冻结检查升级为**两级**（`assert_generation_is_writable`）：未登记代次一律拒（拼错代次名无 `--allow`）；冻结代次下**不得新建任何批次**（换个没登记的批次名也不行）；已登记的冻结批次仍可用 `--allow-frozen` 做带标记的复算
 - [x] 4. 归档移动：docs+history 34 项 → `archive/legacy_v1_20261015/{docs,experiments,review}/`；**代码一个都没动**
 - [x] 5. 写 `MANIFEST.json`（四段结构 + 留在原位清单 + 使用限制）、`PATH_MAP.json`、`NOTE.md`
 - [x] 6. 移动前后摘要核对：`archive_inventory.py --verify` 通过；另加 `archive_v1.py --verify` 逐文件对 `HEAD` blob 核对（含 438 页登记过的链接改写）
@@ -51,13 +52,24 @@
 
 ## 3. 阶段 3：替代专家评测（未开始）
 
-PROBE 保留；候选补位：NPR、UnivFD。评测"能否替代 jpeg/noise/frequency_v2"，
-判据是**在 Agent 流程里的增益**，不是单专家准确率。**前置事实待用户提供**（权重、许可、输入接口、输出定义）。
+**保留集以提案为准**（`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md` §1）：
+
+| 专家 | 处置 |
+|------|------|
+| PROBE | **保留**，主检测器（C 组独立验证过） |
+| noise | **候选保留**：与 NPR/UnivFD 同标准评测，**仅在缺乏独立效果与互补性时退出**——不预设退役 |
+| NPR / UnivFD | 候选补位 |
+| frequency_v2、jpeg | **已决定退出**当前工具箱 |
+
+四专家是初始方案、不是数量硬约束。判据是**在 Agent 流程里的增益与互补性**，
+不是单专家准确率。**前置事实待用户提供**（权重、许可、输入接口、输出定义）。
 
 ## 4. 阶段 4：解耦与退役（未开始）
 
 - 移除 v3 路径上的参考后验与预计收益计算（含方向检查改按**经核实的原始 score 语义**）
-- 退役 jpeg / noise / frequency_v2：先改导入方与包导出，再移动实现；`calibration/` 随之归档
+- 退役 **frequency_v2 与 jpeg**（提案 §1 已决定）；**noise 的退役不是既定项**——它由阶段 3
+  的评测结果决定，评测未出结果前不写进退役名单
+- 顺序：先改导入方与包导出，再移动实现；`calibration/` 随之归档
 - README/文档同步；旧校准表的运行时读者归零后才归档
 
 ## 5. SFT（未开始）
@@ -77,5 +89,5 @@ PROBE 保留；候选补位：NPR、UnivFD。评测"能否替代 jpeg/noise/freq
 
 1. Qwen3-VL-8B 的**具体 checkpoint**、推理模式（thinking / non-thinking）、许可与显存要求
 2. NPR / UnivFD 的**权重来源、许可、输入接口、输出定义**
-3. noise 专家的**保留判据**（收益不足则一并退役）
+3. noise 专家的**评测口径与保留判据**（它是候选，退役与否由阶段 3 的增益/互补性结果决定）
 4. 重复请求轮的处置口径：**掩码**该轮，还是**整条会话拒收**

@@ -25,8 +25,11 @@ The selection rule, written before the scores arrive:
     rather than sailing to "Real" without evidence.
 
 Usage:
-  python scripts/g7_select_sources.py --dry-run          # pool + variants only
-  python scripts/g7_select_sources.py                    # needs GPU (PROBE)
+  python scripts/g7_select_sources.py --generation g8 --batch b1 --dry-run   # pool + variants only
+  python scripts/g7_select_sources.py --generation g8 --batch b1             # needs GPU (PROBE)
+
+(g7-era script: it writes batch material, so it now takes the same required
+--generation as the other writers and is refused for a frozen generation.)
 """
 
 from __future__ import annotations
@@ -45,7 +48,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import GENIMAGE_SUBDIRS, PROJECT_ROOT
-from utils.batch import batch_paths
+from utils.batch import assert_not_frozen_batch, batch_paths, resolve_path
 
 SPLIT_PATH = os.path.join(PROJECT_ROOT, "sft_data", "split_v2.json")
 MANIFEST_D_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "manifest_d.json")
@@ -110,7 +113,11 @@ def prior_batch_sources(batches) -> set:
         split = json.load(handle)
     blocked = set()
     for batch in batches:
-        path = os.path.join(batch_paths(batch)["samples"], "selection.json")
+        # The batches being excluded are historical (g7_b1 was archived on
+        # 2026-10-15): follow the mapping, or the exclusion silently stops
+        # excluding and a new batch re-draws sources a reviewer already judged.
+        path = resolve_path(
+            os.path.join(batch_paths(batch)["samples"], "selection.json"))[0]
         if not os.path.exists(path):
             continue
         with open(path, encoding="utf-8") as handle:
@@ -180,7 +187,7 @@ def check_candidates(candidates: List[dict], exclude_batches=("g7_b1",)) -> List
     return problems
 
 
-def build_variants(candidates: List[dict], batch: str) -> List[dict]:
+def build_variants(candidates: List[dict], batch: str, generation: str) -> List[dict]:
     """
     The four encoded cells per source (the native format is the source file).
 
@@ -189,7 +196,7 @@ def build_variants(candidates: List[dict], batch: str) -> List[dict]:
     """
     from scripts.build_variants_g4 import build_variants as build
 
-    paths = batch_paths(batch)
+    paths = batch_paths(batch, generation)
     with open(SPLIT_PATH, encoding="utf-8") as handle:
         split = json.load(handle)
     manifest = build([s["source_id"] for s in candidates], split,
@@ -342,6 +349,9 @@ def choose(summary: List[dict]) -> List[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--batch", default=DEFAULT_BATCH)
+    # Same rule as every other batch writer (§ 阶段 1).
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--dry-run", action="store_true",
                         help="只建候选池与变体（CPU），不打分、不选源")
@@ -350,7 +360,8 @@ def main() -> None:
     args = parser.parse_args()
     exclude_batches = tuple(b.strip() for b in args.exclude_batch.split(",") if b.strip())
 
-    paths = batch_paths(args.batch)
+    assert_not_frozen_batch(args.batch, "选源与变体生成", args.generation)
+    paths = batch_paths(args.batch, args.generation)
     candidates = select_candidates(args.seed, exclude_batches)
     problems = check_candidates(candidates, exclude_batches)
     if problems:
@@ -360,7 +371,7 @@ def main() -> None:
           f"{sum(1 for s in candidates if s['label'] == 'Fake')}）"
           f"｜生成器 {len({s['generator'] for s in candidates})} 个")
 
-    variants = build_variants(candidates, args.batch)
+    variants = build_variants(candidates, args.batch, args.generation)
     print(f"变体：{len(variants)} 个 → {os.path.relpath(paths['variants_dir'], PROJECT_ROOT)}/"
           f"（每源 4 个编码格 + 源图本身 = 5 个格式）")
 

@@ -250,9 +250,17 @@ class TestGenerationIsolation:
         for key in ("variants", "variants_dir", "trajectories", "admission", "samples"):
             assert "g7_small" in paths[key], key
 
+    # Every script that writes batch material.  Two of these were missed the
+    # first time (build_review_from_trajectories.py writes the review samples
+    # and the review_only note; g7_select_sources.py writes the variants and
+    # selection.json) — which is why the list lives in this test: a sweep of
+    # `batch_paths(` callers is the only way to keep it honest, and the user
+    # found the gap this list did not.
     WRITERS = ("build_variants_g4.py", "generate_trajectories_g4.py",
                "admit_trajectories_g4.py", "build_final_v2.py",
-               "apply_review.py", "build_review_workstation.py", "record_review.py")
+               "apply_review.py", "build_review_workstation.py",
+               "record_review.py", "build_review_from_trajectories.py",
+               "g7_select_sources.py")
 
     def test_the_generation_scripts_take_the_batch_id(self):
         """The id has to reach the scripts, or the paths are theory."""
@@ -590,6 +598,42 @@ class TestFrozenBatchesAreRefusedByTheCode:
             cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=60)
         assert result.returncode != 0
         assert "--generation" in (result.stdout + result.stderr)
+
+    def test_a_new_batch_name_inside_a_frozen_generation_is_refused(self):
+        """
+        The batch-level check alone had an obvious way around it: keep the
+        frozen generation and pick a name that is not in the register.  `b9`
+        under `g7` is not a replay of anything, so --allow-frozen does not
+        unlock it either.
+        """
+        import pytest
+
+        from utils.batch import assert_not_frozen_batch
+
+        for allow in (False, True):
+            with pytest.raises(SystemExit) as excinfo:
+                assert_not_frozen_batch("b9", "写入", "g7", allow=allow)
+            message = str(excinfo.value)
+            assert "g7" in message and "不得在其下新建任何批次" in message
+
+    def test_an_unregistered_generation_is_refused(self):
+        """`--generation g9` for `g8` is a typo, not a scenario."""
+        import pytest
+
+        from utils.batch import assert_not_frozen_batch, assert_generation_is_writable
+
+        with pytest.raises(SystemExit) as excinfo:
+            assert_not_frozen_batch("b1", "写入", "g9")
+        assert "未登记的代次" in str(excinfo.value)
+        # and it is not an --allow escape either: nothing to replay
+        with pytest.raises(SystemExit):
+            assert_generation_is_writable("g9", "写入")
+
+    def test_an_archived_batch_can_still_be_replayed_with_the_flag(self):
+        """Analysis of a registered frozen batch stays available, labelled."""
+        from utils.batch import assert_not_frozen_batch
+
+        assert assert_not_frozen_batch("g7_b2", "分析", "g7", allow=True) is None
 
 
 class TestTheGenerationLayout:

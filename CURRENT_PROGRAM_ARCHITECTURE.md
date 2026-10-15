@@ -37,11 +37,11 @@ FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>
 批量与验收（不是"启动命令"，是流程步骤）：
 
 ```bash
-python scripts/generate_trajectories_g4.py --batch <id> --policies probe+noise   # GPU
-python scripts/g7_b2_report.py --batch <id>                                       # 统计
-python scripts/cpu_acceptance_r5.py                                               # CPU 五检查
-python scripts/build_review_from_trajectories.py --batch <id>                     # 审核材料
-python scripts/batch_inventory.py                                                 # 批次台账
+python scripts/generate_trajectories_g4.py --generation g8 --batch b1 --policies probe+noise  # GPU
+python scripts/g7_b2_report.py --batch g7_b2                                     # 统计（读归档副本）
+python scripts/cpu_acceptance_r5.py                                              # CPU 五检查
+python scripts/build_review_from_trajectories.py --generation g8 --batch b1      # 审核材料
+python scripts/batch_inventory.py                                                # 批次台账（归档感知）
 ```
 
 历史版本只能显式开启：`FORENSIC_HALTING_POLICY=v1|v2`（非法值直接报错）；
@@ -52,9 +52,9 @@ python scripts/batch_inventory.py                                               
 | 工具键 | 代码 | 权重 | 当前角色 | 备注 |
 |--------|------|------|----------|------|
 | `probe` | `experts/probe_dino.py` | **外部，不随仓库分发**（`PROBE_WEIGHTS`） | 主检测器（分离度 ≈0.98，A 组拟合） | 未配置权重时该工具**缺席**，其余照常 |
-| `noise` | `experts/noise.py` | 仓库内 | 辅助线索；高值统计上指向 Real（极性已校正） | 计划退出工具箱 |
-| `jpeg` | `experts/jpeg.py` | 仓库内 | 辅助线索；q70 下分离度仅 0.40 | 计划退出工具箱 |
-| `freq` | `experts/frequency_v2.py` | 仓库内 | 弱信号（0.66），只作辅助 | 计划退出工具箱 |
+| `noise` | `experts/noise.py` | 仓库内 | 辅助线索；高值统计上指向 Real（极性已校正） | **候选保留**：与 NPR/UnivFD 同标准评测，缺乏增益与互补性才退出（提案 §1） |
+| `jpeg` | `experts/jpeg.py` | 仓库内 | 辅助线索；q70 下分离度仅 0.40 | **已决定退出**工具箱 |
+| `freq` | `experts/frequency_v2.py` | 仓库内 | 弱信号（0.66），只作辅助 | **已决定退出**工具箱 |
 | — | `experts/frequency.py`（v1）、`experts/ela.py` | — | **已退役**，不进入工具箱 | 保留代码供复算 |
 | — | `experts/trufor.py` | 外部 | **不在全局主链**，只作对照评测 | 与 PROBE 同属外部模型，未经许可不得再分发 |
 
@@ -82,9 +82,11 @@ python scripts/batch_inventory.py                                               
 - **批次台账**：`sft_data/BATCH_INVENTORY.md`（`scripts/batch_inventory.py` 生成），
   逐批写明类别（历史/待审核/合格训练）与三个版本。
 - **进 SFT 的唯一路径**：`record_review --import` → `apply_review` → `build_final_v2`（门禁）。
-  **冻结是硬约束**：`sft_data/FROZEN.json` 登记已冻结批次，`apply_review` / `build_final_v2` /
-  `generate_trajectories_g4` 遇到即退出；分析用途加 `--allow-frozen`，产物标注
-  `frozen_batch_used=true`。
+  **冻结是硬约束，两级**：`sft_data/FROZEN.json` 登记 (代次, 批次) 与代次状态；
+  ①**未登记的代次**一律拒（拼错 `--generation g9` 不是场景，无 `--allow`）；
+  ②**已冻结代次下不得新建任何批次**（换个没登记的批次名也不行，无 `--allow`）；
+  ③已登记的冻结批次：写入拒，分析用途加 `--allow-frozen`，产物标注 `frozen_batch_used=true`。
+  七个以上写入入口（轨迹/变体/准入/出集/工作台/评审材料/处置记录/选源）都走同一函数。
   两条容易忘掉的规则写在台账顶部：
   **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。
 

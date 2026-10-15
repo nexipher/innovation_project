@@ -181,7 +181,13 @@ def main() -> None:
     parser.add_argument("--output", default=None)
     args = parser.parse_args()
 
+    from utils.batch import resolve_path
+
     paths = batch_paths(args.batch)
+    # Archived 2026-10-15: the report's numbers come from the archived copy,
+    # and it says so instead of failing on a path that moved.
+    traces_dir, from_archive = resolve_path(paths["trajectories"])
+    paths["trajectories"] = traces_dir
     records = list(load_trajectory_records(paths["trajectories"]).values())
     if not records:
         raise SystemExit(f"{paths['trajectories']} 里没有轨迹")
@@ -194,6 +200,7 @@ def main() -> None:
     report = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "batch": args.batch,
+        "resolved_from_archive": bool(from_archive),
         "versions": {
             "halting_policy": records[0].get("policy_version"),
             "prompt_digest": prompt_digest(),

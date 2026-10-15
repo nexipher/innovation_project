@@ -305,6 +305,58 @@ def frozen_batches() -> Dict[tuple, dict]:
             for entry in frozen_payload().get("frozen", [])}
 
 
+def generation_register() -> Dict[str, dict]:
+    """generation -> its entry in the `generations` index of FROZEN.json."""
+    return {entry["generation"]: entry
+            for entry in frozen_payload().get("generations", [])
+            if entry.get("generation")}
+
+
+def generation_status(generation: Optional[str]) -> Optional[str]:
+    """'active' / 'frozen' / None when the generation is not registered."""
+    return (generation_register().get(generation) or {}).get("status")
+
+
+def assert_generation_is_writable(generation: str, purpose: str,
+                                  registered_batch: bool = False) -> None:
+    """
+    A frozen or unregistered generation must not receive *new* batches.
+
+    The batch-level check alone answers "is *this* batch frozen?", which leaves
+    the obvious way around it: keep the frozen generation and pick a name that
+    is not in the register.  That is exactly what the two-part identity exists
+    to prevent, so the generation is checked as well:
+
+      * **unregistered** — refuse.  Writing material under a generation nobody
+        has registered means nobody can say which generation produced it, and a
+        typo (`--generation g9` for `g8`) would look like a new generation.
+        There is no `--allow` for this: a typo is not a scenario.
+      * **frozen, batch not registered** — refuse.  A new batch name inside a
+        frozen generation is not a replay of anything, so this has no
+        `--allow-frozen` escape either.
+      * **frozen, batch registered** — allowed here; the batch-level check
+        decides, and `--allow-frozen` is what permits a labelled replay of that
+        historical batch.
+    """
+    register = generation_register()
+    entry = register.get(generation)
+    if entry is None:
+        known = ", ".join(sorted(register)) or "（登记表为空）"
+        raise SystemExit(
+            f"未登记的代次 {generation}：不能用于{purpose}。"
+            f"登记表（sft_data/FROZEN.json 的 generations 索引）里只有：{known}。"
+            "新代次请先登记（并同步 sft_data/GENERATIONS.json 的模型身份）——"
+            "否则产生的是「没人知道属于哪一代」的材料。")
+    if entry.get("status") == "frozen" and not registered_batch:
+        raise SystemExit(
+            f"代次 {generation} 已冻结（自 {entry.get('since') or '未注明'}："
+            f"{entry.get('note') or entry.get('reason') or '未注明理由'}），"
+            f"不能用于{purpose}，也**不得在其下新建任何批次**——"
+            "冻结身份是 (代次, 批次) 两段，正是为了挡住「换个批次名继续写在冻结代次里」。"
+            "新批次请用当前代次（如 --generation g8 --batch b1）；"
+            "已登记的历史批次若只是复算，走 --allow-frozen。")
+
+
 def generation_of(batch_id: str, generation: Optional[str] = None) -> Optional[str]:
     """
     The generation of a batch: what the caller said, else what the register
@@ -335,10 +387,19 @@ def assert_not_frozen_batch(batch_id: str, purpose: str, generation: str,
 
     `--allow-frozen` exists for analysis runs and labels its output, so an
     artifact can never quietly come from a frozen batch.
+
+    The check has **two levels**, because a batch-level check alone leaves the
+    obvious way around it: keep the frozen (or unregistered) generation and pick
+    a batch name that is not in the register.
     """
     entry = frozen_batches().get((generation, batch_id))
     if entry is None:
         entry = frozen_batches().get((generation_of(batch_id), batch_id))
+    # Order matters: the generation decides whether a *new* batch may appear
+    # here at all, and a registered frozen batch is the one case where
+    # --allow-frozen may still say yes (a labelled replay).
+    assert_generation_is_writable(generation, purpose,
+                                  registered_batch=entry is not None)
     if entry is None or allow:
         return
     raise SystemExit(

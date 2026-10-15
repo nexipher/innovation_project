@@ -36,8 +36,14 @@ from scripts.g7_audit_traces import (
     EXCLUSIONS, RESULT_VERBS, SENTENCE_SPLIT, SOURCE_WORDS, states_the_near_chance)
 from utils.batch import load_trajectory_records
 
-TRACES_DIR = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1")
-BATCH_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "batches", "g7_b1")
+# g7_b1 was archived on 2026-10-15: read it through the mapping, or this
+# diagnosis reports an empty batch as if it were a result.
+from utils.batch import resolve_path as _resolve_path  # noqa: E402
+
+TRACES_DIR = _resolve_path(os.path.join(PROJECT_ROOT, "sft_data",
+                                        "trajectories_g7_b1"))[0]
+BATCH_DIR = _resolve_path(os.path.join(PROJECT_ROOT, "sft_data", "train",
+                                       "batches", "g7_b1"))[0]
 OUTPUT_PATH = os.path.join(PROJECT_ROOT, "calibration", "g7_abstention_diagnosis.json")
 
 VERDICT_PATTERN = re.compile(r'<verdict>\s*(\{.*?\})\s*</verdict>', re.S)

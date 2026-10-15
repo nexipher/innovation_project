@@ -10,7 +10,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1158%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-1161%20passed-brightgreen)](./tests/)
 
 ---
 
@@ -50,9 +50,11 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 | [`ARCHIVE_INVENTORY.md`](ARCHIVE_INVENTORY.md) | v1 归档清单（口径、角色、能证明什么/不能证明什么） |
 | [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账（自动生成；已归档批次会标明读的是归档副本） |
 
-**当前注册的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`——后三者**随 v1
-代次在阶段 4 退役**，替代候选为 NPR / UnivFD（待评测）。`frequency`(v1)、`ela` 已退役；
-`trufor` 不在全局主链，仅作对照。
+**当前注册的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`，处置按
+[`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) §1：
+`jpeg` 与 `freq`(frequency_v2) **已决定退出**；`noise` 是**候选保留**，与 NPR / UnivFD 一起
+按"能否在 Agent 流程里带来增益与互补性"评测，**缺乏收益时才退出**——不预设它退役。
+`frequency`(v1)、`ela` 已退役；`trufor` 不在全局主链，仅作对照。
 
 ### 0.3 v1 归档（2026-10-15）
 
@@ -72,8 +74,9 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
    （每个批次目录的 `VERSIONS.json`）。
 2. **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。进 SFT 的唯一路径是
    `record_review --import` → `apply_review` → `build_final_v2`（门禁），且写入入口会读
-   `sft_data/FROZEN.json`：**冻结批次直接拒绝**，分析用途需 `--allow-frozen` 并留下标记。
-   冻结身份是 **(代次, 批次)**，不是裸批次名。
+   `sft_data/FROZEN.json`。**冻结是两级的**：未登记的代次一律拒（拼错代次名没有 `--allow`）；
+   已冻结代次下**不得新建任何批次**（换个没登记的批次名也不行）；已登记的冻结批次写入被拒，
+   分析用途需 `--allow-frozen` 并留下标记。冻结身份是 **(代次, 批次)**，不是裸批次名。
 3. **归档数据只作历史**：读归档路径必须走 `utils.batch.resolve_path()` 并在报告里写
    `resolved_from_archive=true`；训练入口对归档数据直接拒绝（`train_lora_g4.py` 需显式
    `--allow-archived`，且会打印横幅）。归档**不解除**任何冻结门禁。
@@ -647,8 +650,8 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 |------|----------|-----|
 | 1（进行中） | 代次目录布局、冻结身份升级、v1 归档与逐文件核对、README 收敛 | 否 |
 | 2 | `scripts/g8_smoke.py`：新工具箱 + Qwen3-VL 协议冒烟（三类回复分别留存） | 先用 Mock（CPU），后需授权 |
-| 3 | NPR / UnivFD 评测：判据是**在 Agent 流程里的增益**，不是单专家准确率 | 是（需授权与权重） |
-| 4 | 移除参考后验与预计收益；退役 jpeg/noise/frequency_v2（先改导入方） | 否 |
+| 3 | NPR / UnivFD 评测，并与 noise 同标准比较：判据是**在 Agent 流程里的增益与互补性**，不是单专家准确率 | 是（需授权与权重） |
+| 4 | 移除参考后验与预计收益；退役 jpeg 与 frequency_v2（**noise 由阶段 3 结果决定**） | 否 |
 | SFT | 新代次样本的审核 → 出集 → LoRA → 统一评测 | 是（需授权） |
 
 ### 7.3 已知局限
