@@ -49,15 +49,21 @@ sft_data/admission_report_g8_b1.json
 
 `utils/batch.py` 的三处小改：
 - `frozen_batches()` 返回 `{(generation, batch): entry}`；
-- `assert_not_frozen_batch(batch_id, purpose, allow=False)` 增加 `generation="g8"` 默认参数，
-  先按 `(generation, batch)` 命中，再回退到裸名匹配（旧的 g7 调用不变）；
-- 新增 `generation_of(batch_id)`：`g8_b1 → g8`，`g7_b1 → g7`，`g4_trial → g7`（历史批次映射）。
+- `assert_not_frozen_batch(batch_id, purpose, allow=False, generation=None)`：
+  **代次必须显式给出，或能从批次 id 推导出来**（`g8_b1 → g8`）。推导不出又没有显式代次
+  → **直接报错**，不猜默认值——"默认 g8"就是下一个"默认 v2"。
+- 裸名称回退**只对历史批次开放**：`g4_trial`/`g7_*` 这些在登记表里有明确 `generation` 的
+  旧 id 走"裸名 → (g7, id)"映射；**新代次的 id 必须自带可推导的代次**，否则拒绝。
+  这样既保住旧调用，又不会让新版批次重新掉进"裸名冻结歧义"。
 
-**验收**：新批次 `g8_b1` 通过；`g7_b1`/`g7_b2`/`g4_trial` 仍拒绝（现有 5 项测试保持通过）。
+**验收**：`g8_b1` 通过；`g7_b1`/`g7_b2`/`g4_trial` 仍拒绝（现有 5 项测试保持通过）；
+`"b1"`（无代次、又不在历史登记表里）**报错**而不是被当成某个后代次。
 
-### 3.2 代次登记表 `sft_data/GENERATIONS.json`
+### 3.2 代次登记表 `sft_data/GENERATIONS.json`（**不能替代批次身份**）
 
-每代次一行，记录身份；新版批次生成时写入（`write_batch_versions` 顺带更新）：
+代次表只回答"这一代大体是什么"；**同一代次里也会换模型版本、换专家权重、改预处理**，
+所以**每份 `VERSIONS.json` 仍必须记录该批次实际使用的**模型版本、专家权重与预处理，
+不能靠"同代次"推断。`write_batch_versions` 因此要扩展为：
 
 ```json
 {"generation": "g8", "created_at": "…",
@@ -67,8 +73,19 @@ sft_data/admission_report_g8_b1.json
  "status": "active"}
 ```
 
-提案 §9「配置版本绑定」要求模型、提示词、专家权重、预处理、证据 schema 与代码身份进批次记录
-——现在批次有 `VERSIONS.json`（代码/提示词/专家/校准），**代次是它缺的那一层**：模型身份。
+```json
+// VERSIONS.json（每批次，新增字段）
+{"generation": "g8",
+ "model": {"name": "Qwen3-VL-8B", "checkpoint": "<该批次实际加载的>",
+           "inference_mode": "<thinking|non-thinking>", "weights_sha256": "…"},
+ "experts": {"probe": {"weights_sha256": "…", "preprocess": "<resize/normalize 说明>"},
+             "npr": {...}},
+ "prompt_digest": "…", "calibration": {...}, "fingerprint": {...}}
+```
+
+提案 §9「配置版本绑定」要求模型、提示词、专家权重、预处理、证据 schema 与代码身份进批次记录。
+现状：`VERSIONS.json` 有代码/提示词/专家名/校准，**缺模型身份、权重摘要与预处理**——
+这三项按上表补进**每一批次**，代次表只作索引。
 
 ### 3.3 归档路径映射 `PATH_MAP.json`
 
@@ -99,7 +116,7 @@ def resolve_path(path: str) -> tuple[str, bool]:
 
 | 依赖 | 现在谁在读 | 切换动作 |
 |------|-----------|----------|
-| `calibration/reliability_table.json` | `utils/reliability.py` 默认路径；控制器每会话 | 新代次另行生成 `calibration/g8/reliability_table.json`（或先放**临时兼容表 + Mock 专家**），改默认路径后再归档旧表 |
+| `calibration/reliability_table.json` | `utils/reliability.py` 默认路径；控制器每会话 | **不建新版运行时校准表**（阶段 4 已决定：新版运行时关闭参考后验与预计收益）。正确顺序是**先解除运行依赖**——停算后验/效用、不再查表、方向检查改按经核实的原始 score 语义；解除之后这张表对运行时**没有读者**，旧表归档即可。临时兼容表 + Mock 只供迁移冒烟，**不构成新版正式前置**；离线校准对照（C5）是后续独立课题 |
 | `calibration/set/*`（划分、原始分数） | 构建脚本 | 新代次建立自己的 set 目录；旧目录随归档移动并按 PATH_MAP 解析 |
 | `sft_data/split_v2.json` | 运行与构建都读 | 新代次沿用**同一划分**（数据源不变），但最终测试源需按 KNOWN_ISSUES「数据泄漏」另行划定并记录使用史 |
 | `sft_data/FROZEN.json` | 三个写入入口的门禁 | 跟随代码保留（不归档） |
@@ -109,6 +126,9 @@ def resolve_path(path: str) -> tuple[str, bool]:
 **临时兼容配置的红线**：只用于"模型迁移冒烟不依赖已封存路径"，**不得用于新版正式生成**
 （提案 §2.6）。实现上给 `VERSIONS.json` 加 `"compatibility_mode": true` 并让它进台账类别，
 一眼能看出哪些产物是兼容模式跑出来的。
+
+**顺序（不变）**：解除运行依赖 → 冒烟（可用兼容/Mock）→ 归档旧表 → 阶段 4 彻底关闭旧数值路径。
+"先建一张新版校准表"不在路线里。
 
 ## 5. 新版最小冒烟（阶段 2 的入口，现未实现）
 
@@ -126,12 +146,29 @@ def resolve_path(path: str) -> tuple[str, bool]:
 ## 6. 实施阶段 1 的确切动作清单（待你确认后执行）
 
 1. `git mv` 或 `mv` 清单中的 `docs`/`history` 项 → `archive/legacy_v1_20261015/{docs,experiments,review}/`；
+   **代码文件一个都不动**（`role=code`，见下"归档 ≠ 退役"）；
 2. 写 `MANIFEST.json`（提案 §2 的四段结构）与 `PATH_MAP.json`；
-3. **移动后用** `python scripts/archive_inventory.py --verify` 逐行核对摘要；
+3. **移动前**对待归档目录做一次全量摘要（清单已对 docs/history 全量；大目录的部分摘要
+   不证明完整备份），**移动后**用 `python scripts/archive_inventory.py --verify` 逐行核对；
 4. 建新版 `plan.md`、`claude_operation_log.md`（同名，顶部注明历史入口）；
    **并按提案 §2 的批注统一更新一次 README、删除旧字段**——即把 README 里
    描述 v1 代次的语句收敛成"指向归档"的一句话，只保留当前能运行的内容；
 5. 改 `FROZEN.json` + `utils/batch.py` 三处（§3.1）、加 `GENERATIONS.json`（§3.2）、加 `resolve_path`（§3.3）；
 6. 跑 `scripts/run_tests.sh core`，确认门禁与路径相关测试全绿（预计需要改 3–5 处测试里的硬编码路径）。
+
+**归档体量（按新口径）**：待归档 = docs+history 共 30 项、**约 119 MB**（已去父子重叠）；
+`runtime`/`code`/`external`/`dataset` 共 15 项、约 6.35 GB **保持原位**。
+两个数字都不是"磁盘总占用"，日志里曾经的 6.32 GB 也不能当归档量。
+
+### 归档 ≠ 退役（用户点名）
+
+`role=code` 的项是**仍被导入的已退役实现**。以 `experts/frequency.py` 为例，它仍被
+`experts/__init__.py`（包导出）、`scripts/calibrate_experts.py`、`scripts/evaluate_experts_g2.py`、
+`tests/conftest.py`、`tests/test_frequency_expert.py`、`tests/test_expert_admission.py` 导入——
+**移动它会直接破坏包导入与测试**。因此：
+
+- 阶段 1 **只归档数据**，代码原地不动；
+- 代码退役放到阶段 4（专家退出）与导入方一起改：先改导入/导出与专属测试，再移动实现；
+- 清单对每个 `code` 项自动列出导入方（见 `ARCHIVE_INVENTORY.md` 的说明列），移动前必须为空。
 
 不在此清单内：Qwen3-VL 权重下载、专家权重下载、任何 GPU 运行。

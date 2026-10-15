@@ -43,7 +43,10 @@ JSON_PATH = os.path.join(PROJECT_ROOT, "archive_inventory.json")
 # role: docs      source of truth for what was decided, archive wholesale
 #       history   produced material (trajectories, calibrations, reviews)
 #       runtime   the current code reads it; moving it breaks the pipeline
-#       external  outside the repository (weights, datasets)
+#       code      retired *code* that is still imported somewhere: data
+#                 archiving and code retirement are separate jobs, and moving
+#                 a module out from under its importers breaks the package
+#       external  outside the repository (weights, datasets), not archived
 ASSETS = [
     ("plan.md", "docs", "计划与档案；顶部当前阶段一并封存"),
     ("claude_operation_log.md", "docs", "操作日志（增量追加）"),
@@ -77,8 +80,8 @@ ASSETS = [
     ("calibration/reliability_table_v1.json", "runtime", "旧表，供历史复算；新版不读"),
     ("sft_data/split_v2.json", "runtime", "数据划分（运行与构建都读）"),
     ("sft_data/FROZEN.json", "runtime", "冻结登记：**归档不等于取消门禁**（提案 §2.7）"),
-    ("experts/frequency.py", "history", "退役专家 v1 实现（保留复算入口）"),
-    ("experts/ela.py", "history", "退役专家实现"),
+    ("experts/frequency.py", "code", "退役专家 v1 实现，**仍被 experts/__init__ 与多个脚本/测试导入**"),
+    ("experts/ela.py", "code", "退役专家实现（同样按代码退役处理，不随数据归档移动）"),
     ("experts/trufor.py", "runtime", "外部对照模型（不进主链，但不属本代次归档对象）"),
     ("scripts/evaluate_experts_g2.py", "runtime", "旧专家的评测脚本；退出后按退役归档"),
     ("scripts/calibrate_experts.py", "runtime", "旧校准流程；新代次沿用或重写前不能移"),
@@ -136,6 +139,45 @@ def _digest_tree(directory: str, limit: int = 512 * 1024 * 1024) -> Dict[str, ob
             "digest_covers_content": total <= limit}
 
 
+ARCHIVE_ROLES = ("docs", "history")
+
+
+def _importers(relative: str) -> List[str]:
+    """
+    Modules with a real *import statement* for this code path.
+
+    A substring grep counts every mention of the word (`frequency_v2` matched
+    `frequency`, and the inventory script matched itself) — the same
+    false-positive shape seen elsewhere in this project.  Match the import
+    statement, and exclude the longer name.
+    """
+    import re as _re
+
+    module = (relative[:-3].replace("/", ".") if relative.endswith(".py")
+              else relative)
+    leaf = module.rsplit(".", 1)[-1]
+    pattern = _re.compile(
+        rf"^\s*(?:from\s+[\w.]*\b{leaf}\b\s+import|import\s+[\w.]*\b{leaf}\b(?!s|_v2))"
+        rf"|^\s*from\s+\.{leaf}\s+import", _re.M)
+    found = []
+    for root, dirs, files in os.walk(PROJECT_ROOT):
+        dirs[:] = [d for d in dirs if d not in (".git", "__pycache__", "archive")]
+        for name in files:
+            if not name.endswith(".py"):
+                continue
+            path = os.path.join(root, name)
+            rel = os.path.relpath(path, PROJECT_ROOT)
+            if rel == relative:
+                continue
+            try:
+                text = open(path, encoding="utf-8").read()
+            except OSError:
+                continue
+            if pattern.search(text):
+                found.append(rel)
+    return sorted(found)
+
+
 def _tracked(relative: str) -> str:
     """Whether git has this path (so a move is recoverable from history)."""
     try:
@@ -165,23 +207,45 @@ def collect() -> List[dict]:
     for relative, role, note in expanded:
         path = relative if os.path.isabs(relative) else os.path.join(PROJECT_ROOT, relative)
         row = {"path": relative, "role": role, "note": note,
+               "archive": role in ARCHIVE_ROLES,
                "exists": os.path.exists(path), "tracked_by_git": _tracked(relative)}
         if not os.path.exists(path):
             rows.append(row)
             continue
         if os.path.isdir(path):
-            row.update(_digest_tree(path))
+            # the archive set is small enough to digest in full; the big
+            # non-archive trees (dataset, external weights) only get a
+            # partial digest, which is *not* proof of a complete backup
+            row.update(_digest_tree(path,
+                                    limit=(1 << 60) if role in ARCHIVE_ROLES
+                                    else 512 * 1024 * 1024))
             row["kind"] = "dir"
         else:
             size = os.path.getsize(path)
             row.update({"kind": "file", "bytes": size,
                         "digest": _digest_file(path),
                         "digest_covers_content": size <= 64 * 1024 * 1024})
+        if role == "code":
+            importers = _importers(relative)
+            row["importers"] = importers
+            row["note"] += f"（被 {len(importers)} 处导入：{'、'.join(importers[:4])}"
+            row["note"] += "…）" if len(importers) > 4 else "）"
         if any(word in relative for word in WEIGHT_LIKE) and row.get("bytes", 0) > 1 << 30:
             row["digest"] = row.get("digest")
             row["note"] += "（体积大：摘要只覆盖前 512 MB 的名称与字节数，内容未逐块校验）"
         rows.append(row)
     return rows
+
+
+def _non_overlapping(rows: List[dict]) -> List[dict]:
+    """Drop rows nested inside another row, so a total is not double-counted."""
+    chosen = []
+    for row in sorted(rows, key=lambda item: item["path"]):
+        path = row["path"].rstrip("/") + "/"
+        if any(path.startswith(parent["path"].rstrip("/") + "/") for parent in chosen):
+            continue
+        chosen.append(row)
+    return chosen
 
 
 def render(rows: List[dict]) -> str:
@@ -212,7 +276,28 @@ def render(rows: List[dict]) -> str:
             f"| `{row['path']}` | {row['role']} | {row.get('kind', '缺失')} | "
             f"{row.get('files', '—')} | {size_text} | {digest} | "
             f"{row['tracked_by_git']} | {row['note']} |")
+    archive_rows = _non_overlapping([row for row in rows
+                                     if row["exists"] and row.get("archive")])
+    stays = [row for row in rows if row["exists"] and not row.get("archive")]
     lines += [
+        "",
+        "## 总量（先把口径说清楚）",
+        "",
+        f"- **待归档（role=docs+history，已去掉父子重叠）**：{len(archive_rows)} 项，"
+        f"{sum(row.get('bytes', 0) for row in archive_rows) / 1024 / 1024:.1f} MB",
+        f"- **保持原位（runtime/code/external/dataset）**：{len(stays)} 项，"
+        f"{sum(row.get('bytes', 0) for row in stays) / 1024 / 1024:.1f} MB",
+        "",
+        "两个数字都**不是“磁盘总占用”**：清单里既有父子目录重叠（如 `calibration` 与其子目录），"
+        "也有仓库之外的外部路径，还有本就不归档的 dataset 与权重。"
+        "**大目录的部分摘要不足以证明完整备份**——真正移动之前，对每个待归档目录做一次"
+        "全量摘要（本清单已对 docs/history 做全量），移动之后再用 `--verify` 逐行复核。",
+        "",
+        "## 归档与退役是两件事",
+        "",
+        "`role=code` 的项是**仍被导入的已退役实现**（如 `experts/frequency.py` 仍被 "
+        "`experts/__init__.py`、评测脚本与测试导入）。**数据归档不动代码**；"
+        "代码退役在第 4 阶段单独做：先删除/改写导入方，再移动实现。",
         "",
         "## 归档前必须处理的运行时依赖（提案 §2.6）",
         "",
@@ -284,8 +369,16 @@ def main() -> None:
         handle.write(render(rows))
 
     present = [row for row in rows if row["exists"]]
-    total = sum(row.get("bytes", 0) for row in present)
-    print(f"清单完成：{len(present)}/{len(rows)} 项存在，合计 {total / 1024 / 1024 / 1024:.2f} GB")
+    grand = sum(row.get("bytes", 0) for row in present)
+    archive_rows = _non_overlapping([row for row in present if row.get("archive")])
+    archive_total = sum(row.get("bytes", 0) for row in archive_rows)
+    stays = [row for row in present if not row.get("archive")]
+    print(f"清单完成：{len(present)}/{len(rows)} 项存在")
+    print(f"  待归档（docs+history，已去父子重叠）：{len(archive_rows)} 项，"
+          f"{archive_total / 1024 / 1024:.1f} MB")
+    print(f"  保持原位（runtime/code/external/dataset）：{len(stays)} 项，"
+          f"{sum(row.get('bytes', 0) for row in stays) / 1024 / 1024:.1f} MB")
+    print("  注意：两项相加也不等于'磁盘总占用'（清单本身含父子重叠与外部路径）")
     print(f"  {os.path.relpath(MD_PATH, PROJECT_ROOT)}")
     print(f"  {os.path.relpath(JSON_PATH, PROJECT_ROOT)}")
     print("未移动、未删除任何文件；归档后用 --verify 复核。")

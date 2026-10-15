@@ -1858,3 +1858,17 @@
 * **涉及/修改的文件清单**：`scripts/archive_inventory.py (Created)、ARCHIVE_INVENTORY.md + archive_inventory.json (Created/Generated)、NEW_GENERATION_NAMING.md (Created)、KNOWN_ISSUES.md (Modified — 阶段 1 准备件一行)、claude_operation_log.md (Modified — 本条)`
 * **执行结果与验证状态**：清单生成成功（45/46 项存在、6.32 GB）；`--verify` 路径已实现待归档后使用。
 * **置信度或遗留待办（TODO）**：①阶段 1 的确切动作清单已列在 `NEW_GENERATION_NAMING.md` §6，待用户确认后执行（预计需改 3–5 处测试里的硬编码路径）②A5 补充的修复按提案归入**新版最小转换**，历史冻结批次只留证不重生成③待用户提供 Qwen3-VL 具体版本/推理模式、NPR/UnivFD 权重与许可、noise 保留判据、重复轮处置口径（掩码 vs 整条拒收）
+
+### 2026-10-15 08:42:49 - 命名方案与清单按用户五条修正
+
+* **当前操作动作**：按用户五条意见修正阶段 1 的两份准备件——①不建新版运行时校准表 ②代次不默认猜 g8 ③代次登记不替代批次身份 ④清单总量口径 ⑤数据归档与代码退役分开。**仍未移动任何文件。**
+* **对应计划锚点**：`NEW_GENERATION_NAMING.md`、`ARCHIVE_INVENTORY.md`（均为阶段 1 准备件）
+* **核心变更说明**：
+  1. **不建新版运行时校准表**：§4 的"新代次另行生成 `calibration/g8/reliability_table.json`"删除。正确顺序是**先解除运行依赖**（阶段 4 已决定关闭运行时后验/预计收益 → 停算、不再查表、方向检查改按经核实的原始 score 语义），解除后旧表对运行时**没有读者**，归档即可；临时兼容表 + Mock **只供迁移冒烟，不构成新版正式前置**；离线校准对照（C5）是后续独立课题。
+  2. **代次不猜默认值**：`assert_not_frozen_batch(..., generation=None)` 要求**显式给出或从批次 id 推导**；推导不出又没给 → **直接报错**（"默认 g8 就是下一个默认 v2"）。裸名回退**只对登记表里的历史 id**（`g4_trial`/`g7_*`）开放，新代次 id 必须自带可推导代次，避免重新产生"裸名冻结歧义"。
+  3. **代次登记 ≠ 批次身份**：`GENERATIONS.json` 只作索引；**每份 `VERSIONS.json` 必须记录该批次实际的模型版本（含权重摘要与推理模式）、各专家权重摘要与预处理**——同代次内也会换配置。已给出新增字段的具体 schema。
+  4. **总量口径写清**：清单新增"待归档 / 保持原位"两栏与**去父子重叠**计算——**待归档 30 项 118.7 MB**（docs+history）、**保持原位 15 项 6.35 GB**（runtime/code/external/dataset）；并明确"两个数字都不是磁盘总占用，日志里的 6.32 GB 也不能当归档量"、"大目录的部分摘要不证明完整备份"——**移动前对待归档目录做全量摘要**（清单已对 docs/history 全量），移动后 `--verify` 复核。
+  5. **归档 ≠ 退役**：新增 `role=code`（退役但**仍被导入**的实现）。清单自动扫描**真实 import 语句**（早先的裸名 grep 把 `frequency_v2` 与清单自身都算进去了，已改为按 import 语句匹配并排除更长名）：`experts/frequency.py` 被 **6 处**导入（包导出、两个评测脚本、conftest、两个测试），`ela.py` 被 1 处导入。因此阶段 1 **只归档数据、代码原地不动**；代码退役放到阶段 4，与导入方一起改，移动前该清单必须为空。
+* **涉及/修改的文件清单**：`NEW_GENERATION_NAMING.md`、`scripts/archive_inventory.py`、`ARCHIVE_INVENTORY.md` + `archive_inventory.json`（重新生成）、`claude_operation_log.md`
+* **执行结果与验证状态**：清单重新生成（口径与导入方列表均已修正）；`core` 层 348 通过。**未移动、未删除任何文件。**
+* **置信度或遗留待办（TODO）**：①`experts/trufor.py` 仍是 `runtime` 角色（外部对照，保留到新专家评测完成）②阶段 1 动作清单 §6 已同步这五条修正，待用户确认后执行③仍缺用户提供的事实：Qwen3-VL 版本/推理模式、NPR/UnivFD 权重与接口、noise 保留判据、重复轮处置口径（掩码 vs 整条拒收）
