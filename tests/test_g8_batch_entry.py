@@ -100,6 +100,21 @@ class TestTheDryRunStaysOutOfTheBatch:
         assert os.path.isdir(dry_run["out"])
         assert "dry_run" in dry_run["out"] or "tmp" in dry_run["out"]
 
+    def test_the_traces_of_a_dry_run_go_with_its_records(self, tmp_path):
+        """
+        记录隔离了、trace 没隔离，就等于把 mock 会话留在批次目录里给审阅者翻。
+        真实发生过一次（6 个干跑 trace 落进了 b1 的 trace 目录）。
+        """
+        from scripts.g8_generate_batch import run_batch
+
+        manifest = _manifest(tmp_path)
+        out = tmp_path / "records"
+        run_batch("g8", "b_entry_test2", manifest, "g8_default", 1, True, False,
+                  True, "non-thinking", False, out_dir=str(out))
+        assert os.path.isdir(os.path.join(str(out), "sessions"))
+        assert any(name.endswith(".json")
+                   for name in os.listdir(os.path.join(str(out), "sessions")))
+
     def test_no_record_lands_in_the_batch_directory(self, tmp_path):
         """默认干跑目录是 traces/dry_run_records/…，批次目录一个文件都不加。"""
         from utils.batch import batch_paths

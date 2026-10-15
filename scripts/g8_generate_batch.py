@@ -120,17 +120,18 @@ def run_batch(generation: str, batch: str, manifest_path: str,
     if out_dir is None:
         if dry_run:
             # 干跑**不写批次目录**：mock 会话与真实会话在记录里长得一样，混进去就是
-            # "假数据当真的收"（转换器不会、也无法分辨）。放到 dry_run 目录，路径
-            # 自己说明它是什么。
+            # "假数据当真的收"（转换器不会、也无法分辨）。记录**与 trace 都**放到
+            # dry_run 目录——只隔离记录、把 mock 的 trace 留在批次目录里，
+            # 就是让审阅者在批次材料里翻到一份假会话（实测发生过：6 个干跑 trace）。
             out_dir = os.path.join(PROJECT_ROOT, "traces", "dry_run_records",
                                    generation, batch)
         else:
             out_dir = paths["trajectories"]
-    # trace 落在批次自己的目录下（`traces/sft_sessions/<代次>/<批次>/`，与旧约定
-    # 同一棵树）；显式给了 out_dir（测试）就跟着它走，任何东西都不落进仓库。
-    trace_dir = (os.path.join(out_dir, "sessions") if out_dir != paths["trajectories"]
-                 else os.path.join(PROJECT_ROOT, "traces", "sft_sessions",
-                                   generation, batch))
+    # 真实批次的 trace 落在 `traces/sft_sessions/<代次>/<批次>/`（与旧约定同一棵树）；
+    # 干跑与显式 out_dir（测试）都跟着记录走，两样东西永远同进同出。
+    default_traces = (not dry_run and out_dir == paths["trajectories"])
+    trace_dir = (os.path.join(PROJECT_ROOT, "traces", "sft_sessions", generation, batch)
+                 if default_traces else os.path.join(out_dir, "sessions"))
     os.makedirs(out_dir, exist_ok=True)
 
     variants = load_manifest(manifest_path)
