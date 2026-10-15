@@ -55,6 +55,13 @@
 
 历史出处：claude_operation_log.md、plan.md历史档案、sft_data/BATCH_INVENTORY.md及人工审核JSON。
 
+### 阶段 1 准备件（2026-10-15，均已就绪）
+
+| 件 | 位置 | 说明 |
+|---|---|---|
+| 归档预检清单 | `ARCHIVE_INVENTORY.md` + `archive_inventory.json`（`scripts/archive_inventory.py` 生成，只读） | 46 项：路径/大小/文件数/摘要/git 跟踪/角色（runtime 不可盲搬）；移动后 `--verify` 复核 |
+| 代次命名与冻结升级方案 | `NEW_GENERATION_NAMING.md` | (代次, 批次) 身份、`FROZEN.json` 升级、`GENERATIONS.json`、`PATH_MAP.json` 与 `resolve_path`、阶段 1 动作清单 |
+
 ## 4. 推进顺序与运行条件
 
 新专家评测方案 → 独立评测与选择 → 旧专家退出及新校准 → 小批Agent验收（第1节一起验证）→ 人工审核 → 新版SFT。

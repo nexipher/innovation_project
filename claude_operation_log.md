@@ -1845,3 +1845,16 @@
 * **核心变更**：KNOWN_ISSUES.md新增三类当前清单并保留旧编号快照；通用证据/协议/审核问题继续验收；旧专家专属缺陷停止优化，实际退出后按退役关闭；旧批次补审退出前置。C5改为校准方法比较而非预设缺陷，明确旧C组不能反复充当未见测试集。GPU状态不沿用历史判断。
 * **文件**：KNOWN_ISSUES.md、plan.md、claude_operation_log.md。
 * **验证**：仅文档调整，git diff --check通过；未运行测试或GPU，未改变代码、数据或暂停约束。
+
+### 2026-10-15 08:31:27 - 阅读新版方案提交，产出阶段 1 的两份准备件（未移动任何数据）
+
+* **当前操作动作**：阅读用户三个提交（`6c52676`/`117f93a` 问题清单重分类、`e5c0445` 新版专家组与 Agent 重整方案），复核方案中点名的 A5 补充缺陷，并按用户选择"先出归档清单与命名方案"产出两份准备件。**未移动、未删除任何文件，未改冻结登记与代码行为。**
+* **对应计划锚点**：`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md` §2（归档与代次）、§10 阶段 1
+* **核心变更说明**：
+  1. **A5 补充缺陷复核：成立**。以 `f2_probe+noise__BigGAN_964_biggan_00035_png` 对照——trace 的 `final_verdict.report` 是完整一段（"根据AI生成鉴别器的评估结果（0.9796）…图像被判定为AI生成。"），而转换后 verdict 段只剩 `verdict/verdict_status/confidence/basis/reference_posterior/reference_recommendation`：**report 文本丢失**；`primary_evidence` 在该例中模型本就没输出（不影响结论）。reasoning 保留，但"保留 reasoning ≠ 保留完整回答"。
+  2. **归档预检清单（新，只读）**：`scripts/archive_inventory.py` → `ARCHIVE_INVENTORY.md` + `archive_inventory.json`。46 项（45 存在，合计 6.32 GB），逐项记路径、类型、文件数、大小、内容摘要（>512 MB 的目录注明"部分"）、是否被 git 跟踪、**角色**（`runtime` 不可盲搬）。清单明确写出"能证明什么/不能证明什么"，并提供 `--verify` 供归档**之后**逐行复核。未对多 GB 权重做逐块校验，如实标注。
+  3. **代次与冻结升级方案（新，草案）**：`NEW_GENERATION_NAMING.md`——(代次, 批次) 身份（g7 冻结 / g8 待建）、`FROZEN.json` 升级为带 `generation` 且 `assert_not_frozen_batch` 增加代次参数（旧调用不受影响）、新 `GENERATIONS.json` 记录模型身份（现行 `VERSIONS.json` 缺的正是这一层）、归档 `PATH_MAP.json` + 只读 `resolve_path()`（命中归档副本必须写进报告，不假装旧命令仍可跑）、运行时依赖切换顺序（校准表默认路径先切后搬）、以及"临时兼容配置只用于冒烟、不得用于正式生成"的红线。
+  4. **未做的事**：没有建 `archive/`、没有移动文件、没有改 `FROZEN.json`/`utils/batch.py`、没有下载 Qwen3-VL 或新专家权重、没有 GPU 操作。
+* **涉及/修改的文件清单**：`scripts/archive_inventory.py (Created)、ARCHIVE_INVENTORY.md + archive_inventory.json (Created/Generated)、NEW_GENERATION_NAMING.md (Created)、KNOWN_ISSUES.md (Modified — 阶段 1 准备件一行)、claude_operation_log.md (Modified — 本条)`
+* **执行结果与验证状态**：清单生成成功（45/46 项存在、6.32 GB）；`--verify` 路径已实现待归档后使用。
+* **置信度或遗留待办（TODO）**：①阶段 1 的确切动作清单已列在 `NEW_GENERATION_NAMING.md` §6，待用户确认后执行（预计需改 3–5 处测试里的硬编码路径）②A5 补充的修复按提案归入**新版最小转换**，历史冻结批次只留证不重生成③待用户提供 Qwen3-VL 具体版本/推理模式、NPR/UnivFD 权重与许可、noise 保留判据、重复轮处置口径（掩码 vs 整条拒收）
