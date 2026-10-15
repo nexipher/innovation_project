@@ -343,6 +343,49 @@ class TestProseNumbersHaveARole:
         assert all(f["severity"] == "candidate" for f in findings)
 
 
+class TestTheTwoFalsePositivesTheBatchFound:
+    """
+    b1 小批（32 会话）里有两条候选，逐句核过——**都是账本的假阳性**，不是模型的
+    问题。这里把两种形态钉住，免得下次又被记成"交人工裁决"的噪音。
+    """
+
+    def test_a_negated_generation_claim_is_not_a_fake_assertion(self):
+        """'未被外部判别器识别为AI生成' 是在说**没有**生成证据。"""
+        from utils.evidence_ledger import _asserted_direction
+
+        assert _asserted_direction(
+            "probe_dino_expert 的测量结果为 0.00514，方向为 Real，"
+            "表明该图像在全局层面未被外部判别器识别为AI生成") is None
+
+    def test_quoting_the_delivered_threshold_is_a_clean_citation(self):
+        """包里有 `score.threshold`：写"低于阈值 0.5"是在引用它看到过的东西。"""
+        from utils.evidence_ledger import Ledger
+
+        token = {"evidence_id": "E-1", "source": "probe_dino_expert",
+                 "evidence_name": "aigi_discriminator_score", "strength": 0.1396,
+                 "raw_metric": 0.1396, "support": "Real",
+                 "phenomenon": "整图判别分数 0.1396。", "reasoning": "x",
+                 "interpretation_text": "y", "measurement_scope": "global",
+                 "model_delivered": "slim", "status": "measured"}
+        ledger = Ledger.from_session([token], served=["probe_dino_expert"])
+        assert ledger.findings(
+            "图像经外部判别器检测得分为0.1396，低于阈值0.5。") == []
+
+    def test_a_number_that_was_never_delivered_is_still_a_defect(self):
+        from utils.evidence_ledger import Ledger
+
+        token = {"evidence_id": "E-1", "source": "probe_dino_expert",
+                 "evidence_name": "aigi_discriminator_score", "strength": 0.1396,
+                 "raw_metric": 0.1396, "support": "Real",
+                 "phenomenon": "整图判别分数 0.1396。", "reasoning": "x",
+                 "interpretation_text": "y", "measurement_scope": "global",
+                 "model_delivered": "slim", "status": "measured"}
+        ledger = Ledger.from_session([token], served=["probe_dino_expert"])
+        kinds = [f["kind"] for f in ledger.findings(
+            "图像经外部判别器检测得分为0.77，低于阈值0.5。")]
+        assert kinds == ["fabricated_value"]
+
+
 class TestTheDeliveredFieldRule:
     """
     阶段 4.3：引用"没投递给模型的字段"不算忠实引用。
@@ -361,7 +404,10 @@ class TestTheDeliveredFieldRule:
 
         token = self._slim_token("noise_expert", "strength", 0.71, "raw_metric", 2.5)
         ledger = Ledger.from_session([token])
-        assert ledger.measured["noise_expert"].delivered == {"strength": 0.71}
+        # 交付集合＝登记表指定的那个字段 **+ 阈值**（包里有 `score.threshold`，
+        # 模型据此写"低于阈值 0.5"是忠实引用，不该算自由文本里的数字）。
+        assert ledger.measured["noise_expert"].delivered == {"strength": 0.71,
+                                                            "threshold": 0.5}
 
     def test_quoting_the_undelivered_field_is_a_defect(self):
         from utils.evidence_ledger import Ledger

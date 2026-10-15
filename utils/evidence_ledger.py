@@ -146,7 +146,12 @@ MENTION_FAKE = ("伪造", "ai生成", "合成", "生成图像", "生成图", "�
 NEGATED_ASSERTION = ("并不", "不直接", "不指向", "未指向", "不应", "不能", "难以",
                      "无法", "不足", "没有足够", "未提供", "不明确", "不确定",
                      "并没有", "尚不能", "很难", "未发现", "不足以",
-                     "而不是", "并非", "不是", "没有", "无")
+                     "而不是", "并非", "不是", "没有", "无",
+                     # 4.5：小批里真实出现过 "未被外部判别器识别为AI生成"——一个
+                     # **否定**句被读成"断言 Fake"，于是和 Real 方向判成冲突。
+                     # `未` 单独太宽（"未发现异常"已在上表），这里收具体形态。
+                     "未被", "未能", "未识别", "未判定", "未构成", "不构成",
+                     "不属于", "不表明", "不支持")
 # Detector names contain "AI 生成" without asserting a generation claim.
 DETECTOR_PHRASE = re.compile(
     r"(?:ai\s*生成|aigi|agi)?\s*(?:探测器|检测器|鉴别器|判别器|鉴定器|分级器)")
@@ -276,6 +281,8 @@ def ledger_view(token: dict) -> dict:
     value = score.get("value")
     if isinstance(value, (int, float)):
         view[_registry_field(source)] = float(value)
+    if isinstance(score.get("threshold"), (int, float)):
+        view["threshold"] = float(score["threshold"])
     return {key: item for key, item in view.items() if item is not None}
 
 
@@ -304,7 +311,23 @@ def _delivered_fields(token: dict) -> Optional[Dict[str, float]]:
     value = token.get(field)
     if value is None:
         value = token.get("raw_metric", token.get("strength"))
-    return {field: float(value)} if isinstance(value, (int, float)) else {}
+    if not isinstance(value, (int, float)):
+        return {}
+    delivered = {field: float(value)}
+    # 包还交付了**阈值**（`score.threshold`）：模型写"低于阈值 0.5"是在引用它看到
+    # 过的东西，不该记成"自由文本里的数字"。只在一个分数真的交付了之后才算——
+    # 失败测量什么都没交付。
+    threshold = token.get("threshold")
+    if threshold is None:
+        try:
+            from utils.score_semantics import entry as _entry
+
+            threshold = _entry(source)["threshold"]["value"]
+        except Exception:
+            threshold = None
+    if isinstance(threshold, (int, float)):
+        delivered["threshold"] = float(threshold)
+    return delivered
 
 
 @dataclass

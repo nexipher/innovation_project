@@ -142,7 +142,8 @@ class TestTheLedgerReadsWhatWasActuallyDelivered:
                             "reading": "整图判别分数 0.9000。"})
         ledger = Ledger.from_session([pack], served=["probe_dino_expert"])
         assert ledger.ran("probe_dino_expert")
-        assert ledger.measured["probe_dino_expert"].delivered == {"raw_metric": 0.9}
+        assert ledger.measured["probe_dino_expert"].delivered == {"raw_metric": 0.9,
+                                                                 "threshold": 0.5}
         assert ledger.findings("PROBE 的分数 0.9 指向生成。") == []
 
     def test_the_two_new_tool_names_are_recognised(self):

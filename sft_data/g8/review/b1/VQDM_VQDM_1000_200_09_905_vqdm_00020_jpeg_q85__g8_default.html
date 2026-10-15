@@ -1,0 +1,54 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85</title><style>
+:root { color-scheme: light dark; }
+body { font: 15px/1.55 -apple-system, "Segoe UI", "Noto Sans CJK SC", sans-serif;
+       margin: 0 auto; max-width: 1180px; padding: 24px; }
+h1 { font-size: 22px; } h2 { font-size: 17px; margin-top: 28px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border-bottom: 1px solid #8884; padding: 6px 8px; text-align: left;
+         vertical-align: top; font-size: 14px; }
+th { background: #8881; }
+img { max-width: 100%; border: 1px solid #8884; border-radius: 6px; }
+.turn { border-left: 3px solid #8886; margin: 10px 0; padding: 6px 12px; }
+.turn.user { border-color: #2b7; } .turn.gpt { border-color: #37b; }
+.role { font-weight: 600; font-size: 13px; opacity: .8; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0;
+      background: #8881; padding: 10px; border-radius: 6px; font-size: 13px; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px;
+        background: #8883; font-size: 13px; margin-right: 6px; }
+.ok { background: #2b73; } .bad { background: #b223; } .warn { background: #b903; }
+.muted { opacity: .7; font-size: 13px; }
+</style></head><body><p><a href="index.html">← 批次目录</a></p><h1>g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85</h1><p><span class="pill ok">判定 Fake</span><span class="pill">真值 Fake</span><span class="pill">model_concluded</span><span class="pill">停止原因 model_concluded</span><span class="pill">jpeg_q85</span><span class="pill">VQDM</span></p><h2>原始图像（模型看到的变体）</h2><img src="../../variants/b1/VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85.jpg" alt="sft_data/g8/variants/b1/VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85.jpg"><p class="muted">源：VQDM/VQDM_1000_200_09_905_vqdm_00020｜分辨率 -｜容器 jpg｜耗时 30.0 s</p><h2>结果与外部控制</h2><table><tr><th>项</th><th>值</th></tr><tr><td>模型自己的报告</td><td>外部判别器（PROBE-DINOv2）对整图输出极高AI生成分数（0.9998），远超阈值0.5，表明图像极可能为AI生成。无其他证据反驳，故判定为Fake。</td></tr><tr><td>模型候选 / 采纳</td><td>Fake / Fake</td></tr><tr><td>置信度</td><td>0.99</td></tr><tr><td>控制原因</td><td>[&#x27;model_concluded&#x27;]</td></tr><tr><td>引用检查</td><td>pass（缺陷 0，候选 0）</td></tr><tr><td>计数器</td><td>{&quot;model_turns&quot;: 2, &quot;expert_calls&quot;: 1, &quot;unique_evidence&quot;: 1, &quot;suppressed_duplicates&quot;: 0, &quot;weighted_cost&quot;: 2.0}</td></tr><tr><td>工具</td><td>npr_expert, probe_dino_expert, univfd_expert</td></tr></table><h2>证据链（模型看到的是精简包）</h2><table><tr><th>expert</th><th>evidence_id</th><th>状态</th><th>投递</th><th>score</th><th>说明</th></tr><tr><td>probe_dino_expert</td><td>E-9cd887aa4a</td><td>measured</td><td>slim</td><td>0.999846</td><td>整图判别分数 0.9998（外部判别器的原始输出，未经本地校准）。输入预处理：336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A high score points to AI-generated. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area.</td></tr></table><h2>完整原始对话</h2><div class="turn user"><div class="role">#0 user</div><pre>&lt;image&gt;
+请分析这张图像的真实性，并使用法证工具箱开展多轮质证。</pre></div><div class="turn gpt"><div class="role">#1 gpt</div><pre>&lt;planning&gt;
+Suspected Region: none
+Visual Observation: 图像展示了一个室内场景，左侧为带有水平百叶窗的窗户，光线透过百叶窗形成条状光影。窗台下方有白色物体，右侧有木质家具和书架，书架上摆放着书籍和装饰品。整体色调偏暖，纹理自然，边缘清晰，无明显压缩或合成痕迹。
+Suspected Anomalies: 无明显异常，画面细节自然，光影过渡平滑，未见明显AI生成或篡改痕迹。
+Expert Target &amp; Hypothesis: probe — 用于检测图像整体是否存在AI生成的全局异常，作为初步筛查。
+&lt;/planning&gt;
+&lt;call_probe&gt;&lt;/call_probe&gt;</pre></div><div class="turn user"><div class="role">#2 user</div><pre>{
+  &quot;evidence_id&quot;: &quot;E-9cd887aa4a&quot;,
+  &quot;expert&quot;: &quot;probe_dino_expert&quot;,
+  &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;,
+  &quot;status&quot;: &quot;measured&quot;,
+  &quot;scope&quot;: &quot;global&quot;,
+  &quot;score&quot;: {
+    &quot;name&quot;: &quot;aigi_discriminator_score&quot;,
+    &quot;value&quot;: 0.999846,
+    &quot;range&quot;: [
+      0.0,
+      1.0
+    ],
+    &quot;direction&quot;: &quot;higher_is_fake&quot;,
+    &quot;is_calibrated_probability&quot;: false,
+    &quot;threshold&quot;: 0.5,
+    &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;,
+    &quot;direction_for_this_value&quot;: &quot;AI-generated&quot;
+  },
+  &quot;reading&quot;: &quot;整图判别分数 0.9998（外部判别器的原始输出，未经本地校准）。输入预处理：336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A high score points to AI-generated. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area.&quot;
+}</pre></div><div class="turn user"><div class="role">#3 user</div><pre>[System: 本会话状态 —— 已执行的专家：
+  - probe_dino_expert（E-9cd887aa4a）：aigi_discriminator_score=0.999846（该值的方向：AI-generated）
+尚可调用：npr_expert, univfd_expert。每个专家每会话只对整图测量一次：重复请求的返回值与上面已有的 token 相同，系统会跳过执行并白费一轮。请基于上面已给出的结论继续，或直接给出结案。]</pre></div><div class="turn gpt"><div class="role">#4 gpt</div><pre>&lt;reasoning&gt;
+probe_dino_expert 的测量结果显示 aigi_discriminator_score 为 0.9998，远高于阈值 0.5，方向为“AI-generated”，表明该图像极可能为AI生成。该专家测量的是整图，未聚焦任何局部区域，其结论具有全局性。视觉观察中虽未发现明显合成痕迹，但判别器的高分已构成强证据。根据“presumption of innocence”原则，若无其他证据反驳，应优先采纳该专家的高置信度结论。
+&lt;/reasoning&gt;
+&lt;verdict&gt;
+{&quot;verdict&quot;: &quot;Fake&quot;, &quot;confidence&quot;: 0.99, &quot;primary_evidence&quot;: [&quot;probe_dino_expert&quot;], &quot;report&quot;: &quot;外部判别器（PROBE-DINOv2）对整图输出极高AI生成分数（0.9998），远超阈值0.5，表明图像极可能为AI生成。无其他证据反驳，故判定为Fake。&quot;}
+&lt;/verdict&gt;</pre></div></body></html>
