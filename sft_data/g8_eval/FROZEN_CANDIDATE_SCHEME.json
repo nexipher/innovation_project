@@ -1,0 +1,112 @@
+{
+  "frozen_at": "2026-10-15T13:28:07",
+  "generation": "g8",
+  "stage": "阶段三结束时的候选方案（用户 2026-10-15 决定）",
+  "why_frozen": "val 用于选择：选专家、选 checkpoint、选使用条件都在 val 上完成；方案一经冻结，**test 只在证据接口、调用规则与提示词也固定之后才打开**，不得成为下一轮选型集。",
+  "partition_rule": {
+    "train": "适配调试、生成 SFT",
+    "val": "专家选择、预处理与阈值选择、提示词验证",
+    "test": "方案冻结后的最终验收，不进入 SFT 与开发决策；**当前未打开**",
+    "same_source_variants": "同一源图的 PNG/q70/q85/q95 必在同一分区",
+    "opening_conditions": [
+      "证据接口定稿",
+      "调用规则定稿",
+      "提示词定稿",
+      "以上冻结后一次性打开 test"
+    ]
+  },
+  "experts": {
+    "probe": {
+      "role": "主检测器，保留",
+      "val_auroc": 0.9808,
+      "per_format": {
+        "png": 0.9754,
+        "jpeg_q70": 0.9879,
+        "jpeg_q85": 0.9822,
+        "jpeg_q95": 0.9782
+      },
+      "cost_gpu_ms": 74.8,
+      "notes": "四个格式格均 ≥0.975，不挑格式"
+    },
+    "npr-a": {
+      "role": "PNG 条件下的补充候选",
+      "val_auroc": 0.6363,
+      "per_format": {
+        "png": 0.9975,
+        "jpeg_q70": 0.47,
+        "jpeg_q85": 0.5115,
+        "jpeg_q95": 0.5644
+      },
+      "cost_gpu_ms": 30.9,
+      "added_gain_source_level": {
+        "all": {
+          "delta": 0.0061,
+          "ci95": [
+            0.0025,
+            0.0108
+          ],
+          "p_le_zero": 0.0
+        },
+        "png": {
+          "delta": 0.0228,
+          "ci95": [
+            0.0097,
+            0.0401
+          ],
+          "p_le_zero": 0.0
+        }
+      },
+      "conditions": [
+        "只在当前 val 的 PNG 编码条件下表现强；PNG 是容器，不代表没有 JPEG 压缩历史",
+        "JPEG 格低分不得解释成强 Real 证据"
+      ]
+    },
+    "univfd": {
+      "role": "进入小批 Agent 对照，尚不认定为必需专家",
+      "val_auroc": 0.8493,
+      "per_format": {
+        "png": 0.8934,
+        "jpeg_q70": 0.8454,
+        "jpeg_q85": 0.8168,
+        "jpeg_q95": 0.8432
+      },
+      "cost_gpu_ms": 38.7,
+      "added_gain_source_level": {
+        "all": {
+          "delta": 0.003,
+          "ci95": [
+            -0.0092,
+            0.014
+          ],
+          "p_le_zero": 0.285
+        }
+      },
+      "finding": "未证明明确增益，也未排除损害（CI 含负值）"
+    },
+    "noise": {
+      "role": "退出新版默认工具箱（历史实现与结果保留）",
+      "val_auroc": 0.6596,
+      "cost_cpu_ms": 63.3,
+      "retirement_basis": [
+        "弱判别力",
+        "格式敏感",
+        "语义负担（raw_metric/strength 方向相反）"
+      ],
+      "scope_limit": "负增益只对当前等权组合成立，未达显著"
+    }
+  },
+  "combination_rule": "等权平均、方向已按语义登记统一、**无任何在 val 上拟合的参数**；报告只用于对照，Agent 不消费该平均分——模型看到的是证据 token（阶段四）",
+  "statistics": {
+    "unit": "源（source）——1136 张变体来自 284 个源，按图独立重采样会缩小 CI 约 √4",
+    "method": "配对 bootstrap，2000 次重采样，按源聚类（含该源在本格内全部变体）",
+    "reports": [
+      "sft_data/g8_eval/gain_bootstrap_val_sourcelevel.json",
+      "sft_data/g8_eval/four_experts_val_comparison.json"
+    ]
+  },
+  "open_items": [
+    "NPR 许可未明确（仅本地研究）",
+    "noise 的历史实现与结果保留但不入默认工具箱",
+    "阶段四：证据接口、调用规则、提示词；完成后才打开 test"
+  ]
+}

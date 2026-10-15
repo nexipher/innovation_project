@@ -144,3 +144,53 @@ class TestTheDirectionIsAppliedConsistently:
         metrics = metrics_for(rows, "noise_expert", 0.5)
         assert metrics["direction"] == "higher_is_real"
         assert metrics["auroc"] == 1.0
+
+
+class TestTheFrozenCandidateScheme:
+    """
+    阶段三冻结的方案必须把用户四条方法学指正一起冻结，否则下一轮又会
+    把图当独立样本、又会说"从不伤害"、又会拿 test 当选型集。
+    """
+
+    @pytest.fixture(scope="class")
+    def scheme(self):
+        path = os.path.join(PROJECT_ROOT, "sft_data/g8_eval/FROZEN_CANDIDATE_SCHEME.json")
+        if not os.path.exists(path):
+            pytest.skip("候选方案尚未冻结")
+        with open(path, encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def test_the_roles_are_the_decided_ones(self, scheme):
+        assert "主检测器" in scheme["experts"]["probe"]["role"]
+        assert "尚不认定" in scheme["experts"]["univfd"]["role"]
+        assert "退出" in scheme["experts"]["noise"]["role"]
+        assert "PNG 条件下的补充候选" in scheme["experts"]["npr-a"]["role"]
+
+    def test_the_resampling_unit_is_the_source(self, scheme):
+        assert scheme["statistics"]["unit"].startswith("源")
+        assert "√4" in scheme["statistics"]["unit"]
+
+    def test_the_test_partition_stays_closed_until_three_things_are_fixed(self, scheme):
+        conditions = scheme["partition_rule"]["opening_conditions"]
+        assert any("证据接口" in item for item in conditions)
+        assert any("调用规则" in item for item in conditions)
+        assert any("提示词" in item for item in conditions)
+        assert "未打开" in scheme["partition_rule"]["test"]
+
+    def test_the_png_container_caveat_is_recorded(self, scheme):
+        conditions = scheme["experts"]["npr-a"]["conditions"]
+        assert any("容器" in item and "JPEG 压缩历史" in item for item in conditions)
+        assert any("不得解释成强 Real 证据" in item for item in conditions)
+
+    def test_no_claim_says_an_expert_never_harms(self, scheme):
+        finding = scheme["experts"]["univfd"]["finding"]
+        assert "未证明" in finding and "未排除损害" in finding
+        assert "从不伤害" not in json.dumps(scheme, ensure_ascii=False)
+
+    def test_the_combination_scope_limit_is_recorded(self, scheme):
+        assert "等权组合" in scheme["experts"]["noise"]["scope_limit"]
+
+    def test_the_cost_comparison_is_device_matched(self, scheme):
+        for name in ("probe", "npr-a", "univfd"):
+            assert scheme["experts"][name]["cost_gpu_ms"] > 0
+

@@ -60,7 +60,7 @@
     "noise_expert": {
       "variant": "noise",
       "display_name": "SRM 噪声残差一致性（仓库内实现）",
-      "role": "候选保留（提案 §1）；与 NPR/UnivFD 同标准评测，缺乏增益与互补性才退出",
+      "role": "**退出新版默认工具箱**（用户 2026-10-15 决定；历史实现与结果保留，不删除）",
       "weights": {
         "file": "无（确定性算法）",
         "sha256": null,
@@ -105,12 +105,39 @@
       "limits": [
         "分离度弱（G2-b 0.845 极性校正后）；q70 配平后区分度下降",
         "数据集 Real 为 JPEG、Fake 为 PNG，本专家对格式差异敏感——评测必须分格式报告"
+      ],
+      "retirement": {
+        "decided_on": "2026-10-15",
+        "basis": [
+          "独立判别力弱：val 整体 AUROC 0.660（0.624–0.701），四个格式格都远低于 PROBE",
+          "格式敏感（数据集 Real=JPEG / Fake=PNG 的混杂对本专家不利）",
+          "成本 63.3 ms/图（CPU；未做同设备 GPU 计时）",
+          "语义负担：raw_metric 与 strength 方向相反，是唯一这样的专家"
+        ],
+        "scope_limit": "**负增益只对当前“与 PROBE 等权平均”的组合成立**（整体 Δ −0.0070，源级 CI[−0.0215,+0.0059] P(Δ≤0)=0.838，点估计为负但未达显著）——不能据此断言它在任何调用策略下都无益"
+      },
+      "field_consumers": [
+        {
+          "consumer": "utils/reliability.py::lookup（calibrated_likelihood 的来源）",
+          "reads": "raw_metric",
+          "meaning": "SRM 不一致度（越高越偏 Fake）"
+        },
+        {
+          "consumer": "token 的 strength 字段与旧一致性检查",
+          "reads": "strength",
+          "meaning": "带内归一化位置（越高越偏 Real）"
+        },
+        {
+          "consumer": "utils/evidence_ledger.py 的数值核对",
+          "reads": "raw_metric 或 strength（任一）",
+          "defect": "把两者都当作“模型引用的那个数”接受：模型引用方向相反的另一个字段，检查仍然通过。阶段 4 必须按语义登记判定模型指的是哪个字段。"
+        }
       ]
     },
     "npr_expert": {
       "variant": "npr",
       "display_name": "NPR（CVPR 2024，Neighboring Pixel Relationships）",
-      "role": "候选补位（本轮参评）",
+      "role": "**PNG 条件下的补充候选**（保留；JPEG 格低分不得解释成强 Real 证据）",
       "weights": {
         "checkpoints": [
           {
@@ -200,12 +227,23 @@
         "两个 checkpoint 与配方不可混用（AIGCDetectBenchmark 配方 vs GenImage 配方）",
         "同一仓库两种加载写法（validate.py 读 ['model']；test.py 直接 load_state_dict），必须按文件判定",
         "许可未明确"
-      ]
+      ],
+      "usage_conditions": [
+        "增益只在本轮 val 的 **PNG 编码条件**下被 bootstrap 证实（整体 +0.0061 CI[+0.0025,+0.0108]；PNG 格 +0.0228 CI[+0.0097,+0.0401]）",
+        "**PNG 是容器，不代表没有 JPEG 压缩历史**：适用条件写“在当前 val 的 PNG 编码条件下表现强”，不写“所有 PNG 可靠”",
+        "JPEG 格（q70/q85/q95）AUROC 0.47–0.56，且分数几乎全在 0 附近：**低分只能说明它没看到它擅长的东西，不能当作强 Real 证据**",
+        "成本按同设备同计时范围比较：GPU 上 30.9 ms/图（最便宜），不是拿 CPU 的 271 ms 去比 GPU 的 74.8 ms"
+      ],
+      "cost": {
+        "gpu_ms_per_image": 30.9,
+        "cpu_ms_per_image": 271.4,
+        "note": "同设备对比：probe 74.8（GPU）｜univfd 38.7（GPU）｜npr-a 30.9（GPU）；计时范围都含预处理"
+      }
     },
     "univfd_expert": {
       "variant": "univfd",
       "display_name": "UnivFD（CVPR 2023，CLIP ViT-L/14 特征 + 线性头）",
-      "role": "候选补位（本轮参评）",
+      "role": "进入小批 Agent 对照，**尚不认定为必需专家**",
       "weights": {
         "head": {
           "file": "/root/autodl-tmp/third_party/univfd/weights/fc_weights.pth",
@@ -259,6 +297,11 @@
       "limits": [
         "必须同时具备主干与分类头，只下 fc_weights.pth 不能推理",
         "预处理是中心裁剪，测量范围与整图专家不同——证据里必须写明 scope"
+      ],
+      "usage_conditions": [
+        "源级 bootstrap：整体 +0.0030 CI[−0.0092,+0.0140] P=0.285；PNG +0.0093 CI[−0.0018,+0.0226] P=0.060",
+        "**结论只能是“未证明明确增益，也未排除损害”**——CI 含负值，不接受“从不伤害”的表述",
+        "独立判别力 0.849（0.817–0.893），是最便宜的 GPU 专家（38.7 ms/图）"
       ]
     }
   },
@@ -278,5 +321,25 @@
         "score": "固定值（冒烟用，见 scripts/g8_smoke.py）"
       }
     }
+  },
+  "field_consumers_audit": {
+    "why": "同一 token 里有多个数值字段，消费方各自读不同的字段；方向相反的字段被混用就会把结论读反（用户 2026-10-15 要求厘清并留档）",
+    "noise_expert": [
+      {
+        "consumer": "utils/reliability.py::lookup（calibrated_likelihood 的来源）",
+        "reads": "raw_metric",
+        "meaning": "SRM 不一致度（越高越偏 Fake）"
+      },
+      {
+        "consumer": "token 的 strength 字段与旧一致性检查",
+        "reads": "strength",
+        "meaning": "带内归一化位置（越高越偏 Real）"
+      },
+      {
+        "consumer": "utils/evidence_ledger.py 的数值核对",
+        "reads": "raw_metric 或 strength（任一）",
+        "defect": "把两者都当作“模型引用的那个数”接受：模型引用方向相反的另一个字段，检查仍然通过。阶段 4 必须按语义登记判定模型指的是哪个字段。"
+      }
+    ]
   }
 }
