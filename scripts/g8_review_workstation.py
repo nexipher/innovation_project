@@ -42,6 +42,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT  # noqa: E402
+from state_machine.controller import ForensicStateMachine  # noqa: E402
 from utils.batch import batch_paths  # noqa: E402
 from utils.review_store import (CATEGORIES, DECISIONS, SCHEMA,  # noqa: E402
                                 latest, load_ledger, progress, sample_fingerprint)
@@ -50,7 +51,8 @@ CSS = """
 :root { color-scheme: light dark; --line:#8884; --bg:#8881; }
 * { box-sizing: border-box; }
 body { font: 15px/1.6 -apple-system, "Segoe UI", "Noto Sans CJK SC", sans-serif;
-       margin: 0; padding: 20px 26px 80px; max-width: 1280px; }
+       margin: 0; padding: 16px 26px 60px; max-width: 1280px;
+       background: canvas; color: canvastext; }
 a { color: #2b7; }
 h1 { font-size: 21px; margin: 0 0 6px; } h2 { font-size: 16px; margin: 26px 0 8px; }
 h3 { font-size: 14px; margin: 16px 0 6px; opacity: .85; }
@@ -61,6 +63,27 @@ th { background: var(--bg); position: sticky; top: 0; }
 img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 .card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+/* 链接：未访问/已访问用不同色相区分（蓝 vs 紫），深浅色各一套；
+   已访问只是**浏览器里的浏览记录**，与"是否已审核"无关——审核状态另有标签。 */
+a:link { color: #0b5fb0; text-decoration-color: #0b5fb066; }
+a:visited { color: #8a3fb8; text-decoration-color: #8a3fb866; }
+a:hover { text-decoration: underline; }
+a:focus-visible { outline: 2px solid #0b5fb0; outline-offset: 2px; border-radius: 3px; }
+@media (prefers-color-scheme: dark) {
+  a:link { color: #74b9ff; text-decoration-color: #74b9ff66; }
+  a:visited { color: #cba0ff; text-decoration-color: #cba0ff66; }
+  a:focus-visible { outline-color: #74b9ff; }
+}
+/* 顶部固定审核栏：滚动时始终可见，不透明背景 + 明确的层叠顺序 */
+.topbar { position: sticky; top: 0; z-index: 20; background: canvas;
+          border-bottom: 1px solid var(--line); padding: 6px 0 10px;
+          margin: -10px 0 14px; }
+.topbar .row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.topbar h1 { font-size: 18px; margin: 2px 0; }
+.topbar .crumbs { font-size: 13px; }
+.topbar textarea { min-height: 38px; max-height: 96px; resize: vertical; }
+.topbar .controls { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+@media (max-width: 720px) { .topbar .row { gap: 4px 8px; } .topbar h1 { font-size: 16px; } }
 .turn { border-left: 3px solid var(--line); margin: 10px 0; padding: 4px 12px; }
 .turn.model { border-color: #37b; } .turn.tool { border-color: #2b7; }
 .turn.control { border-color: #c93; }
@@ -74,8 +97,6 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0; background: 
 .muted { opacity: .72; font-size: 13px; }
 .bar { height: 10px; background: var(--bg); border-radius: 6px; overflow: hidden; }
 .bar > span { display: block; height: 100%; background: #2b7; }
-.decide { position: sticky; bottom: 0; background: canvas; border-top: 1px solid var(--line);
-          padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button { font: inherit; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
          background: var(--bg); cursor: pointer; }
 button.primary { background: #2b7; color: #fff; border-color: #2b7; }
@@ -324,6 +345,145 @@ def classify_turn(turn: dict, index: int) -> Tuple[str, str]:
     return "control", "控制器提示（纠正/追问）"
 
 
+def call_status(record: dict, trace: dict) -> dict:
+    """
+    调用状态：**四类各自记录、各自可能"未记录"**，不靠"数组是空的"推断。
+
+    这个页面曾经把 `unavailable_tool_calls` 与 `failed_tool_calls` 直接拼成
+    "缺席 []｜失败 []"——空数组既可能是"确实没有"，也可能是"这个版本根本没记"，
+    而"模型没调用某个专家"更是完全另一件事。四类：
+
+      * `unavailable` 请求了不可用工具（tag + 对应专家 + 轮次 + 提示原文）
+      * `failed`      工具执行失败（专家 + 异常原文 + 轮次）
+      * `skipped`     重复请求被跳过（专家 + 轮次，计数来自 metadata）
+      * `not_called`  本次可用但模型没调用（available 减去已测量/不可用/失败）
+
+    每类都带 `recorded` 标志：键不存在就是**未记录**（旧 trace），不写"无"。
+    """
+    metadata = trace.get("metadata") or {}
+    turns = trace.get("conversations") or []
+
+    def _turn_texts(*needles) -> List[int]:
+        found = []
+        for index, turn in enumerate(turns):
+            value = turn.get("value") or ""
+            if all(needle in value for needle in needles):
+                found.append(index)
+        return found
+
+    measured = {token.get("source") for token in (record.get("evidence") or [])
+                if token.get("source")}
+    available = metadata.get("available_experts")
+    if available is None:
+        available = record.get("tools_served")
+
+    out: Dict[str, object] = {"unavailable": [], "failed": [], "skipped": [],
+                              "not_called": [], "recorded": {}, "skipped_count": None}
+
+    raw_unavailable = metadata.get("unavailable_tool_calls")
+    out["recorded"]["unavailable"] = raw_unavailable is not None
+    asked_unavailable = set()
+    for tag in raw_unavailable or []:
+        turn_indexes = _turn_texts("不提供", tag)
+        notice = next((turns[index].get("value") for index in turn_indexes), "")
+        source = ForensicStateMachine.EXPERT_KEY_MAP.get(tag, "")
+        if source:
+            asked_unavailable.add(source)
+        out["unavailable"].append({
+            "tool": tag, "expert": source or "（未登记标签）", "turns": turn_indexes,
+            "reason": (notice.strip() if notice else "未记录提示原文"),
+        })
+
+    raw_failed = metadata.get("failed_tool_calls")
+    out["recorded"]["failed"] = raw_failed is not None
+    asked_failed = set()
+    for entry in raw_failed or []:
+        source = str(entry).split(":", 1)[0].strip()
+        asked_failed.add(source)
+        turn_indexes = _turn_texts("执行失败", source) or _turn_texts(source, "失败")
+        out["failed"].append({"tool": source, "expert": source, "turns": turn_indexes,
+                              "reason": str(entry)})
+
+    skipped_count = metadata.get("skipped_duplicate_calls")
+    out["skipped_count"] = skipped_count
+    out["recorded"]["skipped"] = skipped_count is not None
+    for source in sorted(set(metadata.get("skipped_sources") or []) |
+                         {token.get("source") for token in (record.get("evidence") or [])
+                          if token.get("source") and skipped_count}):
+        turn_indexes = _turn_texts(source, "已跳过执行")
+        if turn_indexes:
+            out["skipped"].append({"tool": source, "expert": source,
+                                   "turns": turn_indexes,
+                                   "reason": "该专家已在本会话测量过整图，重复请求未执行"})
+
+    out["recorded"]["not_called"] = available is not None
+    if available is not None:
+        out["not_called"] = sorted(set(available) - measured - asked_unavailable
+                                   - asked_failed)
+    return out
+
+
+def _render_call_status(status: dict) -> str:
+    """按调用状态出块：无异常就一句"调用异常：无"，有就逐条列出工具/轮次/原因。"""
+    parts: List[str] = ["<h2>调用状态</h2>"]
+    abnormal = status["unavailable"] or status["failed"]
+    if not status["recorded"]["unavailable"] and not status["recorded"]["failed"]:
+        parts.append('<p class="banner">调用异常：<b>未记录</b>'
+                     '（本会话 trace 里没有 `unavailable_tool_calls` / '
+                     '`failed_tool_calls` 字段，不能当作"没有异常"）。</p>')
+    elif not abnormal:
+        parts.append('<p>调用异常：<b>无</b>'
+                     '<span class="muted">（未请求不可用工具，也没有工具执行失败）</span></p>')
+    if status["unavailable"]:
+        parts.append("<h3>请求了不可用工具</h3><table>"
+                     "<tr><th>工具</th><th>对应专家</th><th>轮次</th><th>原因（记录原文）</th></tr>")
+        for item in status["unavailable"]:
+            parts.append(f'<tr><td>{html.escape(str(item["tool"]))}</td>'
+                         f'<td>{html.escape(str(item["expert"]))}</td>'
+                         f'<td>{html.escape(_turns_text(item["turns"]))}</td>'
+                         f'<td>{html.escape(str(item["reason"]))}</td></tr>')
+        parts.append("</table>")
+    if status["failed"]:
+        parts.append("<h3>工具执行失败</h3><table>"
+                     "<tr><th>专家</th><th>轮次</th><th>记录的原因</th></tr>")
+        for item in status["failed"]:
+            parts.append(f'<tr><td>{html.escape(str(item["expert"]))}</td>'
+                         f'<td>{html.escape(_turns_text(item["turns"]))}</td>'
+                         f'<td>{html.escape(str(item["reason"]))}</td></tr>')
+        parts.append("</table>")
+    if status["recorded"]["skipped"]:
+        count = status["skipped_count"]
+        if count:
+            detail = ("；".join(f'{item["tool"]}（轮次 {_turns_text(item["turns"])}）'
+                                for item in status["skipped"])
+                      or "轮次未记录")
+            parts.append(f'<p>重复请求被跳过：<b>{count}</b> 次 —— {html.escape(detail)}'
+                         '<span class="muted">（重复请求不执行、不产生新测量）</span></p>')
+        else:
+            parts.append('<p>重复请求被跳过：<b>无</b></p>')
+    else:
+        parts.append('<p>重复请求被跳过：<b>未记录</b></p>')
+    if status["recorded"]["not_called"]:
+        if status["not_called"]:
+            parts.append('<p>未调用专家（本次可用、模型没有调用）：'
+                         + "、".join(f"<code>{html.escape(name)}</code>"
+                                     for name in status["not_called"])
+                         + '<span class="muted">（可用列表取自 trace 的 '
+                           '`available_experts`）</span></p>')
+        else:
+            parts.append('<p>未调用专家：<b>无</b>（可用的都调用过）</p>')
+    else:
+        parts.append('<p>未调用专家：<b>未记录</b>'
+                     '（trace 里没有可用专家列表）</p>')
+    return "".join(parts)
+
+
+def _turns_text(indexes) -> str:
+    if not indexes:
+        return "未记录"
+    return "、".join(f"#{index}" for index in indexes)
+
+
 def _truncate(text: str, limit: int = 900) -> Tuple[str, bool]:
     text = text or ""
     if len(text) <= limit:
@@ -373,22 +533,27 @@ def session_page(sample: dict, page_dir: str, index_name: str,
     counters = record.get("counters") or {}
 
     parts: List[str] = []
-    parts.append(f'<p><a href="{html.escape(index_name)}">← 批次目录</a> · '
-                 f'<span class="muted">内容指纹 {html.escape(sample["fingerprint"])}</span></p>')
-    parts.append(f"<h1>{html.escape(str(trajectory_id))}</h1>")
+    # ① 顶部固定审核栏：目录/上下条/样本名/小标签/指纹/审核控件，**只此一套**。
+    nav = []
+    if neighbors and neighbors.get("prev"):
+        nav.append(f'<a href="{html.escape(neighbors["prev"])}">← 上一条</a>')
+    if neighbors and neighbors.get("next"):
+        nav.append(f'<a href="{html.escape(neighbors["next"])}">下一条 →</a>')
     parts.append(
-        f'<p><span class="pill {agree}">判定 {html.escape(str(verdict))}</span>'
+        '<header class="topbar">'
+        f'<div class="row crumbs"><a href="{html.escape(index_name)}">← 批次目录</a>'
+        + ("　" + " · ".join(nav) if nav else "")
+        + f'<span class="muted">内容指纹 {html.escape(sample["fingerprint"])}</span></div>'
+        f'<h1>{html.escape(str(trajectory_id))}</h1>'
+        f'<div class="row">'
+        f'<span class="pill {agree}">判定 {html.escape(str(verdict))}</span>'
         f'<span class="pill">真值 {html.escape(str(truth))}</span>'
         f'<span class="pill">结案来源 {html.escape(str(record.get("verdict_status")))}</span>'
         f'<span class="pill">停止原因 {html.escape(str(record.get("halting_reason")))}</span>'
-        f'<span class="pill">{html.escape(str(record.get("treatment")))}</span></p>')
-    if neighbors:
-        nav = []
-        if neighbors.get("prev"):
-            nav.append(f'<a href="{html.escape(neighbors["prev"])}">← 上一条</a>')
-        if neighbors.get("next"):
-            nav.append(f'<a href="{html.escape(neighbors["next"])}">下一条 →</a>')
-        parts.append('<p class="muted">' + " · ".join(nav) + "</p>")
+        f'<span class="pill">{html.escape(str(record.get("treatment")))}</span>'
+        "</div>"
+        + _review_controls(trajectory_id)
+        + "</header>")
 
     # ⑥ 审计信息：图、尺寸、版本、计数、检查发现
     variant = record.get("image_path") or ""
@@ -433,8 +598,6 @@ def session_page(sample: dict, page_dir: str, index_name: str,
                                f'抑制重复 {metadata.get("suppressed_duplicate_count", "未记录")}'),
         ("模型轮 / 工具 / 权重成本", f'{counters.get("model_turns")}｜{counters.get("expert_calls")}'
                                      f'｜{counters.get("weighted_cost")}'),
-        ("缺席/失败的调用", f'缺席 {metadata.get("unavailable_tool_calls", "未记录")}｜'
-                            f'失败 {metadata.get("failed_tool_calls", "未记录")}'),
         ("格式/动作违规轮", f'格式失败 {metadata.get("format_failure_turns", "未记录")}｜'
                             f'非法动作 {metadata.get("invalid_action_turns", "未记录")}｜'
                             f'协议违规 {metadata.get("protocol_violations", "未记录")}'),
@@ -445,6 +608,7 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         parts.append(f"<tr><td>{html.escape(name)}</td>"
                      f"<td>{html.escape(str(value))}</td></tr>")
     parts.append("</table>")
+    parts.append(_render_call_status(call_status(record, trace)))
 
     parts.append("<h2>引用检查（具体发现，不只是数量）</h2>")
     findings = evidence_check.get("findings") or []
@@ -507,7 +671,6 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         parts.append(_json_block(value) if value.lstrip().startswith("{") else _pre(value))
         parts.append("</div>")
 
-    parts.append(_decide_block(trajectory_id, sample["fingerprint"]))
     return _page(str(trajectory_id), "".join(parts), meta=meta)
 
 
@@ -546,32 +709,33 @@ def _completeness_table(metadata: dict, trace: dict) -> str:
     return "".join(rows)
 
 
-def _decide_block(trajectory_id: str, fingerprint: str) -> str:
+def _review_controls(trajectory_id: str) -> str:
+    """
+    审核控件（顶部栏里那**一套**）：决定、审核人、分类、备注、导出、导入、提示。
+
+    决定区在顶部而不是页尾：审核时要边看正文边改决定，控件跟着滚就没法用。
+    """
     categories = "".join(f'<option value="{html.escape(name)}">{html.escape(name)}</option>'
                          for name in CATEGORIES)
     return f'''
-<h2>审核决定</h2>
-<div class="banner">
-  这是<b>行为验收</b>（b1）：<b>通过</b>只表示这条会话本次审核通过，
-  <b>不会</b>把它变成可训练样本，也不走训练准入规则。决定先存在浏览器（草稿），
-  <b>导出并用 <code>python scripts/g8_review_import.py &lt;文件&gt;</code> 才算写回仓库</b>。
-</div>
 <div id="decide" data-id="{html.escape(trajectory_id)}">
-  <p id="decide-state"></p>
-  <p><label>审核人 <input type="text" id="reviewer" placeholder="你的名字"></label></p>
-  <p><label>问题分类 <select id="category"><option value="">（不需要）</option>{categories}</select></label></p>
-  <p><textarea id="note" placeholder="备注／原因（待修、拒绝必填）"></textarea></p>
-  <div class="decide">
+  <div class="controls">
+    <span id="decide-state"></span>
+    <label class="muted">审核人 <input type="text" id="reviewer" placeholder="你的名字" size="10"></label>
+    <label class="muted">分类 <select id="category"><option value="">（不需要）</option>{categories}</select></label>
     <button id="btn-pass" class="primary">通过（本次审核）</button>
     <button id="btn-revise" class="warn">待修</button>
     <button id="btn-reject" class="danger">拒绝</button>
-    <button id="btn-export">导出决定（交给导入命令）</button>
-    <label class="muted">导入：<input type="file" id="import-file" accept="application/json"></label>
+    <button id="btn-export">导出决定</button>
+    <label class="muted">导入 <input type="file" id="import-file" accept="application/json"></label>
     <span id="flash" class="muted" hidden></span>
   </div>
+  <textarea id="note" placeholder="备注／原因（待修、拒绝必填）"></textarea>
+  <p class="muted" style="margin:4px 0">这是<b>行为验收</b>：<b>通过</b>只表示本次审核通过，
+  <b>不会把它变成可训练样本</b>，也不走训练准入。决定先存浏览器草稿，
+  <b>导出后用 <code>python scripts/g8_review_import.py &lt;文件&gt;</code> 才写回仓库</b>；
+  内容一变旧决定自动标"已过期"。链接颜色只表示你打开过（浏览记录），与审核状态无关。</p>
 </div>
-<p class="muted">内容指纹（本条）：<code>{html.escape(fingerprint)}</code>
-—— 决定绑定它；页面内容一变，旧决定自动标"已过期"，不会继承。</p>
 '''
 
 

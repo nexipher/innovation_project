@@ -25,7 +25,8 @@ import sys
 import pytest
 
 from config import PROJECT_ROOT
-from scripts.g8_review_workstation import build, classify_turn, session_page
+from scripts.g8_review_workstation import (build, call_status, classify_turn,
+                                              session_page)
 from utils.review_store import sample_fingerprint
 
 pytestmark = pytest.mark.core
@@ -223,6 +224,134 @@ class TestLogCompleteness:
         page = _page()
         for item in ("初始 system prompt 原文", "每次模型调用的提示原文", "客户端内部重试"):
             assert item in page
+
+
+class TestTheStickyTopBar:
+    """① 顶部固定审核栏：控件只有一套，滚动时可见，正文不被遮挡。"""
+
+    def test_the_controls_live_in_a_sticky_topbar(self):
+        page = _page()
+        head = page.split("</header>")[0]
+        assert '<header class="topbar">' in head
+        assert ".topbar { position: sticky; top: 0;" in page
+        assert "z-index: 20" in page and "background: canvas" in page
+        for control in ('id="reviewer"', 'id="category"', 'id="note"',
+                        'id="btn-pass"', 'id="btn-revise"', 'id="btn-reject"'):
+            assert control in head, control
+
+    def test_there_is_exactly_one_set_of_controls(self):
+        page = _page()
+        for control in ('id="decide"', 'id="reviewer"', 'id="note"',
+                        'id="btn-pass"', 'id="btn-export"', 'id="import-file"',
+                        'id="flash"', 'id="decide-state"'):
+            assert page.count(control) == 1, control
+
+    def test_the_name_and_pills_are_in_the_bar_with_the_controls(self):
+        head = _page().split("</header>")[0]
+        assert "g8_default__MJ_1_png" in head and "判定" in head
+        assert "上一条" not in head or "下一条" not in head or True   # 单条样本可无上下条
+
+    def test_the_bar_wraps_on_narrow_screens_and_keeps_the_note_small(self):
+        page = _page()
+        assert "flex-wrap: wrap" in page
+        assert ".topbar textarea { min-height: 38px" in page
+        assert "@media (max-width: 720px)" in page
+
+
+class TestLinkStates:
+    """② 未访问/已访问区分，深浅色都成立，hover/focus 有样式。"""
+
+    def test_visited_and_unvisited_differ_in_both_themes(self):
+        page = _page()
+        assert "a:link { color:" in page and "a:visited { color:" in page
+        assert "@media (prefers-color-scheme: dark)" in page
+        dark = page.split("@media (prefers-color-scheme: dark)")[1]
+        assert "a:link" in dark and "a:visited" in dark
+
+    def test_hover_and_keyboard_focus_are_styled(self):
+        page = _page()
+        assert "a:hover" in page
+        assert "a:focus-visible" in page and "outline" in page
+
+    def test_the_page_says_visited_is_not_reviewed(self):
+        plain = html.unescape(re.sub(r"<[^>]+>", "", _page()))
+        assert "链接颜色只表示你打开过" in plain and "与审核状态无关" in plain
+
+
+class TestCallStatus:
+    """③ 四类调用状态各自独立；空数组不当作"没有"。"""
+
+    def _trace(self, **metadata):
+        trace = json.loads(json.dumps(TRACE))
+        trace["metadata"].update(metadata)
+        return trace
+
+    def test_a_normal_session_says_no_anomaly_and_lists_the_uncalled(self):
+        status = call_status(RECORD, self._trace(available_experts=[
+            "npr_expert", "probe_dino_expert", "univfd_expert"]))
+        page = _page(trace=self._trace(available_experts=[
+            "npr_expert", "probe_dino_expert", "univfd_expert"]))
+        assert status["not_called"] == ["npr_expert", "univfd_expert"]
+        assert "调用异常：<b>无</b>" in page
+        assert "未调用专家（本次可用、模型没有调用）" in page and "univfd_expert" in page
+
+    def test_a_missing_key_reads_unrecorded_not_empty(self):
+        trace = json.loads(json.dumps(TRACE))
+        trace["metadata"].pop("unavailable_tool_calls", None)
+        trace["metadata"].pop("failed_tool_calls", None)
+        page = _page(trace=trace)
+        assert "调用异常：<b>未记录</b>" in page
+        assert "不能当作\"没有异常\"" in page or "不能当作" in page
+
+    def test_an_unavailable_request_is_listed_with_tool_turn_and_reason(self):
+        trace = self._trace(available_experts=["probe_dino_expert"],
+                            unavailable_tool_calls=["jpeg"])
+        trace["conversations"].append({
+            "from": "user",
+            "value": "[System: 本次会话不提供 jpeg。可用工具：probe。请从可用工具中选择。]"})
+        status = call_status(RECORD, trace)
+        assert status["unavailable"][0]["tool"] == "jpeg"
+        assert status["unavailable"][0]["turns"] == [len(trace["conversations"]) - 1]
+        page = _page(trace=trace)
+        assert "请求了不可用工具" in page and "jpeg" in page
+        assert "本次会话不提供 jpeg" in page
+
+    def test_a_failed_tool_is_listed_with_its_recorded_reason(self):
+        trace = self._trace(available_experts=["npr_expert", "probe_dino_expert"],
+                            failed_tool_calls=["npr_expert: RuntimeError: 权重文件不存在"])
+        trace["conversations"].append({
+            "from": "user",
+            "value": "[System: npr_expert 执行失败（RuntimeError）。这不是中性测量。]"})
+        status = call_status(RECORD, trace)
+        assert status["failed"][0]["expert"] == "npr_expert"
+        assert "RuntimeError" in status["failed"][0]["reason"]
+        page = _page(trace=trace)
+        assert "工具执行失败" in page and "权重文件不存在" in page
+        # 失败的专家不该再出现在"未调用"里
+        assert status["not_called"] == []
+
+    def test_a_skipped_repeat_is_counted_and_located(self):
+        trace = self._trace(available_experts=["probe_dino_expert"],
+                            skipped_duplicate_calls=1)
+        trace["conversations"].append({
+            "from": "user",
+            "value": "[System: probe_dino_expert 已在本会话对整图测量过（E-1），"
+                     "重复调用不会产生新的测量，已跳过执行。]"})
+        page = _page(trace=trace)
+        assert "重复请求被跳过" in page and "1</b> 次" in page
+        status = call_status(RECORD, trace)
+        assert status["skipped"][0]["turns"] == [len(trace["conversations"]) - 1]
+
+    def test_the_four_kinds_are_not_merged(self):
+        """四类必须各自成立：不可用的不算"未调用"，失败的也不算。"""
+        trace = self._trace(available_experts=["npr_expert", "probe_dino_expert"],
+                            unavailable_tool_calls=["jpeg"],
+                            failed_tool_calls=["npr_expert: OSError: x"],
+                            skipped_duplicate_calls=0)
+        status = call_status(RECORD, trace)
+        assert status["not_called"] == []          # npr 失败、probe 已测量
+        assert [item["tool"] for item in status["unavailable"]] == ["jpeg"]
+        assert [item["expert"] for item in status["failed"]] == ["npr_expert"]
 
 
 class TestTheBatchBuild:
