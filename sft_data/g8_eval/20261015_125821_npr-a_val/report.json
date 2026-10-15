@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-10-15T12:58:42",
+  "expert": "npr-a",
+  "source_name": "npr_expert",
+  "mock": false,
+  "split": "val",
+  "formats": [
+    "png",
+    "q70",
+    "q85",
+    "q95"
+  ],
+  "device": "cpu",
+  "sources": 8,
+  "images": 32,
+  "identity": {
+    "expert": "npr_expert",
+    "checkpoint_id": "npr-a",
+    "weights_file": "/root/autodl-tmp/third_party/npr/weights/NPR.pth",
+    "weights_bytes": 17393733,
+    "weights_sha256": "3939297e9399e0b992f87211610769d87d899de50d56da0204d6cbda2d483a53",
+    "load_as_recorded": "state_dict['model']",
+    "load_as_used": "state_dict['model']",
+    "load_fallback_used": false,
+    "repo": "/root/autodl-tmp/third_party/npr/repo",
+    "repo_commit": "781ced3f7ca2cdc69ec9dd4ef27e8d0b3c07752a",
+    "code_file": "networks/resnet.py",
+    "preprocess": "整图、不缩放（配方与 checkpoint 绑定，不得混用）",
+    "preprocess_detail": "no_resize=True, no_crop=True → ToTensor → ImageNet 归一化（mean [0.485,0.456,0.406], std [0.229,0.224,0.225]）；官方另有 GenImage 配方（translate-duplicate 平铺补尺寸 + CenterCrop(224)），本项目不用它；**奇数宽/高**按官方 README 的 AIGCDetectBenchmark 说明裁掉最后一行/列（模型内部 x - interpolate(x,0.5) 在奇数边长上差一个像素），每次调用记录 odd_size_cropped",
+    "measurement_scope": "global",
+    "licence": "**未明确**：仓库根无 LICENSE 文件（已核实 404）。仅本地研究；其他用途须向作者确认"
+  },
+  "semantics": {
+    "field": "raw_metric",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "direction": "higher_is_fake",
+    "is_calibrated_probability": false
+  },
+  "threshold_policy": {
+    "value": 0.5,
+    "chosen_on": "官方默认",
+    "searched_on_val": false
+  },
+  "metrics": {
+    "n": 32,
+    "direction": "higher_is_fake",
+    "threshold_on_raw": 0.5,
+    "errors": 0,
+    "auroc": 0.515625,
+    "accuracy@0.5": 0.8125,
+    "accuracy@threshold": 0.8125,
+    "per_format": {
+      "jpeg_q70": {
+        "n": 8,
+        "auroc": 0.25,
+        "mean_fake_score": 8.978055544604281e-25,
+        "mean_real_score": 2.3743563649639553e-12
+      },
+      "jpeg_q85": {
+        "n": 8,
+        "auroc": 0.25,
+        "mean_fake_score": 2.725321011466436e-20,
+        "mean_real_score": 1.0226393397241579e-10
+      },
+      "jpeg_q95": {
+        "n": 8,
+        "auroc": 0.5833333333333334,
+        "mean_fake_score": 9.663523453662448e-12,
+        "mean_real_score": 3.836382042981317e-10
+      },
+      "png": {
+        "n": 8,
+        "auroc": 1.0,
+        "mean_fake_score": 0.9999642968177795,
+        "mean_real_score": 6.574147989987044e-11
+      }
+    },
+    "mean_elapsed_ms": 470.87
+  },
+  "failures": []
+}

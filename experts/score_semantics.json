@@ -1,0 +1,255 @@
+{
+  "schema": 1,
+  "recorded_at": "2026-10-15",
+  "why": [
+    "阶段三（专家评测）与阶段四（证据检查）读同一份登记：评测按它解释每个原始分数，",
+    "证据检查按它判断模型引用得对不对。两处若各写一份，就会像 v1 那样漂移。",
+    "**sigmoid 分数不是本地校准概率**：本表把 raw_score 与“本项目是否把它映射成概率”分开，",
+    "raw_score.is_calibrated_probability 一律为 false，映射由校准层另行记录。"
+  ],
+  "direction_vocabulary": {
+    "higher_is_fake": "分数越高越像 AI 生成",
+    "higher_is_real": "分数越高越像真实拍摄（极性已核实的反向专家）",
+    "none": "无方向（不是判别分数）"
+  },
+  "experts": {
+    "probe_dino_expert": {
+      "variant": "probe",
+      "display_name": "PROBE-DINOv2（外部判别器）",
+      "role": "主检测器（g7 结论：C 组独立验证 AUROC 0.986）",
+      "weights": {
+        "file": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+        "bytes": 1217679947,
+        "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "source": "ModelScope shuinishaojiu/PROBE-AIGI-Detection",
+        "licence": "上游未声明（仓库无 LICENSE）；仅本地研究，不再分发"
+      },
+      "code": {
+        "repo": "本仓库 experts/probe_dino.py（复刻 Detector/evaluate_dino.py 的推理序）",
+        "commit": "见 VERSIONS.json 的 fingerprint.git_commit"
+      },
+      "preprocess": {
+        "name": "pad→336 滑窗均值",
+        "detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+        "measurement_scope": "global"
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "上游判别器的 sigmoid 输出；本项目只用其排序，概率映射由本地校准层另记"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "外部默认",
+        "note": "本项目不据此下结论，只作对照"
+      },
+      "status": {
+        "evaluated": "g7 A/B/C 组",
+        "mock_equivalent": "MockProbeExpert（同 source_name，固定/哈希分数）"
+      },
+      "limits": [
+        "权重与代码不可再分发；上游许可未确认",
+        "分数随分辨率与重编码漂移；已按格式分层评测（PNG/q70/q85/q95）"
+      ]
+    },
+    "noise_expert": {
+      "variant": "noise",
+      "display_name": "SRM 噪声残差一致性（仓库内实现）",
+      "role": "候选保留（提案 §1）；与 NPR/UnivFD 同标准评测，缺乏增益与互补性才退出",
+      "weights": {
+        "file": "无（确定性算法）",
+        "sha256": null,
+        "licence": "本仓库"
+      },
+      "code": {
+        "repo": "本仓库 experts/noise.py",
+        "commit": "见 VERSIONS.json"
+      },
+      "preprocess": {
+        "name": "整图 SRM 高通 + 局部方差不一致度",
+        "detail": "RGB → 灰度 → SRM 高通滤波 → 分块方差 → 不一致度标量 → 到 strength 的 sigmoid 归一化",
+        "measurement_scope": "global"
+      },
+      "raw_score": {
+        "field": "strength",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_real",
+        "is_calibrated_probability": false,
+        "note": "**两个字段方向相反**：strength 是 sigmoid 归一化后的带内位置（高=像相机传感器=偏 Real）；raw_metric 是 SRM 不一致度原始值（高=残差被破坏=偏 Fake，取值不在 [0,1]）。token 的 `strength` 与 `raw_metric` 因此不能互换，评测必须写明用的是哪一个。",
+        "also_recorded": [
+          {
+            "field": "raw_metric",
+            "meaning": "SRM 局部方差一致性被破坏的程度",
+            "range": "≥0（无上界）",
+            "direction": "higher_is_fake"
+          }
+        ]
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "G2 校准集（格式配平）",
+        "note": "仅作参考带中心"
+      },
+      "status": {
+        "evaluated": "g2/g7 旧口径",
+        "mock_equivalent": "无"
+      },
+      "limits": [
+        "分离度弱（G2-b 0.845 极性校正后）；q70 配平后区分度下降",
+        "数据集 Real 为 JPEG、Fake 为 PNG，本专家对格式差异敏感——评测必须分格式报告"
+      ]
+    },
+    "npr_expert": {
+      "variant": "npr",
+      "display_name": "NPR（CVPR 2024，Neighboring Pixel Relationships）",
+      "role": "候选补位（本轮参评）",
+      "weights": {
+        "checkpoints": [
+          {
+            "id": "npr-a",
+            "file": "/root/autodl-tmp/third_party/npr/weights/NPR.pth",
+            "bytes": 17393733,
+            "sha256": "3939297e9399e0b992f87211610769d87d899de50d56da0204d6cbda2d483a53",
+            "load_as": "state_dict['model']",
+            "note": "仓库主测试命令的默认产物；顶层含 model/optimizer/total_steps"
+          },
+          {
+            "id": "npr-b",
+            "file": "/root/autodl-tmp/third_party/npr/weights/model_epoch_last_3090.pth",
+            "bytes": 5842385,
+            "sha256": "b67a91555ce786a6d0463ff0cb2b0b874d1c3f971b0e3febd2ae5618a80f7e8a",
+            "load_as": "raw_state_dict",
+            "note": "README 标注为 ProGAN-4class checkpoint（AIGCDetectBenchmark 表格所用）"
+          }
+        ],
+        "selection": "在 val 上二选一（用户 2026-10-15 决定），选定后写入 selected 字段",
+        "selected": null,
+        "source": "GitHub chuangchuangtan/NPR-DeepfakeDetection（经 ghfast.top 代理）",
+        "licence": "**未明确**：仓库根无 LICENSE 文件（已核实 404）。仅本地研究；其他用途须向作者确认"
+      },
+      "code": {
+        "repo": "/root/autodl-tmp/third_party/npr/repo（克隆，固定 commit 见 commit 字段）",
+        "commit": "781ced3f7ca2cdc69ec9dd4ef27e8d0b3c07752a",
+        "file": "networks/resnet.py"
+      },
+      "model_structure": {
+        "class": "ResNet（两段式：conv1 3×3 stride2 + layer1 + layer2 + avgpool + fc1=Linear(512→1)）",
+        "params": "1.44M",
+        "forward": "NPR = x - interpolate(x, 0.5)；输入 = NPR * 2/3（残差在模型内部计算）"
+      },
+      "preprocess": {
+        "name": "整图、不缩放（配方与 checkpoint 绑定，不得混用）",
+        "detail": "no_resize=True, no_crop=True → ToTensor → ImageNet 归一化（mean [0.485,0.456,0.406], std [0.229,0.224,0.225]）；官方另有 GenImage 配方（translate-duplicate 平铺补尺寸 + CenterCrop(224)），本项目不用它；**奇数宽/高**按官方 README 的 AIGCDetectBenchmark 说明裁掉最后一行/列（模型内部 x - interpolate(x,0.5) 在奇数边长上差一个像素），每次调用记录 odd_size_cropped",
+        "measurement_scope": "global"
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "官方 validate.py 的 model(x).sigmoid()；官方阈值 0.5；不是本地校准概率"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方默认",
+        "note": "本项目若另选阈值，只能在 val 上选"
+      },
+      "status": {
+        "evaluated": "待本阶段",
+        "mock_equivalent": "无"
+      },
+      "limits": [
+        "两个 checkpoint 与配方不可混用（AIGCDetectBenchmark 配方 vs GenImage 配方）",
+        "同一仓库两种加载写法（validate.py 读 ['model']；test.py 直接 load_state_dict），必须按文件判定",
+        "许可未明确"
+      ]
+    },
+    "univfd_expert": {
+      "variant": "univfd",
+      "display_name": "UnivFD（CVPR 2023，CLIP ViT-L/14 特征 + 线性头）",
+      "role": "候选补位（本轮参评）",
+      "weights": {
+        "head": {
+          "file": "/root/autodl-tmp/third_party/univfd/weights/fc_weights.pth",
+          "bytes": 4083,
+          "sha256": "477100745713bcc957beb2b40859536859b6483fd6301b3b9293151b194c7847",
+          "structure": "nn.Linear(768, 1)（实测 768×4+4 字节）",
+          "load_as": "model.fc.load_state_dict(...)"
+        },
+        "backbone": {
+          "file": "/root/autodl-tmp/third_party/univfd/clip_cache/ViT-L-14.pt",
+          "url": "https://openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt",
+          "sha256_from_url": "b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836",
+          "note": "URL 路径段即官方声明的 sha256，下载器据此自校验"
+        },
+        "source": "GitHub WisconsinAIVision/UniversalFakeDetect + OpenAI CLIP",
+        "licence": "仓库 MIT（WAIV 2025）；主干与权重条款归 OpenAI，另行留档"
+      },
+      "code": {
+        "repo": "/root/autodl-tmp/third_party/univfd/repo（克隆，固定 commit 见 commit 字段）",
+        "commit": "030495aea3300a8b54c0ec37ec7fe1dd7e63c619",
+        "files": [
+          "models/clip_models.py（CLIPModel：backbone + fc）",
+          "validate.py（评测脚本）"
+        ]
+      },
+      "preprocess": {
+        "name": "CenterCrop(224)（**无 Resize**）",
+        "detail": "RGB → CenterCrop(224) → ToTensor → CLIP 归一化（mean [0.48145466,0.4578275,0.40821073], std [0.26862954,0.26130258,0.27577711]）；官方流程没有 resize，替换成 CLIP 通用 resize+crop 属改变配方，必须另记",
+        "measurement_scope": "center_crop",
+        "scope_note": "不是整图：会裁掉边缘。登记如此，避免与整图专家混谈；token 若把这套测量写成 global，就是 global_evidence_localised。"
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "CLIP 特征经线性头得 logit，官方再 sigmoid；标签 Real=0/Fake=1，故高值偏 Fake"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方默认（acc.txt）",
+        "note": "官方另提供 find_best_threshold；**不得在 test 分区搜阈值**"
+      },
+      "status": {
+        "evaluated": "待本阶段",
+        "mock_equivalent": "无"
+      },
+      "limits": [
+        "必须同时具备主干与分类头，只下 fc_weights.pth 不能推理",
+        "预处理是中心裁剪，测量范围与整图专家不同——证据里必须写明 scope"
+      ]
+    }
+  },
+  "mock_experts": {
+    "why": "Mock 只用于验证管线：它们不得进入任何性能结果（用户 2026-10-15 明确）。评测脚本据此把它们标 mock=true 并单独归档。",
+    "entries": {
+      "MockProbeExpert": {
+        "mimics": "probe_dino_expert",
+        "score": "图像内容的确定性哈希"
+      },
+      "MockExternalScoreExpert": {
+        "mimics": "任意外部判别器",
+        "score": "可指定固定值"
+      },
+      "NoiseStubExpert": {
+        "mimics": "noise_expert",
+        "score": "固定值（冒烟用，见 scripts/g8_smoke.py）"
+      }
+    }
+  }
+}

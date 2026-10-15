@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-10-15T12:56:30",
+  "expert": "mock-fixed",
+  "source_name": "probe_dino_expert",
+  "mock": true,
+  "split": "val",
+  "formats": [
+    "png"
+  ],
+  "device": "cpu",
+  "sources": 3,
+  "images": 3,
+  "identity": {
+    "expert": "probe_dino_expert",
+    "mock": true,
+    "kind": "fixed",
+    "weights_file": null,
+    "weights_sha256": null,
+    "preprocess": "无（Mock 不读像素）",
+    "measurement_scope": "global",
+    "licence": "不适用"
+  },
+  "semantics": {
+    "field": "raw_metric",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "direction": "higher_is_fake",
+    "is_calibrated_probability": false
+  },
+  "threshold_policy": {
+    "value": 0.5,
+    "chosen_on": "外部默认",
+    "searched_on_val": false
+  },
+  "metrics": {
+    "n": 3,
+    "direction": "higher_is_fake",
+    "threshold_on_raw": 0.5,
+    "errors": 0,
+    "auroc": 0.5,
+    "accuracy@0.5": 0.6666666666666666,
+    "accuracy@threshold": 0.6666666666666666,
+    "per_format": {
+      "png": {
+        "n": 3,
+        "auroc": 0.5,
+        "mean_fake_score": 0.5,
+        "mean_real_score": 0.5
+      }
+    },
+    "mean_elapsed_ms": 0.0
+  },
+  "failures": []
+}

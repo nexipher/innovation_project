@@ -156,6 +156,41 @@
 4. CPU 协议测试（`tests/test_g8_smoke.py`）：Mock 客户端跑通全流程并断言五项，纳入 `core`。
 5. **GPU 验收（授权已获）**：真模型跑同一序列，验证图像输入、具体视觉描述、一次工具调用、结果引用、自主结案，并**实测显存**。
 
+## 3c. 阶段 3：四专家独立评测（2026-10-15 起）
+
+用户给定的口径（本轮确认）：
+
+1. **重新处理全部源图，但保留数据划分**：约 9000 源图可由新模型与专家组重新处理，旧实验结果不混入；
+   **不重新随机划分**——`train`（适配调试、生成 SFT）/ `val`（**专家选择、预处理与阈值选择、提示词验证**）/
+   `test`（方案冻结后的最终验收，不进入 SFT 与开发决策）。**同一源图的 PNG/q70/q85/q95 变体必须同分区**；
+   已参与历史开发的源图（旧 A/B/C 组与 `holdout`）如实记录，不重新冠名。
+2. **参评：PROBE、noise、NPR、UnivFD**，Qwen 暂不参与融合。
+3. **每次测量必须记录**：权重与代码身份、输入预处理、原始 score 及其**尺度与方向**、执行状态/耗时/错误。
+   **Mock 只验证管线，不计入性能结果**。
+4. **推进顺序**：CPU 接口准备 → 单图冒烟 → 小批专家评测 → 定专家与证据接口 → 小批 Agent 人工验收 →
+   全量专家测分 → train 批量生成。
+
+**已核实的事实（本轮，全部取自官方源码/实测，不是转述）**：
+
+| 专家 | 事实 |
+|------|------|
+| **NPR** | 论文 *Rethinking the Up-Sampling Operations…*（CVPR 2024，arXiv 2312.10461）。分数 = `model(x).sigmoid()`，0–1，**高值偏 Fake**，官方阈值 0.5。预处理按配方开关：`no_resize`/`no_crop`、`Resize((loadSize,loadSize))` 或恒等、`CenterCrop(cropSize)`、**ImageNet 归一化**。模型 = 仓库 `networks/resnet.py` 的两段式 ResNet（只 layer1/layer2、`fc1=Linear(512→1)`、forward 内 `NPR = x - interpolate(x,0.5)`），参数 1.44M。**仓库根无 LICENSE（404）→ 许可未明确**。 |
+| **NPR 权重**（两者架构相同、保存格式不同，**逐文件判定加载方式**） | A `NPR.pth`：17,393,733 B，sha256 `3939297e9399e0b992f87211610769d87d899de50d56da0204d6cbda2d483a53`，顶层含 `model/optimizer/total_steps` → **必须 `state_dict['model']`**（validate.py 写法；写成裸 dict 缺 146 键）。B `model_epoch_last_3090.pth`：5,842,385 B，sha256 `b67a91555ce786a6d0463ff0cb2b0b874d1c3f971b0e3febd2ae5618a80f7e8a`，裸 state_dict → **必须直接 load_state_dict**（test.py 写法；无 `model` 键）。**决定：A、B 都在 val 上测，由 val 选一个**（用户 2026-10-15）。C（GenImage 训练版）在 Google Drive，本机不可达，除非用户提供文件。 |
+| **UnivFD** | 论文 *Towards Universal Fake Image Detectors…*（CVPR 2023，arXiv 2302.10174）。模型 = CLIP ViT-L/14 主干 + `fc_weights.pth` 线性头（实测 4083 B = 768×1）。预处理 **RGB → CenterCrop(224) → ToTensor → CLIP 归一化（无 Resize）**：mean `[0.48145466, 0.4578275, 0.40821073]`、std `[0.26862954, 0.26130258, 0.27577711]`。输出 = logit → `sigmoid` 0–1，**Real=0/Fake=1，高值偏 Fake**，默认 0.5 阈值，另有 `find_best_threshold`——**不得在最终测试集上搜阈值**。主干 URL 内嵌 sha256：`openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt`（933 MB，本机可达）。仓库许可 **MIT**（WAIV 2025）；主干归 OpenAI，条款另档。 |
+
+**落地位置（用户建议，已建）**：`/root/autodl-tmp/third_party/{npr/{repo,weights},univfd/{repo,weights,clip_cache}}`。
+
+**分数语义登记**（阶段三评测与阶段四证据检查**共用同一份**）：每个专家一条，含
+`source_name / 权重身份(sha256+repo commit+file) / 预处理(名称+参数) / 原始分数定义(字段、范围、方向) /
+阈值口径 / 许可状态 / 评测状态(Mock|已测) / 已知限制`。**sigmoid 分数不等于本地校准概率**，登记里必须分开写。
+
+**本阶段交付**：
+1. `scripts/g8_evaluate_experts.py`：统一离线入口（`--expert probe|noise|npr|univfd|mock-*`、`--split val|test`、
+   `--partition`、`--limit`），逐图记录原始分与耗时/错误，产出可比对的报告；`test` 分区**拒绝阈值搜索**
+   （阈值只能在 val 上选，冻结后才用于 test）。
+2. 分数语义登记表 + 载入器（含"按文件判定加载方式"的机制：试两种写法，**都不行就报错**，不静默换一种）。
+3. CPU 管线测试（Mock 专家与 Mock 适配器），GPU 小批评测在 val 上跑。
+
 ## 4. 视觉分析：生成前必须验收（提案 §8）
 
 - 首轮包含**具体客观描述**，疑似异常另列，无异常可直说。

@@ -119,3 +119,17 @@
 * **执行结果与验证状态**：CPU：`core` 358、`module` 938 通过；GPU：六项全过（报告 `sft_data/g8_smoke/20261015_121549/smoke_report.json`）。**未做**：多会话批量、思考模式（模板没有该开关）、prompt 大规模对比。
 * **置信度或遗留待办（TODO）**：①单例通过 ≠ 泛化；下一批要按 §3 步骤 5 做小批端到端（含人工查看原始图像与投递证据包）②v3 目前**仍计算参考后验与预计收益**（报告里能看到 `posterior`、`tool_utilities`）——阶段 4 的解耦尚未做③`inference_mode` 的 thinking 分支在真模板上会正确报错（无开关），该分支本身仍未被真实模板覆盖④噪声桩只是工具链验证，noise/NPR/UnivFD 的真实评测属阶段 3⑤用户将删除 2.5-VL 旧模型腾空间，未代删
 
+### 2026-10-15 - 阶段 3 开工：官方事实核实、分数语义登记、统一评测入口（NPR A/B 全量 val 对比在跑）
+
+* **当前操作动作**：按用户四条口径启动阶段三——①主动核实 NPR/UnivFD 的官方事实（不等用户给）②建分数语义登记表（阶段三与阶段四共用）③建 g8 统一离线评测入口 ④按"CPU 接口 → 单图 → 小批评测"推进，先跑 CPU 可做的部分。
+* **对应计划锚点**：`plan.md` §3c（本轮先写的计划）
+* **核心变更说明**：
+  1. **官方事实核实（全部取自官方源码/实测）**：NPR = `model(x).sigmoid()`、高值偏 Fake、官方阈值 0.5；预处理开关 `no_resize`/`no_crop`（整图配方）与 ImageNet 归一化；仓库根**无 LICENSE**。UnivFD = CLIP ViT-L/14 + 线性头（`fc_weights.pth` 实测 4083 B = 768×1）、预处理 `CenterCrop(224)→ToTensor→CLIP 归一化`（**无 Resize**）、Real=0/Fake=1、仓库 MIT；主干 URL 内嵌 sha256 `b8cca3fd…`，**下载后自校验通过**（932,768,134 B）。两个仓库已克隆并**固定 commit**（NPR `781ced3f…`、UnivFD `030495ae…`）。
+  2. **"不能照抄一个加载方式"用实测钉死**：`NPR.pth` 只能以 `state_dict['model']` 加载（裸 dict 缺 146 键），`model_epoch_last_3090.pth` 只能裸加载（无 `model` 键）。适配器按文件判定：先试用登记的方式，回退到另一种，**两种都不行就报错**；若回退的方式成功则明确提示"登记表需要更正"。
+  3. **分数语义登记表**（`experts/score_semantics.json` + `utils/score_semantics.py`）：每专家记 权重身份/代码 commit/预处理（含**测量范围**枚举）/原始分数（字段、范围、方向、是否本地校准概率）/阈值口径/许可/评测状态。**又抓到一个语义陷阱**：noise 的 `raw_metric`（SRM 不一致度，越大越偏 Fake、无上界）与 `strength`（归一化后高=偏 Real）**方向相反**，登记表原来写错了字段，已改正并加回归测试——两个字段被当同一个用，就等于把这个专家反过来读。
+  4. **统一评测入口** `scripts/g8_evaluate_experts.py`：一个入口测 PROBE/noise/NPR(A,B)/UnivFD，逐图记录原始分、耗时、状态与错误（错误如实入表，不丢不补零）；指标按登记表的方向统一（`higher_is_real` 用 1−score 算 AUROC，否则好专家会被读成坏专家）；**Mock 标记为不计入性能结果**；**test 分区拒绝阈值搜索**（阈值只能在 val 上选）。
+  5. **官方奇数尺寸规则**：NPR 的 `x - interpolate(x,0.5)` 在奇数宽高上差一个像素（实测 327 vs 326 → 12/32 张报错）。按官方 README 的 AIGCDetectBenchmark 说明裁掉最后一行/列，并**逐次记录 `odd_size_cropped`**——改了输入一个像素，就必须说出来。
+* **涉及/修改的文件清单**：`experts/score_semantics.json (Created)`、`utils/score_semantics.py (Created)`、`experts/npr.py (Created)`、`experts/univfd.py (Created)`、`scripts/g8_evaluate_experts.py (Created)`、`tests/test_score_semantics.py (Created — 17 项)`、`tests/test_g8_evaluate_experts.py (Created — 14 项)`、`plan.md (Modified — §3c)`、`.gitignore (Modified — 评测变体图像不入库)`、`sft_data/g8_eval/** (Created — 报告与逐图分数)`；外部：`/root/autodl-tmp/third_party/{npr,univfd}`（仓库 + 权重 + CLIP 主干）
+* **执行结果与验证状态**：`core` 全绿、`module` **970 通过**。首批实测（CPU，val 8 源 × 4 格式）：**NPR-A** 整体 AUROC 0.516、acc@0.5 0.8125，**PNG 格 AUROC 1.00**（mean Fake 0.99996 / Real 6.6e-11），JPEG q70/q85 格 0.25/0.25（几乎全判 Real）；**NPR-B** 同形（PNG 1.00、JPEG 0.125/0.375/0.458）。noise 小批：方向 higher_is_real，AUROC 0.75（n=8）。**注意：这些都是 n=8 的管线验证，不是结论**；A/B 的取舍要用 val 全量（284 源）。
+* **置信度或遗留待办（TODO）**：①**NPR A/B 全量 val 对比正在后台跑**（各约 10–15 分钟 CPU），结果出来按 val 选定 checkpoint 并写入登记表 ②UnivFD 与 PROBE 尚未评测（主干已就绪，CPU 也能跑 CLIP）③NPR 许可未明确——需要你去确认后才能谈研究之外的用法 ④本轮尚未做"生成 SFT 前的小批 Agent 人工验收"（属第 5 步）
+
