@@ -207,7 +207,7 @@ dataset/
 | 路径 | `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master` |
 | 配置 | `config.py` → `QWEN_MODEL_PATH` |
 | 显存 | FP16 ~16 GB（RTX 4090 可承载） |
-| 下一代（g8） | Qwen3-VL-8B，**checkpoint 与推理模式待用户确认**（`sft_data/GENERATIONS.json`） |
+| 下一代（g8） | **Qwen3-VL-8B-Instruct**，`Qwen/Qwen3-VL-8B-Instruct` @ `0c351dd0…`（固定 revision，apache-2.0，17.55 GB，HF 缓存）；推理模式待定（`sft_data/GENERATIONS.json`） |
 
 > ⚠️ 加载模型权重前必须获得用户 GPU 授权（见 `docs/development/agent.md` §3.2）。
 

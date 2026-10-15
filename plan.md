@@ -124,6 +124,7 @@
 | 模型 | `Qwen/Qwen3-VL-8B-Instruct`，**固定 revision `0c351dd01ed87e9c1b53cbc748cba10e6187ff3b`**（2025-10-15） |
 | 许可 | **apache-2.0**（模型卡明示；与 PROBE 的"许可未声明"不同） |
 | 体量 | 17.55 GB（4 个 safetensors 分片 + 处理器/模板文件，共 16 个文件） |
+| 推理模式 | **non-thinking**：模型自带的两份模板（`chat_template.json`、`tokenizer_config.json`）都**没有** `enable_thinking` 开关——Instruct 版没有思考模式，要 thinking 得换 Thinking 变体。客户端在加载时复核这一点，不靠猜 |
 | 依赖 | 本机 `transformers 5.14.0` **已含** `Qwen3VLForConditionalGeneration` / `Qwen3VLProcessor`；`torch 2.5.1+cu124`；无 `flash_attn`（用 sdpa/eager）；`huggingface_hub 1.23.0` |
 | 下载方式 | `HF_ENDPOINT=https://hf-mirror.com` + **`HF_HUB_DISABLE_XET=1`**（镜像不代理 xet 的 CAS：走 xet 时权重分片 401，只有小文件能下——第一次失败即此）；**只进 HF 缓存，不设 `--local-dir`**，避免缓存与本地目录各存一份 |
 | 落地文件系统 | `/`（overlay）：清理中断残留后 21.08 GB 可用，模型 17.55 GB，余约 3.5 GB；下载脚本带**看门狗**，可用空间低于 1.5 GB 即停止 |
@@ -203,7 +204,7 @@
 
 ## 8. 待确认项（阻塞阶段 2–3，需用户提供）
 
-1. **Qwen3-VL-8B 的具体版本与推理模式**（thinking / non-thinking）、官方模板、依赖、许可、显存预算。
+1. ~~Qwen3-VL-8B 的具体版本与推理模式~~ **已解决**：`Qwen/Qwen3-VL-8B-Instruct` @ `0c351dd0…`（apache-2.0），模板已核实无思考开关 ⇒ **non-thinking**；依赖与磁盘已核实（§3b）。仍待实测：显存占用。
 2. **NPR / UnivFD 的权重、许可、预处理与输出定义**。
 3. **noise 的评测口径与保留判据**（候选；退役与否由阶段 3 的增益与互补性结果决定）。
 4. **重复请求轮的处置口径**：整条拒收，还是逐轮排除/掩码。

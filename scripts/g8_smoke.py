@@ -243,7 +243,8 @@ def check_three_records_kept(trace: dict, result: dict) -> dict:
 # Run
 # ---------------------------------------------------------------------------
 
-def build_client(kind: str, system_prompt: str, inference_mode: str, greedy: bool):
+def build_client(kind: str, system_prompt: str, inference_mode: str, greedy: bool,
+                 local_files_only: bool = False):
     if kind == "mock":
         from mllm.mock_client import MockMLLMClient
 
@@ -254,20 +255,23 @@ def build_client(kind: str, system_prompt: str, inference_mode: str, greedy: boo
         client = Qwen3VLClient(system_prompt=system_prompt,
                                inference_mode=inference_mode,
                                do_sample=not greedy,
-                               temperature=0.0 if greedy else 0.1)
+                               temperature=0.0 if greedy else 0.1,
+                               local_files_only=local_files_only)
         return client, client
     raise SystemExit(f"未知客户端：{kind}")
 
 
 def run(image: str, client_kind: str, experts: List[str], inference_mode: str,
-        greedy: bool, out_dir: Optional[str] = None) -> dict:
+        greedy: bool, out_dir: Optional[str] = None,
+        local_files_only: bool = False) -> dict:
     toolbox = build_toolbox(experts, client_kind)
     tags = [ForensicStateMachine.EXPERT_SOURCE_MAP[name] for name in toolbox
             if name in ForensicStateMachine.EXPERT_SOURCE_MAP]
     from mllm.message_builder import build_forensic_prompt
 
     system_prompt = build_forensic_prompt(tags)
-    client, identity_client = build_client(client_kind, system_prompt, inference_mode, greedy)
+    client, identity_client = build_client(client_kind, system_prompt, inference_mode,
+                                           greedy, local_files_only)
 
     fsm = ForensicStateMachine(client, toolbox)
     started = time.perf_counter()
@@ -327,6 +331,8 @@ def main() -> None:
                         default="non-thinking")
     parser.add_argument("--greedy", action="store_true", help="贪心解码，便于复现")
     parser.add_argument("--out-dir", default=None)
+    parser.add_argument("--local-files-only", action="store_true",
+                        help="只用已下载的权重（revision 已固定；避免加载时再走网络）")
     args = parser.parse_args()
 
     if not os.path.exists(args.image):
@@ -338,7 +344,8 @@ def main() -> None:
             "（或用 --client mock 先做 CPU 协议验证）。")
 
     report = run(args.image, args.client, [e.strip() for e in args.experts.split(",") if e.strip()],
-                 args.inference_mode, args.greedy, args.out_dir)
+                 args.inference_mode, args.greedy, args.out_dir,
+                 local_files_only=args.local_files_only)
     for name, check in report["checks"].items():
         print(f"  {'✅' if check['ok'] else '❌'} {name}：{check['detail']}")
     print(f"\n通过：{report['passed']}｜耗时 {report['elapsed_s']}s"
