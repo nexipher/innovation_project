@@ -97,3 +97,23 @@ class TestTheCurrentLinksResolve:
 @pytest.mark.parametrize("name", sorted(ROOT_DOCS))
 def test_the_root_documents_still_exist(name):
     assert os.path.isfile(os.path.join(PROJECT_ROOT, name)), name
+
+
+class TestTheArchiveSnapshotIsNotOverwrittenByAccident:
+    """The snapshot in docs/archive/ is the pre-move state, and `--verify`
+    compares against it.  Regenerating it would retire that check silently."""
+
+    def test_the_generator_refuses_to_overwrite_it(self):
+        import hashlib
+        import subprocess
+        import sys
+
+        snapshot = os.path.join(PROJECT_ROOT, "docs/archive/archive_inventory.json")
+        before = hashlib.sha256(open(snapshot, "rb").read()).hexdigest()
+        result = subprocess.run(
+            [sys.executable, "scripts/archive_inventory.py"],
+            cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=120)
+        assert result.returncode != 0
+        assert "--refresh" in result.stdout + result.stderr
+        after = hashlib.sha256(open(snapshot, "rb").read()).hexdigest()
+        assert before == after, "生成器在被拒绝的情况下仍然改写了清单"

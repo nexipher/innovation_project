@@ -463,12 +463,24 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--verify", action="store_true",
                         help="用已记录的清单核对当前文件（归档之后跑）")
+    parser.add_argument("--refresh", action="store_true",
+                        help="覆盖已有清单：默认不覆盖，因为它记的是归档**之前**的状态")
     args = parser.parse_args()
 
     if args.verify:
         with open(JSON_PATH, encoding="utf-8") as handle:
             rows = json.load(handle)["assets"]
         raise SystemExit(verify(rows))
+
+    # The file that is already there is the pre-archive snapshot — the evidence
+    # `--verify` checks the move against.  Regenerating it would replace
+    # "where things were" with "where things are" and quietly retire the check,
+    # so overwriting has to be asked for.
+    if os.path.exists(JSON_PATH) and not args.refresh:
+        raise SystemExit(
+            f"{os.path.relpath(JSON_PATH, PROJECT_ROOT)} 已存在：它记录的是**归档之前**的状态，"
+            "是 --verify 的比对基准。重新生成会把它换成当前状态，等于悄悄取消这项核对。"
+            "确要重拍（例如下一次归档）请显式加 --refresh。")
 
     rows = collect()
     with open(JSON_PATH, "w", encoding="utf-8") as handle:

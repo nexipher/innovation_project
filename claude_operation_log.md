@@ -79,3 +79,13 @@
 * **涉及/修改的文件清单**：移动：`active_forensic_agent_tasks.md`→`docs/design/`、`Reasoning_Framework.md`→`docs/design/`、`CURRENT_PROGRAM_ARCHITECTURE.md`→`docs/design/`、`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`→`docs/design/`、`ARCHIVE_INVENTORY.md`→`docs/archive/`、`archive_inventory.json`→`docs/archive/`、`NEW_GENERATION_NAMING.md`→`docs/archive/`、`TESTING.md`→`docs/development/`、`agent.md`→`docs/development/`；修改：`plan.md (Modified — §1b 计划与结果、§2–§8 整合提案、指针路径)`、`README.md (Modified — 文档表/维护表/§0 布局说明/agent.md 路径/badge)`、`KNOWN_ISSUES.md (Modified — 四处文档路径)`、`scripts/archive_inventory.py`、`scripts/archive_v1.py`、`tests/test_config_fingerprint.py`、`tests/test_doc_layout.py (Created)`、`docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md (Modified — 状态横幅)`、`docs/design/Reasoning_Framework.md (Modified — 位置说明)`、`docs/archive/ARCHIVE_INVENTORY.md (Modified — 相对链接)`、`docs/development/agent.md (Modified — 位置说明)`、七个代码文件（`agent.md` 散文引用补前缀）
 * **执行结果与验证状态**：`git status` 九个 `R` 无内容增删；**链接检查 20 条相对链接、0 失效**（并入 `tests/test_doc_layout.py`）；`core` **348 通过**、`module` **927 通过**、`full` **1169 通过 / 3 跳过**；`python scripts/archive_v1.py --verify`（34 项 / 2141 文件 / 438 页登记改写）与 `python scripts/archive_inventory.py --verify`（移动过的 25 项一致 + 1 项文档归类 + 19 项未移动）在改动后**复跑通过**。**未运行 GPU，未删除任何文件。**
 * **置信度或遗留待办（TODO）**：①归档的 v1 文档（`archive/legacy_v1_20261015/**`）保持原样、其内部链接不再维护——`docs/**` 的链接测试只覆盖当前文档，这个边界写在测试文件的注释里②`agent.md` 仍写着"项目根目录维护四个核心控制文件"，已加一句位置说明而未改条文（规范内容不动，等用户决定是否重写）③`docs/design/Reasoning_Framework.md` 与 `active_forensic_agent_tasks.md` 里的 plan 小节号指向 v1 计划，已在 `Reasoning_Framework.md` 顶部注明去归档里找，任务书保持原样
+
+### 2026-10-15 - 补一道"不许悄悄取消核对"的闸：归档清单不再被默认覆盖
+
+* **当前操作动作**：文档归类后 `archive_inventory.py` 的产物进了 `docs/archive/`——那正是 `--verify` 的比对基准（归档**之前**的状态）。它的默认模式会直接重写该文件，等于把"东西原来在哪"换成"现在在哪"，核对就悄悄失效了。加显式 `--refresh` 才允许覆盖。
+* **对应计划锚点**：`plan.md` §1b 验收第③项（脚本改到新路径）的延伸
+* **核心变更说明**：`main()` 在写文件前检查目标是否存在，存在且未给 `--refresh` 就**拒绝并说明理由**（为什么这个文件不能随手重拍）；新增测试用子进程跑一次生成器，断言①退出码非零、②stderr 提到 `--refresh`、③**清单文件的摘要前后一致**（被拒绝时确实一个字节都没写）。
+* **涉及/修改的文件清单**：`scripts/archive_inventory.py`、`tests/test_doc_layout.py (Extended — 1 项)`、`README.md (badge)`
+* **执行结果与验证状态**：`core` **348 通过**、`module` **928 通过**、`full` **1170 通过 / 3 跳过**；`--verify` 复跑仍通过（25 项一致 + 1 项文档归类 + 19 项未移动）。**未重写快照。**
+* **置信度或遗留待办（TODO）**：①下一次真正的归档才需要 `--refresh`（届时新快照会覆盖旧的，属预期）②同类"默认就覆盖证据"的脚本若还有，判据是"产物是不是核对基准"
+
