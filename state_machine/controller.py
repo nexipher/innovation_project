@@ -927,7 +927,10 @@ class ForensicStateMachine:
             reference_fields=self._uses_reference,
         )
         self._logger.finalize_sft(
-            final_verdict, model_turn_count, halting_reason, counters=counters
+            final_verdict, model_turn_count, halting_reason, counters=counters,
+            # 模型侧的原始记录：每次调用的提示原文与统计、被格式校验拒掉的尝试、
+            # 以及初始 system prompt 原文。客户端不支持就写空——空即"未记录"。
+            model_log=self._model_log(),
         )
         sft_path = self._logger.save_sft()
 
@@ -1051,6 +1054,20 @@ class ForensicStateMachine:
             f"[System: 输出格式错误 — {message} "
             f"请严格按照 SOP 格式重新输出，包含 <call_*> 或 <verdict> 标签。]"
         )
+
+    def _model_log(self) -> dict:
+        """
+        模型侧的原始记录（阶段 4.6）。客户端没有这套接口时返回**空**结构。
+
+        容忍是刻意的：测试替身与第三方客户端不该被这段记录绑死；而"空"在页面上
+        就是"未记录"——不许拿别的来源补出来冒充原始日志（旧批次就是这样处理的）。
+        """
+        calls = getattr(self._mllm, "call_log", None)
+        prompt = getattr(self._mllm, "system_prompt_record", None)
+        return {
+            "model_calls": list(calls() or []) if callable(calls) else [],
+            "system_prompt": (prompt() or {}) if callable(prompt) else {},
+        }
 
     @staticmethod
     def _state_note(evidence_chain: List[dict], served, measured_sources: Dict[str, str]) -> str:

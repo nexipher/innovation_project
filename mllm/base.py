@@ -42,6 +42,17 @@ class BaseMLLMClient(ABC):
         """Reset internal state (turn counter, etc.) for a new session."""
         ...
 
+    def call_log(self) -> list:
+        """
+        本次会话每次模型调用的记录（阶段 4.6）。真实客户端覆盖它；没有可记的
+        （mock、旧实现）就返回空列表——**空不等于没记**：页面据此标"未记录"。
+        """
+        return []
+
+    def system_prompt_record(self) -> dict:
+        """初始 system prompt 的原文与哈希；拿不到就返回空 dict。"""
+        return {}
+
     @property
     @abstractmethod
     def name(self) -> str:

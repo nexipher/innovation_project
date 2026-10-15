@@ -36,6 +36,15 @@ def with_image_marker(history: List[Dict[str, str]]) -> List[Dict[str, str]]:
     return [{**first, "value": "<image>\n" + (first.get("value") or "")}] + list(history[1:])
 
 
+
+def _sha256(value: Optional[str]) -> Optional[str]:
+    """提示文本的哈希：与原文并存，用来在事后核对"这段文本没被改过"。"""
+    if not value:
+        return None
+    import hashlib
+
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+
 class QwenVLClient(BaseMLLMClient):
     """
     Real Qwen2.5-VL-7B-Instruct client.
@@ -51,6 +60,15 @@ class QwenVLClient(BaseMLLMClient):
         self._model = None
         self._loaded = False
         self._retry_count = 0  # per-session retry counter
+        # 每次模型调用的记录（阶段 4.6，用户第 7 条）：原文、格式校验结果、
+        # 注入的纠正、以及**那次调用真正发出去的完整提示文本**。曾经这些都不留，
+        # 于是 trace 里"一轮模型输出"可能其实是内部重试后的第三次结果，
+        # 而中间那两次与纠正文本无从核对。逐会话累积，`reset()` 清空。
+        self._call_log: List[dict] = []
+        self._call_index = 0
+        # 上一次 `_inference` 真正送进模型的文本与图像数（由子类填写）
+        self.last_prompt_text: Optional[str] = None
+        self.last_prompt_image_count = 0
         # G2-d: optional prompt variant (the no-tool baseline uses its own)
         self._system_prompt = system_prompt
         # G4-g: optional LoRA adapter, so the four-arm comparison can measure a
@@ -146,16 +164,34 @@ class QwenVLClient(BaseMLLMClient):
         """
         self._ensure_loaded()
         self._retry_count = 0
+        self._call_index += 1
+        turn = self._call_index
 
         # Build Qwen-format messages from our conversation history
         messages = self._build_messages(image_path, history)
 
         # Generate with retry loop for format correction
+        correction = None
         for attempt in range(self._max_retries + 1):
             raw_output = self._inference(messages)
 
             # Validate format
             valid, error_msg = Parser.validate_tag_structure(raw_output)
+            self._call_log.append({
+                "turn": turn,
+                "attempt": attempt,
+                "valid": bool(valid),
+                "format_error": None if valid else error_msg,
+                "raw_output": raw_output,
+                # **这次调用真正发出去的东西**：完整提示文本 + 图像数 + 统计。
+                "prompt_text": self.last_prompt_text,
+                "prompt_sha256": _sha256(self.last_prompt_text),
+                "images_attached": self.last_prompt_image_count,
+                "input_stats": dict(self.last_input_stats or {}),
+                "messages_len": len(messages),
+                # 上一次尝试被拒后注入的纠正（第一次尝试为 None）
+                "correction_from_previous_attempt": correction,
+            })
             if valid:
                 return raw_output
 
@@ -176,8 +212,30 @@ class QwenVLClient(BaseMLLMClient):
         # All retries exhausted — return last output anyway
         return raw_output
 
+    # ------------------------------------------------------------------
+    # 会话级记录（阶段 4.6）
+    # ------------------------------------------------------------------
+
+    def call_log(self) -> List[dict]:
+        """本次会话里每次模型调用的记录（逐次尝试，含被格式校验拒掉的）。"""
+        return [dict(entry) for entry in self._call_log]
+
+    def system_prompt_record(self) -> Optional[dict]:
+        """
+        初始 system prompt 的原文与哈希。
+
+        "模型看了什么提示词"是根事实：以前只留 digest，等于只能证明"提示词变过"，
+        不能证明"当时用的是哪一版"。原文照存（8 KB 量级）。
+        """
+        if not self._system_prompt:
+            return None
+        return {"text": self._system_prompt, "sha256": _sha256(self._system_prompt),
+                "chars": len(self._system_prompt)}
+
     def reset(self) -> None:
         self._retry_count = 0
+        self._call_log = []
+        self._call_index = 0
 
     @property
     def name(self) -> str:
@@ -211,9 +269,12 @@ class QwenVLClient(BaseMLLMClient):
         text = self._processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True,
         )
+        # 阶段 4.6：这次调用到底发了什么——原文由 generate() 记进调用日志。
+        self.last_prompt_text = text
 
         # Collect images from messages for processor
         images = self._collect_images(messages)
+        self.last_prompt_image_count = len(images)
 
         inputs = self._processor(
             text=[text],

@@ -29,6 +29,7 @@ class SessionLogger:
     """
 
     def __init__(self, sft_dir: Optional[str] = None):
+        self._model_log: dict = {}
         """
         Args:
             sft_dir: Directory for the serialised trace.  Defaults to
@@ -129,6 +130,7 @@ class SessionLogger:
         total_steps: int,
         halting_reason: str,
         counters: Optional[dict] = None,
+        model_log: Optional[dict] = None,
     ) -> None:
         """
         Mark the session as complete with the final verdict.
@@ -146,6 +148,7 @@ class SessionLogger:
         self._total_steps = total_steps
         self._halting_reason = halting_reason
         self._counters = counters or {}
+        self._model_log = model_log or {}
 
     def save_sft(self) -> str:
         """
@@ -186,6 +189,9 @@ class SessionLogger:
                 "region_semantics": REGION_SEMANTICS_DIAGNOSTIC,
                 # Observable counters (G1 §4.8)
                 **self._counters,
+                # 阶段 4.6（用户第 7 条）：模型侧的原始记录。旧批次没有这一段，
+                # 页面据此标"未记录"，**不事后重建冒充原始日志**。
+                **self._model_log,
             },
         }
 

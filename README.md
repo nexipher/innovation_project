@@ -298,7 +298,26 @@ FORENSIC_ALLOW_GPU=1 PROBE_WEIGHTS=<probe.pth> \
 结果被后续轮准确引用、结案可解析且收尾轮仍有图像、原始回复/采纳回复/外部控制原因分别留存、
 首轮有具体的视觉观察与另列疑似异常。GPU 项需 `FORENSIC_ALLOW_GPU=1`，否则在加载权重前退出。
 
-### 3.7c 打印模型实际看到的输入（小批前必查）
+### 3.7c 验收审核工作台（b1 等批次的行为验收）
+
+```bash
+python scripts/g8_review_workstation.py --generation g8 --batch b1   # 出页面
+# 在浏览器里逐条做决定（草稿存 localStorage，刷新不丢），点「导出决定」得到 JSON：
+python scripts/g8_review_import.py review_g8_b1.json --dry-run       # 先看会写什么
+python scripts/g8_review_import.py review_g8_b1.json                 # 写回验收台账
+```
+
+页面：`sft_data/g8/review/<批次>/index.html`（一览 + 进度 + 筛选）与每条会话一页：
+原图与实际输入变体、模型与专家版本、**trace 里保存的投递包原文**、后台证据折叠区、
+**已记录的会话原文**（逐轮标注模型输出／工具返回／控制器提示，附原始文本与整份 trace 下载）、
+引用检查的**具体发现**、以及"日志完整性"表（未记录就写未记录）。
+
+三条规矩：**通过 = 本次审核通过**（不改"可训练"标记，也不跑训练准入）；
+决定绑 `(代次, 批次, 内容指纹)`，页面内容一变旧决定标**过期**、不继承；
+**浏览器保存 ≠ 写回仓库**——只有 `g8_review_import.py` 会写
+`sft_data/<gen>/review/<batch>/dispositions.jsonl`（追加式，跨代次/跨批次导入一律拒收）。
+
+### 3.7d 打印模型实际看到的输入（小批前必查）
 
 ```bash
 python scripts/g8_dump_model_inputs.py     # 产物：sft_data/g8_model_inputs/<时间戳>/model_inputs.md

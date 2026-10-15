@@ -230,8 +230,11 @@ class Qwen3VLClient(QwenVLClient):
             template_kwargs["enable_thinking"] = (self._inference_mode == "thinking")
         text = self._processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True, **template_kwargs)
+        # 阶段 4.6：这次调用到底发了什么（原文 + 图像数进调用日志）。
+        self.last_prompt_text = text
 
         images = self._collect_images(messages)
+        self.last_prompt_image_count = len(images)
         inputs = self._processor(text=[text],
                                  images=images if images else None,
                                  return_tensors="pt").to("cuda")

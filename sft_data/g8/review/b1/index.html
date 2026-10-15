@@ -1,20 +1,246 @@
-<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>批次 b1 审阅</title><style>
-:root { color-scheme: light dark; }
-body { font: 15px/1.55 -apple-system, "Segoe UI", "Noto Sans CJK SC", sans-serif;
-       margin: 0 auto; max-width: 1180px; padding: 24px; }
-h1 { font-size: 22px; } h2 { font-size: 17px; margin-top: 28px; }
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>b1 验收审核</title><style>
+:root { color-scheme: light dark; --line:#8884; --bg:#8881; }
+* { box-sizing: border-box; }
+body { font: 15px/1.6 -apple-system, "Segoe UI", "Noto Sans CJK SC", sans-serif;
+       margin: 0; padding: 20px 26px 80px; max-width: 1280px; }
+a { color: #2b7; }
+h1 { font-size: 21px; margin: 0 0 6px; } h2 { font-size: 16px; margin: 26px 0 8px; }
+h3 { font-size: 14px; margin: 16px 0 6px; opacity: .85; }
 table { border-collapse: collapse; width: 100%; }
-th, td { border-bottom: 1px solid #8884; padding: 6px 8px; text-align: left;
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left;
          vertical-align: top; font-size: 14px; }
-th { background: #8881; }
-img { max-width: 100%; border: 1px solid #8884; border-radius: 6px; }
-.turn { border-left: 3px solid #8886; margin: 10px 0; padding: 6px 12px; }
-.turn.user { border-color: #2b7; } .turn.gpt { border-color: #37b; }
-.role { font-weight: 600; font-size: 13px; opacity: .8; }
-pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0;
-      background: #8881; padding: 10px; border-radius: 6px; font-size: 13px; }
-.pill { display: inline-block; padding: 1px 8px; border-radius: 10px;
-        background: #8883; font-size: 13px; margin-right: 6px; }
+th { background: var(--bg); position: sticky; top: 0; }
+img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.turn { border-left: 3px solid var(--line); margin: 10px 0; padding: 4px 12px; }
+.turn.model { border-color: #37b; } .turn.tool { border-color: #2b7; }
+.turn.control { border-color: #c93; }
+.role { font-weight: 600; font-size: 13px; }
+.role .kind { font-weight: 400; opacity: .75; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0; background: var(--bg);
+      padding: 10px; border-radius: 6px; font-size: 13px; max-height: 340px; overflow: auto; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; background: #8883;
+        font-size: 12.5px; margin: 0 6px 4px 0; }
 .ok { background: #2b73; } .bad { background: #b223; } .warn { background: #b903; }
-.muted { opacity: .7; font-size: 13px; }
-</style></head><body><h1>批次 b1（代次 g8）· 最小审阅视图</h1><p class="muted">生成于 2026-10-15T21:40:37｜会话 32 条｜模式 gpu｜策略 g8_default / v3</p><p class="muted">模型 Qwen/Qwen3-VL-8B-Instruct@0c351dd0｜提示词 af7003e17e0d6a42｜解码 {&#x27;greedy&#x27;: True, &#x27;inference_mode&#x27;: &#x27;non-thinking&#x27;}<br>专家 npr_expert(cuda), probe_dino_expert(cuda), univfd_expert(cuda)</p><table><tr><th>变体</th><th>格式</th><th>真值</th><th>判定</th><th>结案来源</th><th>停止原因</th><th>工具调用</th><th>耗时</th></tr><tr><td><a href="BigGAN_188_biggan_00127_jpeg_q70__g8_default.html">BigGAN_188_biggan_00127_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>27.4s</td></tr><tr><td><a href="BigGAN_188_biggan_00127_jpeg_q85__g8_default.html">BigGAN_188_biggan_00127_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.8s</td></tr><tr><td><a href="BigGAN_188_biggan_00127_jpeg_q95__g8_default.html">BigGAN_188_biggan_00127_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>30.9s</td></tr><tr><td><a href="BigGAN_188_biggan_00127_png__g8_default.html">BigGAN_188_biggan_00127_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>27.3s</td></tr><tr><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>28.6s</td></tr><tr><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>29.3s</td></tr><tr><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.2s</td></tr><tr><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_png__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.3s</td></tr><tr><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.3s</td></tr><tr><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.2s</td></tr><tr><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>27.5s</td></tr><tr><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>26.9s</td></tr><tr><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>26.2s</td></tr><tr><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>27.7s</td></tr><tr><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.7s</td></tr><tr><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>26.7s</td></tr><tr><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.7s</td></tr><tr><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>26.2s</td></tr><tr><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>24.8s</td></tr><tr><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>25.7s</td></tr><tr><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>24.4s</td></tr><tr><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>24.6s</td></tr><tr><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>23.9s</td></tr><tr><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>24.8s</td></tr><tr><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>26.1s</td></tr><tr><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>30.0s</td></tr><tr><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>27.9s</td></tr><tr><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_png__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>27.9s</td></tr><tr><td><a href="Wukong_965_wukong_image128_jpeg_q70__g8_default.html">Wukong_965_wukong_image128_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>31.2s</td></tr><tr><td><a href="Wukong_965_wukong_image128_jpeg_q85__g8_default.html">Wukong_965_wukong_image128_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>29.9s</td></tr><tr><td><a href="Wukong_965_wukong_image128_jpeg_q95__g8_default.html">Wukong_965_wukong_image128_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>32.4s</td></tr><tr><td><a href="Wukong_965_wukong_image128_png__g8_default.html">Wukong_965_wukong_image128_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>model_concluded</td><td>1</td><td>43.2s</td></tr></table></body></html>
+.muted { opacity: .72; font-size: 13px; }
+.bar { height: 10px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: #2b7; }
+.decide { position: sticky; bottom: 0; background: canvas; border-top: 1px solid var(--line);
+          padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font: inherit; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
+         background: var(--bg); cursor: pointer; }
+button.primary { background: #2b7; color: #fff; border-color: #2b7; }
+button.danger { background: #b22; color: #fff; border-color: #b22; }
+button.warn { background: #c93; color: #fff; border-color: #c93; }
+input[type=text], textarea, select { font: inherit; background: transparent; color: inherit;
+        border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+textarea { width: 100%; min-height: 54px; }
+.stale { background: #b903; }
+details > summary { cursor: pointer; font-size: 13.5px; opacity: .85; }
+.banner { border: 1px solid var(--line); border-left: 4px solid #c93; padding: 10px 12px;
+          border-radius: 6px; background: var(--bg); }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+tr.hidden { display: none; }
+</style></head><body><h1>批次 b1（代次 g8）· 验收审核工作台</h1><p class="muted">生成视图：2026-10-15T22:13:40｜会话 32 条｜模型 Qwen/Qwen3-VL-8B-Instruct@0c351dd0｜策略 g8_default（v3）</p><div class="banner">本页是<b>行为验收</b>：决定与训练无关（不改"可训练"标记，也不跑训练准入）。决定先存浏览器草稿，<b>导出后由导入命令写回仓库</b>才算数。</div><h2>进度</h2><div class="bar" id="progress"><span style="width:0%"></span></div><p id="progress-text" class="muted"></p><h2>筛选</h2><div class="filters"><label class="muted">决定 <select id="f-decision"><option value="">全部</option><option value=pass>pass</option><option value=revise>revise</option><option value=reject>reject</option><option value="undecided">未决定</option><option value="stale">已过期</option></select></label><label class="muted">格式 <select id="f-treatment"><option value="">全部</option><option value="jpeg_q70">jpeg_q70</option><option value="jpeg_q85">jpeg_q85</option><option value="jpeg_q95">jpeg_q95</option><option value="png">png</option></select></label><label class="muted">结果 <select id="f-outcome"><option value="">全部</option><option value="ok">判定=真值</option><option value="abstain">弃权</option><option value="wrong">判错</option></select></label><label class="muted">审核人 <input type="text" id="reviewer" placeholder="你的名字"></label><button id="btn-export">导出决定</button><label class="muted">导入：<input type="file" id="import-file" accept="application/json"></label><span id="flash" class="muted" hidden></span></div><p class="banner">本批缺失的记录项（各会话页也已逐项标注）：初始 system prompt 原文；每次模型调用的提示原文与统计</p><h2>会话一览</h2><table><tr><th>变体</th><th>格式</th><th>真值</th><th>判定</th><th>停止原因</th><th>工具</th><th>审核</th></tr><tr data-id="g8_default__BigGAN_188_biggan_00127_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="BigGAN_188_biggan_00127_jpeg_q70__g8_default.html">BigGAN_188_biggan_00127_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__BigGAN_188_biggan_00127_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="BigGAN_188_biggan_00127_jpeg_q85__g8_default.html">BigGAN_188_biggan_00127_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__BigGAN_188_biggan_00127_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="BigGAN_188_biggan_00127_jpeg_q95__g8_default.html">BigGAN_188_biggan_00127_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__BigGAN_188_biggan_00127_png" data-treatment="png" data-outcome="ok"><td><a href="BigGAN_188_biggan_00127_png__g8_default.html">BigGAN_188_biggan_00127_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_png" data-treatment="png" data-outcome="ok"><td><a href="Glide_GLIDE_1000_200_00_049_glide_00020_png__g8_default.html">Glide_GLIDE_1000_200_00_049_glide_00020_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png" data-treatment="png" data-outcome="ok"><td><a href="Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png__g8_default.html">Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png" data-treatment="png" data-outcome="ok"><td><a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png__g8_default.html">Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png" data-treatment="png" data-outcome="ok"><td><a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png__g8_default.html">Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70</a></td><td>jpeg_q70</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85</a></td><td>jpeg_q85</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95</a></td><td>jpeg_q95</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png" data-treatment="png" data-outcome="ok"><td><a href="Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png__g8_default.html">Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png</a></td><td>png</td><td>Real</td><td><span class="pill ok">Real</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_png" data-treatment="png" data-outcome="ok"><td><a href="VQDM_VQDM_1000_200_09_905_vqdm_00020_png__g8_default.html">VQDM_VQDM_1000_200_09_905_vqdm_00020_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Wukong_965_wukong_image128_jpeg_q70" data-treatment="jpeg_q70" data-outcome="ok"><td><a href="Wukong_965_wukong_image128_jpeg_q70__g8_default.html">Wukong_965_wukong_image128_jpeg_q70</a></td><td>jpeg_q70</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Wukong_965_wukong_image128_jpeg_q85" data-treatment="jpeg_q85" data-outcome="ok"><td><a href="Wukong_965_wukong_image128_jpeg_q85__g8_default.html">Wukong_965_wukong_image128_jpeg_q85</a></td><td>jpeg_q85</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Wukong_965_wukong_image128_jpeg_q95" data-treatment="jpeg_q95" data-outcome="ok"><td><a href="Wukong_965_wukong_image128_jpeg_q95__g8_default.html">Wukong_965_wukong_image128_jpeg_q95</a></td><td>jpeg_q95</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr><tr data-id="g8_default__Wukong_965_wukong_image128_png" data-treatment="png" data-outcome="ok"><td><a href="Wukong_965_wukong_image128_png__g8_default.html">Wukong_965_wukong_image128_png</a></td><td>png</td><td>Fake</td><td><span class="pill ok">Fake</span></td><td>model_concluded</td><td>1</td><td data-state></td></tr></table><script>
+const META = {"schema": "g8_review_decisions/1", "generation": "g8", "batch": "b1", "samples": {"g8_default__BigGAN_188_biggan_00127_jpeg_q70": {"fingerprint": "18492d9459c94586", "page": "BigGAN_188_biggan_00127_jpeg_q70__g8_default.html"}, "g8_default__BigGAN_188_biggan_00127_jpeg_q85": {"fingerprint": "cb00c29415a9b2a4", "page": "BigGAN_188_biggan_00127_jpeg_q85__g8_default.html"}, "g8_default__BigGAN_188_biggan_00127_jpeg_q95": {"fingerprint": "c85c24d480e3ef25", "page": "BigGAN_188_biggan_00127_jpeg_q95__g8_default.html"}, "g8_default__BigGAN_188_biggan_00127_png": {"fingerprint": "5c429279d2bd92d9", "page": "BigGAN_188_biggan_00127_png__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70": {"fingerprint": "afd77d80a1f28261", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85": {"fingerprint": "3a98ccb6188ee7f5", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95": {"fingerprint": "b7110c334b9e1cfc", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_png": {"fingerprint": "f3b0b396695c15a3", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_png__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70": {"fingerprint": "e08478fe94598f3e", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85": {"fingerprint": "8b6e406537b887d2", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95": {"fingerprint": "708a0514bbf5c1d7", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png": {"fingerprint": "85cf97e988842903", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70": {"fingerprint": "a60f7dae12cf7793", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85": {"fingerprint": "967b45300bf77b66", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95": {"fingerprint": "99b22e0a976fbe23", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png": {"fingerprint": "2ee65c6e737609ff", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70": {"fingerprint": "69a24a602231283a", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85": {"fingerprint": "707b18129f50ef98", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95": {"fingerprint": "36b5eee472dc1e05", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png": {"fingerprint": "e0f5fdafa0bfd4fd", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70": {"fingerprint": "dfd324af90e99099", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85": {"fingerprint": "77445b431fdc3631", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95": {"fingerprint": "4b88ecbdb786b253", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png": {"fingerprint": "44e157a8155b4178", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70": {"fingerprint": "9a394480fc0fcbaa", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85": {"fingerprint": "344a3c7bbe615cec", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95": {"fingerprint": "8d8f844d46dc8468", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_png": {"fingerprint": "25c2889fd340bc9a", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_png__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_jpeg_q70": {"fingerprint": "0247c2e661930443", "page": "Wukong_965_wukong_image128_jpeg_q70__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_jpeg_q85": {"fingerprint": "1b703c283b603af6", "page": "Wukong_965_wukong_image128_jpeg_q85__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_jpeg_q95": {"fingerprint": "5a65fc8d759e7e5c", "page": "Wukong_965_wukong_image128_jpeg_q95__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_png": {"fingerprint": "146d018221fe29ce", "page": "Wukong_965_wukong_image128_png__g8_default.html"}}, "repo_decisions": {}};
+const KEY = "g8review:" + META.generation + ":" + META.batch;
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; }
+}
+function saveDraft(draft) {
+  localStorage.setItem(KEY, JSON.stringify(draft));
+  flash("已存到浏览器（草稿）。**这还没有写回仓库**——请用「导出」把文件交给导入命令。");
+}
+function flash(message) {
+  const box = $("#flash");
+  if (!box) return;
+  box.textContent = message; box.hidden = false;
+  clearTimeout(flash._t); flash._t = setTimeout(() => { box.hidden = true; }, 6000);
+}
+
+/** 仓库台账 + 浏览器草稿 → 每条现在的状态与是否过期。 */
+function stateOf(id) {
+  const sample = META.samples[id] || {};
+  const repo = META.repo_decisions[id] || null;
+  const draft = loadDraft()[id] || null;
+  const pick = draft || repo;
+  if (!pick) return { decision: null, stale: false, draft: false, repo: repo, record: null };
+  const stale = pick.fingerprint !== sample.fingerprint;
+  return { decision: pick.decision, stale: stale, draft: !!draft, repo: repo, record: pick };
+}
+
+function renderProgress() {
+  const ids = Object.keys(META.samples);
+  let decided = 0, stale = 0, draftOnly = 0;
+  const by = { pass: 0, revise: 0, reject: 0 };
+  for (const id of ids) {
+    const state = stateOf(id);
+    if (state.record && !state.stale) { decided++; if (state.decision in by) by[state.decision]++; }
+    if (state.record && state.stale) stale++;
+    if (state.record && state.draft) draftOnly++;
+  }
+  const pct = ids.length ? Math.round(100 * decided / ids.length) : 0;
+  const bar = $("#progress"); if (bar) bar.innerHTML = `<span style="width:${pct}%"></span>`;
+  const text = $("#progress-text");
+  if (text) text.textContent =
+    `已决定 ${decided}/${ids.length}（${pct}%）｜通过 ${by.pass}｜待修 ${by.revise}｜拒绝 ${by.reject}` +
+    `｜已过期 ${stale}｜浏览器草稿未导出 ${draftOnly}`;
+}
+
+function persist(id, decision, category, note) {
+  const sample = META.samples[id];
+  const reviewer = ($("#reviewer") && $("#reviewer").value || "").trim();
+  if (!reviewer) { flash("请先填审核人。"); return false; }
+  if ((decision === "revise" || decision === "reject") && !note.trim()) {
+    flash("待修/拒绝必须填写原因。"); return false;
+  }
+  const draft = loadDraft();
+  draft[id] = { fingerprint: sample.fingerprint, decision: decision, reviewer: reviewer,
+                category: category || null, note: note,
+                decided_at: new Date().toISOString().slice(0, 19) };
+  saveDraft(draft);
+  return true;
+}
+
+function applyFilters() {
+  const wantDecision = ($("#f-decision") || {}).value || "";
+  const wantTreatment = ($("#f-treatment") || {}).value || "";
+  const wantOutcome = ($("#f-outcome") || {}).value || "";
+  for (const row of $$("tr[data-id]")) {
+    const state = stateOf(row.dataset.id);
+    const key = !state.record ? "undecided" : (state.stale ? "stale" : state.decision);
+    let show = true;
+    if (wantDecision && key !== wantDecision) show = false;
+    if (wantTreatment && row.dataset.treatment !== wantTreatment) show = false;
+    if (wantOutcome && row.dataset.outcome !== wantOutcome) show = false;
+    row.classList.toggle("hidden", !show);
+  }
+}
+
+function buildExport() {
+  const reviewer = (($("#reviewer") || {}).value || "").trim();
+  const draft = loadDraft();
+  const decisions = {}; const ids = Object.keys(draft);
+  ids.forEach(id => {
+    const entry = draft[id];
+    const fp = META.samples[id] && META.samples[id].fingerprint;
+    if (fp && entry.fingerprint === fp) decisions[id] = entry;
+    else decisions[id] = Object.assign({}, entry, { stale: true, stale_reason: "内容已变" });
+  });
+  return { schema: META.schema, generation: META.generation, batch: META.batch,
+           reviewer: reviewer, exported_at: new Date().toISOString().slice(0, 19),
+           scope: "acceptance_only", decisions: decisions };
+}
+
+function doExport() {
+  const payload = buildExport();
+  const count = Object.keys(payload.decisions).length;
+  if (!count) { flash("还没有任何决定可导出。"); return; }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `review_${META.generation}_${META.batch}.json`;
+  link.click();
+  flash(`已导出 ${count} 条。把文件交给：python scripts/g8_review_import.py <文件> --reviewer ${payload.reviewer || "…"}`);
+}
+
+function doImport(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let payload;
+    try { payload = JSON.parse(reader.result); }
+    catch (e) { flash("导入失败：不是合法 JSON。"); return; }
+    if (payload.schema !== META.schema) { flash("导入被拒：schema 不匹配。"); return; }
+    if (payload.generation !== META.generation || payload.batch !== META.batch) {
+      flash(`导入被拒：文件属于 ${payload.generation}/${payload.batch}，本页是 ` +
+            `${META.generation}/${META.batch}（跨代次/跨批次一律拒绝）。`);
+      return;
+    }
+    const draft = loadDraft(); let taken = 0, stale = 0, refused = 0;
+    for (const [id, entry] of Object.entries(payload.decisions || {})) {
+      const sample = META.samples[id];
+      if (!sample) { refused++; continue; }
+      if ((entry.decision === "revise" || entry.decision === "reject") && !(entry.note || "").trim()) {
+        refused++; continue;
+      }
+      if (entry.fingerprint !== sample.fingerprint) stale++;
+      draft[id] = entry; taken++;
+    }
+    saveDraft(draft);
+    flash(`导入 ${taken} 条（其中 ${stale} 条与当前内容不符，已标过期）；拒绝 ${refused} 条。`);
+    renderProgress(); applyFilters();
+    $$("tr[data-id]").forEach(row => paintRow(row));
+  };
+  reader.readAsText(file);
+}
+
+/** 一条样本页上的决定区。 */
+function initDecide() {
+  const box = $("#decide"); if (!box) return;
+  const id = box.dataset.id;
+  const sample = META.samples[id];
+  const state = stateOf(id);
+  const set = (decision) => {
+    const category = ($("#category") || {}).value || "";
+    const note = ($("#note") || {}).value || "";
+    if (!persist(id, decision, category, note)) return;
+    paint();
+  };
+  const paint = () => {
+    const now = stateOf(id);
+    const badge = $("#decide-state");
+    if (badge) {
+      if (!now.record) badge.innerHTML = '<span class="pill">未决定</span>';
+      else {
+        const label = { pass: "通过（本次审核）", revise: "待修", reject: "拒绝" }[now.decision] || now.decision;
+        badge.innerHTML = `<span class="pill ${now.decision === "pass" ? "ok" : (now.decision === "reject" ? "bad" : "warn")}">${label}</span>` +
+          `<span class="pill">审核人 ${now.record.reviewer || ""}</span>` +
+          (now.category ? `<span class="pill">分类 ${now.category}</span>` : "") +
+          (now.stale ? '<span class="pill stale">已过期：内容已变，需重审</span>' : "") +
+          (now.draft ? '<span class="pill warn">浏览器草稿（未写回仓库）</span>' : '<span class="pill">仓库台账</span>');
+      }
+    }
+    if (now.record) {
+      if ($("#note")) $("#note").value = now.record.note || "";
+      if ($("#category")) $("#category").value = now.record.category || "";
+    }
+  };
+  $("#btn-pass") && ($("#btn-pass").onclick = () => set("pass"));
+  $("#btn-revise") && ($("#btn-revise").onclick = () => set("revise"));
+  $("#btn-reject") && ($("#btn-reject").onclick = () => set("reject"));
+  paint();
+}
+
+function paintRow(row) {
+  const cell = row.querySelector("[data-state]");
+  if (!cell) return;
+  const state = stateOf(row.dataset.id);
+  if (!state.record) { cell.innerHTML = '<span class="pill">未决定</span>'; return; }
+  const label = { pass: "通过", revise: "待修", reject: "拒绝" }[state.decision] || state.decision;
+  const cls = state.decision === "pass" ? "ok" : (state.decision === "reject" ? "bad" : "warn");
+  cell.innerHTML = `<span class="pill ${cls}">${label}</span>` +
+    (state.stale ? '<span class="pill stale">过期</span>' : "") +
+    (state.draft ? '<span class="pill warn">草稿</span>' : "");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const reviewer = localStorage.getItem(KEY + ":reviewer");
+  if (reviewer && $("#reviewer")) $("#reviewer").value = reviewer;
+  if ($("#reviewer")) $("#reviewer").addEventListener("change", () =>
+    localStorage.setItem(KEY + ":reviewer", $("#reviewer").value));
+  renderProgress();
+  $$("tr[data-id]").forEach(paintRow);
+  ["#f-decision", "#f-treatment", "#f-outcome"].forEach(sel => {
+    const node = $(sel); if (node) node.addEventListener("change", applyFilters);
+  });
+  $("#btn-export") && ($("#btn-export").onclick = doExport);
+  $("#import-file") && ($("#import-file").onchange = (event) => {
+    if (event.target.files[0]) doImport(event.target.files[0]);
+  });
+  initDecide();
+});
+</script></body></html>
