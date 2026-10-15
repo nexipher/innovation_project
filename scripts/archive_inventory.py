@@ -320,22 +320,96 @@ def render(rows: List[dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _rewritten_pages() -> List[str]:
+    """
+    Pages whose links the archive move rewrote, by their **original** path.
+
+    The check below asks "does this row's tree contain a rewritten page?" — a
+    question about the pre-move path, because that is the path the row is
+    written in.  Using the archived path here skipped nothing and reported the
+    whole review tree as a digest mismatch.
+    """
+    try:
+        with open(os.path.join(PROJECT_ROOT, "archive", "legacy_v1_20261015",
+                               "MANIFEST.json"), encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    except (OSError, ValueError):
+        return []
+    entry = manifest.get("links_rewritten") or {}
+    files = entry.get("files") if isinstance(entry, dict) else None
+    return [record.get("was") or record.get("page")
+            for record in (files or []) if isinstance(record, dict)]
+
+
+def _head_digest(path: str) -> Optional[str]:
+    """Digest of the committed content of a path (the state before the move)."""
+    result = subprocess.run(["git", "show", f"HEAD:{path}"],
+                            cwd=PROJECT_ROOT, capture_output=True)
+    if result.returncode != 0:
+        return None
+    return hashlib.sha256(result.stdout).hexdigest()[:16]
+
+
+def _resolve(path: str) -> tuple:
+    """(存在的路径, 是否取自归档) —— 归档之后，原路径按 PATH_MAP.json 解析。"""
+    from utils.batch import resolve_path
+
+    return resolve_path(path)
+
+
 def verify(rows: List[dict]) -> int:
-    """Re-check every recorded digest; used after the move."""
+    """
+    Re-check the digests recorded before the move.
+
+    这是"移动后逐行核对"，所以只对**移动过**的项下判据：清单是移动前拍的快照，
+    拿它去判"留在原位的文件现在是否一致"，会把此后任何正当修改都报成失败
+    （`FROZEN.json` 就是这样：它在原地，且被有意改过）。
+
+    A tree the link rewrite touched cannot be checked against a digest taken
+    *before* that rewrite — saying so beats reporting a mismatch that is not
+    one.  Those pages are checked individually, against the committed blobs, by
+    `python scripts/archive_v1.py --verify`.
+
+    For a moved row whose digest differs, the committed blob decides: if the
+    archived copy equals `HEAD:<原路径>`, the snapshot was simply older than a
+    later, legitimate edit (`plan.md` is the example) and that is reported as
+    such rather than as a failure.
+    """
     problems = []
+    followed = 0
+    rewritten = _rewritten_pages()
+    skipped = 0
+    in_place = 0
+    stale_snapshot = 0
     for row in rows:
         if not row.get("exists"):
             continue
         path = row["path"] if os.path.isabs(row["path"]) else os.path.join(
             PROJECT_ROOT, row["path"])
+        path, from_archive = _resolve(path)
         if not os.path.exists(path):
             problems.append(f"缺失：{row['path']}")
+            continue
+        if not from_archive:  # 从未移动：快照不是一致性判据
+            in_place += 1
+            continue
+        followed += 1
+        if row.get("kind") == "dir" and any(page.startswith(row["path"] + "/")
+                                            for page in rewritten):
+            skipped += 1
+            print(f"  跳过（含 {sum(1 for p in rewritten if p.startswith(row['path'] + '/'))} "
+                  f"页登记过的链接改写，另由 archive_v1.py --verify 逐页核对）：{row['path']}")
             continue
         if row.get("kind") == "dir":
             fresh = _digest_tree(path)
         else:
             fresh = {"digest": _digest_file(path),
                      "bytes": os.path.getsize(path)}
+        if row.get("digest") and fresh.get("digest") != row["digest"] \
+                and fresh.get("digest") == _head_digest(row["path"]):
+            # 与 HEAD 一致 ⇒ 移动没有改动它，是快照拍得早
+            stale_snapshot += 1
+            continue
         if row.get("digest") and fresh.get("digest") != row["digest"]:
             problems.append(f"摘要不一致：{row['path']}（记录 {row['digest']}，现在 {fresh.get('digest')}）")
         elif row.get("bytes") and fresh.get("bytes") != row["bytes"]:
@@ -345,7 +419,12 @@ def verify(rows: List[dict]) -> int:
         for problem in problems:
             print("  -", problem)
         return 1
-    print(f"核对通过：{len(rows)} 项与清单一致")
+    print(f"核对通过：移动过的 {followed} 项与清单一致"
+          + (f"；{stale_snapshot} 项与 HEAD 一致、清单快照早于其后一次正当修改"
+             if stale_snapshot else "")
+          + (f"；{skipped} 项含登记的链接改写，改由 `archive_v1.py --verify` 逐页核对"
+             if skipped else "")
+          + f"；{in_place} 项从未移动（快照不构成一致性判据，未检）")
     return 0
 
 

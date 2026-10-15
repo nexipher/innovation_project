@@ -28,6 +28,28 @@ from utils.batch import (
 
 pytestmark = pytest.mark.slow
 
+def _batch_samples(batch_id="g7_b1"):
+    """
+    A frozen batch's samples, **followed into the archive** if it was moved.
+
+    Returns `(samples, from_archive)`.  Archiving must not turn these checks
+    into silent skips: the interesting properties (the manifest matches the
+    content, no sample comes from a held-out source, images exist) are about
+    the batch, and the batch is still there — one directory over.
+    """
+    from utils.batch import resolve_path
+
+    directory, from_archive = resolve_path(batch_paths(batch_id)["samples"])
+    return load_samples(batch_id, samples_dir=directory), from_archive
+
+
+def _batch_path(*parts, batch_id="g7_b1", kind="samples"):
+    from utils.batch import resolve_path
+
+    directory, _from_archive = resolve_path(batch_paths(batch_id)[kind])
+    return os.path.join(directory, *parts)
+
+
 def _sample(sample_id, text="<verdict>Fake</verdict>"):
     return {"id": sample_id, "ground_truth": "Fake", "type": "positive",
             "conversations": [{"from": "gpt", "value": text}],
@@ -90,7 +112,15 @@ class TestBatchPaths:
         assert paths["review"] != batch_paths(LEGACY_BATCH)["review"]
 
     def test_the_legacy_batch_still_reads_its_237_samples(self):
-        samples = load_samples(LEGACY_BATCH)
+        # Since 2026-10-15 those files are archived.  `load_samples` deliberately
+        # does NOT fall back on its own — a loader that quietly reads a copy is
+        # how "which set is this?" stops being answerable — so the caller maps
+        # the path and the mapping is asserted, not assumed.
+        from utils.batch import resolve_path
+
+        directory, from_archive = resolve_path(batch_paths(LEGACY_BATCH)["samples"])
+        assert from_archive, "237 集应已归档"
+        samples = load_samples(LEGACY_BATCH, samples_dir=directory)
         assert len(samples) == 237
         assert all("_bucket_file" in sample for sample in samples)
 
@@ -252,8 +282,11 @@ class TestNoSharedOutputs:
         """A reader must be able to tell which batch and which run it is."""
         import glob
 
-        paths = glob.glob(os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1",
-                                       "report_*.json"))
+        from utils.batch import resolve_path
+
+        traces_dir, _from_archive = resolve_path(
+            os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1"))
+        paths = glob.glob(os.path.join(traces_dir, "report_*.json"))
         if not paths:
             pytest.skip("本批次报告尚未生成")
         for path in paths:
@@ -263,7 +296,13 @@ class TestNoSharedOutputs:
             assert report.get("policies"), path
 
     def test_the_legacy_report_still_describes_the_legacy_batch(self):
-        path = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json")
+        # Archived 2026-10-15; the report's numbers are what the test is about,
+        # so it follows the mapping instead of failing on a moved file.
+        from utils.batch import resolve_path
+
+        path, from_archive = resolve_path(
+            os.path.join(PROJECT_ROOT, "sft_data", "trajectories_report.json"))
+        assert from_archive, "v1 的 237 集报告应在归档中"
         with open(path, encoding="utf-8") as handle:
             report = json.load(handle)
         assert report["planned"] == 440 and report["written"] == 440
@@ -275,13 +314,12 @@ class TestTheBuiltBatch:
         """Recomputed, not hardcoded: a sample edited by hand shows up here."""
         from utils.batch import batch_fingerprint, load_samples
 
-        path = os.path.join(PROJECT_ROOT, "sft_data", "train", "batches",
-                            "g7_b1", "manifest.json")
+        path = _batch_path("manifest.json")
         if not os.path.exists(path):
             pytest.skip("批次尚未构建")
         with open(path, encoding="utf-8") as handle:
             manifest = json.load(handle)
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         assert manifest["samples"] == len(samples) == 145
         assert manifest["fingerprint"] == batch_fingerprint(samples)
 
@@ -289,7 +327,7 @@ class TestTheBuiltBatch:
         """The batch's sources are train-partition sources, by id, not by hope."""
         from utils.batch import load_samples
 
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         if not samples:
             pytest.skip("批次尚未构建")
         with open(os.path.join(PROJECT_ROOT, "sft_data", "split_v2.json"),
@@ -303,9 +341,8 @@ class TestTheBuiltBatch:
         assert all(sample["metadata"]["split"] == "train" for sample in samples)
         assert not (sources & test_paths)          # the guard itself
         # every sample's source is one of the train sources the split declares
-        chosen = json.load(open(os.path.join(
-            PROJECT_ROOT, "sft_data", "train", "batches", "g7_b1",
-            "selection.json"), encoding="utf-8"))["chosen"]
+        chosen = json.load(open(
+            _batch_path("selection.json"), encoding="utf-8"))["chosen"]
         assert len(chosen) == 14
         assert all(split["sources"][key]["split"] == "train" for key in chosen)
 
@@ -314,7 +351,7 @@ class TestTheBuiltBatch:
         from utils.batch import load_samples
         from utils.weak_evidence import flags
 
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         if not samples:
             pytest.skip("批次尚未构建")
         # the promotion flags are the ones the band-checker produces (no
@@ -334,7 +371,7 @@ class TestTheBuiltBatch:
         from utils.batch import load_samples
         from utils.weak_evidence import flags
 
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         if not samples:
             pytest.skip("批次尚未构建")
         conflicts = [s["id"] for s in samples
@@ -347,7 +384,7 @@ class TestTheBuiltBatch:
         from utils.batch import load_samples
         import collections
 
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         if not samples:
             pytest.skip("批次尚未构建")
         by_bucket = collections.defaultdict(collections.Counter)
@@ -368,20 +405,25 @@ class TestTheSamplesCarryTheirImages:
     def test_every_sample_points_at_a_picture_that_exists(self):
         from utils.batch import load_samples
 
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         if not samples:
             pytest.skip("批次尚未构建")
+        from utils.batch import resolve_path
+
         empty = [s["id"] for s in samples if not s.get("image_path")]
         assert empty == [], empty
+        # A sample stores the path it was built with; after the archive that
+        # path resolves through the map, exactly as a reader must do.
         missing = [s["image_path"] for s in samples
-                   if not os.path.exists(os.path.join(PROJECT_ROOT, s["image_path"]))]
+                   if not os.path.exists(resolve_path(
+                       os.path.join(PROJECT_ROOT, s["image_path"]))[0])]
         assert missing == [], missing
 
     def test_the_image_is_the_variant_the_model_was_shown(self):
         """A q70 sample shows the q70 file, not the source."""
         from utils.batch import load_samples
 
-        samples = load_samples("g7_b1")
+        samples, _from_archive = _batch_samples()
         if not samples:
             pytest.skip("批次尚未构建")
         for sample in samples[:20]:
@@ -389,8 +431,7 @@ class TestTheSamplesCarryTheirImages:
             assert sample["metadata"]["treatment"] in sample["image_path"], sample["id"]
 
     def test_the_review_pages_render_the_images(self):
-        page_dir = os.path.join(PROJECT_ROOT, "sft_data", "review", "g7_b1",
-                                "samples")
+        page_dir = _batch_path("samples", kind="review")
         if not os.path.isdir(page_dir):
             pytest.skip("工作台尚未构建")
         pages = sorted(os.listdir(page_dir))[:10]
@@ -585,3 +626,28 @@ class TestTheGenerationLayout:
         shutil.rmtree(live)
         path, from_archive = batch.resolve_path("sft_data/trajectories_g7_b9")
         assert str(archived) == path and from_archive is True
+
+    def test_resolve_path_handles_a_single_moved_file(self, tmp_path, monkeypatch):
+        """
+        A file entry, not a directory: joining an empty suffix used to leave a
+        trailing separator, and `os.path.exists` on a file with one is False —
+        so every single-file mapping (plan.md, the report JSONs) claimed
+        "not from the archive" while returning the archived path.
+        """
+        import json
+
+        import utils.batch as batch
+
+        monkeypatch.setattr(batch, "PROJECT_ROOT", str(tmp_path))
+        monkeypatch.setattr(batch, "PATH_MAP_PATH", str(tmp_path / "archive" / "PATH_MAP.json"))
+        (tmp_path / "archive" / "legacy" / "docs").mkdir(parents=True)
+        archived = tmp_path / "archive" / "legacy" / "docs" / "plan_v1.md"
+        archived.write_text("旧计划", encoding="utf-8")
+        (tmp_path / "archive" / "PATH_MAP.json").write_text(json.dumps({
+            "moved": [{"from": "plan.md", "to": "archive/legacy/docs/plan_v1.md"}]}),
+            encoding="utf-8")
+
+        path, from_archive = batch.resolve_path("plan.md")
+        assert path == str(archived) and from_archive is True
+        # and the archive's own path is answered directly, without a map lookup
+        assert batch.resolve_path(str(archived)) == (str(archived), False)

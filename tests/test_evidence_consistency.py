@@ -13,6 +13,12 @@ REJECTED_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "sft_data", "train", "final", "sft_rejected.json",
 )
+# Archived 2026-10-15 (`archive/legacy_v1_20261015/experiments/train_final/`).
+# The counterexamples below are history; the test follows the mapping so it
+# still tests them, and says so if it could not.
+from utils.batch import resolve_path  # noqa: E402
+
+REJECTED_PATH, _FROM_ARCHIVE = resolve_path(REJECTED_PATH)
 
 # The two counterexamples confirmed in the G0 audit (plan.md §4.7).
 COUNTEREXAMPLE_CONTRADICTION = "session_20260721_111810_080862af-5aba-41b0-80ed-dab7b7683807"

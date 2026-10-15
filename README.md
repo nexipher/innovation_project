@@ -3,50 +3,80 @@
 **主动探索型双分支图像取证系统**
 MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的法证报告。
 
-> **先读 §0：当前版本与入口。** 本文档 §1–§6 描述现在的系统；§7 起为**历史档案**
-> （计划、进展、旧路线），保留备查，不再是当前指令。
+> **先读 §0：当前版本与入口。** §0–§6 描述**当前代码**，但其中的示例命令、批次路径与
+> 实测数字来自 **g7 代次（Qwen2.5-VL + 旧专家组）**——那一代的**数据产物已全部归档**
+> （见 §0.3），文字作为结论保留。§7 是历史进展与路线图，§7.3 的实测结论仍然有效。
 
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1115%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-1157%20passed-brightgreen)](./tests/)
 
 ---
 
----
+## 0. 当前版本与代次（2026-10-15）
 
-## 0. 当前版本（工程收口，2026-10-13）
-
-**当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**，
-参考后验只作对照、不覆盖标签。**默认策略就是当前版本 v3**（历史复算才显式
-`FORENSIC_HALTING_POLICY=v2`）：
+**当前代次是 g8**（Qwen3-VL-8B + PROBE / 候选新专家，**待建**）；**g7 及更早全部冻结并归档**。
+代码默认态即当前版本，不需要额外开关：
 
 ```bash
-python main.py --image <path/to/image>                                 # 唯一推荐启动命令（v3）
-FORENSIC_HALTING_POLICY=v2 python main.py --image <path>               # 仅用于历史复算
+python main.py --image <path/to/image>                    # 单张（CPU 用 Mock，GPU 加 --mllm qwen）
+FORENSIC_HALTING_POLICY=v2 python main.py --image <path>  # 仅用于历史复算（v2 已冻结）
 ```
 
-**权威文档（只描述当前代码）**：
+**当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**；
+参考后验只作对照、不覆盖标签。默认策略是 **v3**（`config.HALTING_POLICY`）。
+
+### 0.1 数据布局：代次是目录，批次名是纯名字
+
+```text
+sft_data/g8/{trajectories,variants,review,train/batches}/b1/
+```
+
+三个**写入入口**（`generate_trajectories_g4.py` / `build_final_v2.py` / `apply_review.py`，
+以及同样写批次目录的 `build_variants_g4.py`）**必须显式给 `--generation`**，缺了就报错——
+不允许"默认猜成 g8"。批次名不再含代次，两层含义不再挤进一个名字。
+
+### 0.2 权威文档（只描述当前代码）
 
 | 文档 | 内容 |
 |------|------|
-| [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md) | 当前任务、角色分工、入口、真实可用的专家、运行时序、版本记录规则 |
+| [`plan.md`](plan.md) | 当前代次的计划与阶段状态（v1 计划已归档） |
+| [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md) | 当前任务、角色分工、入口、专家、运行时序、版本记录规则 |
 | [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) | 未完成问题清单（已实现待验证 / 尚未修复 / 暂缓），每项带验收条件 |
-| [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账：历史 / 待审核 / 合格训练三类材料与各自的版本记录 |
+| [`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) | 新专家组与 Agent 重整方案（阶段 2–4 的依据） |
+| [`NEW_GENERATION_NAMING.md`](NEW_GENERATION_NAMING.md) | 代次/冻结/归档映射的实施细节 |
 | [`TESTING.md`](TESTING.md) | 测试三层（core / module / full）与"换专家后哪些测试退役" |
+| [`ARCHIVE_INVENTORY.md`](ARCHIVE_INVENTORY.md) | v1 归档清单（口径、角色、能证明什么/不能证明什么） |
+| [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账（自动生成；已归档批次会标明读的是归档副本） |
 
-**当前实际可用的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`
-（后三者计划退出工具箱）。`frequency`(v1)、`ela` 已退役；`trufor` 不在全局主链，仅作对照。
+**当前注册的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`——后三者**随 v1
+代次在阶段 4 退役**，替代候选为 NPR / UnivFD（待评测）。`frequency`(v1)、`ela` 已退役；
+`trufor` 不在全局主链，仅作对照。
+
+### 0.3 v1 归档（2026-10-15）
+
+历史产物已移入 [`archive/legacy_v1_20261015/`](archive/legacy_v1_20261015/NOTE.md)
+（34 项、2141 个文件，逐文件核对通过）。**代码一个都没搬**——退役实现仍被包导出与测试导入，
+退役与导入方一起改（阶段 4）。
+
+| 文件 | 作用 |
+|------|------|
+| [`archive/legacy_v1_20261015/MANIFEST.json`](archive/legacy_v1_20261015/MANIFEST.json) | 每一项的原路径、大小、内容摘要、留在原位的资产、使用限制 |
+| [`archive/PATH_MAP.json`](archive/PATH_MAP.json) | 旧路径 → 归档路径（历史复算据此解析） |
+| [`archive/legacy_v1_20261015/NOTE.md`](archive/legacy_v1_20261015/NOTE.md) | 归档说明与三条使用规矩 |
 
 **三条不可混淆的规则**：
 
 1. 默认即当前策略 v3；历史复算显式选 v2。报告必须核对策略、提示词指纹与校准表身份
    （每个批次目录的 `VERSIONS.json`）。
 2. **重新渲染工作台 ≠ 重新生成轨迹**；**自动检查通过 ≠ 允许训练**。进 SFT 的唯一路径是
-   `record_review --import` → `apply_review` → `build_final_v2`（门禁），且这三个写入入口
-   会读 `sft_data/FROZEN.json`：**冻结批次直接拒绝**，分析用途需 `--allow-frozen` 并留下标记。
-3. 未审核批次（含 g7_b1、g7_b2）**不得用于 SFT**；因缺陷作废的批次归档在
-   `sft_data/trajectories_<id>_<原因>/`，不参与任何统计。
+   `record_review --import` → `apply_review` → `build_final_v2`（门禁），且写入入口会读
+   `sft_data/FROZEN.json`：**冻结批次直接拒绝**，分析用途需 `--allow-frozen` 并留下标记。
+   冻结身份是 **(代次, 批次)**，不是裸批次名。
+3. **归档数据只作历史**：读归档路径必须走 `utils.batch.resolve_path()` 并在报告里写
+   `resolved_from_archive=true`；训练入口对归档数据直接拒绝（`train_lora_g4.py` 需显式
+   `--allow-archived`，且会打印横幅）。归档**不解除**任何冻结门禁。
 
 ---
 
@@ -57,7 +87,7 @@ FORENSIC_HALTING_POLICY=v2 python main.py --image <path>               # 仅用�
 **本系统**将 MLLM 作为"法官"，与传统法证"专家组"结合，构建主动探索式闭环：
 
 1. MLLM 扫描图像，锁定可疑区域（Planning）
-2. 按需**主动调用**法证专家（`freq` / `noise` / `jpeg`），传入具体 bbox
+2. 按需**主动调用**法证专家（g7 时代的工具集是 `freq` / `noise` / `jpeg` + `probe`；g8 待换）
 3. 专家输出被抽象为结构化 **Evidence Token**（含物理现象描述 + 置信度）
 4. MLLM 交叉质证全部证据，生成证据锚定的可解释真伪判定报告
 
@@ -165,10 +195,11 @@ dataset/
 
 | 项目 | 路径 / 说明 |
 |------|-------------|
-| 模型 | Qwen2.5-VL-7B-Instruct（16.6 GB，5 × safetensors） |
+| 当前（g7） | Qwen2.5-VL-7B-Instruct（16.6 GB，5 × safetensors） |
 | 路径 | `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master` |
 | 配置 | `config.py` → `QWEN_MODEL_PATH` |
 | 显存 | FP16 ~16 GB（RTX 4090 可承载） |
+| 下一代（g8） | Qwen3-VL-8B，**checkpoint 与推理模式待用户确认**（`sft_data/GENERATIONS.json`） |
 
 > ⚠️ 加载模型权重前必须获得用户 GPU 授权（见 `agent.md` §3.2）。
 
@@ -213,21 +244,24 @@ python main.py --batch all --max 10          # 全部类别，每类 10 张
 
 ### 3.6b G4 数据管线（CPU 全流程，除轨迹生成需 GPU）
 
+**写批次的命令必须给 `--generation <代次> --batch <批次>`**（如 `--generation g8 --batch b1`），
+产物落在 `sft_data/g8/.../b1/`；冻结批次会被直接拒绝。
+
 ```bash
-python scripts/build_split_v2.py            # 1) 源级划分（9000 源，防泄漏 + 校准源 holdout）
-python scripts/build_variants_g4.py --sources 20   # 2) 训练源的格式变体（类别配平抽样）
-python scripts/generate_trajectories_g4.py --dry-run --limit 1   # 3) 轨迹生成（Mock 验证管线）
-python scripts/generate_trajectories_g4.py         #    真实生成（需 GPU 授权）
-python scripts/admit_trajectories_g4.py     # 4) 两级准入（仅读训练分区）
-python scripts/build_final_v2.py            # 5) 组装 final_v2 并过十项校验
-python scripts/build_review_workstation.py  # 6) 生成审核工作台（sft_data/review/index.html）
-# 人工审核（单次全量）：浏览器打开 index.html，逐条按 1–4 快捷键给处置，
-# 决定存在浏览器本地；改完点「导出全部决定」得到 review_decisions.json
-python scripts/record_review.py --import review_decisions.json --reviewer <你>   # 写回仓库
-python scripts/record_review.py --sample <id> --reviewer <你> \
+python scripts/build_split_v2.py                   # 1) 源级划分（9000 源，防泄漏 + 校准源 holdout）
+python scripts/build_variants_g4.py --generation g8 --batch b1 --sources 20   # 2) 训练源的格式变体
+python scripts/generate_trajectories_g4.py --generation g8 --batch b1 --dry-run --limit 1  # 3) Mock 验证管线
+python scripts/generate_trajectories_g4.py --generation g8 --batch b1         #    真实生成（需 GPU 授权）
+python scripts/admit_trajectories_g4.py --generation g8 --batch b1  # 4) 两级准入（仅读训练分区）
+python scripts/build_final_v2.py --generation g8 --batch b1         # 5) 组装并过十项校验
+python scripts/build_review_workstation.py --generation g8 --batch b1  # 6) 审核工作台（按批次隔离存储）
+# 人工审核（单次全量）：浏览器打开该批次的 index.html，逐条按 1–4 快捷键给处置，
+# 决定存在浏览器本地（键含批次 ID + 内容指纹，不会跨批次串）；导出 review_decisions.json
+python scripts/record_review.py --generation g8 --batch b1 --import review_decisions.json --reviewer <你>
+python scripts/record_review.py --generation g8 --batch b1 --sample <id> --reviewer <你> \
     --decision accept|format_only|revise|reject --notes "…"      # 也可单条记录
 python scripts/record_review.py --summary   # 审核进度
-python scripts/apply_review.py              # 7) 按处置出训练集（未审完会拒绝运行）
+python scripts/apply_review.py --generation g8 --batch b1   # 7) 按处置出训练集（未审完会拒绝运行）
 ```
 
 ### 3.7 Mock 行为模式（CPU 调试）
@@ -241,9 +275,12 @@ python main.py --image path/to/img.png --mode conflict       # 制造证据冲�
 
 ### 3.8 运行测试
 
+三层（详见 [`TESTING.md`](TESTING.md)）；本机 shell 处于 2 GB cgroup，`full` 层建议用分块运行器：
+
 ```bash
-pytest tests/ -v              # 运行当前测试集
-pytest tests/test_pipeline.py # 仅端到端测试
+bash scripts/run_tests.sh core     # 快：门禁、账本、解析、协议（约 30 秒）
+bash scripts/run_tests.sh module   # 模块级：管线、工作台、转换（约 35 秒）
+bash scripts/run_tests.sh full     # 全量（按 8 个文件分块，避免 OOM 被静默杀死）
 ```
 
 ---
@@ -307,20 +344,31 @@ innovation_project/
 │   └── audit_sft_correct.py        # correct 结构审计 + 全量处置状态标记
 │
 ├── tests/                          # CPU 单元测试与端到端测试
-├── sft_data/train/final/           # 旧版 SFT 候选集（509 条，冻结作回归基线）
-├── sft_data/train/final_v2/        # G4 生成的 final_v2（237 条，十项校验 0 拒绝）
-├── sft_data/train/final_v2_reviewed/  # 人工审核后按处置分集的训练集（待生成）
-├── sft_data/split_v2.json          # G4-a 源级划分（9000 源，含校准源 holdout 与采样权重）
-├── sft_data/variants/              # G4-b 格式变体（图像 gitignore，manifest 入库）
-├── sft_data/trajectories/          # G4-b 轨迹记录（440 条，六策略）
-├── sft_data/admission_report.json  # G4-c 逐轨迹准入判定与理由
-├── sft_data/review/                # G4-f 审核工作台（237 页 + 工作单 + 高风险标记，单次全量审核）
+│
+├── sft_data/                       # 数据区：代次是目录，批次名是纯名字
+│   ├── g8/                         # 当前代次（待建）：{trajectories,variants,review,train/batches}/<batch>/
+│   ├── FROZEN.json                 # 冻结登记：身份是 (代次, 批次)，写入入口据此拒收
+│   ├── GENERATIONS.json            # 代次索引（模型身份；批次身份仍以各批次 VERSIONS.json 为准）
+│   ├── split_v2.json               # G4-a 源级划分（9000 源，含校准源 holdout 与采样权重）
+│   └── review/dispositions.jsonl   # 人工处置台账（append-only；归档时留在原位，工具运行时读写）
+│
+├── archive/                        # v1 归档（2026-10-15，只作历史）
+│   ├── PATH_MAP.json               # 旧路径 → 归档路径（resolve_path 据此解析）
+│   └── legacy_v1_20261015/         # {docs,experiments,review}/ + MANIFEST.json + NOTE.md
+│
 ├── calibration/                    # 专家校准集、可靠性表、G2-d/G3-e 增益与回放报告
 ├── traces/sft_sessions/            # 管道运行的原始 Trace（ShareGPT）—— 真实会话入库作为 SFT provenance
 ├── traces/evidence/                # 诊断区域裁剪图（运行期生成，未纳入版本控制）
 ├── traces/dry_run_sessions/        # Mock 干跑 Trace（与真实会话隔离，未纳入版本控制）
-└── claude_operation_log.md         # 开发操作审计日志
+├── plan.md                         # 当前代次的计划（v1 计划见归档）
+└── claude_operation_log.md         # 开发操作审计日志（v1 日志见归档）
 ```
+
+> 已归档的 v1 数据路径（`sft_data/train/final*`、`sft_data/variants*`、`sft_data/trajectories*`、
+> `sft_data/review/*` 等）现在都在 `archive/legacy_v1_20261015/experiments|review/` 下，
+> 逐项对照见 `MANIFEST.json`。上面脚本清单里 `generate_sft_data.py`、`build_sft_data.py`、
+> `finalize_sft_data.py`、`audit_sft_*.py` 属于 v1 流水线，保留可读但不再用于新代次
+> （`finalize_sft_data.py` 会对归档路径直接拒绝）。
 
 ---
 
@@ -429,6 +477,10 @@ innovation_project/
  "sources": {"ADM/49_adm_153": {"split": "train", "path": "...", "label": "Fake",
              "generator": "ADM", "resolution": [256, 256]}}}
 ```
+
+> **本节及下一节的路径属于 g7 代次**（`sft_data/trajectories/`、`sft_data/train/final_v2/`、
+> `sft_data/review/…`），现已归档；现行布局是 `sft_data/<generation>/<kind>/<batch>/`。
+> Schema 本身不变。
 
 **轨迹记录（`sft_data/trajectories/<variant>__<policy>.json`）**：`policy` 与 `tools_served`（六策略之一）、`model_candidate`（模型原始判断）、`final_verdict`/`confidence`/`posterior`/`policy_reasons`（停止策略）、`evidence[]`（完整 Evidence Bundle）、`counters`（轮/调用/唯一证据/抑制/加权成本）、`elapsed_s`、`scores`（模型概率与结构化后验各自的 NLL/Brier）。
 
@@ -568,60 +620,42 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 
 ---
 
-> **以下为历史档案（§7–§11）**：路线图、进展、旧规范与引用。保留备查；
-> 当前阶段与近期任务以 [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md)
-> 与 [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) 为准，本区的方案不再作为当前指令。
+> **§7 起是"结论与规范"，不是当前任务**：§7.1/§7.2 是 g7 代次的总结与指向归档的入口，
+> §7.3 是仍然有效的实测局限，§8 是现行的维护/归档规范，§9–§11 是环境与引用。
+> 当前阶段的计划以 [`plan.md`](plan.md) 为准。
 
 ## 7. 项目进展与路线图
 
-### 7.1 已完成
+### 7.1 g7 代次（Qwen2.5-VL + 旧专家组）已完成的事
 
-| 阶段 | 内容 | 关键产出 |
-|------|------|----------|
-| **一** 1.1–1.6 | 基础设施 / 工具层 / 专家算法 / MLLM 抽象 / 状态机 / 测试 | 完整 CPU 管道；阶段一基线 95 项测试通过 |
-| **二** 2.1 | 真实 MLLM 接入 | `QwenVLClient`（FP16, 16.6 GB）+ 格式纠错反馈环 |
-| **二** 2.2 | 专家算法校准 | ROC 网格搜索：noise sep=0.83 / jpeg sep=1.02 / freq sep=0.05 |
-| **二** 2.3 | SFT 数据规模化生成 | 865 条真实 Qwen 推理 Trace（A 线 610 + B 线 255） |
-| **二** 2.4 | 验证与评估 | 格式覆盖率 98%+；端到端准确率 25%（确认 SFT 必要性） |
-| **三** 3.1a | SFT 数据构造 | **509 条候选训练数据**（correct 166 / conflict 143 / borderline 100 / format 100）+ 68 条拒绝记录 |
-| **四** G0 | 旧 SFT 数据审计收口 | 全部旧样本获得明确处置状态（regenerate 409 / format_only 100 / rejected 68）；correct 硬拒绝 30 条；幂等审计脚本 + 16 项测试 |
-| **四** G1 | 运行协议与证据正确性 | 双空间坐标协议 + 稳定 evidence_id；证据去重（消除虚假收敛）；方向一致性门；原图+诊断区域图多轮回灌；任务语义字段与分离计数全部写入 Trace |
-| **三** 3.2 | 专家重构 | `frequency_v2.py`（多尺度 FFT）+ 四专家 reasoning 条件化修复 |
-| **四** G2 | Expert 准入与 Evidence Bundle | 格式配平校准集（700 样本）+ 逐格区分度/适用条件；可靠性表（分位分箱 → 经验 P(Fake)）；Evidence Bundle（校准概率/适用性/反证/可视化产物）；**四条件增益对比证明证据曾显著有害**（三臂均低于基线，p≤0.0007），并定位为专家语义反向 + 一致性门抹除 |
-| **四** G3 | 管线重建与复核 | 整图度量（消除尺度外推）/ EvidenceRectifier（方向权威单一化）/ 停止策略 v2（后验决策）/ 配置指纹；四臂复核：工具臂由**低于随机**回到**随机至弱正**，PNG 格获真实判别力 0.78–0.83（基线 0.61） |
-| **四** G4-a~f | final_v2 数据管线与审核工作台 | 源级防泄漏划分（9000 源）/ 六策略轨迹生成器 / 两级准入 / final_v2 Schema 与十项校验 / 20 源试生成（440 轨迹 → 237 样本，0 拒绝）/ 审核工作台 + 处置管线 |
-| **四** G4-f 修订 | 工作台可用性修订（2026-10-09） | **完整训练对话**（原页只显示第一个助手轮，198/237 条把调用轮、证据轮和最终四段答案全藏了）/ **逐 token 证据语义**（support vs support_raw vs direction 分离，158/200 个 `semantics_aligned=false` 现以红色告警显示）/ **按桶清单**（工具 / 无工具 / 弃权三套，弃权不再被要求 ΔBrier<0）/ **浏览器内保存决定 + 导出导入**（`record_review.py --import`）/ 置信度四分（原始模型 / 后验 / 自报 / ΔBrier）/ 取消双审，改单次全量审核 + `high_risk` 标记 |
-| **四** G4-g | LoRA 试训（临时集）与两处协议失配修复 | 24 GB 显存适配（掩码位置交叉熵，OOM 消除）/ 首轮四臂暴露"从不调用工具"（127 会话 1 次调用）→ 定位为**调用轮被掩进提示**（未监督）+ **训练用子集提示而推理用出厂提示**，两者已修并复训；冒烟显示工具调用恢复（每样本 1–2 次） |
-| **四** G7 入口 1 | 外部专家（PROBE-DINOv2 / TruFor）实测与准入 | 源级划分 A 62 / B 18 / C 18 源（hash `37bf2f1db22ccdef`）/ 通用外部专家适配器（未校准分数**不带方向**）/ 批量推理（TruFor 12.4 s → 0.3 s/图，峰值显存 2.27 GB）/ **TruFor A 组 AUROC 0.426 → 不纳入全局链**（留作 L1 研究对照）/ **PROBE A 组 0.960、未见生成器 0.952 → 满足判别力判据** |
-| **四** G7 入口 3 | Agent 接线与小批端到端验收（PROBE 主检测器） | 全链路接线（注册 / 解析 / 提示词按注册表生成 / 校准只用 A 组 / 逐工具成本 / 相关证据折减）/ **120 会话实跑两遍**：调用记账恒等式 120/120（**无静默丢弃**）、probe token 全部带校准与来源、**无一条轨迹把分数写成物理伪影** / 第一遍发现并修复**执行层缺陷**：重复测量占执行 48.6% → 修复后 **0**（154 次执行前跳过），执行次数 311 → **175**，`budget_exhausted` 14 → **4**；准确率 0.758 → 0.742（噪声，非收益）|
-| **四** G7 入口 2 | 三条无 Qwen 基线与 C 组独立验证 | 逻辑回归融合，A 拟合 / B 选择 / **C 冻结后验证**（脚本门禁：无冻结文件或划分哈希不符即拒跑）/ B 组 Δ `融合−PROBE` = +0.105 判"融合胜出" → **C 组未复现（+0.0043，CI 跨 0）**，`现有−PROBE` 在 C 组为 −0.222（CI 整段为负）→ **判定：PROBE 为主检测器，现有专家降为辅助线索**；冻结方案与 17 项判据测试落盘 |
+这一代的完整决策记录、阶段表与操作日志都在归档里：
+[`archive/legacy_v1_20261015/docs/plan_v1.md`](archive/legacy_v1_20261015/docs/plan_v1.md)、
+[`.../claude_operation_log_v1.md`](archive/legacy_v1_20261015/docs/claude_operation_log_v1.md)，
+数据产物在 `archive/legacy_v1_20261015/experiments|review/`（清单见 `MANIFEST.json`）。
 
-### 7.2 后续执行顺序
+一句话概述：**校准集与准入 → 停止策略 v1/v2 → 轨迹生成与两级准入 → 审核工作台与处置管线 →
+外部专家（PROBE）实测 → Agent 接线与小批端到端验收**，最后落到 v3（Qwen 主导）策略与
+一套证据账本/结案门禁。它的结论不是"成功"，而是**换代的依据**：证据管线按设计工作，
+但 Agent 的准确率没有超过单用主检测器（见 §7.3）。
 
-详细步骤、依赖和验收门槛统一见 `plan.md` §4.7–§4.15；README 仅保留当前顺序概览。
+### 7.2 当前路线图
 
-| 顺序 | 阶段 | 主要工作 | GPU |
-|------|------|----------|-----|
-| 1 | G0 ✅ | 旧 SFT 数据用途隔离与拒绝集收口（已完成） | 否 |
-| 2 | G1 ✅ | 坐标协议、证据去重、多轮图像历史和语义一致性修复（已完成） | 否 |
-| 3 | G2-a/b/c ✅ | 格式配平校准集、专家区分度/适用条件评估、Evidence Bundle 与可靠性表（已完成） | 否 |
-| 3 | G2-d ✅ | 四条件增益对比：三个含工具臂均显著差于 RGB 基线（已完成） | 是（约 57 分钟） |
-| 3 | G2-e ✅ | 准入收口：停用 v1 与 ELA、noise/jpeg 反转语义、Prompt 重写、修复 v2 校准身份（已完成） | 否 |
-| 4 | G3-a~d ✅ | 整图度量 / EvidenceRectifier / 停止策略 v2 / 配置指纹（已完成） | 否 |
-| 4 | G3-e ✅ | n=120 四条件 GPU 复核（已完成：四臂 480 会话） | 是（约 1.5 小时） |
-| 5 | G4-a~d ✅ | 数据划分与防泄漏 / 轨迹生成器 / 两级准入 / final_v2 Schema 与校验器（已完成） | 否 |
-| 5 | G4-e ✅ | 20 源试生成：440 轨迹 → 准入 97 正样本 → `final_v2` **237 条、十项校验 0 拒绝**（已完成） | 是（约 2.5 小时） |
-| 5 | G4-f/g | 全量人工审核 → 以 accepted 集重训 → 重跑四臂验收。**当前停在人工审核**：工作台 `sft_data/review/index.html` 已就绪，需裁决标签成分偏斜（工具正样本 48F/12R、无工具 37R/0F）与是否投入全量四臂（约 10 GPU 小时） | 是 |
-| 5 | G4 | 重新生成并审核 `final_v2`，随后进行 LoRA | 是 |
-| 5.5 | G7 入口 1–2 ✅ | 外部专家实测与准入 / 三条无 Qwen 基线 / C 组独立验证（已完成：PROBE 为主检测器） | 是（已完成，约 1 小时） |
-| 5.6 | G7 入口 3 ✅ | 接线完成（PROBE 主检测器 + 三专家辅助线索 + 逐工具成本）与小批 120 样本验收（已完成：结构判据全过） | 是（已完成，约 26 分钟） |
-| 5.65 | G7 入口 3 收尾 ✅ | 执行前按专家去重（消除 48.6% 的重复测量）+ 提示词 planning 栏改为只写专家名 + 重跑验收（已完成：浪费归零、预算耗尽 14→4） | 是（已完成，约 26 分钟） |
-| 5.7 | G7 入口 4 第一步–二步 ✅ | CPU 准备四项（提示词硬约束 / 弱证据检查 / 审核绑定内容哈希+批次指纹 / 批次独立目录）与首批生成（14 源 × 4 格式、4 策略、210 会话；**145 条候选**：工具正样本 91、无工具正样本 27、合理弃权 27；批次指纹 `532766c303e63cad`） | 是（已完成，约 70 分钟） |
-| 5.75 | G7 入口 4 第三步 | **人工审阅 145 条**（原始 trace + 转换后的训练对话）：证据忠实性 / 弱证据 / 对话结构 / 测量范围 / 弃权 / 数据偏斜；工作台 `sft_data/review/g7_b1/index.html` | 否 |
-| 6 | G5/G6/G7 入口 6 | 统一评测（六条件配对，含无 Qwen 的 PROBE 基线）；达标后可选 GRPO | 是 |
-| 7 | L1–L3 | 全局检测稳定后扩展局部篡改定位（TruFor 适配器与原始产物管线为其现成基座） | 是 |
+以 [`plan.md`](plan.md) 为准（阶段 1 收尾 → 阶段 2 Qwen3-VL 迁移冒烟 → 阶段 3 替代专家评测 →
+阶段 4 解耦与退役 → SFT）。本表只留概览：
+
+| 阶段 | 主要工作 | GPU |
+|------|----------|-----|
+| 1（进行中） | 代次目录布局、冻结身份升级、v1 归档与逐文件核对、README 收敛 | 否 |
+| 2 | `scripts/g8_smoke.py`：新工具箱 + Qwen3-VL 协议冒烟（三类回复分别留存） | 先用 Mock（CPU），后需授权 |
+| 3 | NPR / UnivFD 评测：判据是**在 Agent 流程里的增益**，不是单专家准确率 | 是（需授权与权重） |
+| 4 | 移除参考后验与预计收益；退役 jpeg/noise/frequency_v2（先改导入方） | 否 |
+| SFT | 新代次样本的审核 → 出集 → LoRA → 统一评测 | 是（需授权） |
 
 ### 7.3 已知局限
+
+> **以下是 g7 代次（Qwen2.5-VL + 旧专家组）的实测结论**，数字与批次路径都属于那一代
+> （数据已归档）。它们仍然有效，因为其中多数是**方法层**的发现：换代不等于消失，
+> 阶段 2–4 正是为它们安排的。
 
 - **基座模型无法证推理**：未微调的 Qwen2.5-VL 端到端准确率仅 25%（Real 53% / Fake 20%）——它收到 Evidence Token 后不知如何解读，1.9 步即结案且轻信单个专家。**这正是 SFT 的核心动机。**
 - **工具证据对未微调模型没有净增益（G2-d 实测 + G2-e 修复后复测）**：120 样本四条件配对对比中，三个含工具臂全部显著差于纯 RGB 基线（McNemar p ≤ 0.0007，ΔAUROC 95% CI 全部为负）；`both`（双通道，原默认协议）AUROC 仅 0.391 且低于随机 —— 其置信度与真相反相关。基线的"能力"其实是全判 Real 的领域先验（Real 召回 1.000 / Fake 0.067）。
@@ -655,11 +689,14 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 | 文件 | 角色 | 修改时机 |
 |------|------|----------|
 | `active_forensic_agent_tasks.md` | 原始需求（**只读**） | 禁止修改 |
-| `plan.md` | **后续工作的唯一执行计划** | 变更前先追加计划，持续更新阶段状态 |
-| `claude_operation_log.md` | 操作审计日志 | 每完成一个二级小节立即追加 |
+| `plan.md` | **当前代次的唯一执行计划**（v1 计划在 `archive/`） | 变更前先追加计划，持续更新阶段状态 |
+| `claude_operation_log.md` | 操作审计日志（v1 日志在 `archive/`） | 每完成一个二级小节立即追加 |
 | `README.md` | 项目入口文档 | 每完成一个大节统一更新 |
 | `CURRENT_PROGRAM_ARCHITECTURE.md` | 当前实现、已确认缺陷与论文架构依据 | 源码或架构事实变化时更新，不维护待办 |
 | `Reasoning_Framework.md` | 早期研究动机与概念设计 | 仅作背景参考，不作为当前实现或计划 |
+
+> `plan.md` 与 `claude_operation_log.md` 同名换新（2026-10-15）：v1 的两份文件已按原样归档，
+> **归档件不改写**，新文件从当日起记当前代次。
 
 ### 8.2 版本控制规范
 
@@ -676,9 +713,10 @@ git commit -m "feat(plan-X.Y): 描述"
 ### 8.3 测试
 
 ```bash
-pytest tests/ -v                        # 当前完整测试集
-pytest tests/test_pipeline.py -v        # 端到端管道
-pytest tests/test_parser.py -v          # 单模块
+bash scripts/run_tests.sh core          # 快层（约 30 秒）
+bash scripts/run_tests.sh module        # 模块层（约 35 秒）
+bash scripts/run_tests.sh full          # 全量，分块运行以免超 cgroup 被静默杀死
+pytest tests/test_pipeline.py -v        # 单文件
 ```
 
 ### 8.4 操作日志
@@ -698,6 +736,16 @@ pytest tests/test_parser.py -v          # 单模块
 ### 8.5 GPU 使用规范
 
 ⚠️ **加载任何模型权重或执行 GPU 任务前，必须先向用户报告算力需求并获得明确授权**（见 `agent.md` §3.2）。
+
+### 8.6 数据与归档规范
+
+- **冻结**：`sft_data/FROZEN.json` 以 **(代次, 批次)** 为身份；写入入口直接拒收，分析用途需
+  `--allow-frozen` 并在产物里留 `frozen_batch_used=true`。
+- **归档**：读归档路径走 `utils.batch.resolve_path()`，报告里必须写 `resolved_from_archive`；
+  归档**不解除**冻结门禁（`apply_review` / `build_final_v2` / 轨迹生成仍然拒收）。
+- **不删除数据**：归档只做"移动 + 摘要 + 映射"，SUMMARY 见 `MANIFEST.json`；
+  代码退役与数据归档分开做（退役实现仍被导入，先改导入方）。
+- **统计口径**：任何统计都要说明读的是**现行目录**还是**归档副本**——两者不能混算。
 
 ---
 

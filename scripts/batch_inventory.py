@@ -46,9 +46,29 @@ def _load(path: str) -> Optional[dict]:
         return None
 
 
-def _versions(batch_id: str) -> Dict[str, str]:
+def _batch_paths(batch_id: str) -> Dict[str, object]:
+    """
+    A batch's paths, following `archive/PATH_MAP.json` when it has been archived.
+
+    Stage 1 (2026-10-15) moved the v1 batches; the historical ids still live in
+    `FROZEN.json`, so the inventory must keep reporting them — and saying that
+    what it read is the archived copy, rather than degrading to "未记录".
+    """
+    from utils.batch import resolve_path
+
+    resolved: Dict[str, object] = {}
+    archived = False
+    for key, value in batch_paths(batch_id).items():
+        path, from_archive = resolve_path(value)
+        resolved[key] = path
+        archived = archived or from_archive
+    resolved["archived"] = archived
+    return resolved
+
+
+def _versions(batch_id: str, paths: Optional[dict] = None) -> Dict[str, str]:
     """The four versions, from VERSIONS.json, else the run report, else 未记录."""
-    paths = batch_paths(batch_id)
+    paths = paths or _batch_paths(batch_id)
     found: Dict[str, str] = {}
     versions = _load(os.path.join(paths["trajectories"], "VERSIONS.json"))
     if versions:
@@ -82,9 +102,9 @@ def _versions(batch_id: str) -> Dict[str, str]:
             "校准表": "未记录", "拟合组": "未记录", "代码版本": "未记录"}
 
 
-def _batch_sample_ids(batch_id: str) -> set:
+def _batch_sample_ids(batch_id: str, paths: Optional[dict] = None) -> set:
     """The sample ids this batch's files actually contain (either direction)."""
-    paths = batch_paths(batch_id)
+    paths = paths or _batch_paths(batch_id)
     ids = set()
     for directory in (paths["samples"], paths.get("reviewed", "")):
         if not directory or not os.path.isdir(directory):
@@ -101,7 +121,7 @@ def _batch_sample_ids(batch_id: str) -> set:
     return {sample_id for sample_id in ids if sample_id}
 
 
-def _review_state(batch_id: str) -> Dict[str, object]:
+def _review_state(batch_id: str, paths: Optional[dict] = None) -> Dict[str, object]:
     """
     What the reviewer has decided about *this batch*.
 
@@ -109,7 +129,7 @@ def _review_state(batch_id: str) -> Dict[str, object]:
     decisions of the first review against every batch that came later.
     """
     dispositions = os.path.join(PROJECT_ROOT, "sft_data", "review", "dispositions.jsonl")
-    own_ids = _batch_sample_ids(batch_id)
+    own_ids = _batch_sample_ids(batch_id, paths)
     lines = 0
     decided = set()
     if os.path.exists(dispositions):
@@ -128,35 +148,58 @@ def _review_state(batch_id: str) -> Dict[str, object]:
     # whose 145 decisions were sitting in the other (same false zero as the
     # counter that started this).  Both are checked, and the file's own
     # batch_id/fingerprint are read when present.
+    #
+    # Each candidate is also followed into the archive (2026-10-15): after the
+    # move this reported "无导出文件" for g7_b1 again, whose 145 decisions are
+    # exactly where the mapping says they are.
+    from utils.batch import resolve_path
+
     decisions = None
     export_path = None
+    exported_from_archive = False
+    export_is_own = False
+    root_export = None
     for candidate in (
             os.path.join(PROJECT_ROOT, "sft_data", "review",
                          f"review_decisions_{batch_id}.json"),
             os.path.join(PROJECT_ROOT, "sft_data", "review", batch_id,
                          f"review_decisions_{batch_id}.json"),
             os.path.join(PROJECT_ROOT, "sft_data", "review", "review_decisions.json")):
+        candidate, from_archive = resolve_path(candidate)
         loaded = _load(candidate)
+        if from_archive:
+            exported_from_archive = True
         if loaded and loaded.get("decisions"):
-            if candidate.endswith(f"review_decisions_{batch_id}.json") \
-                    or loaded.get("batch_id") in (None, batch_id):
-                decisions, export_path = loaded, candidate
-                if loaded.get("batch_id") == batch_id:
+            own_name = candidate.endswith(f"review_decisions_{batch_id}.json")
+            own_id = loaded.get("batch_id") == batch_id
+            if own_name or loaded.get("batch_id") in (None, batch_id):
+                decisions, export_path, export_is_own = loaded, candidate, own_name or own_id
+                if own_id:
                     break
+            elif root_export is None and loaded.get("batch_id"):
+                root_export = candidate
     exported = {key for key in ((decisions or {}).get("decisions") or {})
                 if key in own_ids}
+    # A root-level export belonging to an earlier batch is not this batch's
+    # file: saying "0 条（<别人的文件>）" invites the reader to think this batch
+    # has an export that is merely empty.
+    if decisions is not None and not export_is_own and not exported:
+        root_export, decisions, export_path = export_path, None, None
     return {"dispositions_lines": lines,
             "own_samples": len(own_ids),
             "decided_in_batch": len(decided),
             "browser_export": decisions is not None,
+            "export_from_archive": exported_from_archive if decisions is not None else False,
             "export_path": (os.path.relpath(export_path, PROJECT_ROOT).replace(os.sep, "/")
                             if export_path else None),
             "export_batch": (decisions or {}).get("batch_id"),
+            "other_batch_export": (os.path.relpath(root_export, PROJECT_ROOT).replace(os.sep, "/")
+                                   if root_export else None),
             "export_decisions_in_batch": len(exported)}
 
 
-def _samples(batch_id: str) -> Dict[str, object]:
-    paths = batch_paths(batch_id)
+def _samples(batch_id: str, paths: Optional[dict] = None) -> Dict[str, object]:
+    paths = paths or _batch_paths(batch_id)
     manifest = _load(os.path.join(paths["samples"], "manifest.json"))
     review_only = _load(os.path.join(paths["samples"], "review_only.json"))
     counts: Dict[str, int] = {}
@@ -176,12 +219,12 @@ def _samples(batch_id: str) -> Dict[str, object]:
 def collect(batch_ids: List[str]) -> List[dict]:
     rows = []
     for batch_id in batch_ids:
-        paths = batch_paths(batch_id)
+        paths = _batch_paths(batch_id)
         records = load_trajectory_records(paths["trajectories"]) if os.path.isdir(
             paths["trajectories"]) else {}
         policies = sorted({record.get("policy_version") for record in records.values()})
-        review = _review_state(batch_id)
-        samples = _samples(batch_id)
+        review = _review_state(batch_id, paths)
+        samples = _samples(batch_id, paths)
         # kind: reviewed (historical) / produced-but-unreviewed / qualified
         # "Reviewed" is what the reviewer actually decided about this batch's
         # samples, wherever that lives: the browser export counts, and a
@@ -201,9 +244,10 @@ def collect(batch_ids: List[str]) -> List[dict]:
         rows.append({
             "batch": batch_id,
             "kind": kind,
+            "archived": bool(paths["archived"]),
             "trajectories": len(records),
             "policies": policies or ["未记录"],
-            "versions": _versions(batch_id),
+            "versions": _versions(batch_id, paths),
             "samples": samples,
             "review": review,
         })
@@ -237,6 +281,9 @@ def render(rows: List[dict]) -> str:
             f"## {row['batch']}",
             "",
             f"- 类别：**{row['kind']}**",
+            (f"- 位置：**已归档** → 以下数字读自 `archive/legacy_v1_20261015/` 的副本"
+             "（`archive/PATH_MAP.json`）" if row.get("archived")
+             else "- 位置：仓库原位"),
             f"- 轨迹：{row['trajectories']} 条｜策略版本：{', '.join(row['policies'])}",
             f"- 版本（来自 {versions['来源']}）：策略 {versions['策略']}｜"
             f"提示词 {versions['提示词']}｜校准表 {versions['校准表']}"
@@ -247,7 +294,12 @@ def render(rows: List[dict]) -> str:
             f"准入已应用：{'是' if samples['admission_applied'] else '否（评审材料）'}",
             f"- 审核：本批样本 {review['own_samples']} 条｜浏览器导出 "
             f"{review['export_decisions_in_batch']} 条"
-            + (f"（{review['export_path']}）" if review["export_path"] else "（无导出文件）")
+            + (f"（{review['export_path']}"
+               + ("，读自归档副本" if review.get("export_from_archive") else "")
+               + "）" if review["export_path"] else "（无导出文件"
+               + (f"；仓库根另有 {review['other_batch_export']}，属于更早的批次"
+                  if review.get("other_batch_export") else "")
+               + "）")
             + f"｜写回仓库的处置 {review['decided_in_batch']} 条"
             + ("（该导出尚未 `record_review --import`）"
                if review["export_decisions_in_batch"] and not review["decided_in_batch"]
@@ -262,7 +314,9 @@ def render(rows: List[dict]) -> str:
         "",
         "| 路径 | 内容 | 能否训练 |",
         "|------|------|----------|",
-        "| `sft_data/train/final/` | 最早的冻结基线（v1 时代） | 只作回归对照 |",
+        "| `archive/legacy_v1_20261015/` | **2026-10-15 归档的 v1 全部产物** | 历史，不训练 |",
+        "| `sft_data/g8/` | 新代次（Qwen3-VL + 新专家组），批次名 `b1`… | 建成后按流程 |",
+        "| `sft_data/train/final/` | 最早的冻结基线（v1 时代，已归档） | 只作回归对照 |",
         "| `sft_data/train/final_v2/` | G4 转换产物（v2 时代，含 237 集） | 只作对照 |",
         "| `sft_data/train/batches/<id>/` | 分批产物；`review_only.json` 表示评审材料 | 仅当该批有审核处置且过门禁 |",
         "| `sft_data/trajectories_<id>/` | 批次轨迹（只读，含 `VERSIONS.json`） | 不直接训练 |",

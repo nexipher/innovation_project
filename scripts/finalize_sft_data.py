@@ -254,7 +254,29 @@ def generate_format(num_samples: int = 100) -> List[dict]:
 # Main
 # =========================================================================
 
+def assert_not_archived(output_dir: str) -> None:
+    """
+    Refuse to write where the archive now holds the v1 baseline.
+
+    `sft_data/train/final/` was archived on 2026-10-15.  Running this script
+    after that would recreate the directory at a path that is on record as
+    archived — a directory that looks like the frozen baseline and is not it.
+    The check goes live exactly when the archive lands, so it cannot be
+    "remembered" wrongly.
+    """
+    from utils.batch import resolve_path
+
+    _path, from_archive = resolve_path(output_dir)
+    if from_archive and not os.path.exists(output_dir):
+        raise SystemExit(
+            f"拒绝写入：{os.path.relpath(output_dir)} 已于 2026-10-15 归档为历史产物"
+            "（archive/legacy_v1_20261015/experiments/train_final/）；"
+            "重建它会得到一个看起来像冻结基线、实际不是的目录。"
+            "新代次请走 sft_data/<generation>/ 布局。")
+
+
 def main():
+    assert_not_archived(SFT_DATA_DIR)
     os.makedirs(SFT_DATA_DIR, exist_ok=True)
 
     random.seed(42)

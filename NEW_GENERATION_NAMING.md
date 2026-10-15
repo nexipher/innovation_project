@@ -165,7 +165,14 @@ def resolve_path(path: str) -> tuple[str, bool]:
 现有的 `--dry-run` 机制（`MockMLLMClient` + Mock 专家）可直接复用；要新增的只是
 "工具箱里只有新专家"的注册路径。
 
-## 6. 实施阶段 1 的确切动作清单（待你确认后执行）
+## 6. 实施阶段 1 的确切动作清单（**已于 2026-10-15 执行，见下**）
+
+> **执行状态（2026-10-15）**：本清单 1–3、5、6 已执行完毕——34 项移入
+> `archive/legacy_v1_20261015/`，`MANIFEST.json`/`PATH_MAP.json` 已写，移动前后逐文件核对通过
+> （`archive_v1.py --verify` + `archive_inventory.py --verify`）；第 4 项的 README 收敛与新版
+> `plan.md`/`claude_operation_log.md` 同日完成。实际执行与两处计划外补充
+> （`build_variants_g4.py` 也写批次目录，一并加必填 `--generation`；历史脚本改走 `resolve_path`）
+> 见 `claude_operation_log.md` 2026-10-15 条。**本 §6 保留原样作为当时的计划文本。**
 
 1. `git mv` 或 `mv` 清单中的 `docs`/`history` 项 → `archive/legacy_v1_20261015/{docs,experiments,review}/`；
    **代码文件一个都不动**（`role=code`，见下"归档 ≠ 退役"）；

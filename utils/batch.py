@@ -239,8 +239,13 @@ def resolve_path(path: str) -> "tuple":
     for entry in mapping.get("moved", []):
         if relative == entry["from"] or relative.startswith(entry["from"].rstrip("/") + "/"):
             suffix = relative[len(entry["from"].rstrip("/")):].lstrip("/")
-            archived = os.path.join(PROJECT_ROOT, entry["to"].rstrip("/"), suffix)
-            return archived.rstrip(os.sep) or archived, os.path.exists(archived)
+            # normpath, not a bare join: for a *file* entry the join with an
+            # empty suffix leaves a trailing separator, and `os.path.exists`
+            # on a file with a trailing separator is False — which made every
+            # single-file mapping report "not from the archive".
+            archived = os.path.normpath(
+                os.path.join(PROJECT_ROOT, entry["to"].rstrip("/"), suffix))
+            return archived, os.path.exists(archived)
     return absolute, False
 
 

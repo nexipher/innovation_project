@@ -37,7 +37,15 @@ LABELS = ("Uncertain", "Real", "Fake", "NONE")
 
 
 def transitions(traces_dir: str = TRACES_DIR) -> dict:
+    # Archived 2026-10-15: without this the empty read would produce an all-zero
+    # matrix that looks like a report — the exact false zero this file exists
+    # to prevent.
+    from utils.batch import resolve_path
+
+    traces_dir, from_archive = resolve_path(traces_dir)
     records = load_trajectory_records(traces_dir)
+    if not records:
+        raise SystemExit(f"没有轨迹记录：{traces_dir}")
     matrix: Counter = Counter()
     ids: Dict[tuple, List[str]] = defaultdict(list)
     for trajectory_id, record in sorted(records.items()):
@@ -57,6 +65,7 @@ def transitions(traces_dir: str = TRACES_DIR) -> dict:
         "definition": ("行 = 模型最后一次**可解析**的 <verdict>；列 = 控制器采纳的 final_verdict。"
                        "任何计数都取自矩阵本身，不由其他汇总数相减得到"),
         "traces_dir": os.path.relpath(traces_dir, PROJECT_ROOT),
+        "resolved_from_archive": bool(from_archive),
         "matrix": {f"{row}->{col}": matrix.get((row, col), 0)
                    for row in LABELS for col in LABELS},
         "ids": {f"{row}->{col}": ids[(row, col)]

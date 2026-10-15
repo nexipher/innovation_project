@@ -1,0 +1,2660 @@
+# 当前阶段与近期任务（2026-10-13 工程收口）
+
+> **本文件同时承担计划与计划档案**：本节（顶部）是**当前指令**；下面自
+> `## Context` 起的全部内容为**历史计划档案**，保留备查，**不再与当前指令并列**。
+> 权威说明：`CURRENT_PROGRAM_ARCHITECTURE.md`（当前代码）、`KNOWN_ISSUES.md`（未完成清单）、
+> `sft_data/BATCH_INVENTORY.md`（批次与版本台账）。
+
+## 当前状态
+
+- **任务**：全局 AI 生成检测；**Qwen 主导调用与结案**（`FORENSIC_HALTING_POLICY=v3`），
+  控制器负责执行与安全约束，参考后验只作对照。
+- **默认策略就是当前版本 v3**（`config.HALTING_POLICY`）；历史复算才显式
+  `FORENSIC_HALTING_POLICY=v2`（或 `v1`）。任何报告与批次都要核对策略、提示词指纹、
+  校准表身份三个版本。
+- **暂停**：新增专家、大批生成、SFT（用户 2026-10-13 指示）。
+- **冻结**：过去的所有批次（含 g7_b1、g7_b2、237 集、两个缺陷归档）全部**冻结为历史实验**，
+  换专家后生成新版；历史批次一律不进入 SFT。台账见 `sft_data/BATCH_INVENTORY.md`。
+
+## 近期只做三件事（其余暂缓）
+
+**2026-10-14 清单重分类**：按用户要求将 `KNOWN_ISSUES.md` 分为「当前必须解决」「新专家组建设」「已完成或退役归档」，原编号保留便于追溯。旧专家仍在代码中，专属问题停止优化，实际退出后按退役关闭；通用证据与控制流程问题保留。池化校准不预设为缺陷，由新版独立验证选择。本次仅整理文档，不解除新增专家/生成/SFT的暂停，不删除数据，不运行GPU。
+
+1. **证据忠实性**：账本与方向检查在真实模型下的误报/漏报；观察描述协议（下一批验证）。
+2. **重复调用与停止记录**：状态行的效果对照（GPU 对照已备好未跑）；口径已统一；
+   重复轮不做动作示范。
+3. **专家更换与重新校准**：冻结旧版本 → 评测替代专家 → 退出 jpeg/noise/frequency → 重新校准。
+
+## 收口四件事的落地位置
+
+| 收口项 | 落地位置 |
+|--------|----------|
+| 1 明确唯一当前版本 | `CURRENT_PROGRAM_ARCHITECTURE.md` §1–§3、README §0 |
+| 2 整理计划与文档 | 本节 + README §0/§7 分界 + `CURRENT_PROGRAM_ARCHITECTURE.md` |
+| 3 隔离数据与实验产物 | `sft_data/BATCH_INVENTORY.md`（自动生成）、每批 `VERSIONS.json`、路径约定表 |
+| 4 未完成问题清单 | `KNOWN_ISSUES.md`（状态 + 验收条件） |
+
+## 推进顺序（用户给定）
+
+冻结旧版本 → 理清入口与数据 → 收口关键缺陷 → 评测替代专家 → 重新校准 →
+小批 Agent 验收 → SFT。**每一步以 `KNOWN_ISSUES.md` 的验收条件为准，不以"测试通过"为准。**
+
+---
+
+# 历史计划档案（以下内容保留备查，不再是当前指令）
+
+# 阶段一实现计划：主动探索型双分支图像取证系统原型
+
+> **当前执行入口（2026-09-20）**：阶段一、二和三章节保留历史规划与已完成记录；旧的“直接使用 539 条候选数据进行 LoRA”路径已暂停。后续工作统一从 §4.7 开始，严格按 G0 → G1 → G2 → G3 → G4 → G5 的依赖顺序开展。
+
+## Context
+
+本项目从零构建一个"主动探索型 MLLM 图像取证系统"的原型。代码仓库当前只有设计文档（`.md`），无任何 Python 代码。阶段一目标：**在 CPU 模式下实现完整数据管道（真实专家算法 + Mock MLLM），用真实图像跑通端到端测试，并生成 SFT 训练数据**。
+
+核心约束：无 GPU、纯 Python 状态机、操作日志增量追加。
+
+---
+
+## 一、目录结构
+
+```
+innovation_project/
+├── main.py                         # 入口：加载配置 → 创建组件 → 运行状态机
+├── config.py                       # 集中配置常量（路径、阈值、步数上限等）
+├── requirements.txt                # 依赖清单
+├── claude_operation_log.md         # 操作日志（已存在空文件，增量追加）
+│
+├── experts/                        # 法证专家模块
+│   ├── __init__.py
+│   ├── base.py                     # BaseExpert 抽象类 + ExpertResult dataclass
+│   ├── frequency.py                # 2D-FFT 频域网格伪迹检测
+│   ├── noise.py                    # SRM 高通滤波噪声残差分析
+│   └── jpeg.py                     # JPEG 块效应 + DCT 直方图分析
+│
+├── mllm/                           # MLLM 客户端抽象层
+│   ├── __init__.py
+│   ├── base.py                     # BaseMLLMClient 抽象接口
+│   └── mock_client.py             # 模板驱动的 Mock（按图像来源+轮次生成响应）
+│
+├── state_machine/                  # 状态机核心
+│   ├── __init__.py
+│   ├── controller.py              # 核心循环：解析→执行专家→Evidence Token→回传
+│   ├── halting.py                 # 三重拦截守卫 + 信息熵/KL 散度计算
+│   └── evidence_tokenizer.py      # 标量→语义描述映射 + Evidence Token Schema 构建
+│
+├── utils/                          # 工具层
+│   ├── __init__.py
+│   ├── parser.py                  # 正则解析器：抓取 <planning>/<call_*>/<reasoning>/<verdict>
+│   ├── coordinate_transformer.py  # 相对坐标 [0,1000] → 绝对像素坐标
+│   ├── image_utils.py            # 图像加载、bbox 裁剪、格式转换
+│   └── logger.py                 # Trace Logger (ShareGPT 格式) + 操作日志追加
+│
+├── tests/                          # 测试
+│   ├── __init__.py
+│   ├── conftest.py                # Pytest fixtures（合成图像、Mock 配置）
+│   ├── test_parser.py
+│   ├── test_coordinate_transformer.py
+│   ├── test_image_utils.py
+│   ├── test_frequency_expert.py
+│   ├── test_noise_expert.py
+│   ├── test_jpeg_expert.py
+│   ├── test_evidence_tokenizer.py
+│   ├── test_halting.py
+│   ├── test_mock_mllm.py
+│   ├── test_controller.py
+│   └── test_pipeline.py          # 端到端管道测试（Real + GenImage 各 2 张图）
+│
+└── traces/                         # SFT 训练数据输出目录
+    └── sft_sessions/              # 每次运行生成一个 ShareGPT JSON 文件
+```
+
+---
+
+## 二、核心类/接口设计
+
+### 2.1 专家模块 (`experts/`)
+
+```python
+# experts/base.py
+@dataclass
+class ExpertResult:
+    """专家分析结果，直接映射到 Evidence Token Schema"""
+    evidence_name: str          # e.g. "abnormal_high_frequency_residual"
+    region: str                 # e.g. "patch_coordinates_[210,150,480,420]"
+    phenomenon: str             # 物理现象描述
+    reasoning: str              # 物理原理
+    strength: float             # 归一化异常值 [0, 1]
+    source: str                 # "frequency_expert" | "noise_expert" | "jpeg_expert"
+    support: str                # "AI-generated" | "Real" | "Uncertain"
+    interpretation_text: str    # 语义软描述
+
+class BaseExpert(ABC):
+    @abstractmethod
+    def analyze(self, img_np: np.ndarray, bbox: list[int]) -> ExpertResult:
+        """入参：BGR numpy 数组 + 绝对像素坐标 [ymin, xmin, ymax, xmax]"""
+        ...
+```
+
+三个具体实现：
+
+- **`FrequencyExpert`** — 裁剪 bbox → 灰度化 → Hanning 窗 → 2D-FFT → 功率谱 → 高频径向平均 → 峰值检测 → 归一化
+- **`NoiseExpert`** — 裁剪 bbox → SRM 5×5 高通滤波核卷积 → 局部噪声方差 vs 全局背景方差 → 断层程度归一化
+- **`JPEGExpert`** — 裁剪 bbox → 8×8 块效应强度 (Blockiness) → DCT 系数直方图 → 双重量化痕迹检测
+
+### 2.2 MLLM 客户端 (`mllm/`)
+
+```python
+# mllm/base.py
+class BaseMLLMClient(ABC):
+    @abstractmethod
+    def generate(self, prompt: str, image_path: str,
+                 history: list[dict]) -> str:
+        """返回 MLLM 的原始文本输出（含 XML 标签）"""
+        ...
+
+# mllm/mock_client.py
+class MockMLLMClient(BaseMLLMClient):
+    """模板驱动 Mock：根据图像来源（real/fake）和对话轮次返回预设响应"""
+    MODES = ["fast_verdict", "two_calls", "explore_all", "conflict"]
+    def __init__(self, mode: str = "two_calls", seed: int = 42):
+        ...
+```
+
+Mock 行为模式：
+
+| 模式 | Turn 0 | Turn 1 | Turn 2+ | 用途 |
+|------|--------|--------|---------|------|
+| `fast_verdict` | planning + verdict（real）或 +1 call（fake） | reasoning + verdict | N/A | 测试快速结案路径 |
+| `two_calls` | planning + 1 call | reasoning + 另1 call 或 verdict | verdict | 默认均衡测试 |
+| `explore_all` | planning + 2 calls | reasoning + 2 calls | 持续至 max steps | 测试强制终止路径 |
+| `conflict` | planning + call_freq | reasoning + call_noise | conflict → Uncertain | 测试证据冲突路径 |
+
+### 2.3 状态机 (`state_machine/`)
+
+```python
+# state_machine/controller.py
+class ForensicStateMachine:
+    def __init__(self, mllm_client, experts, parser, tokenizer, halting, logger):
+        ...
+    def run(self, image_path: str, ground_truth: str = None) -> dict:
+        """主循环，返回完整 Session 记录"""
+        # 1. 加载图像 → conversation 初始化（含 System Prompt SOP 约束）
+        # 2. while step < max_steps:
+        #    a. MLLM.generate() → raw output
+        #    b. Parser 提取 planning / call_* / reasoning / verdict
+        #    c. if verdict → break
+        #    d. if call_* → CoordinateTransformer → ImageUtils.crop → Expert.analyze
+        #       → EvidenceTokenizer.build → 注入 conversation history
+        #    e. HaltingChecker.check() → 可能强制终止
+        # 3. Logger 保存完整 Session → SFT JSON
+```
+
+### 2.4 终止机制 (`state_machine/halting.py`)
+
+```python
+class HaltingChecker:
+    def __init__(self, max_steps=5, entropy_threshold=0.3, kl_threshold=1e-3):
+        ...
+    def check(self, step, evidence_chain, last_output) -> (bool, str):
+        """按优先级依次检查：verdict > max_steps > conflict > info_gain"""
+    def _verdict_detected(self, output) -> str | None: ...
+    def _max_steps_reached(self, step) -> bool: ...
+    def _conflict_detected(self, evidence_chain) -> bool: ...
+    def _info_gain_converged(self, evidence_chain) -> bool: ...
+```
+
+---
+
+## 三、数据流（端到端）
+
+```
+1. 用户指定图像路径 → main.py
+2. StateMachine.run(image_path)
+3. Logger.init_sft_session() → 初始化 ShareGPT 数据结构
+4. System Prompt 含 SOP 约束（planning/call/reasoning/verdict 格式要求）
+5. 第 0 轮：MLLM.generate(system_prompt, image_path, history=[])
+6. MockMLLM 返回：
+   "<planning>
+    Suspected Region: [200,150,400,350]
+    Visual Anomalies: 边缘过于平滑
+    Expert Target: freq — 检测上采样网格伪迹
+    </planning>
+    <call_freq>[200,150,400,350]</call_freq>"
+7. Parser.extract_all_calls() → [("freq", [200,150,400,350])]
+8. Parser.parse_verdict() → None → 继续
+9. For each call:
+   a. CoordinateTransformer.relative_to_absolute([200,150,400,350], W, H) → abs_bbox
+   b. ImageUtils.crop_bbox(img, abs_bbox) → patch
+   c. FrequencyExpert.analyze(patch) → ExpertResult(strength=0.82, support="AI-generated", ...)
+   d. EvidenceTokenizer.tokenize(result, bbox, image_shape) → Evidence Token JSON
+   e. conversation.append({"from": "user", "value": json.dumps(evidence_token)})
+10. HaltingChecker.check() → (False, None) → 继续
+11. 第 1 轮：MLLM.generate(prompt, image, updated_conversation)
+12. MockMLLM 返回："<reasoning>...</reasoning><verdict>{"verdict":"Fake","confidence":0.92}</verdict>"
+13. Parser.parse_verdict() → 提取 verdict → break
+14. Logger.finalize_sft(verdict) → 保存 session JSON
+15. Logger.log_operation() → 追加 claude_operation_log.md
+```
+
+---
+
+## 四、关键设计决策
+
+| 决策 | 选择 | 理由 |
+|---|---|---|
+| MLLM 接入 | 抽象接口 `BaseMLLMClient` | 当前 Mock 跑通管道，后续接真实 API 无需改状态机 |
+| 状态机框架 | 纯 Python `while` 循环 | 解耦清晰，无框架依赖，符合任务书要求 |
+| 专家算法 | 第一阶段即用真实算法（非 Mock） | SciPy/NumPy 纯 CPU，计算量小 |
+| 坐标系统 | MLLM 输出 `[ymin, xmin, ymax, xmax]` × [0,1000] | 对齐 Qwen2.5-VL 规范 |
+| BBox 顺序 | `[ymin, xmin, ymax, xmax]`（OpenCV 风格） | 与 NumPy 切片 `img[y0:y1, x0:x1]` 一致 |
+| SFT 数据格式 | ShareGPT 多轮对话 JSON | 与任务文档 §7.2 Schema 对齐，可直接用于微调 |
+| 图像内部格式 | BGR NumPy (OpenCV 格式) | 所有专家算法基于 OpenCV/SciPy |
+| ADM RGBA 处理 | `cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)` | 集中处理于 `image_utils.py` |
+| 小图像 (BigGAN 128×128) | bbox clip 保证最小 16×16 | `coordinate_transformer.py` 中处理 |
+
+---
+
+## 五、真实专家算法设计
+
+### 5.1 Frequency Expert
+
+```
+输入: patch (BGR numpy array)
+步骤:
+  1. cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY) → gray
+  2. gray * Hanning window → windowed
+  3. np.fft.fft2(windowed) → fft_result
+  4. np.fft.fftshift(fft_result) → centered
+  5. power_spectrum = np.log(np.abs(centered) + 1)
+  6. 高频径向平均（取外圈 50% 半径区域）
+  7. 检测周期性尖峰：高频区域局部最大值超过中位数 + 3×std
+  8. sigmoid 归一化 → strength ∈ [0, 1]
+```
+
+### 5.2 Noise Expert
+
+```
+输入: patch (BGR numpy array)
+步骤:
+  1. SRM 5×5 高通滤波核（空间富模型 kernel #1）
+  2. cv2.filter2D(patch, -1, srm_kernel) → noise_residual (逐通道)
+  3. 计算局部滑动窗口 (32×32) 的噪声方差
+  4. 计算全局背景噪声方差
+  5. 局部方差 / 全局方差 → 不一致性度量
+  6. 断层程度归一化 → strength ∈ [0, 1]
+```
+
+### 5.3 JPEG Expert
+
+```
+输入: patch (BGR numpy array)
+步骤:
+  1. 计算水平/垂直块效应强度：
+     - 检测 8×8 边界相邻像素差的周期性模式
+     - B_h = mean(|I[i,8j] - I[i,8j-1]|) / mean(|I[i,j] - I[i,j-1]|)
+  2. 对 8×8 块做 DCT (scipy.fft.dct)
+  3. 检查 DCT 系数直方图是否有"挖空"效应（双重量化特征）
+  4. 合并块效应 + 直方图异常 → 归一化 strength
+```
+
+---
+
+## 六、Mock MLLM 模板设计
+
+Mock 从预设模板库选择，不随机生成：
+
+```
+模板 TURN_0_REAL:
+  <planning>
+  Suspected Region: [250, 250, 750, 750]
+  Visual Anomalies: 轻微压缩马赛克，疑似社交媒体传播痕迹
+  Expert Target & Hypothesis: 拟调用 jpeg 专家，检测重压缩痕迹
+  </planning>
+  <call_jpeg>[250, 250, 750, 750]</call_jpeg>
+
+模板 TURN_0_FAKE:
+  <planning>
+  Suspected Region: [200, 200, 800, 800]
+  Visual Anomalies: 中心区域纹理过于平滑，缺乏真实相机噪点
+  Expert Target & Hypothesis: 拟调用 freq 专家，生成图像在频域常有网格伪迹
+  </planning>
+  <call_freq>[200, 200, 800, 800]</call_freq>
+
+模板 TURN_AFTER_EVIDENCE:
+  <reasoning>
+  【物理-语义一致性校验】底层 {expert_name} 反馈{evidence_strength}级异常：
+  {phenomenon}——这与视觉观察到的{visual_anomaly}在因果链上吻合。
+  </reasoning>
+  [再调用另一个专家 或 输出 verdict]
+
+模板 TURN_FINAL_FAKE:
+  <reasoning>...</reasoning>
+  <verdict>
+  {"verdict": "Fake", "confidence": 0.92,
+   "primary_evidence": "high_frequency_grid_artifact",
+   "report": "经频域+噪声多轮法证分析，确认伪造。"}
+  </verdict>
+
+模板 CONFLICT:
+  <reasoning>
+  【证据冲突反思】freq 专家强判假(strength=0.9)，但 noise 专家强判真(strength=0.1)。
+  底层物理痕迹出现不可调和的强冲突，不能做出确定结论。
+  </reasoning>
+  <verdict>
+  {"verdict": "Uncertain", "confidence": 0.45,
+   "report": "多项法证证据存在根本性冲突，疑罪从无。"}
+  </verdict>
+```
+
+---
+
+## 七、SFT 数据生成
+
+每一次 `StateMachine.run()` 自动产出完整的 ShareGPT 格式多轮对话：
+
+```json
+{
+  "id": "forensic_sft_20260717_001",
+  "image_path": "dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+  "ground_truth": "Fake",
+  "source_model": "Midjourney",
+  "final_verdict": {"verdict": "Fake", "confidence": 0.92, ...},
+  "conversations": [
+    {"from": "user", "value": "<image>\n请分析这张图像的真实性..."},
+    {"from": "gpt", "value": "<planning>...</planning><call_freq>...</call_freq>"},
+    {"from": "user", "value": "{\"evidence_name\":\"...\",\"strength\":0.82,...}"},
+    {"from": "gpt", "value": "<reasoning>...</reasoning><verdict>...</verdict>"}
+  ],
+  "evidence_chain": [...],
+  "metadata": {
+    "image_size": [1024, 1024],
+    "total_steps": 2,
+    "halting_reason": "verdict_output",
+    "mock_mode": "two_calls"
+  }
+}
+```
+
+输出路径：`traces/sft_sessions/session_{timestamp}_{image_name}.json`
+
+---
+
+## 八、实现顺序（依赖关系驱动）
+
+```
+阶段 1.1 ─ 基础设施（无依赖，可并行）
+  ├── config.py
+  ├── requirements.txt
+  ├── utils/image_utils.py
+  └── utils/logger.py
+
+阶段 1.2 ─ 工具层（依赖 config）
+  ├── utils/coordinate_transformer.py
+  └── utils/parser.py
+
+阶段 1.3 ─ 专家模块（依赖 base.py）
+  ├── experts/base.py
+  ├── experts/frequency.py    (依赖 scipy.fft)
+  ├── experts/noise.py        (依赖 cv2)
+  └── experts/jpeg.py         (依赖 numpy/scipy)
+
+阶段 1.4 ─ MLLM 抽象层
+  ├── mllm/base.py
+  └── mllm/mock_client.py
+
+阶段 1.5 ─ 状态机核心（依赖上述所有）
+  ├── state_machine/evidence_tokenizer.py
+  ├── state_machine/halting.py
+  └── state_machine/controller.py
+
+阶段 1.6 ─ 入口 + 测试
+  ├── main.py
+  └── tests/*
+```
+
+---
+
+## 九、测试策略
+
+### 单元测试
+| 测试文件 | 测试内容 |
+|---|---|
+| `test_parser.py` | 正常/畸形 XML 标签匹配、多标签提取、verdict JSON 解析、空输入返回 None |
+| `test_coordinate_transformer.py` | 往返转换精度、边界裁剪、0/1000 极值、非正方形图像 |
+| `test_image_utils.py` | JPEG/PNG/RGBA 加载、bbox 裁剪、灰度转换 |
+| `test_frequency_expert.py` | 合成网格图像→高 strength、均匀噪声→低 strength |
+| `test_noise_expert.py` | 合成拼接图像→高 strength、自然图像→中低 strength |
+| `test_jpeg_expert.py` | 单次 JPEG→低分、双重 JPEG→高分、PNG 无压缩→低分 |
+| `test_evidence_tokenizer.py` | 强度映射边界（0.0/0.3/0.7/1.0）、Schema 完整性 |
+| `test_halting.py` | 每种终止条件独立测试、无触发→返回 False |
+| `test_mock_mllm.py` | 4 种模式 XML 结构正确、bbox 在 [0,1000] 范围、轮次追踪 |
+| `test_controller.py` | 2 轮正常结案、max-step 终止、冲突终止、异常处理 |
+
+### 端到端测试 (`test_pipeline.py`)
+- Real × 2 张、Midjourney × 1 张、SD15 × 1 张
+- 验证：管道不卡死、≥1 次专家调用、合法 verdict、SFT JSON 生成、操作日志追加
+
+---
+
+## 十、验证命令
+
+```bash
+pip install -r requirements.txt
+python -m pytest tests/ -v                        # 全部测试
+python -m pytest tests/test_pipeline.py -v        # 端到端
+python main.py --image dataset/Real/xxx.jpg       # 单张手动运行
+ls traces/sft_sessions/                           # SFT 数据检查
+tail -30 claude_operation_log.md                  # 操作日志检查
+```
+
+---
+
+## 十一、`requirements.txt`
+
+```
+numpy>=2.1.0
+opencv-python>=5.0.0
+scipy>=1.18.0
+Pillow>=11.0.0
+torch>=2.5.0
+pytest>=8.0.0
+```
+
+## 十二、潜在风险与缓解
+
+| 风险 | 缓解措施 |
+|---|---|
+| ADM 图像为 RGBA 256×256 | `image_utils.py` 集中处理 alpha → RGB 转换 |
+| BigGAN 仅 128×128，bbox 过小 | `clip_bbox` 强制最小 16×16 |
+| 不同专家归一化尺度不一致 | 各专家内部用 sigmoid 校准，而非 min-max |
+| Mock MLLM 无法模拟真实视觉理解 | 测试关注 XML 结构+状态转移，不验证语义内容 |
+| Parser 容错不够导致管道卡死 | 设计"格式纠错反馈环"：解析失败时注入错误提示重新生成 |
+
+# 阶段二实现计划：真实 MLLM 接入、SFT 数据规模化与专家校准
+
+## Context
+
+阶段一已完成：纯 CPU 管道跑通（Mock MLLM + 真实专家算法）、95 个测试全部通过、SFT 数据生成机制就绪。
+
+阶段二核心目标：**将 Mock MLLM 替换为真实 Qwen2.5-VL，规模化生成高质量 SFT 训练数据，校准专家算法参数，为阶段三的监督微调做好准备。**
+
+关键变化：需要 GPU 环境（按 agent.md §2.2 规范，须先获得用户明确授权）。
+
+---
+
+## 一、阶段二目标
+
+| 目标 | 阶段一状态 | 阶段二目标 |
+|------|-----------|-----------|
+| MLLM | Mock 模板驱动 | 真实 Qwen2.5-VL API 调用 |
+| 运行环境 | 纯 CPU | GPU（RTX 4090），按需开启 |
+| SFT 数据 | 机制就绪，零星生成 | 规模化生成（目标 1000+ 条） |
+| 专家算法 | 基础实现，参数未校准 | Frequency 敏感度校准 + 三专家阈值对齐 |
+| 行为模式 | 4 种 Mock 模板 | 真实模型的多轮 Tool-calling 行为 |
+| 格式容错 | Parser 基础校验 | 真实模型的格式纠错反馈环实战验证 |
+
+---
+
+## 二、子阶段划分
+
+### 2.1 真实 Qwen2.5-VL 接入
+
+**目标**：实现 `QwenVLClient`，替换 `MockMLLMClient`，保持 `BaseMLLMClient` 接口不变。
+
+**实现内容**：
+
+- `mllm/qwen_client.py`：继承 `BaseMLLMClient`
+  - 支持两种推理后端：
+    - **A) 本地 vLLM 部署**（需要 GPU，端口 6006）
+    - **B) API 调用**（DashScope / OpenAI 兼容 API）
+  - 图像预处理：按 Qwen2.5-VL 规范 resize + normalize
+  - 多轮对话上下文管理（System Prompt + 图像 + Evidence Token 历史）
+  - 超时重试 + 格式校验自动重生成
+- 更新 `mllm/__init__.py` 注册新客户端
+- 更新 `main.py` 支持 `--mllm qwen` 参数切换
+
+**格式纠错反馈环**（对应任务书 §6 防"数值懒惰"）：
+
+- 解析 Qwen 输出 → Parser 校验
+- 若缺失必要标签 → 注入纠错提示 → 重新生成（最多 2 次）
+- 若 verdict JSON 格式错误 → 注入修复提示 → 重新生成
+- 记录重试次数到 session metadata
+
+**GPU 审批**：在加载模型权重前，先向用户报告预计显存占用（Qwen2.5-VL-7B ~16 GB FP16）、单张推理时间（~2-5s）、任务必要性。
+
+### 2.2 SFT 数据规模化生成
+
+**目标**：批量运行管道，生成高质量、多样化的 ShareGPT 训练数据。
+
+**数据构造策略**（对应任务书 §7.2）：
+
+- **A 线 — 正常破案流**（占总数据 70%）：
+  - Real 图像 200 张 × GenImage 每类 50 张
+  - 1-3 轮工具调用后成功结案
+  - 覆盖 4 种行为模式的真实模型输出
+- **B 线 — 拦截与冲突流**（占总数据 30%）：
+  - 刻意触发 max_steps / info_gain / conflict
+  - 包含系统强制终止提示词和模型的反思响应
+
+**数据质量控制**：
+
+- 自动过滤：verdict 缺失 / 格式不闭合 / 标签嵌套错误的样本直接丢弃
+- 多样性检查：确保 3 个专家被调用的频次大致均衡
+- 标注 ground truth 与 pipeline verdict 的对照表
+
+**实现内容**：
+
+- `scripts/generate_sft_data.py`：批量数据生成脚本
+  - 支持 `--stream A` / `--stream B` / `--stream both`
+  - 支持 `--num-samples 1000` 控制总量
+  - 实时进度条 + 错误统计
+- 输出目录结构：
+  ```
+  sft_data/
+  ├── stream_a_normal/     # 正常破案流
+  ├── stream_b_conflict/   # 拦截与冲突流
+  └── metadata.json        # 数据集统计信息
+  ```
+
+### 2.3 专家算法校准
+
+**目标**：调整三个专家的 sigmoid 参数和检测阈值，使其在真实图像上的区分度最大化。
+
+**问题诊断**（阶段一发现）：
+
+- Frequency Expert：在 crop 区域上 strength 普遍 < 0.05，sigmoid_midpoint 过于保守
+- Noise Expert：raw_metric 范围 0.3-1.5，sigmoid_midpoint=2.0 过高，导致所有结果被压缩到 < 0.2
+- JPEG Expert：行为正确——Real 图像（JPEG）的 trace 明显，GenImage 图像（PNG）无压缩痕迹
+
+**校准方案**：
+
+1. **基准测试集**：Real 100 张 + GenImage 每类 30 张 = 340 张
+2. **全图分析**：不再局限 bbox crop，对全图运行各专家（提高 FFT 分辨率 + 噪声估计精度）
+3. **ROC 分析**：在 Real vs Fake 二分类上扫描 sigmoid 参数
+4. **确定最优参数**：
+   - 各 sigmoid_midpoint 使 Youden 指数最大化
+   - `STRENGTH_THRESHOLD_LOW/HIGH` 使三分类准确率最大化
+5. 更新 `config.py` 中的默认参数
+
+**实现内容**：
+
+- `scripts/calibrate_experts.py`：
+  - 批量运行三专家 → 收集 raw_metric 分布
+  - 网格搜索最优 sigmoid/threshold 参数
+  - 输出校准报告（JSON）
+
+### 2.4 格式纠错反馈环实战验证
+
+**目标**：验证真实 Qwen2.5-VL 的输出格式稳定性。
+
+**验证指标**：
+
+- 首次输出格式正确率（目标 > 85%）
+- 需要纠错重试的比例
+- 纠错后成功率（目标 > 98%）
+- verdict JSON 可解析率
+
+---
+
+## 三、目录结构变更
+
+```
+innovation_project/
+├── mllm/
+│   └── qwen_client.py          # [NEW] 真实 Qwen2.5-VL 客户端
+│
+├── scripts/                     # [NEW] 批量脚本目录
+│   ├── generate_sft_data.py    # SFT 数据规模化生成
+│   └── calibrate_experts.py    # 专家参数校准
+│
+├── sft_data/                    # [NEW] 规模化 SFT 数据输出
+│   ├── stream_a_normal/
+│   ├── stream_b_conflict/
+│   └── metadata.json
+│
+├── calibration/                 # [NEW] 校准结果
+│   └── calibration_report.json
+│
+└── config.py                    # [MODIFIED] 更新校准后的参数
+```
+
+---
+
+## 四、关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| Qwen 推理后端 | 优先本地 vLLM，备选 DashScope API | 批量生成数据时本地推理无 API 费用 |
+| 格式纠错 | 最多重试 2 次，失败则丢弃 | 避免无限循环；坏样本不应进入 SFT 数据集 |
+| SFT 数据规模 | 目标 1000-2000 条 | 参考 LLaMA-Factory 等框架的最小可用 SFT 集 |
+| 专家校准 | 基于全图而非 bbox | bbox 区域过小导致 FFT 分辨率和方差估计不准确 |
+| GPU 使用 | 仅在 SFT 数据生成和推理时开启 | 符合 agent.md 成本控制原则 |
+
+---
+
+## 五、实现顺序
+
+```
+阶段 2.1 ─ 真实 MLLM 接入（需 GPU 审批）
+  ├── mllm/qwen_client.py
+  ├── 格式纠错反馈环
+  └── main.py --mllm qwen 切换
+
+阶段 2.2 ─ 专家校准（可并行于 2.1，CPU 可跑校准脚本的数据收集部分）
+  ├── scripts/calibrate_experts.py
+  ├── 基准测试集构建
+  └── config.py 参数更新
+
+阶段 2.3 ─ SFT 数据规模化生成（依赖 2.1 + 2.2）
+  ├── scripts/generate_sft_data.py
+  ├── A 线 + B 线数据生成
+  └── 数据质量报告
+
+阶段 2.4 ─ 验证与评估
+  ├── 格式正确率统计
+  ├── SFT 数据质量审查
+  └── 端到端性能基准（准确率、平均步数、终止原因分布）
+```
+
+---
+
+## 六、测试策略
+
+- `tests/test_qwen_client.py`：Mock Qwen API 响应的单元测试（格式纠错环 + 重试逻辑验证）
+- `tests/test_calibrate.py`：校准脚本在少量图像上的功能测试
+- `tests/test_sft_quality.py`：SFT 数据 Schema 校验、标签完整性检查
+
+---
+
+## 七、验证方式
+
+```bash
+# 单张真实 MLLM 推理（需 GPU）
+python main.py --image dataset/Real/xxx.jpg --mllm qwen
+
+# 专家校准（CPU 可跑数据收集部分）
+python scripts/calibrate_experts.py --num-real 100 --num-fake 30
+
+# SFT 数据规模化生成（需 GPU）
+python scripts/generate_sft_data.py --stream both --num-samples 1500
+
+# 数据质量报告
+python scripts/generate_sft_data.py --report-only
+```
+
+---
+
+## 八、阶段二完成标准
+
+- [ ] `QwenVLClient` 可正常调用，输出通过 Parser 校验
+- [ ] 格式纠错反馈环实战有效（纠错后成功率 > 98%）
+- [ ] 三专家 sigmoid 参数经 ROC 校准，Real vs Fake 区分度显著提升
+- [ ] 生成 ≥ 1000 条高质量 SFT 数据（A 线 + B 线）
+- [ ] SFT 数据通过 Schema 校验和多样性检查
+- [ ] 全部测试通过
+- [ ] 操作日志完整
+
+---
+
+## 九、阶段一 vs 阶段二：输出对比
+
+以同一张 Midjourney 图像 `0_midjourney_169.png` 为例。
+
+### 阶段一输出（现在 — Mock MLLM）
+
+```
+============================================================
+Image:   dataset/GenImage_Test/Midjourney/0_midjourney_169.png
+GT:      Fake
+Mode:    two_calls
+============================================================
+
+  Verdict:    Fake
+  Confidence: 0.9206
+  Steps:      1
+  Halting:    verdict_output
+  Evidence:   1 expert(s) called
+    - frequency_expert: strength=0.0110 → Real
+  SFT data:   traces/sft_sessions/session_xxx.json
+```
+
+**阶段一的根本问题**：
+
+- Mock 没有真正"看"图。Planning 写 "unnaturally smooth textures" 是模板固定文本——无论哪张 Fake 图都输出同一句话
+- Evidence 显示 frequency=0.01（完全没检测到异常），但 Mock 仍然判 Fake(0.92)
+- **证据和结论脱节**：MLLM 的 reasoning 不依赖 Expert 的实际输出，而是按模板拼接
+
+### 阶段二完成后（理论输出 — 真实 Qwen2.5-VL）
+
+```
+============================================================
+Image:   dataset/GenImage_Test/Midjourney/0_midjourney_169.png
+GT:      Fake
+MLLM:    Qwen2.5-VL-7B (vLLM)
+Mode:    two_calls
+============================================================
+
+  Verdict:    Fake
+  Confidence: 0.87
+  Steps:      2
+  Halting:    verdict_output
+  Evidence:   2 expert(s) called
+    - noise_expert:      strength=0.7630 → AI-generated
+    - frequency_expert:  strength=0.4200 → Uncertain
+  SFT data:   traces/sft_sessions/session_xxx.json
+  MLLM retries: 0
+```
+
+### 逐维度对比
+
+| 维度 | 阶段一（Mock） | 阶段二（真实 Qwen2.5-VL） |
+|------|---------------|--------------------------|
+| **Planning** | 模板固定文本，所有 Fake 图一样 | 模型真实观察图像，描述*这张图具体*的视觉异常 |
+| **专家选择** | 模板预设（Fake→freq, Real→jpeg） | 模型根据视觉观察*自主决定*：看到过平滑纹理→优先调 noise，看到边缘锯齿→调 freq |
+| **BBox 定位** | 固定坐标（中心 70%） | 模型锁定*实际可疑区域*的像素坐标 |
+| **证据解读** | 模板拼接 strength 数值 | 真实交叉质证：将 noise 的"方差塌陷"与视觉上的"过度平滑"在因果链上关联 |
+| **环境污染分析** | 模板一句话带过 | 具体分析：如"该图为 PNG 格式，无 JPEG 压缩污染，noise 信号可信度高" |
+| **Verdict 置信度** | 伪随机 0.82-0.95 | 由证据链真实支撑，冲突时主动降置信度 |
+| **专家校准** | freq 几乎永远 0.01（无效） | 校准后 freq 敏感度提升，三个专家各司其职 |
+| **SFT 数据质量** | 模板拼接的"假数据" | 真实模型推理行为的忠实记录，可直接用于微调 |
+
+### 阶段二理论输出：接近真实学术场景的完整交互
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MLLM 第 0 轮 ─ Planning:
+
+  Suspected Region: [180, 220, 820, 780]
+  Visual Anomalies: 前景主体与背景交界处存在不自然的羽化过渡；
+                    皮肤纹理在高倍放大后呈现水彩画式的均匀平滑，
+                    缺乏真实相机传感器的微观噪点颗粒感。
+  Expert Target: 优先调用 noise 专家 — 验证局部噪声方差是否存在塌陷。
+
+→ 状态机调用 NoiseExpert(bbox=[184, 225, 839, 798])
+→ 返回 Evidence Token:
+   strength=0.76, support=AI-generated
+   phenomenon: "该区域噪声方差为 1.87，远低于全图背景方差 5.43，
+               方差塌陷率约 65%，与 AI 局部重绘/羽化操作一致"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MLLM 第 1 轮 ─ Reasoning + 二次调用:
+
+  【物理-语义一致性校验】
+  noise 专家在该区域检测到显著的噪声方差塌陷（strength=0.76）。
+  这与我在视觉层观察到的"边缘羽化"和"皮肤纹理过平滑"在因果链上高度吻合——
+  AI 重绘/羽化操作会抹除原始传感器噪声并引入均匀合成纹理。
+
+  【环境污染质询】
+  该图为 PNG 格式（无 JPEG 压缩），不存在压缩污染导致噪声信号衰减的干扰因素，
+  noise 专家的 0.76 置信度可信度较高。
+
+  为进一步确证，补充调取 freq 专家检测高频段是否存在上采样网格伪迹。
+
+→ 调用 FrequencyExpert(bbox=[184, 225, 839, 798])
+→ 返回: strength=0.42, support=Uncertain
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MLLM 第 2 轮 ─ Verdict:
+
+  【综合判定】
+  - noise 专家：局部方差塌陷 65%（强判假，可信度高）
+  - freq 专家：高频段存在微弱网格状能量聚集，但未达显著阈值（判 Uncertain）
+  - 综合来看，噪声层面的物理指纹断层是确定性证据，频域信号提供了辅助线索。
+
+  <verdict>
+  {
+    "verdict": "Fake",
+    "confidence": 0.87,
+    "primary_evidence": ["noise_residual_inconsistency"],
+    "report": "图像前景区域经噪声残差分析确认存在显著的局部方差塌陷（65%），
+              与AI后处理（局部重绘/边缘羽化）的物理特征一致。频域分析发现辅助性
+              线索但未达独立判定阈值。综合判定为 AI 生成/篡改图像。"
+  }
+  </verdict>
+```
+
+### 阶段二本质变化
+
+> **阶段一证明了"管道能跑"** —— Mock MLLM + 真实专家 + 状态机的工程可行性。
+>
+> **阶段二实现了"管道能用"** —— 真实 MLLM 看图、自主决策、交叉质证、
+> 生成真正证据锚定的法证报告。生成的 SFT 数据不再是模板拼接的假数据，
+> 而是真实模型推理行为的忠实记录，可直接用于阶段三的监督微调训练。
+
+---
+
+# 阶段三实现计划：SFT 监督微调、GRPO 对齐与专家重构
+
+> **状态修订**：本章是审计前制定的阶段三方案。3.1b LoRA、3.3 GRPO 和原评测顺序已被 §4.7–§4.15 取代；在生成并审核 `final_v2` 前，不得直接使用当前 `final/` 启动训练。
+
+## Context
+
+阶段二产出：816 条有效 ShareGPT SFT 数据 + 校准后的专家参数 + 真实 Qwen2.5-VL 推理管道。
+阶段二验证：格式覆盖率 98%+，但端到端准确率仅 25%（Real=53%, Fake=20%）。
+
+**基座 Qwen2.5-VL 根本问题**：
+1. 不懂法证推理——收到 Evidence Token 后不知如何解读
+2. 调用策略差——freq 被过度调用（64%）但其信号几乎为 0
+3. 缺乏多轮意识——平均 1.9 steps 就结案，不会交叉验证
+4. 不会反思——冲突场景下很少主动输出 Uncertain
+
+**阶段三核心目标**：通过 SFT 微调注入法证推理能力 + GRPO 强化对齐固化行为模式 + 重构 freq 专家。
+
+---
+
+## 一、子阶段划分
+
+### 3.1 SFT 监督微调
+
+**历史目标（已暂停）**：原计划在内容审计后使用 539 条候选数据进行 LoRA；本轮审计确认这些数据仍含系统性问题，因此改为先完成 §4.7–§4.10，再使用 §4.11 生成并审核的 `final_v2` 训练。38 条已确认严重错误的 conflict 记录永不进入训练。
+
+#### 3.1.1 数据预处理
+
+- ✅ **已完成**：数据筛选、四类构造及首轮结构审计（见 §3.1.1c 和 §4.5），输出至 `sft_data/train/final/`（539 条候选训练数据 + 38 条拒绝记录）
+- ⏸️ **转入 §4.11**：仅对通过准入的 `final_v2` 按来源隔离后划分 train/val/test，不对旧 `final/` 直接随机切分
+- ⏸️ **转入 §4.11**：在 `final_v2` 中检查 Real/Fake/Uncertain 分布及数据用途分层
+- ⏸️ **转入 §4.11**：将审核后的 ShareGPT conversation 转换为 Qwen messages 格式并绑定 `<image>`
+
+#### 3.1.1b SFT 数据构造策略
+
+**关键问题**：现有 816 条数据来自基座 Qwen 的实际输出——准确率仅 25%。直接用错误答案训练会强化错误。必须先构造**正确推理链**的示范数据。
+
+**构造方法**：对每张图运行三专家获取真实 ExpertResult，然后基于 GT + 真实 Expert 输出 + 法证推理模板合成理想 Qwen 回复。四种互补类型：
+
+| 类型 | 数量 | 构造方式 | 教什么 |
+|------|------|----------|--------|
+| **正确答案流** | ~400 | GT 与最强 Expert 信号一致的样本。合成从 planning→call→evidence→reasoning→verdict 的完整推理链，verdict 与 GT 一致 | 正常法证推理全流程 |
+| **冲突反思流** | ~200 | 两个 Expert 信号方向相反（一强判假一强判真）的样本。合成双向反思 + 疑罪从无 + Uncertain 判定 + 置信度校准 | 证据冲突时的正确响应 |
+| **格式示范流** | ~100 | 不依赖具体 Expert 输出。多种变体（不同 call 顺序、不同 bbox 位置），纯格式强化 | XML 标签条件反射 |
+| **边界案例流** | ~100 | 选取 Expert strength 在 0.25-0.75 灰色地带的样本。合成谨慎推理 + 降置信度 | 灰色地带的谨慎判断 |
+
+**类型一：正确答案流示例**（以 Midjourney 假图，GT=Fake 为例）：
+
+实际 Expert 输出：
+```
+noise:   strength=0.76, AI-generated, "局部噪声方差 1.87，全局 5.43，塌陷率 65%"
+freq_v2: strength=0.48, Uncertain, "高频段微弱网格 2.1σ，未达独立阈值"
+jpeg:    strength=0.30, Real, "块效应 0.99，PNG 无压缩"  ← 忽略（信号弱）
+```
+
+合成的理想 Qwen 回复（3 轮）：
+```
+Turn 0 Qwen: <planning>
+  人物面部纹理过度均匀，缺乏真实皮肤微纹理；背景与主体
+  光照方向偏差约 15°。AI 生成模型倾向于产生这种过度平滑
+  的纹理。优先调用 noise 专家验证局部噪声方差塌陷。
+  → <call_noise>[380, 220, 720, 580]
+
+Turn 1 Expert: noise → strength=0.76, AI-generated
+  "局部噪声方差 1.87，远低于全局 5.43，塌陷率 65%"
+
+Turn 2 Qwen: <reasoning>
+  【物理-语义一致性校验】noise 专家检测到面部区域方差塌陷
+  65%（strength=0.76）。与视觉观察到的"皮肤纹理过度均匀"
+  在因果链上吻合——AI 渲染抹除了相机传感器微观噪声。
+  
+  【环境污染质询】PNG 格式无 JPEG 压缩干扰，65% 塌陷远超
+  JPEG 混淆范围（通常 <15%），noise 信号可信度高。
+  
+  补充调取 freq 专家验证频域伪迹。
+  → <call_freq>[380, 220, 720, 580]
+
+Turn 3 Expert: freq_v2 → strength=0.48, Uncertain
+  "微弱网格 2.1σ，方向与 AI 一致但未达独立阈值"
+
+Turn 4 Qwen: <reasoning>
+  【综合判定】
+  noise: 方差塌陷 65%(0.76) → AI，可信度高
+  freq:  微网格 2.1σ(0.48) → 方向一致，辅助确认
+  两条证据均指向 AI，无证据支持真实相机来源。
+  → <verdict>Fake(0.86)
+```
+
+**类型二：冲突反思流示例**（GT=Fake，但 Expert 信号矛盾）：
+
+实际 Expert 输出：
+```
+freq:  strength=0.91, AI-generated, "频域尖峰 4.2σ，典型的 GAN 上采样网格"
+noise: strength=0.08, Real, "噪声方差 4.12 vs 全局 4.08，偏差 < 1%"
+```
+
+合成的理想 Qwen 回复（最终 verdict 为 Uncertain）：
+```
+<reasoning>
+【证据冲突分析】
+freq 专家强烈指出 AI 生成（4.2σ 网格，strength=0.91），
+但 noise 专家强烈指出真实相机（偏差 < 1%，strength=0.08）。
+两条证据在物理层面出现不可调和的根本性冲突。
+
+【冲突溯源】
+可能解释：(1) 真实照片经 AI 锐化/超分辨率处理——保留原始
+噪声结构但引入 AI 上采样伪迹；(2) AI 生成图像叠加了后处理
+噪声——freq 检测到生成痕迹但 noise 被掩盖。
+
+【疑罪从无】当前证据不足以做出确定性判定。
+→ <verdict>Uncertain(0.45)
+```
+
+**类型三：格式示范流示例**（纯格式训练，不关心对错）：
+
+该类型提供多种格式变体——首轮 call noise、首轮 call jpeg、单 call 即结案、双 call 后结案等——确保模型在任意情况下都能输出正确的 XML 标签结构。推理内容模板化，重点在于标签闭合、顺序正确。
+
+**类型四：边界案例流示例**（GT=Real，noise strength=0.32）：
+
+```
+Expert 输出: noise strength=0.32, Uncertain, "方差偏差 18%，处于灰色地带"
+GT: Real
+
+合成 Qwen 回复:
+<reasoning>
+18% 的方差偏差处于真实相机自然波动（<15%）和明显异常
+（>30%）之间的灰色地带。自然场景中的光照变化和纹理复杂度
+差异也可能导致类似偏差。在无其他专家强信号的情况下，
+倾向判定为真实，但置信度相应降低。
+→ <verdict>Real(0.72)
+```
+
+#### 3.1.1c 数据状态演变与问题处置
+
+**第一轮产出**（`build_sft_data.py` 初版）：365 条合成数据（correct=165, conflict=200），borderline=0, format=0。
+
+**发现的三个根本问题与最终处置**：
+
+| # | 问题 | 处置方案 | 最终结果 |
+|---|------|----------|----------|
+| 1 | 模板 reasoning 公式化——"填空式写作"，非真正法证推理 | ❌ 放弃"手写风格种子"，改为**直接从阶段二 A 线筛选 verdict=GT 的真实 Qwen 推理**（`finalize_sft_data.py` Step 1） | ✅ 196 条真实推理，推理风格自然 |
+| 2 | Expert 信号方向错误——GenImage PNG 假图的 noise/jpeg 偏 Real | ✅ 在四专家的 `_get_reasoning()` 中加入**格式差异说明**（如"若为 PNG 格式，无 JPEG 痕迹属正常，不代表伪造"） | ✅ 见 §3.1.1d |
+| 3 | borderline + format 类型缺失 | ✅ 从 390 张基准集选取 strength ∈ [0.25,0.6] 生成 borderline；从 A 线抽取格式完整样本生成 format | ✅ 各 100 条 |
+
+**最终数据分布（实际值）**：
+
+| 类型 | 实际数量 | 来源 | 生成脚本 |
+|------|----------|------|----------|
+| 正确答案流 (`sft_correct`) | **196** | A 线筛选（verdict=GT，真实 Qwen 推理） | `finalize_sft_data.py` Step 1 |
+| 冲突反思流 (`sft_conflict`) | **143** | 三专家合成；已移除同向或重复 Expert 的伪冲突 | `build_sft_data.py` + `audit_sft_conflicts.py` |
+| 边界案例流 (`sft_borderline`) | **100** | 灰色地带样本合成 | `finalize_sft_data.py` Step 2 |
+| 格式示范流 (`sft_format`) | **100** | A 线格式完整样本抽取 | `finalize_sft_data.py` Step 3 |
+| **候选训练总计** | **539** | 输出至 `sft_data/train/final/` | — |
+| 拒绝集 (`sft_rejected`) | **38** | 原 conflict 中不具备独立对立证据的严重错误，不计入训练总数 | `audit_sft_conflicts.py` |
+
+> 注：539 条仅为首轮结构规则过滤后的候选训练数据，并不等于全部通过内容审计。尤其 `borderline`、`format` 及剩余 conflict 仍需在正式 LoRA 前核验。
+
+#### 3.1.1d Expert reasoning 修复与数据重生成评估 (2026-07-21)
+
+**修复**：四个专家（`frequency`/`noise`/`jpeg`/`frequency_v2`）的 `reasoning` 字段从硬编码模板改为三段式条件化输出。此前无论 strength=0.01 还是 0.9，reasoning 永远输出"这是 AI 生成特征"——导致 Evidence Token 内部自相矛盾，误导 Qwen。
+
+**波及范围评估**：
+
+| 数据文件 | 来源 | 受旧 reasoning 影响？ | 处置 | 需要 GPU？ |
+|----------|------|----------------------|------|-----------|
+| `sft_correct.json` (196) | A 线筛选，真实 Qwen 输出 | Evidence Token 中包含旧 reasoning，但 Qwen 的最终 verdict=GT | 保持原样 | 否 |
+| `sft_conflict.json` (143 retained / 38 rejected) | `build_sft_data.py` 合成 | 合成模板中嵌入了旧 Expert reasoning，且部分伪冲突 | ✅ 已重跑；结构审计后隔离 38 条严重错误 | 否 |
+| `sft_borderline.json` (100) | `finalize_sft_data.py` 合成 | 同上 | ✅ **已重跑**（CPU ~3 min） | 否 |
+| `sft_format.json` (100) | A 线抽取 | 格式训练不看内容 | 不需要 | — |
+
+**执行结果**：
+- ✅ conflict 与 borderline **均已用修复后的专家重生成**，reasoning 与 strength 一致（验证：low-strength→正常描述，high-strength→异常描述）
+- ✅ correct **保持原样**——verdict 与 GT 一致，训练目标正确；Evidence Token 中的旧 reasoning 恰好模拟真实场景中 Expert 信号不完美的情形
+- 当前候选训练集：**539 条**（correct=196, conflict=143, borderline=100, format=100）；另有拒绝集 38 条，不参与训练
+
+#### 3.1.2 训练配置
+
+| 参数 | 建议值 | 说明 |
+|------|--------|------|
+| 框架 | LLaMA-Factory / transformers Trainer | 前者更便捷，后者更灵活 |
+| 微调方式 | LoRA (rank=64, alpha=128) | 节省显存，24 GB 可承载 |
+| 学习率 | 2e-5 | 标准 SFT 学习率 |
+| Batch size | 2 (gradient accumulation ×4) | 有效 batch=8 |
+| Epochs | 3 | 避免过拟合 |
+| Max length | 2048 | 覆盖多轮对话 |
+| GPU | RTX 4090 × 1 (24 GB) | LoRA 模式足够 |
+
+#### 3.1.3 训练目标
+
+- **格式硬收敛**：`<planning>/<call_*>/<reasoning>/<verdict>` 标签错漏率 < 0.1%
+- **多轮状态感应**：模型能分辨"首轮看图→中轮收证据→末轮结案"的阶段职责
+- **法证推理注入**：学会将 Evidence Token 的定性描述与视觉观察交叉关联
+
+#### 3.1.4 实现内容
+
+- ✅ `scripts/build_sft_data.py`：三专家运行 + 四类分类 + 合成（已完成）
+- ✅ `scripts/finalize_sft_data.py`：A 线筛选 + borderline/format 生成 + 数据整合（已完成）
+- ⏳ `scripts/train_sft.py` 或 `sft_config.yaml`：LLaMA-Factory 训练配置（待 GPU）
+- ⏳ 训练数据 8:1:1 划分 + Qwen messages 格式转换（待 GPU 前执行）
+- ⏳ 训练完成后保存 LoRA adapter 到 `checkpoints/sft_lora/`
+
+### 3.2 专家算法重构
+
+**目标**：解决阶段二发现的两个核心问题。
+
+#### 3.2.1 Frequency Expert 重设计
+
+**当前状态**：raw_metric 恒 ~0，分离度 0.05，完全无效。
+
+**根因分析**：
+- 当前算法在 bbox 区域（通常 200×200~400×400）上做 2D-FFT
+- GenImage 图像多为 PNG，无压缩伪迹，且生成质量高
+- 高频周期性峰值检测在中小 patch 上分辨率不足
+
+**改进方案**：
+- 对**全图**而非 bbox crop 做 FFT（阶段二校准已证明全图分析可行）
+- 增加**多尺度 FFT**（在不同分辨率下检测）
+- 引入**预训练 CNN 分类器**作为替代方案（在 GenImage 上训练一个轻量 ResNet-18 频域特征提取器）
+- 保持 `BaseExpert` 接口不变，替换内部实现
+
+#### 3.2.2 专家调用策略优化
+
+**当前状态**：freq 被 Qwen 调用 64%，但其信号为 0——浪费推理预算。
+
+**改进方案**：
+- 在 System Prompt 中增加**调用指南**：明确告诉模型 freq 适用于哪些场景、noise/jpeg 适用于哪些场景
+- 可选：在状态机层面增加**智能路由**——用简单的图像特征（分辨率、格式、压缩率）预判应优先调哪个专家
+- 训练数据中**增加不同专家调用顺序的多样性**
+
+#### 3.2.3 实现内容
+
+- `experts/frequency_v2.py`：重写的频域专家（全图 FFT + 多尺度）
+- `scripts/calibrate_experts_v2.py`：更新校准脚本，验证新 freq 的分离度
+- `config.py`：更新 freq 参数和 System Prompt 调用指南
+
+### 3.3 GRPO 强化学习对齐
+
+**目标**：使用规则奖励对 SFT 后的模型进行组内相对策略优化，固化行为模式。
+
+#### 3.3.1 Reward 设计（来自任务书 §8）
+
+| Reward | 权重 | 触发条件 |
+|--------|------|----------|
+| **Format** | +0.2 / -0.5 | 严格遵循 SOP 标签格式 |
+| **Anti-Numerical Laziness** | +0.5 / -0.6 | reasoning 中引用了定性描述词（如 "grid residual"）而非仅提分数 |
+| **Attention-Evidence Consistency** | +0.4 | verdict 声称异常的区域与 call 的 bbox 有空间一致性（IoU > 0.5） |
+| **Outcome Accuracy** | +1.0 / -1.0 | 分类正确；对 Uncertain +0.5 额外奖励 |
+
+#### 3.3.2 实现内容
+
+- `scripts/grpo_reward.py`：实现 4 个 Reward 函数的计算逻辑
+- 奖励计算依赖状态机 Trace Log（已在阶段一实现）
+- 与 SFT 后的模型组成 GRPO 训练循环
+- 输出：GRPO 对齐后的模型权重
+
+**注意**：GRPO 需要 RL 训练框架（如 TRL 的 GRPOTrainer），且需要 GPU 长时间运行。此子阶段可作为 SFT 之后的进阶优化，不一定是阶段三的硬性交付。
+
+### 3.4 全数据集评估与论文素材
+
+**目标**：在完整 GenImage 测试集上评估最终系统性能，产出论文级指标。
+
+#### 3.4.1 评估指标
+
+- **分类准确率**：Real vs Fake 二分类 + Real/Fake/Uncertain 三分类
+- **按生成模型细分**：ADM/BigGAN/Glide/Midjourney/SD14/SD15/VQDM/Wukong 各子类准确率
+- **法证报告质量**（人工评估子集）：
+  - 证据-结论一致性
+  - 物理-语义交叉质证完整性
+  - 环境污染分析的覆盖度
+- **消融实验**：
+  - 仅 MLLM（无专家）vs 单专家 vs 双专家 vs 三专家
+  - Mock vs SFT 后 vs GRPO 后
+  - 校准前 vs 校准后的专家参数
+
+#### 3.4.2 实现内容
+
+- `scripts/evaluate_full.py`：全数据集批量评估脚本
+- `scripts/ablation.py`：消融实验脚本
+- 输出评估报告（JSON + 可视化图表）
+
+---
+
+## 二、目录结构变更
+
+```
+innovation_project/
+├── experts/
+│   └── frequency_v2.py              # [NEW] 重写的频域专家
+│
+├── checkpoints/                      # [NEW] 模型权重
+│   ├── sft_lora/                    # SFT LoRA adapter
+│   └── grpo/                        # GRPO 对齐权重
+│
+├── sft_data/
+│   └── train/                       # [NEW] 标准化训练集
+│       ├── train.json
+│       ├── val.json
+│       └── test.json
+│
+├── scripts/
+│   ├── prepare_sft_data.py          # [NEW] SFT 数据预处理
+│   ├── train_sft.py                 # [NEW] SFT 训练脚本
+│   ├── grpo_reward.py               # [NEW] GRPO Reward 函数
+│   ├── evaluate_full.py             # [NEW] 全数据集评估
+│   └── ablation.py                  # [NEW] 消融实验
+│
+├── evaluation/                       # [NEW] 评估报告
+│   ├── full_eval_report.json
+│   └── ablation_report.json
+│
+└── config.py                        # [MODIFIED] 更新 freq 参数和 System Prompt
+```
+
+---
+
+## 三、实现顺序
+
+```
+阶段 3.1a ─ 数据预处理（CPU，可立即开始）
+  ├── scripts/prepare_sft_data.py
+  ├── 数据清洗 + 8:1:1 划分
+  └── Qwen messages 格式转换
+
+阶段 3.2 ─ 专家重构（CPU，可并行于 3.1a）
+  ├── experts/frequency_v2.py
+  ├── scripts/calibrate_experts_v2.py
+  └── System Prompt 调用指南更新
+
+阶段 3.1b ─ SFT 训练（GPU，依赖 3.1a）
+  ├── scripts/train_sft.py / LLaMA-Factory 配置
+  ├── LoRA 微调（~4-6 小时 RTX 4090）
+  └── 保存 adapter → checkpoints/sft_lora/
+
+阶段 3.3 ─ GRPO 对齐（GPU，依赖 3.1b，可选）
+  ├── scripts/grpo_reward.py
+  ├── GRPO 训练循环
+  └── 保存 GRPO 权重 → checkpoints/grpo/
+
+阶段 3.4 ─ 全数据集评估（GPU，依赖 3.1b + 3.2）
+  ├── scripts/evaluate_full.py
+  ├── scripts/ablation.py
+  └── 论文指标 + 图表
+```
+
+---
+
+## 四、关键设计决策
+
+| 决策 | 选择 | 理由 |
+|------|------|------|
+| 微调方式 | LoRA (rank=64) | 24 GB VRAM 可承载，训练快，可回滚 |
+| 训练框架 | LLaMA-Factory | 支持 Qwen2.5-VL，开箱即用 |
+| freq 重构 | 全图 FFT + 多尺度 → 最终替换为轻量 CNN | 逐级升级，保持接口不变 |
+| GRPO | SFT 后可选 | SFT 是硬交付，GRPO 是学术加分项 |
+| 评估基线 | 阶段二未训练的 Qwen2.5-VL 作为 baseline | 量化 SFT 的提升幅度 |
+
+---
+
+## 五、GPU 时间预估
+
+| 子阶段 | 预估时间 | 是否需要 GPU |
+|--------|---------|-------------|
+| 3.1a 数据预处理 | ~10 min | CPU |
+| 3.2 专家重构 | ~30 min | CPU |
+| 3.1b SFT 训练 | ~4-6 hours | GPU |
+| 3.3 GRPO 对齐 | ~8-12 hours | GPU |
+| 3.4 全数据集评估 | ~2-3 hours | GPU |
+
+---
+
+## 六、阶段三完成标准
+
+- [ ] SFT 训练数据预处理完成（train/val/test 划分，格式标准化）
+- [ ] LoRA 微调完成，loss 收敛，格式错漏率 < 0.5%
+- [ ] Frequency Expert v2: 分离度 > 0.3（当前 0.05）
+- [ ] 端到端准确率 > 50%（当前 25%），至少翻倍
+- [ ] 消融实验完成：SFT 后 vs SFT 前、单专家 vs 多专家
+- [ ] 法证报告质量人工评估：证据-结论一致性 > 80%
+- [ ] 操作日志完整
+
+---
+
+## 七、阶段三本质变化
+
+> **阶段二证明了"管道能跑通真模型"** —— 真实 Qwen2.5-VL 的推理行为被忠实地记录下来。
+>
+> **阶段三实现"模型能用法证"** —— 通过 SFT 微调将 816 条真实推理样本中的模式注入模型，
+> 使其学会：(1) 如何解读 Evidence Token 的物理含义，(2) 何时应该交叉验证而非轻信单个专家，
+> (3) 如何在证据冲突时退回到 Uncertain 并给出置信度校准。最终产出一个具备法证推理能力的
+> 专用 Qwen2.5-VL 变体。
+
+---
+
+# 文档维护计划：当前程序运行逻辑与框架介绍
+
+## 4.1 独立架构介绍文档
+
+**目标**：新增一份面向人工审计和新参与者的独立 Markdown 文档，说明当前程序的分层框架、核心组件和单次分析的完整运行逻辑。
+
+**实现内容**：
+
+- 新建 `CURRENT_PROGRAM_ARCHITECTURE.md`；
+- 使用 Mermaid 展示主管道的数据流和控制流；
+- 说明入口层、模型层、控制层、解析层、专家层和数据层的职责；
+- 按源码实际行为描述 CLI 启动、模型选择、状态机循环、专家调用、终止判断与 Trace 保存过程；
+- 明确 Mock/Qwen、Frequency v1/v2 和运行时步数等当前实现边界。
+
+**验证方式**：核对文档中的文件路径、类名、方法名、CLI 参数和终止原因是否与当前源码一致，并检查 Markdown 标题与 Mermaid 代码块完整性。
+
+## 4.2 新增参考论文对照与借鉴建议
+
+**目标**：阅读 `ref/` 中新增的两篇论文，将其方法、实验结论与当前 Forensic-Agent 的设计逐项对照，并把可执行的借鉴建议写入架构介绍文档。
+
+**实现内容**：
+
+- 总结 TVSIP 的视觉—语义双分支、Locator/Interpreter 解耦、区域高亮提示、框校正和两阶段训练策略；
+- 总结 Propose-Rectify 的 MLLM 提案、法证纠偏、多特征门控、多尺度验证和增强分割设计；
+- 区分可直接加入当前 Python 状态机的短期改进、需要训练的新模块和不适合直接迁移的任务特定设计；
+- 提出分阶段演进路径与对应消融、鲁棒性和跨域评估方案。
+
+**验证方式**：核对论文题名、方法组件、关键实验数字和页码；检查新增 Markdown 表格、引用链接和 Mermaid 演进图的完整性。
+
+## 4.3 新增 FakeReasoning 与 ForenX 对照分析
+
+**目标**：阅读 `ref/` 中新加入的 FakeReasoning 与 ForenX 两篇整图 AI 生成检测论文，更新当前架构文档，并把论文结论转换为适合现有状态机、Evidence Token 和 SFT 数据的实施建议。
+
+**实现内容**：
+
+- 对照两篇论文的任务定义、视觉特征注入、检测—解释一致性、数据构造和跨生成器评测；
+- 分析 FakeReasoning 的 CLIP+DINO 双分支、法证感知特征融合、分类概率映射和结构化四阶段推理；
+- 分析 ForenX 的 forensic prompt、辅助检测损失、两阶段训练和少量人工区域标注；
+- 明确整图生成场景中 bbox/heatmap 的含义应为“诊断证据区域”，而不是“篡改区域”；
+- 给出当前项目可直接实施、需要模型训练和暂不宜照搬的分级建议，并更新实验设计。
+
+**验证方式**：逐页核对方法图、数据规模、消融与限制；渲染代表性页面进行视觉检查；检查 Markdown 标题、表格、代码围栏和本地论文链接。
+
+## 4.4 ForgeryVCR 对照与全局—局部双阶段演进规划
+
+**目标**：结合 ForgeryVCR 的视觉中心工具推理、增益驱动轨迹构造和工具效用优化，完善当前架构文档，形成“近期完成全局 AI 生成检测、后续扩展局部篡改检测与定位”的连续技术路线。
+
+**实现内容**：
+
+- 对照 ForgeryVCR 与当前外部 Expert + Evidence Token 状态机，分析文本证据回灌与视觉证据回灌的差异；
+- 设计兼容全局检测和局部篡改的 `ExpertResult`/Evidence Bundle 演进方向，区分全图证据、诊断区域和篡改区域；
+- 将现有四类停止条件重构为基于证据融合、冲突消歧、工具边际增益和硬预算的决策流程；
+- 制定原始 577 条 SFT 数据的审计方案，并规划 no-tool、single-tool、multi-tool 增益轨迹；当前已自动隔离 38 条严重伪冲突；
+- 给出分阶段实施顺序、准入指标、消融实验和进入局部篡改阶段的门槛。
+
+**验证方式**：核对 ForgeryVCR 主文与补充材料中的工具集合、样本规模、增益筛选公式、奖励函数和消融数据；检查新增 Markdown 链接、表格、Mermaid 图和代码围栏完整性。
+
+## 4.5 SFT 严重错误样本隔离
+
+**目标**：将 `sft_conflict.json` 中不具备真实对立证据的严重错误条目移出训练集，形成可追溯拒绝集，并修复生成逻辑以防止同类错误再次出现。
+
+**实施内容**：
+
+- 以“两个独立 Expert 且 support 方向为 Real 对 AI-generated/Fake”为冲突样本最低准入条件；解析失败、同一 Expert 重复调用或证据方向不相反的样本进入拒绝集；
+- 为拒绝条目追加机器可读的 `audit` 信息，记录拒绝规则、失败类型和说明；训练元数据分别统计可训练样本与拒绝样本；
+- 统一冲突分类与合成阈值，移除缺失高/低证据时回退到固定 Expert 的行为，并在最终数据整理阶段同步拒绝集；
+- 增加 CPU 单元测试，覆盖真实冲突、同向证据、重复 Expert 和阈值边界。
+
+**验证方式**：确认原 181 条 conflict 中 38 条严重错误进入拒绝集、143 条留在训练集；训练总数由 577 调整为 539；运行冲突审计单元测试、JSON 解析检查和 `git diff --check`。
+
+## 4.6 文档职责统一与后续计划收敛
+
+**目标**：将论文对照产生的后续实施路线从 `CURRENT_PROGRAM_ARCHITECTURE.md` 统一迁入 `plan.md`，使架构文档只描述当前实现、已确认问题和研究依据，并以 `plan.md` 作为后续工作的唯一执行基线。
+
+**实施内容**：
+
+- 汇总本轮 SFT 诊断性审计结果，区分“已拒绝”“候选保留”“格式专用”和“等待重生成”四种状态；
+- 迁移 Expert、Evidence Bundle、视觉证据回灌、停止策略 v2、SFT v2、评测、GRPO 与局部篡改扩展的实施步骤、依赖关系和阶段门槛；
+- 清理架构文档中重复的路线图、优先级和待办，仅保留论文事实、当前系统差距、目标架构约束及指向本计划的链接；
+- 统一审阅根目录 Markdown：任务书与 `agent.md` 保持只读，操作日志保持历史记录，README 反映当前状态，`Reasoning_Framework.md` 标注为研究背景而非执行计划；
+- 统一当前数据口径为“原始 577 条、自动拒绝 38 条、磁盘候选 539 条，但尚未全部通过训练准入”。
+
+**验证方式**：检查根目录 Markdown 的职责声明、阶段状态、数据数量、交叉引用、标题层级和代码围栏；确认详细后续行动只在 `plan.md` 维护；运行 Markdown 链接/围栏检查和 `git diff --check`。
+
+# 阶段四执行计划：可信数据、Expert v2 与自适应停止
+
+本节是后续研发的唯一执行基线。论文事实、当前代码结构和已确认缺陷保留在 `CURRENT_PROGRAM_ARCHITECTURE.md`；若两份文档对“将来做什么”存在差异，以本节为准。
+
+## 4.7 G0：旧 SFT 数据诊断收口与训练隔离 ✅（已完成 2026-09-20）
+
+### 最终审计结论（`scripts/audit_sft_correct.py` + `audit_sft_conflicts.py`）
+
+| 数据类别 | 磁盘数量 | 处置状态 | 说明 |
+|----------|---------:|----------|------|
+| `correct` | 166 | `regenerate` | 原 196 条中硬拒绝 30 条（重复证据 23、坐标漂移 5、人工确认 2）；其余 166 条全部命中旧版污染 reasoning（116 条方向矛盾）或单弱证据高置信（85 条），整体需用修复后的专家重新生成 |
+| `conflict` | 143 | `regenerate` | 从原 181 条中已自动拒绝 38 条伪冲突；剩余仅通过结构准入，等待 Expert 校准后复核 |
+| `borderline` | 100 | `regenerate` | 固定模板合成，禁用于推理/路由/置信度训练 |
+| `format` | 100 | `format_only` | 仅作结构训练，事实内容未校验 |
+| `rejected` | 68 | 永不训练 | 38 条 conflict 伪冲突 + 30 条 correct 结构失效；保留用于回归测试 |
+
+**候选总数 509 条（166+143+100+100），全部带明确处置状态；无一达到事实训练准入。**
+
+### 硬拒绝规则（`correct_trace_integrity_v1`）
+
+1. `duplicate_evidence`：同一会话中 (source, strength, region) 完全重复；
+2. `coordinate_drift`：连续 bbox 面积收缩 ≥50% 三次以上（递归缩框死循环）；
+3. `confirmed_invalid_by_review`：人工确认的严重错误会话（含 `00eb3be4…` 坐标二次转换与 `080862af…` 内部矛盾两条）。
+
+### 软失败标记（保留 `regenerate`）
+
+- `contaminated_reasoning_direction`（116）：strength < 0.3 但旧版 reasoning 声称生成伪迹——生成于专家 reasoning 修复（2026-09-15）之前的 A 线数据；
+- `single_evidence_high_confidence`（85）：单条证据 + confidence ≥ 0.95；
+- `verdict_fake_without_fake_evidence`（73）/ `verdict_real_without_real_evidence`（6）：verdict 方向与证据方向不符。
+
+### 完成门槛核对
+
+- ✅ 所有旧样本具有明确处置状态（regenerate 409 / format_only 100 / rejected 68）；
+- ✅ 拒绝集规则可重复运行（幂等验证：二次运行 md5 一致）；
+- ✅ 训练入口尚未建立；`metadata.json` 的 `rejected.included_in_total=false` 与 dispositions 字段保证后续训练脚本可据此隔离；
+- ✅ `tests/test_audit_sft_correct.py`（9 项）+ `tests/test_audit_sft_conflicts.py`（7 项）全部通过。
+
+### 遗留
+
+- `sft_data/train/sft_correct.json`（139 条合成旁支）已标记 `superseded`，不被 `final/` 引用；
+- 旧数据仅用于定位生成流程缺陷；`final_v2` 在 G4 用修复后的专家与协议重新生成。
+
+## 4.8 G1：运行协议与证据正确性修复 ✅（已完成 2026-09-24）
+
+该阶段先修主管道正确性，再更新 Expert。否则新的 Expert 输出仍会被错误坐标、重复回灌或旧停止规则污染。
+
+### 实施结果
+
+1. ✅ **统一坐标协议**：`CoordinateTransformer.transform()` 返回 `region_normalized_1000` + `region_pixels` + `coordinate_space` + `clipped`；Evidence Token 同时保存两个空间（遗留的 `region: "patch_coordinates_[...]"` 字符串保留兼容）；
+2. ✅ **证据去重**：`EvidenceTokenizer.evidence_id()` 以 source/region/strength/evidence_name 生成稳定 sha1 短 id；重复结果不再进入 conversation、evidence chain 或停止统计，`suppressed_duplicate_count` 单独记录；
+3. ✅ **Qwen 多轮图像历史**：`mllm/message_builder.py`（无 torch 依赖）重建完整历史——原图保留在首轮，每个证据轮附诊断区域裁剪图（最多 2 张），相对路径按项目根解析，缺图降级为纯文本；裁剪图落盘 `traces/evidence/<session>/`；
+4. ✅ **证据语义一致性**：`utils/evidence_consistency.py` 确定性短语方向检查（低 strength 不得声称生成伪迹、高 strength 不得声称正常），失败证据标记 `consistency.fail` 并降级 `support→Uncertain`；
+5. ✅ **任务语义字段**：Trace metadata 增加 `task_type=fully_generated`、`evidence_scope=global`、`region_semantics=diagnostic_evidence_region`；证据 token 携带 `region_semantics`；
+6. ✅ **可观测计数**：`model_turn_count`、`expert_call_count`、`unique_evidence_count`、`suppressed_duplicate_count`、`weighted_cost` 全部写入 Trace；停止预算改为 `MAX_EXPERT_CALLS=5` / `MAX_MODEL_TURNS=6` 双计数，停止原因更名 `budget_exhausted`。
+
+### 完成门槛核对
+
+- ✅ 坐标往返测试覆盖 5 种图像尺寸（含非方形），二次转换不产生缩放漂移（`test_roundtrip_no_second_scaling`）；
+- ✅ 重复工具响应不增加 evidence 数、不触发信息增益收敛（`TestEvidenceDeduplication`，复现 `0b0d0ad4` 失败模式）；
+- ✅ 一致性检查捕获两类审计反例：`080862af`（方向矛盾）由检查器捕获、`00eb3be4`（重复证据）由 evidence_id 碰撞捕获（`test_evidence_consistency.py` 集成用例）；
+- ✅ CPU Mock 端到端 Trace 含完整任务语义与计数字段（`TestTraceSemantics`）。
+
+### 提交记录
+
+- `f8f010b` 双空间坐标协议 + evidence_id
+- `0d706ec` 证据去重 + 分离计数 + 预算语义
+- `30d2ae7` 确定性一致性门
+- `fac5c36` 多轮图像历史（region 裁剪图回灌）
+
+### 遗留（进入 G2）
+
+- 停止策略仍未重构（`<verdict>` 仍优先进退出、info_gain 仍比较相邻 strength）——依赖 G2 校准后的后验与工具增益（G3）；
+- Expert 仍输出单标量，无 `reliable/counter_explanation`/可视化产物（G2）；
+- 旧 Trace 不回溯迁移到新协议，`final_v2` 由 G4 重新生成。
+
+## 4.9 G2：Expert 准入、校准与 Evidence Bundle（G2-a/b/c ✅ 2026-09-24；G2-d 待 GPU）
+
+### 执行结果（G2-a/b/c）
+
+**G2-a 校准集** ✅：`scripts/build_calibration_set.py` 生成 2×4 格式配平网格（native / png / jpeg_q95/85/70）+ 7 类扰动，100 个源图（50 Real + 50 Fake×8 生成器）→ **700 样本 / 24 格 / 0 失败**；manifest 已提交，派生图像 116MB 已 gitignore。
+
+**G2-b 专家指标** ✅：`scripts/evaluate_experts_g2.py` 全图评估 5 个候选专家（freq v1/v2、noise、jpeg、ELA），原始值缓存至 `calibration/set/raw_values.json`，报告 `calibration/g2_expert_report.json`。**关键结论（png 格式配平格，q70 = 压缩历史配平格）**：
+
+| 专家 | png AUROC | q70 AUROC | 极性校正分离度 | 语义方向 | 容器红利消失 | 判定 |
+|------|-----------|-----------|---------------|----------|--------------|------|
+| frequency_v1 | 0.505 | 0.541 | 0.505 | ✅一致 | -0.04 | **不可用（无信号）** |
+| frequency_v2 | 0.556 | 0.634 | 0.556 | ✅一致 | -0.08 | 弱信号，仅辅助 |
+| noise | 0.155 | 0.228 | **0.845** | ❌**反向** | -0.07 | **语义反转**：高 strength ⇒ Real |
+| jpeg | 0.028 | 0.569 | **0.972** | ❌**反向** | **-0.54** | **反向 + 压缩历史捷径** |
+| ela | 0.948 | 0.504 | 0.948 | ✅一致 | **+0.44** | 强分离但**依赖压缩历史**（q70 归零） |
+
+- **noise/jpeg 的语义方向与本任务相反**：真实 JPEG 照片的噪声方差与块效应系统性高于未压缩的 Fake PNG；两专家在高 strength 时输出 "AI-generated" 的结论在统计上是错的（jpeg 高 strength 桶 P(Fake)=0.37）。
+- **ELA 的强分离（0.948）几乎全部来自"是否具有 JPEG 压缩历史"**，在 q70 配平格降到随机（0.504）——是数据集构造捷径而非生成伪迹检测。
+- **freq_v1 完全无信号**（0.505）；freq_v2 是唯一在压缩配平后仍略升的专家（0.634），保留为弱辅助。
+- 扰动稳定性：ELA 在 blur/noise/sharpen/brightness 下保持 0.79-0.97；noise/jpeg 在 resize/sharpen/brightness 下彻底反向（AUROC 0.01-0.16）。
+- 错误重叠：noise 与 jpeg 的 phi=1.000（同一信号的两面）；ela 与二者近独立（0.025）。
+- 专家可视化产物已实现（频谱/残差/块效应/ELA 图），250 张子集渲染完毕。
+
+**G2-c Evidence Bundle** ✅：`calibration/reliability_table.json` 由 `scripts/build_reliability_table.py` 蒸馏（等量分位分箱 → 经验 P(Fake)，开区间端点）；`utils/reliability.py` 在运行时提供 `reliability/calibrated_likelihood/semantics_aligned/applicability`；Controller 逐条测量查询校准表并渲染+落盘专家产物（与区域裁剪图一起回灌对话）。适用性标签：`disabled:no-signal`（freq v1）/ `weak:marginally-above-chance`（freq v2）/ `inverted:high-metric-means-real`（noise、jpeg）/ `shortcut-prone:compression-history`（ela）。
+
+### 待执行：G2-d（GPU）/ G2-e（收口）
+
+**G2-d 四条件增益对比（需 GPU 授权）**：`RGB baseline / +文本证据 / +可视化产物 / +双通道`，分层抽取 ~150 张校准样本，预计 **~1500-1800 次生成 ≈ 1-1.5 小时 RTX 4090**。脚本 `scripts/qwen_gain_baseline.py` 待实现（复用 G1 message_builder 的图像回灌与 G2 的产物路径）。
+
+**G2-e 决策收口（依赖 G2-d）**：逐专家给出保留/限制/降权/停用决定；把可靠区间与失败条件写入 System Prompt 调用指南。当前 G2-b/c 证据已指向：freq v1 停用、freq v2 弱保留、noise/jpeg 需反转语义或限制适用条件、ela 加注"仅限未压缩来源"。
+
+### 目标接口
+
+在兼容旧 `ExpertResult` 的基础上增加：
+
+```text
+EvidenceBundle
+├── evidence_id
+├── source / algorithm_version
+├── task_applicability
+├── scope / region / region_semantics
+├── raw_metric / condition_metadata
+├── calibrated_likelihood: Real / Fake / Uncertain
+├── reliability / reliability_factors
+├── visual_artifacts
+├── phenomenon / counter_explanation
+└── latency / failure_state
+```
+
+### 工作包划分（CPU/GPU 标注）
+
+#### G2-a 校准集构建（纯 CPU）
+
+**目标**：消除阶段二发现的 "Real=JPEG / Fake=PNG" 格式混杂，让 Expert 判别力可归因。
+
+- 构建 2×2 格式配平网格：`Real-JPEG`（原生）、`Real-PNG`（无损转存，保留像素级 JPEG 痕迹）、`Fake-PNG`（原生）、`Fake-JPEG`（按质量 95/85/70 重编码）；
+- 分辨率按原生桶分层（≤256 / 512 / 1024），不强制缩放（缩放本身作为扰动项单独测试）；
+- 后处理扰动子集：高斯模糊、高斯噪声、0.5×/2× 缩放、锐化、亮度对比度、截图重编码（JPEG q70→PNG）；
+- 每格 ≥40 张、真实/伪造各半、覆盖 8 个生成器；
+- 产出 `calibration/set/manifest.json`（格标签 + 来源 + GT + 格式 + 分辨率 + 质量 + 扰动类型）与派生图像目录（加入 .gitignore）。
+
+**交付物**：`scripts/build_calibration_set.py` + manifest + 派生图像。
+
+#### G2-b Expert 指标评估与可视化产物（纯 CPU）
+
+**目标**：回答"每个 Expert 在什么条件下有效、什么时候失效"。
+
+- 在全部格上运行 Frequency v1/v2、Noise、JPEG（外加 ELA 可视化实现作为候选新工具）；
+- 每 Expert × 每格输出：AUROC、F1@最优阈值、raw_metric 中位数/分位、在库每秒耗时、失败率（异常/极小 crop）；
+- **稳定性**：扰动前后 raw_metric 漂移分布（同图扰动 ⊆ 配对比较）；跨分辨率方向一致性；
+- **可靠区间**：strength 分箱 → 精确率曲线，导出"该 Expert strength≥x 时精确率≥y%"条件；
+- **失败条件**：逐格找失效组合（如 JPEG Expert 在 PNG 格、Noise Expert 在重压缩格的表现）；
+- **错误重叠**：三 Expert 的错误相关矩阵，标识互补/冗余；
+- **可视化产物**：为每类 Expert 实现产物渲染（频域径向谱图、噪声残差热图、块效应热图），先对分层子集（~100 张）生成，供 G2-c/G2-d 复用；
+- 产出 `calibration/g2_expert_report.json`（含每格指标 + 可靠区间表 + 失败条件 + 错误重叠矩阵）。
+
+**交付物**：`scripts/evaluate_experts_g2.py` + `experts/*` 新增 `render_artifacts()` + 报告 JSON。
+
+#### G2-c Evidence Bundle 接口升级（纯 CPU）
+
+- `ExpertResult`/Evidence Token 增加：`raw_metric`、`reliability`、`reliability_factors`（格式/分辨率/质量条件）、`calibrated_likelihood`、`counter_explanation`（反向解释）、`visual_artifacts`（产物路径）、`latency_ms`、`failure_state`；
+- 可靠性与似然从 G2-b 报告加载为查找表（不训练模型，先规则化）；
+- `counter_explanation` 由 Expert 提供模板（如噪声异常也可能是降噪后处理），写入 token 与对话；
+- Controller 复用 G1 的 `image_paths` 机制，把可视化产物与诊断区域图一起回灌；
+- 旧字段保留兼容；单测覆盖 Bundle 组装、查找表边界与降级路径。
+
+**交付物**：`experts/base.py`、`experts/*`、`state_machine/evidence_tokenizer.py`、`state_machine/controller.py`、`utils/*` 更新 + 测试。
+
+#### G2-d Qwen 四条件增益对比（**需要 GPU**）
+
+**目标**：回答"Expert 相对纯 RGB 是否有净增益""文字 vs 文字+诊断图像哪个有效"。
+
+- 四条件：① `RGB baseline`（无工具，单轮判定）② `+文本证据`（当前协议）③ `+可视化产物`（仅附产物图，无文字数值）④ `+双通道`（文字+图像）；
+- 样本：从校准集分层抽取 ~150 张（每格 ≥15、覆盖生成器与扰动）；
+- 指标：每条件 Accuracy / F1 / AUROC、分层净增益（相对条件①）、置信度 ECE、平均调用数与 token 成本；
+- 预计 GPU 时长：~150 张 × 4 条件 × 2-3 轮 ≈ 1500-1800 次生成 ≈ **1-1.5 小时（RTX 4090）**；
+- 实现：复用 `mllm/message_builder.py`（已支持图像回灌）；新增 no-tool 提示变体与"仅图无文"变体。
+
+**交付物**：`scripts/qwen_gain_baseline.py` + `calibration/g2_gain_report.json`。
+
+**实施状态（2026-09-24，CPU 侧就绪，待 GPU 授权）**：
+
+- `scripts/qwen_gain_baseline.py` 已完成：四条件映射 `rgb → evidence_injection="none" + BASELINE_SYSTEM_PROMPT`、`text → "text"`、`image → "image"`（附产物图与中性标记，不向模型显示数值）、`both → "text+image"`（G2-c 默认协议）；分层抽样仅取格式对齐单元（`real/fake × png/q95/q85/q70`，共 8 格），指标含 Accuracy / F1 / AUROC / ECE / Uncertain 率 / 平均轮数与调用数 / 分格准确率。
+- **两个必须修的问题已在 CPU 侧修掉**：
+  1. 原实现在样本循环内调用 `client_factory` —— GPU 模式下等于**每张图新建 `QwenVLClient` 并重新加载 16.6GB 权重**。现改为每个条件构建一次 client 与 expert 工具集并复用，状态机仍按样本重建以保证会话隔离（`run()` 内部 `mllm.reset()`）。
+  2. `mllm/__init__.py` 原急切导入 `qwen_client`，使所有 CPU 路径（干跑、测试）都付出 torch+transformers 的 ~450MB 代价。改为 PEP 562 惰性导出后，导入基线 **586MB → 116MB**。
+- 干跑报告与正式报告分离：`calibration/g2_gain_report_dry_run.json`（mock 数字永不覆盖 GPU 真实报告）。
+- **断点续跑（GPU 运行必需）**：`run_condition` 支持 `on_record` 回调，主流程在**每个样本完成后**即把报告落盘，并按 `(mode, per_cell)` 校验既有报告后跳过已完成样本（`--fresh` 可强制重跑）。理由：G2-d 预计 1-1.5 小时，而本环境已有 SIGKILL 先例；分次调用（如 `--conditions rgb text` 后再补齐其余）累积到同一份报告，单臂失败不再导致全部作废。`mode` 或 `per_cell` 不一致的报告视为冷启动，避免把不可比的数字混在一起。
+- **Trace 目录隔离**：正式 trace 由 `finalize_sft_data.py` 按文件名前缀从 `traces/sft_sessions/` 收集，mock/测试 session 混入即为治理风险。故 `SessionLogger` 增加 `sft_dir` 覆盖参数：G2-d 干跑写入 `traces/dry_run_sessions/`（已 gitignore），测试套件经 `tests/conftest.py` autouse fixture 写入临时目录（验证：全量测试前后 `traces/sft_sessions/` 文件数不变）。
+- **运行环境前置条件（重要）**：执行 shell 处于 **2GB cgroup**（`memory.max=2147MB`，只读不可调），与 VS Code server、claude 本体、jupyter、tensorboard 等共享；当前常驻 anon ~1.08GB、可回收页缓存 ~0.47GB，**单进程实际可用约 0.93GB**。实测 GPU 栈 `torch + transformers + processor` ≈ 0.65GB RSS（未计权重加载）。故 G2-d 执行前需确认无其他重进程，运行期间监控 `/sys/fs/cgroup/memory.current`。
+- 干跑语义说明：Mock 从对话中的 Evidence Token JSON 取判定依据，故 `rgb`（无注入）与 `image`（中性标记、无数值）两臂必然返回 Uncertain 并落在随机水平 —— 这是 mock 对注入模式的忠实反映，**不构成科学结论**，干跑只证明管线通。
+- 测试：全量 **197 通过**（新增 33 项：注入模式轴 5 项、四条件工具集 28 项）。
+
+**执行结果（2026-09-24 13:10–14:07，RTX 4090，约 57 分钟）**：
+
+配置：120 样本（8 个格式配平格 × 15 Real + 15 Fake）× 4 条件 = 480 次会话；模型加载 8.8s / 16.6GB；报告 `calibration/g2_gain_report.json`，分析 `calibration/g2_gain_analysis.json`（配对检验脚本 `scripts/analyze_g2_gain.py`）。
+
+| 条件 | acc | AUROC [95%CI] | ΔAUROC [95%CI] | McNemar p | Real 召回 | Fake 召回 | 判 Real 率 | 轮数/调用 |
+|------|-----|---------------|----------------|-----------|-----------|-----------|------------|-----------|
+| **rgb（基线）** | 0.533 | 0.658 [0.597, 0.721] | — | — | 1.000 | 0.067 | 0.967 | 1.1 / 0.0 |
+| text | 0.408 | 0.505 [0.402, 0.612] | −0.153 [−0.270, −0.028] | 0.0007 | 0.800 | 0.017 | 0.808 | 2.5 / 1.9 |
+| image | 0.242 | 0.432 [0.337, 0.533] | −0.226 [−0.336, −0.105] | <0.0001 | 0.167 | 0.317 | 0.233 | 2.4 / 1.7 |
+| both | 0.258 | 0.391 [0.291, 0.487] | −0.267 [−0.391, −0.153] | <0.0001 | 0.467 | 0.050 | 0.567 | 3.3 / 2.8 |
+
+**结论（三条均统计显著，且为负增益）**：
+
+1. **专家证据对未微调模型是净损害**：三个含工具臂的相对基线净增益全部为负，AUROC 差的 95% 区间整体落在 0 以下，McNemar 配对检验 p ≤ 0.0007。当前协议（both，G2-c 默认）代价最高（3.3 轮 / 2.8 次调用）而表现最差。
+2. **基线的"能力"是全判 Real 的领域先验**：Real 召回 1.000、Fake 召回 0.067、判 Real 率 0.967。其 AUROC 0.658 来自置信度排序而非真实判别力。
+3. **文本与图像两条通道的作用机制不同**：文本证据几乎不改变决策（判 Real 率 0.967→0.808）却降低准确率；图像证据把决策猛推向 Fake（→0.233），在提升 Fake 召回（0.317）的同时摧毁 Real 召回（1.000→0.167）。`both` 的 AUROC 0.391 **低于随机**，即其置信度与真相反相关。
+4. **这正是 SFT 的动机，同时给出了可量化的验收线**：G5 用同一四条件框架评估微调后模型，要求相对 RGB 基线的 ΔAUROC 显著为正——否则工具调用只是昂贵噪声。
+
+**G2-e 准入决策收口（2026-09-24 完成，CPU）**：
+
+| 专家 | G2-b 实测 | G2-e 决定 | 运行时后果 |
+|------|-----------|-----------|------------|
+| frequency v1 | sep 0.505（无信号） | **停用** | 不注册；类标记 DEPRECATED 仅供旧 Trace 复现；可靠性表保留其条目作为对照文档 |
+| frequency v2 | sep 0.556→q70 0.634，方向对齐但弱 | **保留（弱证据）** | 注册为 `frequency_expert_v2`；Prompt 标注 WEAK，仅可佐证 |
+| noise | 反转；sep 0.845，五格稳定 0.772–0.847 | **保留 + 反转语义** | `metric_polarity = -1`：高残差判 Real（传感器微噪声），低残差判 Fake |
+| jpeg | 反转；png 0.972 → q70 0.569 | **保留 + 反转语义 + 限制** | `metric_polarity = -1`：高值判 Real（JPEG 来源史）；Prompt 注明重压缩后接近随机 |
+| ELA | png 0.948 → q70 0.504（归零） | **不注册** | 其能力仅在"未经统一重压缩"时有意义，运行期无法得知来源压缩史；实现与校准条目保留，供未来 provenance 感知的调用条件使用 |
+
+**实现要点**：
+1. **修复校准身份 bug**：`FrequencyExpertV2.source_name` 改为 `frequency_expert_v2`，控制器注册表同步（`EXPERT_KEY_MAP["freq"] → frequency_expert_v2`），主入口（`main.py`、`scripts/generate_sft_data.py`）与测试全部改用 v2。此前 v2 的每次查询都命中 v1 的 `disabled:no-signal` 条目。
+2. **专家声明实测极性**：`BaseExpert.metric_polarity`（+1 对齐 / −1 反转）+ `inverted_text_map` + `classify_metric()`；noise/jpeg 的 `support`、`interpretation_text`、`reasoning` 全部改写为实测语义（高值→Real），并保留"不等于伪造/重压缩后失效"的限制说明。修正前它们的文本断言"高异常 ⇒ AI 生成"，与校准表方向相反 —— G2-d 证明这种自相矛盾的 token 会误导模型。
+3. **Prompt 重写**（`FORENSIC_SYSTEM_PROMPT`）：三条凭直觉的调用规则替换为逐工具实测指南（freq WEAK、noise/jpeg 高值指向 Real 的反直觉方向、jpeg 在 q≤70 后失效），并新增读取契约：`calibrated_likelihood` 为方向权威、`strength` 不可跨专家比较、读 `applicability` 与 `counter_explanation`、弱或冲突证据应输出 Uncertain。
+4. **端到端核验（64 张格式配平样本 × 3 专家）**：noise/jpeg 的文本方向与校准方向**零直接矛盾**（此前的系统性反转已消除）；文本判 Uncertain 而校准仍有方向的样本 noise 22/64、jpeg 30/64。
+
+**G2-d 机制证据（定量，`scripts/analyze_gain_mechanism.py` → `calibration/g2_gain_mechanism.json`）**：
+
+| 检验 | 结果 |
+|------|------|
+| token 声明方向 vs 真值 | `support="AI-generated"` 的 token 仅 **23.8%** 真为 Fake（105 条；基准率 47.9%，p=1e-6 **显著低于随机**）；`support="Real"` 为 53.6%（384 条，p=0.025 显著高于基准率）——前者为**反向**，后者同样不承载可用信息 |
+| Bundle 内部一致性 | `support="AI-generated"` 时平均校准 P(Fake)=**0.236**；`support="Real"` 时 **0.772**：同一 token 内两个方向字段系统性相反（text 臂 n=24/103，both 臂 n=50/167） |
+| 模型跟随哪个字段 | P(verdict=Fake｜support=AI-generated)=0.087(text)/0.265(both)，support=Real 时 0.000/0.027；而模型判 Fake 时校准 P(Fake) 均值（0.295/0.385）**低于**判 Real 时（0.662/0.625）→ 模型读的是 `support`，**未使用校准概率** |
+| 臂间配对检验 | text（0.408/0.505）显著优于 image（p=0.030）与 both（p=0.006）；三条臂均显著劣于 RGB 基线 |
+| 视觉通道 | image 臂的 Fake 判定与专家原始度量方向不一致且不显著（noise p=0.79、jpeg p=0.33）→ 产物图只提供无区分度的"可疑"偏置；分格上 Real 识别被摧毁（15/15 → 1–3/15） |
+
+结论：G2-e 的极性修复（让专家自身文本与实测方向一致）针对的正是前两行；第三行说明**仅在 Bundle 内附加校准字段不足以纠正模型**，必须改专家自身的 `support`/文本语义 —— 这是 G2-e 选择"改专家"而非"改展示"的实证依据。
+
+**遗留（转 G3 EvidenceRectifier）**：`frequency_expert_v2` 仍有 **15/64 直接矛盾**（例：strength 0.247 → 文本判 Real，校准给出 Fake 0.709）。根因是两套离散化不重合 —— 文本分带用的是 sigmoid 归一后的 `strength` 阈值（0.3/0.7），校准用的是 `raw_metric` 的分位分箱；两者对"高"的定义不一致。这不是文本语义错误，而是需要 EvidenceRectifier 按校准后验统一裁决的接口问题（§4.10）。缓解措施：Prompt 已将 freq 标注为 WEAK 且仅供佐证。
+
+**验证重跑（第一次，2026-09-24 14:26–14:50，40 样本 × 4 条件）—— 结果无效，暴露第三层缺陷**：
+
+结果：rgb 0.500/0.575；text 0.025/0.474（Uncertain 92.5%）；image 0.050/0.425（82.5%）；both 0.075/0.444（80%）。三个工具臂几乎全部弃权，无一超过基线。
+
+**根因（真机 trace 定位）**：G1 的方向一致性门 `EvidenceConsistencyChecker` 在 5 处硬编码了"高 strength ⇒ 生成伪迹"的对齐世界观。G2-e 把 noise/jpeg 反转后，它们**每一次正确的方向声明都被判为矛盾并降级为 Uncertain**：
+
+| 专家 | 专家输出 | 门处理后 | 失败项 |
+|------|---------|---------|--------|
+| jpeg | strength 0.953 → support `Real` | `Uncertain` | `support_strength_mismatch` |
+| noise | strength 0.256 → support `AI-generated` | `Uncertain` | `support_strength_mismatch` |
+
+实测 postfix 批次 160 条 trace 中，noise **57/57**、jpeg **173/173** 全部为 Uncertain —— 模型收到的是纯粹的"我不知道"，因此 80–92% 弃权。**该次运行检验的是门的抹除效应，不是极性修复本身。**
+
+**修复（提交 5582156）**：
+1. **极性感知强度规则**：`semantics_aligned=False` 的 token，期望 support 取镜像，且每带禁止的方向词互换（低 metric 现在禁止 `normal` 而非 `generative`，高 metric 反之）；
+2. **否定感知的短语匹配**：jpeg 的推理文本写的是 "This is **NOT** a forgery marker"（明确否定伪造），而裸子串匹配把 `forgery marker` 当作断言 —— 门自己的规则就要求"标记必须是断言而非否定"；
+3. **noise 的 `phenomenon` 改写**：低 metric 在反转语义下是生成端，原文却写 "within normal range / No significant local variance anomaly"。
+
+**验证**：32 张真实校准图上方向声明保留 **32/0**（此前约 100% 被降级）；测试 267 通过。已按同样配置重跑（`g2_gain_report_postfix2.json`）。
+
+**验证重跑（第二次，门已修，2026-09-24 15:00–15:35）—— 有效结果**：
+
+同样本配对（n=40，per_cell=5）：
+
+| 臂 | acc（修复前 \| 门未修 \| 门已修） | AUROC（修复前 \| 门未修 \| 门已修） | Uncertain（三者） |
+|----|-----------------------------------|--------------------------------------|-------------------|
+| rgb | 0.500 \| 0.500 \| 0.500 | 0.600 \| 0.575 \| 0.605 | 0 \| 0 \| 0 |
+| text | 0.375 \| 0.025 \| 0.075 | 0.435 \| 0.474 \| **0.290** | 0.20 \| 0.93 \| 0.57 |
+| image | 0.325 \| 0.050 \| 0.250 | 0.546 \| 0.425 \| **0.614** | 0.40 \| 0.82 \| 0.65 |
+| both | 0.250 \| 0.075 \| 0.225 | 0.334 \| 0.444 \| 0.496 | 0.35 \| 0.80 \| 0.55 |
+
+**修复达成了什么**：
+1. **token 声明从"反向"变为"随机"**：`AI-generated` 声明的真值命中率 jpeg 23.8%→**42.1%**（基准 47.5%，p=0.66）、noise →**46.9%**（基准 40%，p=0.47）。证据不再误导。
+2. **image 臂 AUROC 从低于随机回到基线持平**：0.432（修复前）→ 0.425（门未修）→ **0.614**（门已修）vs 基线 0.605。视觉通道成为唯一与基线持平的证据通道。
+3. 弃权率从 80–92% 降到 55–65%。
+
+**修复未达成什么**：没有任何一条臂超过基线；text 臂决策级 AUROC 仅 0.290（但其 57.5% 的记录并列于 0.5，n=40 下该统计量脆弱，需 n=120 复核）。
+
+**新发现的阻塞点（转 G3 首要任务）：校准总体与推理总体不匹配**
+
+可靠性表在**全图**上标定（n=700），推理时测的却是**模型自选的裁剪区域**，两者度量分布显著不同：
+
+| 专家 | 全图 p10/中位/p90 | 裁剪图 p10/中位/p90 |
+|------|------------------|---------------------|
+| noise | 0.867 / 2.529 / 4.472 | 0.221 / **1.262** / 4.718 |
+| jpeg | 1.626 / 2.262 / 3.466 | 1.671 / **2.579** / 3.371 |
+| frequency_v2 | 0.000 / 0.000 / 0.002 | 0.002 / 0.003 / 0.005 |
+
+noise 的裁剪中位数只有全图的一半，反转映射下会把大量裁剪推到"生成端"。**即使 token 已经诚实，分箱也按错误的总体解读。** EvidenceRectifier 必须在三者中择一：按裁剪尺度重新标定、限制为全图（全局）调用、或做尺度归一化。这目前是"证据为何仍不带来增益"的首要解释。
+
+**方法论教训**：G2-e 的两次核验（64 样本专家级、本表第一次）都只检查了**专家自身输出**，没有检查**管线对输出的二次加工**。日后任何语义层改动都必须端到端核验到 token 落地为止。
+
+**遗留：极性修复尚未在 Qwen 层面验证（需 GPU）**：G2-e 的核验是**专家文本层面**的（64 样本 × 3 专家，确认方向矛盾清零），但"修复后的证据是否真的对 Qwen 产生正增益"**尚未测量** —— `calibration/g2_gain_report.json` 是**修复前**专家产出的。验证运行：
+
+```
+python3 -u scripts/qwen_gain_baseline.py --per-cell 5 --fresh   # 40 样本 × 4 条件 ≈ 20 分钟
+```
+
+⚠️ `--fresh` 不可省略：续跑逻辑以 `(mode, per_cell)` 判定是否复用既有报告，不包含专家配置指纹。修复后直接重跑会打印 `Resuming: 480 records already on disk` 并把四个条件全部判为 `already complete, skipping`，**静默复用修复前的旧数字**（看起来像"修复无效"）。彻底修法是给报告加专家配置指纹并在读取时校验 —— 属共享文件改动，与 G3 一并处理。完整四条件评估留待 G5（与微调后模型同框比较，验收线才有意义）。
+
+**顺带发现（运行时 bug，纳入 G2-e 修复）**：`FrequencyExpertV2.source_name = "frequency_expert"` 与 v1 同名，导致运行时 `reliability_table.lookup()` 对所有频域 token 命中的是 **v1 条目**（`disabled:no-signal`, reliability 0.505, 校准近似均匀），而 v2 的实测条目（0.556→q70 0.634）挂在 `frequency_expert_v2` 下从未被使用。G2-d 的 text/both 两臂即在此错误标注下运行，且该错误会直接污染 G4 生成的训练数据。
+
+#### G2-e 准入决策与收口（CPU，结论依赖 G2-b + G2-d）
+
+- 依据"稳定净增益且非高度冗余"标准，逐 Expert 给出 **保留 / 限制适用条件 / 降权 / 停用** 决定；
+- 把可靠区间、失败条件与建议调用场景写入 System Prompt 调用指南（替换当前笼统的 3 条规则）；
+- 更新 `config.py` 专家参数与适用条件开关；
+- 文档收口：plan/architecture/README + 操作日志。
+
+**交付物**：决策表 + System Prompt 更新 + 文档。
+
+### 评估指标与门槛
+
+- Accuracy、F1、AUROC、NLL/Brier、ECE；
+- 相对 RGB baseline 的分层净增益；
+- 平均耗时、失败率、视觉 token 成本；
+- 不允许继续把不同 Expert 的 `strength` 当作同尺度概率直接比较；
+- 无稳定增益或只学习 JPEG/PNG 格式捷径的 Expert 必须降权、限制适用条件或移除。
+
+### GPU 需求汇总
+
+| 工作包 | GPU | 说明 |
+|--------|-----|------|
+| G2-a 校准集构建 | 否 | OpenCV/PIL 图像处理 |
+| G2-b Expert 指标 + 可视化产物 | 否 | 专家均为 numpy/cv2 算法 |
+| G2-c Evidence Bundle 升级 | 否 | 接口与查找表 |
+| **G2-d Qwen 四条件对比** | **是** | **~1-1.5 小时 RTX 4090，执行前需用户授权** |
+| G2-e 决策收口 | 否 | 文档与配置（结论依赖 G2-d） |
+
+### 实施顺序与依赖
+
+```text
+G2-a（CPU，可立即开始）
+   ↓
+G2-b（CPU，依赖 a 的校准集）
+   ↓
+G2-c（CPU，依赖 b 的可靠区间表；与 b 可部分并行）
+   ↓
+G2-d（GPU 授权后执行，依赖 c 的产物与双通道回灌）
+   ↓
+G2-e（收口，依赖 b + d 的结论）
+```
+
+## 4.10 G3：EvidenceRectifier 与停止策略 v2
+
+### 决策原则
+
+停止不再采用固定的 `verdict → max_steps → conflict → strength delta` 优先级，而改为：
+
+```text
+可靠性加权证据 + Real/Fake/Uncertain 候选概率
+    → 当前决策风险
+    → 每个剩余工具的预期风险下降
+    → 减去调用、重复、时延和失效成本
+    → continue / Real / Fake / Uncertain
+```
+
+`<verdict>` 只作为候选结论，不能绕过证据冲突、概率一致性和最低证据门槛。达到预算仅表示不能继续取证，不应自动决定标签。
+
+### 目标结构
+
+```text
+HaltingDecision
+├── action: continue / halt
+├── verdict: Real / Fake / Uncertain / null
+├── primary_reason / all_reasons
+├── next_expert
+├── posterior
+├── conflict_score
+├── expected_tool_gain
+└── expected_net_utility
+```
+
+### 入口条件（G2-e 移交）
+
+G2-e 端到端核验留下的量化缺口（64 张格式配平样本 × 3 专家）：`frequency_expert_v2` 存在 15/64 的"文本方向 vs 校准方向"直接矛盾（strength 分带与 raw_metric 分箱两套离散化不重合），noise/jpeg 为 0/64 直接矛盾但分别有 22/64、30/64 落在"文本 Uncertain、校准仍有方向"的区间。EvidenceRectifier 应以**校准后验为准统一裁决方向**，消除同一 token 内部的方向不一致，并把这些样本作为回放验证集。
+
+### 实施步骤
+
+1. 在固定结论位置读取 Real/Fake/Uncertain 候选 token logits，并与 JSON verdict、报告措辞交叉检查；
+2. EvidenceRectifier 使用 Expert 条件可靠性更新后验，不允许自由文本覆盖结构化测量；
+3. 短期以历史增益 × 条件适用度 × 当前不确定性 × 非冗余度 × 可靠性估计工具收益；
+4. 中期用离线 Trace 训练轻量路由器预测候选工具的风险下降；
+5. 强冲突且有正收益正交工具时继续取证；没有预算或无正收益时输出 `Uncertain`；
+6. 记录全部停止原因，避免预算耗尽覆盖真实的未解决冲突；
+7. 使用旧 Trace 离线回放比较 v1/v2，确认不会因重复 evidence 触发虚假收敛。
+
+### G3 执行计划（2026-09-24 制定，五项，a–d 为 CPU，e 需 GPU）
+
+排序理由：先修尺度失配（证据才可解读）→ 再统一 token 方向（消除同 token 内矛盾）→ 再改停止策略（用上干净的后验）→ 再补配置指纹（防止后续实验复用旧结果）→ 最后一次性 GPU 复核。**在 a–d 完成前不做 n=120 复测**，因为届时会测到已被替换掉的中间态。
+
+#### G3-a 全局尺度一致性（解决校准总体失配）
+
+**问题**（G2-e 复测实证）：可靠性表在**全图**标定（n=700），推理却测**模型自选裁剪**；noise 裁剪中位数 1.262 vs 全图 2.529，分箱按错误总体解读。
+
+**方案（最稳妥第一版，采纳）**：
+1. **Expert 度量在全图上计算**：控制器调用专家时传入整图，而非 bbox 裁剪；
+2. **bbox 继续作为诊断与可视化区域**：区域裁剪图、产物渲染与 trace 中的 region 字段语义不变（`region_semantics=diagnostic_evidence_region`），只是不再作为度量输入；
+3. **禁止用局部度量查询全图校准表**：`ReliabilityTable.lookup` 仅对 `measurement_scope="global"` 的测量生效；局部测量不附 `calibrated_likelihood`，并显式标注 `direction_source="expert_claim_uncalibrated"`；
+4. token 新增 `measurement_scope` 与诊断区域的 `region_area_ratio`，为将来按尺度建条件表留出接口。
+
+**升级路径（记为 G3-a2，暂不实施）**：若确实需要局部度量，必须按 (裁剪尺寸桶 × 面积比 × 图像格式) 重建条件校准表 —— 成本高且样本需求大，仅在全局方案被证明不足时启用。
+
+**优点**：校准表无需重算（其标定总体即全图），推理回到表所描述的总体的同时消除尺度外推。
+
+#### G3-b EvidenceRectifier（方向权威单一化）
+
+新增 `state_machine/evidence_rectifier.py`，在证据入链前统一：
+
+| 优先级 | 字段 | 处理 |
+|--------|------|------|
+| 1（权威） | `calibrated_likelihood.Fake` | 决定方向；中性带（0.4–0.6）判 Uncertain |
+| 2 | `support` | 被 1 覆盖重写；无校准表时保留原声明并标注未校准 |
+| 3 | `reasoning` / `phenomenon` / `interpretation_text` | **不得覆盖结构化测量**：与方向权威矛盾的句子被改写为校准派生的规范句，测量数值与其余描述保留 |
+| 4 | `applicability` / 适用条件 | 原样随 token 传递，作为方向可信度的限定 |
+
+要点：
+- 与 G1 一致性门的关系：Rectifier 之后门应**恒通过**，门从"降级器"变为"校验器"（测试中断言其恒通过）；不再靠把 support 降级为 Uncertain 来消除矛盾 —— 那会丢弃测量本身；
+- 结构性消除 freq_v2 的 15/64 两套离散化矛盾：方向只由 `raw_metric → 分箱` 一条路径决定，`strength` 分带退化为 UI/遗留用途；
+- 回放验证集：G2-e 的 64 样本 + 本轮 40 样本真机 trace，断言**零直接矛盾**。
+
+#### G3-c 停止策略 v2（HaltingDecision）
+
+按 §4.10 目标结构实现，输入四要素：
+
+```text
+当前后验（Rectifier 后可靠性加权 log-odds 累积）
++ 冲突程度（专家方向按可靠性的加权分歧）
++ 剩余工具预期收益（历史 AUROC × 适用度 × 非冗余度 × 当前不确定性）
+− 调用成本（调用数 + 轮数 + 延迟）
+→ continue / Real / Fake / Uncertain
+```
+
+- `<verdict>` 仅作候选，不得绕过冲突、概率一致性与最低证据门槛；
+- 预算耗尽**不得**自动决定标签，只能输出 Uncertain 并记录真实原因（未解决冲突 vs 预算）；
+- 离线回放历史 trace 对比 v1/v2：无效调用率、重复调用率、平均调用数、冲突样本是否被候选 verdict 提前覆盖、ECE/Brier、停止原因可否由 trace 复现。
+
+#### G3-d 实验配置指纹
+
+- 报告元数据新增 `config_fingerprint`：专家集合及其 `metric_polarity`、Prompt 哈希、Rectifier 版本、git commit；
+- 续跑读取时校验指纹，不一致即视为冷启动（消除"配置已变却静默复用旧数字"的隐患，此前的 `--fresh` 手工规避法就此废止）；
+- 测试：同配置可续跑；改 Prompt / 改极性 / 改编码后必须冷启动。
+
+#### G3-e 四条件复核结果（2026-09-24，RTX 4090，120 样本 × 4 臂，v2 协议 + 整流器 + 整图度量）
+
+| 臂 | acc | F1(Fake) | AUROC | ECE | 弃权 | 轮 | 调用 | 秒/样本 | 判罚 |
+|----|-----|----------|-------|-----|------|----|------|---------|------|
+| **rgb**（无工具基线） | **0.525** | 0.095 | **0.654** | 0.401 | 0.008 | 1.1 | 0.0 | 4.0 | R=116 F=3 U=1 |
+| text | 0.275 | 0.415 | 0.502 | 0.097 | 0.667 | 3.6 | 2.3 | 17.2 | R=18 F=22 U=80 |
+| image | 0.258 | **0.471** | 0.543 | 0.066 | 0.700 | 3.7 | 2.6 | 12.7 | R=11 F=25 U=84 |
+| both | 0.225 | 0.434 | 0.539 | 0.064 | 0.733 | 3.8 | 2.5 | 14.8 | R=9 F=23 U=88 |
+
+McNemar 配对（vs rgb）：text p=0.0004、image p=0.0003、both p<1e-4，三条臂**准确率仍显著低于基线**。
+
+**按格式配对 AUROC（real_X + fake_X 合并，格内容器无信号 → 真判别力）**：
+
+| 格式 | rgb | text | image | both |
+|------|-----|------|-------|------|
+| png | 0.609 | **0.827** | 0.791 | 0.782 |
+| q95 | 0.600 | 0.400 | 0.509 | 0.502 |
+| q85 | **0.733** | 0.391 | 0.467 | 0.458 |
+| q70 | **0.673** | 0.418 | 0.391 | 0.391 |
+
+**增益与损害分布在不同格、相互抵消**：PNG 格内工具臂显著强于基线（0.78–0.83 vs 0.61，且该格容器无信息，属真实判别力，对应 jpeg 专家 png 0.907 / noise 0.870 的 token 判别力）；JPEG 格内却低于随机（0.39–0.51 vs 0.60–0.73）。
+
+**机制（三个工具臂合并 360 会话）**：模型在两种格式下都**忠实跟随整流后的方向** —— token 指 AI-generated 时 P(Fake)=0.85(png)/0.38(jpeg)，指 Real 时两者均 0.00，无方向时全部弃权；判 Fake 的精确率 0.77–0.80 但只覆盖少数样本，real 格被压垮（15/15 → 1–5/15）。
+
+**结论**：
+1. **G3 的目标达成**：工具臂从"低于随机"（修复前 0.432/0.391）回到"随机至弱正"（0.502–0.543），且在 PNG 格内具备显著判别力（0.78–0.83）。管线（整图度量 / 校准一致 / 方向整流 / 后验停止）已验证按设计工作：度量与校准集逐样本 183/183 一致，token 判别力与 G2-b 一致，模型忠实读取。
+2. **净增益仍缺**：无臂超过基线 AUROC 0.654；准确率显著更低。剩余瓶颈在**模型侧**：JPEG 格内置信度排序反向（0.39–0.51）、对方向过度保守（AI-generated token 仅 38–85% 转化为判罚）。
+3. **对 G4/SFT 的直接含义**：训练目标应显式针对这两条 —— (a) 不得把容器格式当作伪造线索；(b) 在 JPEG 格（jpeg 专家失效区）应按 noise 专家与校准后验下结论，而非退回弃权或反向。**G5 验收线（ΔAUROC 显著为正）仍待以此验证。**
+
+#### G3 执行状态（2026-09-24）
+
+| 项 | 状态 | 关键结果 |
+|----|------|---------|
+| G3-a 全局尺度一致性 | ✅ 提交 `2f4d2ca` | 专家度量改整图；token 带 `measurement_scope`/`region_area_ratio`；校准表无需重算；真机确认 noise 度量回到表分布（4.834/2.362/2.850，png 与 q70 近乎相同） |
+| G3-b EvidenceRectifier | ✅ 提交 `0ee3ae8` | 方向权威单一化（calibrated > support > 文本）；门转为校验器；247 个真机 token 回放：改写 80 个方向、**零矛盾、零门失败**；结构性消除 freq_v2 的 15/64 矛盾 |
+| G3-c 停止策略 v2 | ✅ 提交 `7b89710` | 后验（Youden 加权 log-odds）+ 冲突度 + 工具预期收益 − 成本；`<verdict>` 仅候选；新增 `model_stalled` 规则（mock 实测 7 轮→5 轮）；**回放 1191 条真实会话：v1 标注 802 @0.414 vs v2 标注 367 @0.534，弃权 824；冲突样本 74 条中 v1 定了 14 条标签而 v2 全弃权** |
+| G3-d 配置指纹 | ✅ 本提交 | 指纹覆盖专家集合与极性/提示词哈希/校准表哈希/整流器与分词器版本/策略版本/git commit；续跑比对不符即冷启动并打印差异组件 —— 手工 `--fresh` 就此废止 |
+| G3-e n=120 复核 | ✅ 2026-09-24 完成（四臂 480 会话） | 结果见下节；工具臂由低于随机回到随机至弱正，PNG 格 0.78–0.83，净增益仍缺（模型侧三项） |
+
+**G3 待办**：G3-e 完成后据此判定"证据是否终于带来正增益"；若仍无增益，则瓶颈确证在**专家自身判别力**（配平格 0.55–0.63），需在 G4/G5 前决策（换/增专家 vs 调整 G5 验收线）。
+
+#### G3-e n=120 GPU 复核（需授权）
+
+a–d 完成后一次性执行：四条件对比 `--fresh`（自动带新指纹）+ 离线回放报告。**这是判定 G3 是否奏效的唯一有效测量**，也是 G5 验收线的基线。
+
+### 完成门槛
+
+- 无效调用率、重复调用率和平均调用数下降；
+- 冲突样本不会被候选 `<verdict>` 提前覆盖；
+- confidence 与经验准确率基本匹配，报告 ECE/Brier；
+- 停止原因可由 Trace 完整复现。
+
+## 4.11 G4：视觉证据回灌与增益驱动 SFT v2
+
+### 数据生成
+
+每张图根据真实运行结果构造候选轨迹：
+
+```text
+[]                               no-tool
+[best_tool]                      single-tool
+[independent_tool]               alternative single-tool
+[best_tool, independent_tool]    multi-tool verification
+```
+
+只有在校准后的分类风险、NLL 或 Brier Score 确实改善时，工具才能进入该样本的训练轨迹。当前全局任务不使用局部 IoU 定义工具收益。
+
+### 输出 Schema
+
+- `<observation>`：只写可直接核验的视觉事实；
+- `<forensic_evidence>`：引用 evidence ID、区域、测量值和可靠性；
+- `<reasoning>`：区分支持、反证、替代解释和剩余不确定性；
+- `<verdict>`：与结构化后验一致，confidence 来自校准而非模型自报；
+- 简单样本保留 no-tool 直接回答，复杂样本学习正交验证，不使用固定工具顺序。
+
+### `final_v2` 准入
+
+1. 自动检查格式、坐标、证据引用、重复项、结论一致性和调用有效性；
+2. 全量人工首审；真实 conflict、borderline、Uncertain、多工具和高置信样本双审；
+
+> **本行已于 2026-10-09 修订**：取消首审/二审与双审，改为单次全量审核 + `high_risk` 标记，见「G4-f 工作台修订（2026-10-09）」。
+3. 数据分为事实金标、工具策略、冲突拒判、格式专用和拒绝集，训练时分别采样或加权；
+4. 旧 `final/` 保持冻结用于回归比较，不覆盖；新数据输出到 `final_v2/` 并记录生成代码版本与 Expert 版本。
+
+### G4 执行计划（2026-09-26 制定，a–d 为 CPU，e/g 需 GPU，f 为人工）
+
+前置事实：数据集 9000 张源图（Real 1000 + ADM/BigGAN/Glide/Midjourney/SD14/SD15/VQDM/Wukong 各 1000）；校准集使用其中 98 个源（G2-b 标定用），**这些源不得进入 train/val/test**（专家标定与评测试集重叠会带来乐观偏差）。G3-e 已给出 G4 的直接训练目标：①不得把容器格式当作伪造线索；②JPEG 格内（jpeg 专家失效区）应按 noise 专家与校准后验下结论，不得退回弃权或反向。
+
+#### G4-a 数据划分与防泄漏协议（CPU）
+
+- **泄漏单元是源图，不是文件**：同一源图的 native / png / q95 / q85 / q70 必须落入同一分区（否则 PNG 在训练集、q70 在测试集，测的正是记忆而非泛化）；
+- **记录生成器来源**，为 G5 保留跨生成器（leave-one-generator-out）评测条件；
+- 分层：按 (label × generator) 分层抽样，比例 train/val/test = 70/15/15；分辨率桶随记录但不作为分层键（避免过细分层）；
+- 校准集 98 个源单独划为 `calibration_holdout`，不进入任何训练或评测分区；
+- 产出 `sft_data/split_v2.json`：源 → 分区的映射 + 元数据 + 计数 + 内容哈希（划分可复现）；校验器断言：无跨分区源、每分区标签/生成器分布、格式变体同分区、holdout 不重叠。
+
+#### G4-b 候选轨迹生成器（Schema/生成器/测试为 CPU，执行需 GPU）
+
+每条训练图的候选轨迹族（**不固定所有图都调用多工具**）：
+
+```text
+no-tool            baseline 轨迹
+noise only         主力工具（跨格式最稳定）
+jpeg only          仅当该格式/质量落在适用条件内时才生成
+frequency only     弱独立证据
+noise + jpeg       正交组合
+noise + frequency  正交组合
+```
+
+每条轨迹必须落盘：原始模型判断；每个 Evidence Token（含 `measurement_scope`、`raw_metric`、`calibrated_likelihood`、`applicability`、适用条件）；停止策略后验与 `policy_reasons`；最终判断与置信度；调用数 / 轮数 / 耗时；NLL、Brier 等得分。复用 G3 的 harness（四条件框架 + 配置指纹 + 断点续跑），按"允许的工具集合"参数化。
+
+#### G4-c 两级准入规则（CPU，仅用训练分区数据）
+
+**第一层 条件准入**：
+
+| 工具 | 准入 |
+|------|------|
+| noise | 跨 PNG/JPEG 稳定（token 判别力 0.81–0.87），可作主力 |
+| jpeg | 仅 PNG 格有判别力（0.907）；进入失效区（q95 0.577 / q85 0.544 / q70 0.441）必须降权或禁用 —— 判据用校准表的逐格 separation 阈值，运行时按 `condition_metadata` 决定 |
+| frequency v2 | 仅弱独立证据，不得单独高置信结案 |
+| frequency v1 / ELA | 已停用，不得进入任何轨迹 |
+
+**第二层 增益准入**（工具轨迹相对 no-tool）：Brier/NLL 是否改善；正确标签的后验是否提高；是否减少合理的不确定性；是否引入错误高置信；调用成本是否值得。**只有条件适用、且风险实际下降的轨迹才作为正样本**。
+
+准入计算**只能在训练分区上进行**，不得读取 val/test 结果来选择轨迹。
+
+#### G4-d final_v2 Schema 与校验器（CPU）
+
+每条数据四段结构：
+
+```text
+<observation>         原图中可直接核验的事实
+<forensic_evidence>   evidence_id、专家、测量范围、原始数值、calibrated_likelihood、
+                      applicability、适用条件
+<reasoning>           支持证据、反证、替代解释、专家失效原因、剩余不确定性
+<verdict>             与停止策略后验一致的标签与置信度
+```
+
+自动校验至少覆盖：同源划分泄漏；格式与标签结构；Evidence ID 引用存在；测量范围与 bbox 一致；重复调用；support / 文字 / 校准方向矛盾；不适用专家被采纳；verdict 与后验不一致；高置信但证据不足；**把 PNG/JPEG 容器直接当真假理由**。输出到 `sft_data/train/final_v2/`，**不得覆盖 `final/`**（旧集冻结用于回归）。
+
+#### G4-a ~ G4-d 完成状态（2026-09-26，CPU）
+
+| 项 | 状态 | 关键产物 |
+|----|------|---------|
+| G4-a 数据划分与防泄漏 | ✅ | `sft_data/split_v2.json`（9000 源；泄漏单元=源图；val/test 类别平衡且生成器均摊；98 个校准源 holdout；hash `d8e9d81597ead53f`） |
+| G4-b 候选轨迹生成器 | ✅ | 按策略生成提示词（全工具集字节一致）+ `sft_data/variants/`（变体复用校准集同一编码路径）+ `scripts/generate_trajectories_g4.py`（六策略、jpeg 门控数据驱动、每条轨迹含双概率 NLL/Brier） |
+| G4-c 两级准入 | ✅ | `scripts/admit_trajectories_g4.py`（条件层与生成同尺 0.65；增益层要求风险确实下降且结论正确；弱专家仅佐证；训练分区守卫） |
+| G4-d final_v2 Schema 与校验器 | ✅ | `utils/final_v2.py` 四段式 + 十项自动校验；`scripts/build_final_v2.py`（分桶输出、拒绝写入冻结的 `final/`） |
+
+端到端干跑：22 条准入轨迹 → 4 正样本 + 18 合理弃权，校验 0 拒绝。测试 483 通过。
+
+#### G4-e 小规模 GPU 试生成（需 GPU）
+
+先以 **100–200 个来源配平样本**试运行，覆盖 Real/Fake × PNG/q95/q85/q70 × 多生成器 × no-tool/single/multi × 正常判断/冲突/合理弃权。重点检查：模板化程度；JPEG 格是否仍错误依赖 jpeg 专家；无理由 Uncertain 比例；confidence 是否来自结构化后验；工具轨迹是否真的优于 no-tool。**试生成不通过则不进入全量**。
+
+#### G4-e 试生成结果（2026-09-26，20 源，RTX 4090）
+
+配置：20 源（10 Real + 10 Fake）× 4 处理（png/q95/q85/q70）× 6 策略；**440 次会话**（q70 的 20 变体 × 2 个 jpeg 类策略被门控跳过，40 次未生成）；平均 20.2s/会话，全程约 2.5 小时；指纹 `25b169996ff2d422`。
+
+**质量检查（规范要求逐项）**：
+
+| 检查项 | 结果 |
+|--------|------|
+| 是否高度模板化 | ✅ 报告唯一率 **100%**（no-tool 80/80、noise 80/80、jpeg 60/60、noise+jpeg 60/60） |
+| JPEG 格是否仍错误依赖 jpeg 专家 | ✅ q70 的 jpeg 类策略**全部在生成阶段门控排除**（0 次会话）；png/q95/q85 上 jpeg token 有方向者 24/18/21，指 AI-generated 者 16/7/2 —— 与标定的逐格分离度一致（png 最强） |
+| 是否大量无理由 Uncertain | ✅ 弃权率高（noise 71%、jpeg 75%、noise+jpeg 75%、frequency 100%）但**全部有理由**：100% 的弃权后验偏离中位 < 0.15（后验确实居中），主要原因 `no_expected_gain` / `model_stalled` |
+| confidence 是否来自结构化后验 | ✅ 360 条工具会话中，**0 条**标签置信度偏离后验 |
+| 工具轨迹是否真的优于 no-tool | ✅ 配对 ΔBrier：noise **−0.027**、jpeg −0.025、noise+jpeg −0.021、noise+frequency −0.027（风险下降占比 62–65%）；**frequency 单独 −0.001 / 10%**，与标定预测一致 |
+
+**两级准入结果**（440 条轨迹）：**正样本 97**（工具 60 + 无工具 37）、**合理弃权 140**、拒绝 203。逐策略正样本：noise 18、noise+frequency 18、jpeg 12、noise+jpeg 12、no-tool 37、frequency **0**（弱专家永不单独支撑正样本，符合规范）。
+
+**final_v2 产物**（`sft_data/train/final_v2/`）：**237 条，十项校验 0 拒绝** —— 工具正样本 60、无工具正样本 37、合理弃权 140。
+
+**注意（训练前须处理）**：类别成分为 **Fake 178 / Real 59（75/25）**，且各桶内部同样偏斜（工具正样本 48F/12R、无工具正样本 37R/0F、合理弃权 130F/10R）。原因不是缺陷而是任务结构：**证据只在 no-tool 基线自信判错处产生增益，而该基线在 Fake 上正是高置信判 Real**。风险是训练出"调用工具 ⇒ Fake"的新捷径。已在 metadata 记录 `label_composition` 与 `training_weights`（Real ×3.02），G4-f 人工审核与 G4-g 试训需据此裁决（配平采样 / 接受 / 补充 Real 侧工具样本）。
+
+#### G4-f 全量人工审核（人工）
+
+全量首审；conflict / Uncertain / multi-tool / 高置信样本**双审**；按格式与生成器分层抽查；审计界面需同时可见源图、Evidence Bundle、可视化证据与轨迹增益；严重错误进拒绝集，**不做"稍改即训"**。
+
+> **本行已于 2026-10-09 修订**：改单次全量审核 + `high_risk` 标记，取消分层抽查（237 条已全量审核），见下方「G4-f 工作台修订（2026-10-09）」。
+
+#### G4-f 审核工作台与处置工具（2026-10-08 完成，CPU）
+
+| 工具 | 用途 |
+|------|------|
+| `scripts/build_review_workstation.py` | 生成 `sft_data/review/`：**237 个样本页**（源图 vs 变体图并排、专家产物、Evidence Bundle 表、与 no-tool 基线的对比、该样本将教模型说的四段答案、逐项审核清单）+ `index.html` + `worklist.csv` + `review_sets.json`。静态 HTML、无服务端依赖，图片按相对路径引用（0 张缺失） |
+| `scripts/record_review.py` | 记录处置（`accept` / `format_only` / `revise` / `reject`，沿用 G0 词汇），追加式 JSONL、同一样本以最新为准、对错误样本 id 拒绝写入；`--summary` 报进度 |
+| `scripts/apply_review.py` | 按处置生成 `sft_data/train/final_v2_reviewed/`（四个集合 + metadata），**未审完则拒绝运行**（`--allow-partial` 可出临时集并标注），并计算 accepted 集的类别权重以抵消成分偏斜；不写入任何冻结集 |
+
+**审核清单（工作台内置，逐条勾选）**：观察可核验 / 证据段与 token 一致 / 推理只引合格证据 / **未把容器当真假理由** / verdict 与后验一致 / 增益真实 / 不教坏习惯（捷径、无理由弃权、模板化）。
+
+**双审清单规模提醒**：按规范定义（conflict / Uncertain / multi-tool / 高置信）双审覆盖 **207/237**（弃权 140 + 多工具 78 + 高置信 38）。若全按字面执行需约 450 次阅读；是否对"设计上就弃权"的样本也双审，由审核者决定。
+
+> **本行已于 2026-10-09 修订**：双审/二审/仲裁流程取消，改为**单次全量审核 + 高风险标记**。见下方「G4-f 工作台修订（2026-10-09）」。以上两组数字仅作历史记录保留。
+
+#### G4-f 工作台修订（2026-10-09，CPU）——单次审核 + 全量对话 + 证据语义 + 可保存决定
+
+**修订背景**：工作台已生成、审核尚未开始。复核页面本身时发现六处会直接误导审核者的缺陷，逐条修订如下。
+
+1. **展示完整训练对话**：原页面只取**第一个**助手轮（`answer = next(gpt turn)`），而 237 条中 **198 条是多轮**——页面因此只显示 `<planning>`，把证据输入轮与最终四段答案全部藏掉。改为按序渲染**全部轮次**，逐轮标注「参与训练（被监督）」/「掩码（不进 loss）」，与 `assistant_spans` 的实际监督范围一致（助手轮全监督，用户/系统轮掩码）。
+2. **Evidence Bundle 语义补全**：原表仅 8 列且把 `support` 标成"方向"。改为**逐 token 卡片**，展示 `evidence_name` / `phenomenon` / `reasoning` / `counter_explanation` / `reliability` / `semantics_aligned` / `direction` + `direction_source` / `condition_metadata` / 像素与归一化坐标；并**显式区分** `support`（整流后方向主张）、`support_raw`（专家原始主张）、`direction`+`direction_source`（方向权威链）、`P(Fake)`/`P(Real)`（校准似然）。`semantics_aligned=false` 显示**红色警告**并同时给出原始解释、校准后方向与反解释——当前 200 个 token 中 **158 个为 false**（noise/jpeg 两专家方向反转），原页面一个字段都没显示。
+3. **按桶使用不同审核标准**：原清单对所有样本都用"ΔBrier 为负且结论正确"，会把 140 条**设计上就弃权**的样本判死。改为三套清单 + 共用项：
+   - `tool_positive`：工具轨迹应正确，且通常应优于 no-tool 基线（ΔBrier<0）；证据与图一致；结论与后验一致；
+   - `no_tool_positive`：**不得虚构法证证据**（无工具却写出证据段）；**不得形成"无工具⇒Real"捷径**；视觉观察可核验；
+   - `honest_abstention`：Uncertain 必须由弱证据 / 冲突 / 不适用解释，**不要求 ΔBrier<0**；不得是无理由弃权。
+4. **决定可保存**：静态页 + **localStorage 自动保存** + 导出/导入；`record_review.py` 新增 `--import`（读浏览器导出的 JSON 或填好的 `worklist.csv`，逐条走同一套校验写入 JSONL）。页面提供 accept/format_only/revise/reject 按钮、备注框、上一条/下一条、快捷键、决定后自动跳转、进度与历史。
+5. **置信度语义分列**：分别显示**原始模型判定与概率**（`model_candidate` / `model_probability`）、**停止后验 P(Fake)/P(Real)**、**所选标签置信度**，并注明两者含义不同（工具轨迹的 confidence 来自后验；无工具轨迹没有后验，confidence 是模型自报）。
+6. **取消双审**：改为**单次全量审核**，`double_review` → **`high_risk`**（uncertain / multi_tool / high_confidence / conflict，仅作关注标记，不触发第二次阅读）；不再有首审/二审/仲裁与分层抽查（237 条已全量审核，抽查无对象）；`apply_review.py` 维持"一条样本一个最终决定"不变。
+
+#### G4-f 审核结论与修订计划（2026-10-11）——先止血，再重新生成
+
+**审核结果（人工，全量 237 条）**：**accept 1 / revise 195 / reject 41**（工具桶 35R+25X、无工具桶 34R+3X、弃权桶 1A+126R+13X）。`apply_review.py` 据此只能产出 **1 条 accepted** —— 数据集按现状不可用于训练，G4-g 暂停。审核者给 236 条各写了不同的备注（非模板化审核）。
+
+**三条已定位的根因（代码级）与一条已验证的数据事实**：
+
+| # | 现象（审核条数） | 根因（代码位置） | 验证 |
+|---|---|---|---|
+| 1 | 重复结案 55 / 无新证据改判 25 | `utils/final_v2.py:170` 用**字符串** `<call_` 判定调用轮并保留全部助手轮；被丢弃的 `[System]` 纠正轮使"改判"失去上下文 | 51 条样本含 2 个、4 条含 3 个"带结论的助手轮" |
+| 2 | Real 的 confidence 写成 P(Fake)（12） | `halting_v2.py:264/277/285/297` 把 `posterior`(=P(Fake)) 直接当 confidence 传出 | G3 报告工具臂 Real 判决 confidence 全在 0.20–0.32；按存储实义重算 AUROC：text 0.502→**0.677**、image 0.543→**0.684**、both 0.539→**0.659**（rgb 0.654 不受影响）；**G2 报告不受影响**（当时是所选标签语义） |
+| 3 | 无工具样本 observation 只有格式/分辨率（39） | `build_final_v2.extract_observation()` 只在 `<planning>` 里搜 Visual Anomalies，无工具回答没有 planning | 抽样 3/3 只有 container+resolution |
+| 4 | 全局测量被写成局部（77）、专家文本自相矛盾（38） | 专家自由文本与校准条目未绑定 | `f2_jpeg__ADM_49_adm_153_png`：`P(Fake)=0.861, reliability=0.972`，同 token 的 `reasoning` 却写 "the calibrated likelihood is near chance … should not drive the conclusion" |
+
+**由此产生的一条推论（必须写明）**：`check_acceptance_g5.py` 对 `calibration/g3_gain_report.json` 的裁决（2/6 通过）**作废** —— 它建立在被读反的字段上；G2 报告与其结论不受影响。已有 LoRA 报告（`lora_arms_prefix.json` / `lora_smoke_v2.json`）同受影响。
+
+**两项已定决策**：
+
+- **O2 忠实回放**：中段 reasoning 轮**连同其后的 `[System]` 纠正轮**一起保留，全部助手轮照原样监督 —— 与推理时的真实循环逐字一致。Trace 已完整保留这些轮（G4-e 窗口 1883 条中 954 条含 `[System]`），**无需重新生成 Trace**。代价：中段轮必须过硬，编造证据的那类整条样本**拒绝**，不得靠掩码掩盖。
+- **人工结合预筛**：描述与 bbox 的一致性由**模型先筛可疑项、人工只复核可疑项**，把重新审核的工作量压到新增缺陷上。
+
+**工作项（A–E 全为 CPU，F/G 才需 GPU）**：
+
+| 项 | 内容 | 验收（回归测试） |
+|---|---|---|
+| **A 概率字段** | 新增独立 `posterior_fake`；**Fake 的 confidence = P(Fake)，Real 的 = 1−P(Fake)**；Uncertain 的 confidence 另行约定（明示"未结案"，不得冒充第三类校准概率）；`render_reasoning()` 对无工具样本改写为"未获得工具证据"，不得写"后验 P(Fake)=0.5"；评测提取侧保持现状（数据修正后 `Real → 1−c` 即正确），但补测试钉住语义 | Real 判决 confidence == 1−posterior_fake；无工具正文不出现"后验"；提取器对 Real/Fake/Uncertain 三态的语义测试 |
+| **B 对话忠实回放** | `render_conversation` 改为：保留 `[System]` 纠正轮；调用轮判定 = 该轮含标签形式调用**且其后紧跟匹配的交付轮**（正文里提到标签不计为调用）；中段轮保留并监督；**每条轨迹只允许一个结案轮**，出现多个即整条拒绝（交给 C，不得静默丢弃）；logger 补结构化"本轮执行了哪些调用、返回了什么"事件，供下一轮生成使用 | 用审核中的真实坏样本做 fixture：`f2_noise+frequency__ADM_49_adm_153_jpeg_q95` 重建后不出现虚构的 freq 引用；"多结案轮"样本被拒；`[System]` 轮存在于重建结果 |
+| **C 校验器接地四项** | C1 散文级虚构证据（提到的专家必须在**已执行调用集合**内，引用的数值必须在交付 token 的数值白名单内）；C2 `verdict=Real ⇒ confidence == 1−posterior`；C3 `measurement_scope=global` 的 token 不得被交付文本写成局部测量；C4 单一结案轮 + observation 非空非模板 | 每项都要**能抓到已知坏样本**（直接以审核备注对应的样本为 fixture），且对良好样本（那 1 条 accept）零误报 |
+| **D 生成器与专家语义** | D1 三层写法：**实测现象 → 条件校准下的统计关联 → 当前不能证明什么**；专家自由文本与**同一条校准条目**绑定（jpeg 那条 0.861/near chance 的反例作为测试）；D2 生成器侧：视觉描述与 bbox 复核（模型预筛 + 人工），无工具样本重新生成可核验观察与**判断局限**（不补写支持既有标签的理由），全局工具样本允许直接提出全图假设、不强制编造局部异常，保留诊断框时声明"非专家测量范围、非定位真值"；D3 JPEG / 低纹理 CPU 复算（png/q95/q85/q70 × 内容类型分层），结论决定"受限保留（写明适用条件与失效区）"或"移出策略"；**D4（2026-10-11 预演新发现）控制器对重复调用静默忽略**（`controller.py:254` 命中重复 evidence_id 后直接 `continue`，会话里不给模型任何回应）→ 模型学到"调用后没返回也能下结论"，审核的"悬空调用"即此。修法：向会话注入一条"该调用与已有证据重复、已忽略"的提示轮 | D1：专家文本与 likelihood 不再互相矛盾；D3：复算报告；D4：重复调用后模型必然收到一条回应 |
+| **E 停止策略可解释性** | 轨迹落盘每个**剩余工具**的估计收益 / 成本 / 适用性 + 停止依据；对外措辞改为"当前策略估计继续调用收益不足"；用已有 440 条轨迹离线回放判断是否过早停止 | 轨迹含逐工具估计；回放报告（过早停止率） |
+
+**明确不做（硬约束）**：
+
+1. 不得为"凑齐双专家"强制调用 —— 策略名代表允许集合，不代表必须全部执行；
+2. 不得为保住既有标签而只改措辞（D3 必须先用数据回答"还有没有判别力"）；
+3. 不得通过放宽结案阈值来压低 Uncertain 比例；
+4. 不得让任何未经 C 检查的中间轮进入监督。
+
+**顺序与算力**：A–E 先行（CPU），并在**现有 237 条上做离线预演**，报告"修复后还剩多少条可用"，把缺陷率压到可接受再动 GPU。之后 **F 重新生成 final_v2**（约 2.5 GPU 小时）→ **G 四臂重跑**（约 1.6–2 GPU 小时，含与 RGB 的配对比较）→ 人工重审（工作台 `high_risk` + 分桶清单即本次回归的检查表）。
+
+#### G4-f 修订：A–E 实施结果与离线预演（2026-10-11，CPU）
+
+| 项 | 状态 | 关键结果 |
+|---|---|---|
+| A 概率字段 | ✅ | `_halt` 改由 `_label_confidence` 推导（Fake→P(Fake)、Real→1−P(Fake)、Uncertain→未结案标记）；Uncertain 调用点传真实后验；无工具 reasoning 不再写"后验 P(Fake)=0.5"。**影响面：12 条 Real 样本**（审核恰好也标了 12 条） |
+| B 对话忠实回放 | ✅ | 保留 `[System]` 纠正轮、按交付轮重建证据、单一结案轮；校验器新增"相邻结案轮"检查。**预演：`[System]` 轮保留 0→189 条，相邻助手轮 87→39**；剩余 39 条不是渲染问题，而是控制器对重复调用**静默无回应**（已修为 D4） |
+| C 接地四项 | ✅ | C1 散文级虚构工具引用 / C2 Real⇒confidence=1−posterior / C3 全局测量写成局部 / C4 观察非空非模板 |
+| D1 专家语义 | ✅ | noise 专家不再写 "Localised"、不再断言 PRNU；jpeg 专家不再断言"校准接近随机"；整流器新增守卫：校准确定时（超出中性带）"接近随机"的说法被替换为规范句、原文留 `*_raw` |
+| D3 复算 | ✅ | 见下表 |
+| D4 重复调用回应 | ✅ | 去重命中时向会话注入"该调用与已有证据重复，已忽略" |
+| E 停止可解释性 | ✅ | 轨迹新增 `available_experts` 与 `tool_utilities`（逐专家 gain/cost/net）；措辞改为"当前策略估计继续调用收益不足"；回放新增"停止时是否仍有工具净值>0"（旧 Trace 无允许集合记录 → 记 `not_auditable`）。**旧 Trace 中 0/3237 记录过允许集合** |
+| D2 视觉接地（预筛+人工） | ⚠️ 工具就位但**尚不可用作筛子** | 见下方「D2 预筛结果」 |
+
+**D2 预筛结果（2026-10-11，四轮 GPU）**：
+
+| 轮次 | 提问设计 | 疑点/79 | 结论 |
+|---|---|---|---|
+| 1 | 一次多图，问"异常是否可见" | 75 | 召回 0.94 / 精确 0.84 —— 但**图根本没送进去**（见下），数字无效 |
+| 2 | 一次多图，三问 | 60 | 同上无效；触发分析显示 64 条答"目标不在图中" |
+| 3 | 拆成两次单图（整图 + 裁剪） | 70 | 仍无效；且发现"裁剪图"给的是**伪彩色热力图**（`visual_artifacts`），问题本身无解 |
+| 4 | 三次调用：**先描述（不带回答）→ 比对文字 → 照片裁剪**；并修掉送图 bug | **79/79** | 描述已正确（鳄鱼/狗/龙虾全对），但判定不可靠：自称"图里有一只鳄鱼"，却对"该对象是否在图中"答 false；把唯一一条 accept 也标为疑点 |
+
+**发现的 Harness bug（重要）**：`QwenVLClient.ask` 实际**没有发送图像** —— `build_messages` 仅在轮次文本含 `<image>` 标记时附主图，而自带提示词的调用方无从知道这一点。三轮"高召回"都是在**纯文本**上让模型空口判定得出的（它把鳄鱼描述成"一只猫"）。已修为 `with_image_marker` 在 `ask` 内无条件补标记，并补了两侧契约测试。
+
+**结论**：本机 7B 零样本裁判**能看图、不能判**。因此 D2 不作为过滤器使用。可选出路：①用人工审核的 237 条做**少样本示例**再试一次（把"什么算相符/不符"示范出来）；②只把它当**标注器**（把裁判对整图与裁剪图的描述并排显示在工作台上，由人工判断）——这与"人工结合"的决策一致；③放弃预筛，F 阶段依赖 A–C 的自动检查 + 人工全量审核（工作台已按桶与高风险标记组织）。**当前默认走③，②随时可加**。
+
+**D3 复算（校准集 700 条，AUROC 以 Fake 为正类、原始方向未翻转；0.5=无判别力）**：
+
+| 专家 | native | png | q95 | q85 | q70 | 结论 |
+|---|---|---|---|---|---|---|
+| noise | 0.153 | 0.155 | 0.177 | 0.216 | 0.228 | 全格式存活（反极性），q70 减弱但未失效 → **保留为主力** |
+| jpeg | 0.038 | 0.028 | 0.283 | 0.266 | **0.569** | png/native 强，q95/q85 已弱，**q70 死亡** → 沿用逐格门控，q70 禁用 |
+| frequency_v2 | 0.561 | 0.556 | 0.594 | 0.600 | 0.634 | 弱但稳定（q70 最好）→ 弱证据，永不单独结案 |
+| ela | 0.960 | 0.948 | 0.945 | 0.885 | 0.504 | 复现项目既有结论：**压缩历史捷径**（分分辨率层后 mid 0.972 / large 0.774 仍在）→ 维持停用 |
+
+内容分层（Laplacian 方差十分位）：noise 在**最平滑内容上分离最强**（低纹理 0.087 / 中 0.146 / 高纹理 0.279）——审核担心的"低纹理造成假信号"未表现为判别力丧失；但十分位显示**内容与标签在数据集内相关**（最平滑的 2 个十分位 78% 是 Real，最粗糙的 75% 是 Fake），故"内容先验"是真实存在的旁路，专家文本必须写清不能证明什么（D1 已写）。
+
+**离线预演总账（237 条，A–C 之后自动判定 vs 人工处置）**：
+
+| | 新校验 FAIL | 新校验 PASS |
+|---|---|---|
+| accept (1) | 0 | **1**（零误报 ✅） |
+| revise (195) | 126 | 69 |
+| reject (41) | 32 | 9 |
+
+→ 自动接地检查把可判定的缺陷从 0 提升到 **158/237**；仍通过的 79 条里有 **78 条人工判为 revise/reject**，其备注几乎全部是"**裁剪区域与所述内容不符**、压缩痕迹在实际输入上不可核验"——即 **D2 的视觉接地**，这也是 F 重新生成前必须补上的一环（否则新数据仍带同一类缺陷）。
+
+#### G4-g LoRA 小规模试训（需 GPU）
+
+小规模试训后**立即重跑与 G3 完全相同的四臂实验**（RGB / Text / Image / Both）。验收不看 loss：
+
+- 工具臂相对 RGB 的 **ΔAUROC 为正**；
+- **JPEG 格不再低于随机**（G3-e 为 0.39–0.51）；
+- PNG 格既有增益（0.78–0.83）不消失；
+- Uncertain 率明显下降（G3-e 为 0.67–0.73）；
+- 覆盖率提高时，明确结论的准确率不坍塌；
+- Evidence 引用与输出格式稳定；
+- 不再把容器格式写成真假理由。
+
+无改善则**先修数据与目标**，不得靠增加 epoch 或扩大数据硬推。
+
+#### G4-g 训练显存适配（2026-10-08，需 GPU）
+
+**背景**：7B 模型 FP16 权重 15.4 GB，24 GB 卡上训练态只剩约 8 GB；最长样本 2442 token、每样本 3 张图。首次实跑在反向传播时 OOM（已分配 21.75 GB，再申请 2.02 GB 失败）。
+
+**根因逐项排除**：
+
+| 假设 | 实测 | 结论 |
+|------|------|------|
+| 视觉塔仍在反向图中 | `vision tower runs outside the backward graph` | 排除 |
+| 梯度检查点未生效 | 包装前后 `is_gradient_checkpointing` 均为 True | 排除 |
+| **LM head 对全序列投影** | 模型自带 loss 把 2442 个位置全部投影过 152k 词表：logits 及其梯度各约 742 MB，外加交叉熵中间量；而监督位置只有 489 个 | **根因** |
+
+**变更**：新增 `compute_masked_loss()` —— 不再把 `labels` 交给模型（避免其内置 loss），取 `output_hidden_states[-1][:, :-1]`，只在 `labels != -100` 的移位位置上过 `lm_head` 做交叉熵。
+
+**等价性**：目标函数逐位置不变（同样的右移、同样的监督掩码），只是不再为被掩位置付出词表投影。CPU 回归测试 5 项（`TestMaskedLoss`）：与独立计算的掩码交叉熵一致 / 被掩位置扰动不改变 loss / head 只看到监督位置 / 多模态张量透传 / loss 仍连着计算图。
+
+**结果**：237 样本 × 2 epoch 完成，OOM 消除。
+
+**边界（重要）**：本次试训用**未审核**的 final_v2 临时集（`--from-final-v2`），只验证训练管线与 `--adapter` 四臂接线，**不作为科学结论**；G4-f 审核完成后须用 accepted 集重训。
+
+#### G4-g 首轮四臂（2026-10-08，未通过）+ 三处协议失配
+
+首个适配器（`provisional_20src`）在四臂上**完全失败**，且失败形态是"没在跑协议"而不是"跑得差"：
+
+| 观测 | 数值 | 含义 |
+|------|------|------|
+| rgb 臂结论 | 120/120 全为 `Real, 0.95`，AUROC **0.500** | 常量答案，置信度不含信息 |
+| 工具臂发出 `<call_*>` 的会话 | **1 / 127** | 模型根本不调用专家 |
+| 复读循环（连续助手轮逐字节相同）的会话 | **127 / 127** | 控制器驳回后原地复读至预算耗尽 |
+| 虚构证据段（写了 `<forensic_evidence>` 而该轮并未收到证据） | 6 条 | 背格式而非用证据 |
+
+**根因（三处，前两处已修）**：
+
+1. **训练目标错**（决定性）：`split_answer` + 全提示掩码把"除最后一个助手轮以外的全部 token"都算作提示 —— 工具轨迹里的**调用轮是助手轮，也被掩掉了**。模型因此从未学过发出 `<call_*>`，只学会"问题之后直接是答案"。日志证据：修复后首步 loss 从 1.06 升到 **2.82**（多出 2–3 个助手轮在监督范围内）。
+   **修复**：新增 `assistant_spans()`，按 `<|im_start|>assistant` … `<|im_end|>` 定位**每一个**助手轮并全部监督（含中段 reasoning 轮），用户与系统轮掩为 -100；`supervised_turns`/`supervised_tokens` 替代原 `prompt_tokens`/`answer_tokens` 上报。
+2. **提示词分布错**：训练样本用的是**按策略裁剪的子集提示**（生成器为了制造多样性），而四臂推理发的是**出厂全工具提示** —— 训练里 0 条见过全工具提示。
+   **修复**：`system_prompt_for()` 对工具样本一律返回 `build_forensic_prompt()`（出厂提示，字节一致）；无工具样本仍用 `BASELINE_SYSTEM_PROMPT`。229/237 条答案未提及受限工具集，切换不改变目标文本的合法性。
+3. **标签成分偏斜**（未修，属 G4-f 裁决范围）：工具正样本 48F/12R、无工具正样本 **37R/0F**、合理弃权 130F/10R —— 无工具桶单标签正是"无工具 ⇒ Real"捷径的来源。计划已写明：**无改善则先修数据与目标**，此项需人工审核决定配平/接受/补样本。
+
+**复训与冒烟（`provisional_20src_v2`）**：474 步、loss 2.82 → 0.023；text 臂 32 样本冒烟（`calibration/lora_smoke_v2.json`）—— **32/32 样本全部发出工具调用**（每样本 1.62 次，基线 2.34），轮数 3.69，结论不再恒定，复读消失。
+
+**配对比较（同一 32 样本，仅作管线健康度，不作增益结论）**：
+
+| | acc | F1 | AUROC | 弃权 | 调用 |
+|---|---|---|---|---|---|
+| 基线 text | 0.219 | 0.348 | 0.535 | 0.625 | 2.34 |
+| LoRA v2 text | 0.375 | 0.476 | 0.502 | 0.562 | 1.62 |
+
+准确率与 F1 升高、调用更省，但 AUROC 仍在随机附近且低于基线（n=32、16R/16F，差异在噪声内）。**结论：协议已恢复执行，增益未获证明** —— 这与"临时集未审核 + 成分偏斜"一致，须待 accepted 集重训后再判。
+
+**GPU 预算提示**：修复后每样本约 75–90 s，全量四臂（480 会话）约 10 GPU 小时；基线同规模为 1.6 小时。
+
+## 4.12 G5：统一评测协议
+
+### 检测与校准
+
+- 按 ADM、BigGAN、Glide、Midjourney、SD14、SD15、VQDM、Wukong 分层报告；
+- 执行 train-one-test-many 或 leave-one-generator-out，禁止同一来源随机泄漏；
+- 报告 Accuracy、F1、AUROC、NLL、Brier、ECE、Uncertain 覆盖率与风险—覆盖曲线。
+
+### 鲁棒性与泛化
+
+- JPEG 质量、缩放、模糊、噪声、锐化、亮度/对比度及截图重编码；
+- PNG/JPEG 格式配平；条件允许时增加未见生成器；
+- 中英文、同义改写、只返回 JSON、先/后给结论等提示扰动。
+
+### 工具与解释
+
+- 单 Expert、组合 Expert、文本证据、视觉证据和双通道消融；
+- EvidenceRectifier、停止策略 v1/v2、Frequency v1/v2 对比；
+- 平均调用数、无效/重复调用率、单位图像时延、显存与视觉 token 成本；
+- 人工评估解释的准确性、相关性、可核验性、完整性和证据绑定率；
+- 重复推理的标签翻转率、调用序列变化和证据引用变化。
+
+## 4.13 G6：可选 GRPO
+
+只有同时满足以下条件才进入 GRPO：
+
+- SFT v2 已稳定输出合法调用和结构化 verdict；
+- Expert 已完成条件校准；
+- reward 可从 Trace 离线复算；
+- no-tool、single-tool 与 multi-tool 基线均已建立。
+
+工具奖励应显式包含任务风险下降，并扣除调用次数、重复/同源调用、运行时延和无效调用。若 SFT 尚存在格式捷径、标签泄漏或虚假 Expert 指标，则暂停 GRPO，避免放大错误策略。
+
+## 4.14 L1–L3：局部篡改扩展
+
+该路线在全局检测通过 G0–G5 门槛后启动，不与当前整图生成监督混合解释。
+
+1. **L1 数据与任务协议**：引入带 bbox/mask 的局部篡改数据；设置 `task_type=locally_manipulated` 与 `region_semantics=candidate_manipulation_region`；
+2. **L2 定位工具**：输出局部/背景频谱差异、噪声指纹、压缩历史热图和迭代 Zoom-In；独立报告 BBox-IoU；
+3. **L3 精细分割**：粗定位达到门槛后再接 SAM2 或分割头，报告 Pixel F1/Mask IoU，避免分割器掩盖粗定位不足。
+
+## 4.15 总体依赖与阶段门槛
+
+```mermaid
+flowchart LR
+    G0["G0 旧数据处置"] --> G1["G1 协议正确性"]
+    G1 --> G2["G2 Expert 校准"]
+    G2 --> G3["G3 Rectifier + 停止 v2"]
+    G3 --> G4["G4 SFT final_v2"]
+    G4 --> G5["G5 统一评测"]
+    G5 --> G6["G6 可选 GRPO"]
+    G5 --> L1["L1–L3 局部篡改"]
+```
+
+| 顺序 | 阶段 | 进入下一阶段的最低条件 | GPU |
+|------|------|------------------------|-----|
+| 1 | G0 数据处置 | 旧数据用途隔离，拒绝集可追溯 | 否 |
+| 2 | G1 协议修复 | 坐标、去重、多轮图像和语义一致性测试通过 | 否 |
+| 3 | G2 Expert 校准 | 每个工具有分层增益、可靠性和成本报告 | Qwen 对比需要 |
+| 4 | G3 停止 v2 | 离线回放优于 v1，冲突和预算语义正确 | 校准需 GPU |
+| 5 | G4 SFT v2 | `final_v2` 完成自动校验与人工准入 | 是 |
+| 6 | G5 统一评测 | 泛化、鲁棒性、校准和工具成本均有基线 | 是 |
+| 7 | G6/L1–L3 | 仅在前述门槛满足后启动 | 是 |
+| 8 | **G7 专家扩展**（§4.16） | 新专家完成校准准入、控制链贯通、五条件对照（含无 Qwen 的简单融合基线） | G7-a 冒烟起需要 |
+
+
+## 4.16 G7：专家扩展（PROBE-DINOv2 / TruFor）与基线对照（第二版，含 2026-10-11 审核意见）
+
+**目标**：接入两个外部专家 —— PROBE-DINOv2（全局 AI 生成分数，黑箱）与 TruFor（整图分 + 异常图 + 置信图，可选 Noiseprint++）—— 并回答：**Qwen 的调度与解释，是否增加了检测能力或可靠性，还是只增加了成本**。
+
+**来源与许可（已核实）**：
+
+| 专家 | 论文 | 权重 | 接口 | 许可 |
+|------|------|------|------|------|
+| PROBE-DINOv2 | *Where Detectors Fail…*（ICML 2026，arXiv 2605.24906）；PROBE = Probing Robustness via Boundary Exploration | ModelScope `shuinishaojiu/PROBE-AIGI-Detection` → `DINOv2_best_model_step_34999.pth`（1217.7 MB）；主干 `facebook/dinov2-with-registers-large` | DINOv2-L + CLS 线性头；336×336 滑窗 → 逐块 logit → 均值 sigmoid = **P(AI-generated)** | ⚠️ **许可待确认**（见 G7-5）：仓库无 LICENSE；**不分发 ≠ 已获运行授权** |
+| TruFor | CVPR 2023（GRIP-UNINA + Google） | `TruFor_weights.zip`（249 MB，MD5 `7bee48f3476c75616c3c5721ab256ff8`）→ `pretrained_models/trufor.pth.tar`；Noiseprint++ 与 SegFormer-B2 权重随仓库提供 | `test.py` → `.npz`：`map` / `conf` / `score`∈[0,1] / `np++`（可选）/ `imgsize`；68.7M 参数，~1.17 s@3.2MP | ⚠️ **仅限非营利研究用途**；本项目不分发（见 G7-5）。`map`/`conf` 用法见 G7-4 |
+
+**本机网络（实测）**：`github.com` 网页与 **git clone 可用**；`raw.githubusercontent.com` 与 `huggingface.co` **不通**；可用替代源：`ghfast.top` / `cdn.jsdelivr.net`（raw 文件）、`hf-mirror.com`（HF 主干）、ModelScope（PROBE 权重）、`grip.unina.it`（TruFor 权重）。**官方源不再重复测试，统一走替代源。**
+
+### G7-0 判据：先明确"接入是否值得"（在写任何适配器之前）
+
+准入是**条件性的**，且必须给出**增益大小**：
+
+1. **判别力按条件评估，不要求全格达标**：报告每格（png/q95/q85/q70 × 内容分层）方向校正后的分离度**点估计 + 按源分组的 bootstrap CI**。允许"在 png/q95 可用、q70 禁用"这类**条件准入**（与既有 jpeg 专家的处理同构）。**不要求每格都显著优于随机**。
+2. **互补性用系统级比较**：在**开发组**上比较【现有专家组合（基线）】与【基线 + 候选专家】的**同一套系统**（同一融合/停止规则），报告 **ΔAUROC / Δ准确率 / ΔBrier 的大小**与**按源分组的 CI**。
+   - 只看"错误子集上的命中率"或只看 McNemar 显著性**都不够**：前者忽略候选专家是否把别的样本改坏，后者只回答"是不是噪声"。
+   - 判读原则：**显著 ≠ 有用，不显著 ≠ 无用** —— 结论以增益大小与 CI 为准。
+3. TruFor 若在全局生成检测上只有弱判别力：保留为**研究对照（L1 局部篡改路线的候选）**，不强行纳入工具集。
+
+### G7-1 数据划分纪律（互斥的源图集合，不得先拟合后验证）
+
+**四组互斥的来源**，按**源图**分组，同源不同格式不跨组：
+
+| 组 | 来源 | 用途 | 允许做什么 |
+|----|------|------|-----------|
+| **拟合组** | 98 holdout 源中的 A 组（约 60%） | 拟合 | 概率校准映射、可靠性表、适用条件 |
+| **开发组** | 98 holdout 源中的 B 组（约 20%） | 选择 | 选工具组合、阈值、`POLICY_CALL_COST`、融合超参 |
+| **独立验证组** | 98 holdout 源中的 C 组（约 20%） | 复核 | 只读报告，不参与任何拟合或选择 |
+| **最终测试** | **原项目 `split_v2` 的 test 分区**（与上述 98 源完全不相交） | 最终验收 | 六条件配对评测，全程不参与拟合/选择 |
+
+- **明令禁止**："先用 700 条全部拟合、再拿其中一部分当验证" —— 每个数字都要说明它来自哪一组。
+- 现有可靠性表（G2-b）是在**全部 700 条**上拟合的，对 B/C 组已构成污染：**新专家的拟合与选择一律只用 A 组重做**；旧表保留为历史产物，涉及选择决策时标注"含 B/C"。
+- 组划分与哈希写入 `calibration/set/g7_split.json`。
+
+**外部专家训练数据重叠：分三级记录，不得一律标"不可信"**：
+
+| 级别 | 判据 | 报告处置 |
+|------|------|---------|
+| **源图级重叠** | 其训练集含我们的具体源图（哈希可比对时） | 该格数字标 **泄漏，不可信**，单独列出 |
+| **训练域重叠** | 同生成器 / 同数据集家族，但非同一图 | 标 **域内测试**；可作为参考，但泛化结论必须基于未见生成器 |
+| **来源未知** | 其训练清单未公开/无法比对 | 标 **未确认**，在报告中并列陈述，**不下"不可信"结论** |
+
+方法：先取官方公开的训练清单（PROBE 的 "Reconstruction Training Set"、TruFor 的 tampCOCO/compRAISE/FantasticReality/CASIA/IMD）与我们的源做哈希/来源比对；不可得时按域判据逐格标注。
+
+### G7-1 首批实测结果（2026-10-11，A 组 = 拟合组）
+
+**TruFor（584 行代码之外的结论：不行）** —— 464 张（62 源 × 格式），批量推理：
+
+| 格式 | n | AUROC | 95% CI（按源重采样） | map 峰值 AUROC |
+|------|---|-------|---------------------|----------------|
+| native / png | 62 / 62 | 0.425 | (0.29, 0.58) | 0.30 / 0.29 |
+| q95 / q85 / q70 | 62 各 | 0.392 / 0.342 / 0.427 | 全部跨 0.5 | 0.27 / 0.23 / 0.31 |
+| **整体** | 464 | **0.426**（极性 −1，分离度 0.574） | (0.30, 0.55) | — |
+
+**判定**：**TruFor 不作为全局 Agent 工具**（G7-0 的两条判据都不满足）。准确表述：**5 个格式中 4 个的 CI 跨 0.5**（native/png/q95/q70），**q85 的 CI 为 (0.2094, 0.4823)，整段落在 0.5 以下** —— 这是**方向反转**的迹象，但**不得现场翻正后当作收益**：反转是否可复现须在独立数据上验证（本轮仅在 A 组观察到一次，点估计 0.342 与其它格同量级）；在此之前只记为「无正向判别力，存在待验证的反向迹象」。互补性也因此无从谈起 —— 与现有专家相关性 |ρ| ≤ 0.19，既不冗余也无信息。**保留为 L1 局部篡改路线的研究对照**，其适配器与原始产物管线照常复用（是后续 L1 的现成基座）。B/C 组不再跑：五个格式的 CI 全部跨 0.5，选择与验证救不回来。**该反向迹象已在 D 组独立复测中复现（见下方「入口 1 补充」）：仍然是负向、仍然弱，判定不变。**
+
+**原因**：TruFor 检测的是**局部篡改**（训练于 tampCOCO / compRAISE / FantasticReality / CASIA / IMD），而整图生成图像**不存在"被篡改的区域"** —— 这与计划里预判的风险一致。重叠核查：其训练语料为篡改数据集，与我们的 GenImage 生成源不同族；Real 侧来源**未确认**（其清单未逐图比对）—— 因结论是否定的，此风险不影响判定方向。
+
+**顺带测得（可直接复用，注意口径）**：**逐图子进程 12.4 s/图 → 批量目录调用 0.28–0.36 s/图（40×）**；**卡级峰值显存 2.27 GB**（仅 TruFor，与 Qwen 16.6 GB 常驻相容）；**计时口径**：A 组报告的 timing 块由**批量**路径产生（`cold_start_s` 是整批墙钟时间），不得与逐图耗时混用，`timing_summary()` 现已按口径分列；原始产物按"图像+权重+配方"落盘 `calibration/trufor_raw/<key>/{result.npz,meta.json}`。
+
+### G7 入口 1 补充：TruFor 独立对照复测（**D 组**，2026-10-11，用户要求）
+
+**问题**：A 组观察到一次**未解释的反向**——q85 格 AUROC 0.342、CI (0.2094, 0.4823)，整段在 0.5 以下（其余四格 CI 均跨 0.5）。一次观察不能当结论，也不能现场翻符号当收益。**换一批从未用过的图重测一次**，看它是否复现。
+
+**设计（在跑之前固定）**：
+- **D 组来源**：`split_v2` 的 **val 分区**（284 源）中按种子固定抽取 **32 Real + 32 Fake（每个生成器 4 张）**，共 64 源。val 与 ①98 个校准/holdout 源、②A/B/C 三组、③最终 test 分区**都不相交**（构建脚本内断言）；它不是训练分区，因此这 64 源**永远不会进入 SFT 训练集**。
+- **格式**：与校准集**同一套编码**（`build_cells` 复用：native / png / q95 / q85 / q70），图像写入 `calibration/set/images_d/`，清单写入 `calibration/set/manifest_d.json`，分组写入 `calibration/set/g7_split_d.json`（沿用 A/B/C 的 schema，便于同一评测器读取）。64 源 × 5 格式 = **320 张**，每格式 n=64（A 组为 62，可比）。
+- **评测**：同一脚本、同一统计（逐格式 AUROC + **按源重采样** CI）、同一权重哈希（`ac1d90e3…578c7844`）。
+
+**判读规则（预注册，先写后跑）**：
+1. **复现**：q85 的**点估计 < 0.5 且 CI 整段低于 0.5** → 反向迹象复现，记为「反向信号在小样本上稳定」，但**仍不作任何正向使用**；
+2. **不复现**：q85 CI 跨 0.5（无论点估计在上或在下）→ 记为「A 组一格的偶然」，TruFor 的判定不变；
+3. **无论哪种结果，接线决定都不变**（TruFor 不接入全局链）—— 本次只检验一个已记录的异常，**不用于任何准入决策**，也**不得**据其翻符号改判为"有判别力"。
+
+**成本与授权**：GPU 约 **2–3 分钟**（320 张 × ~0.3 s/张 + 模型加载），峰值显存 ~2.3 GB，单卡独占；**跑之前需用户确认使用 GPU**。
+
+**产出**：`calibration/g7_external_trufor_D.json`（逐格式 AUROC + 按源 CI + 与 A 组同格的并列对照），日志记录复现与否。
+
+**复测结果（D 组，2026-10-11 实跑，权重 sha256 与 A 组一致）**：
+
+| 格式 | A 组（n=62） | A 组 95% CI | D 组（n=64） | D 组 95% CI | Δ(D−A) |
+|------|-------------|-------------|-------------|-------------|--------|
+| native | 0.425 | [0.291, 0.580] 跨 | 0.386 | [0.246, 0.523] 跨 | −0.039 |
+| png | 0.425 | [0.288, 0.579] 跨 | 0.380 | [0.244, 0.520] 跨 | −0.045 |
+| q95 | 0.392 | [0.256, 0.538] 跨 | 0.359 | [0.222, **0.497**] **整段<0.5** | −0.032 |
+| **q85** | **0.342** | [0.209, **0.482**] **整段<0.5** | **0.347** | [0.213, **0.482**] **整段<0.5** | +0.005 |
+| q70 | 0.427 | [0.291, 0.573] 跨 | 0.440 | [0.295, 0.574] 跨 | +0.012 |
+| **整体** | **0.426** | [0.304, 0.552] 跨 | **0.384** | [0.251, 0.514] 跨 | −0.043 |
+
+**判读（按预注册规则 1：命中）**：
+- **q85 复现**，且几乎是复制：0.342 → 0.347，CI (0.209, 0.482) → (0.213, 0.482)。"某一格的偶然"这一分支被排除。
+- **更强的事实**：**两组 × 五格式 = 10/10 格的点估计全部 < 0.5**（0.342–0.440）；D 组 **q95 的 CI 也整段低于 0.5**；空域 `map` 峰值同样 **10/10 < 0.5**（A 0.23–0.31 / D 0.34–0.41）。**反向是系统性的，不是单格噪声**。
+- **但幅度很弱**：分离度 A 0.574 / D 0.617，与已被判为"仅佐证"的 `frequency_v2`（0.556）同一量级；**整体 CI 仍跨 0.5**。与现有专家 |ρ| ≤ 0.19（A 组）—— 不是同一条压缩历史轴的重复，但弱与反向两条就够了。
+- **判定不变（预注册规则 3）**：TruFor **仍不接入全局链**。此结果**只说明"负向信号可复现"**，**不得**翻符号读成"其实有判别力"：一个分数越高越像 Real 的检测器，接进 Agent 只会把 AI 图推向 Real。若将来要讨论反向使用，需**另立预注册研究**（新组、新判据、先定方向再测），不能由本次结果顺推。
+- **机制仍未知**，仅记为观察：TruFor 给 Real 更高分（其 noiseprint 分支响应相机侧残差，而整图生成图无此残差）——这是**假设**，本次未做任何验证，不写进任何结论句。
+
+**PROBE-DINOv2（A 组 464 张，一次前向 0.02–0.09 s/图，峰值显存 1.62 GB）**：
+
+| 格式 | AUROC | 95% CI（按源） |
+|------|-------|----------------|
+| native / png | 0.967 / 0.973 | (0.92, 1.00) |
+| q95 / q85 / **q70** | 0.977 / 0.987 / **0.995** | (0.94, 1.00) |
+| **整体** | **0.960** | (0.924, 0.986) |
+
+**跨生成器泛化（关键，直接回应 G7-1 的重叠核查）**：
+
+| 生成器 | Fake n | AUROC | 与 PROBE 训练分布 |
+|--------|--------|-------|------------------|
+| ADM / BigGAN | 48 / 48 | 0.914 / 0.925 | **未见过** |
+| Glide / Midjourney | 34 / 20 | 0.959 / 1.000 | **未见过** |
+| VQDM / Wukong | 20 / 20 | 1.000 / 1.000 | **未见过** |
+| SD14 / SD15 | 20 / 20 | 1.000 | 同属 SD 家族 |
+| **6 个未见生成器整体** | 190 | **0.952** | — |
+
+**判定（G7-0 第 1 条：判别力）**：**满足**。五个格式的 CI 全部远高于 0.5，最难的 q70 反而最强（与论文抗压缩之说一致）；未见生成器上仍有 0.952，说明不是记住了训练生成器。与现有专家相关性 |ρ| ≤ 0.23（不冗余）。
+**已完成（G7-0 第 2 条：互补性）**：在 B 组（选择）上做系统级比较、在 **C 组（独立验证）**上复核 —— 见下方「入口 2」。结论是**融合没有收益**：C 组 `现有+PROBE − PROBE` 的 ΔAUROC = +0.0043，CI 跨 0。现有三专家的逐图分数取自 `calibration/set/raw_values.json`，PROBE 的 B/C 组分数由 `evaluate_external_expert.py` 补齐（C 组以 `--scores-only` 封存，冻结后才读）。
+
+### G7 入口 2：三个基线与独立验证（2026-10-11，A 拟合 / B 选择 / C 冻结后验证）
+
+融合用**逻辑回归**（标准化分数 → LR），拟合在 A 组、选择在 B 组、冻结后只测一次 C 组（脚本层面强制：`--validate-c` 找不到冻结文件或划分哈希不符即拒跑）。**极性由拟合自己学出**，不预设方向 —— 学到的系数正好自证了 G2-e 的反转（noise −1.24、jpeg −0.44、freq +0.08）。
+
+| 条件 | A 组 AUROC（拟合） | B 组 AUROC（选择） | **C 组 AUROC（独立验证）** |
+|------|------------------|------------------|--------------------------|
+| 现有 noise/jpeg/freq 融合 | 0.769 | 0.885 | **0.764** |
+| PROBE 单独 | 0.960 | 0.846 | **0.986** |
+| 现有 + PROBE | 0.978 | 0.951 | **0.990** |
+
+**C 组按源配对 ΔAUROC（冻结后只测量）**：
+- `现有+PROBE − PROBE`：**Δ +0.0043，CI [−0.0038, +0.015]** → **跨 0：融合没有收益**；
+- `现有 − PROBE`：**Δ −0.2222，CI [−0.435, −0.051]** → **整段为负：旧三专家显著差于 PROBE 单独**；
+- B 组的 `+0.105，CI [0.000, 0.314]` **未复现**（B 组仅 18 源；A/B 两组对 probe vs existing 的排序还相反）—— 这正是独立验证组存在的意义。
+- 同一 B 组选定阈值下，C 组的 Acc/F1 也是 PROBE 单独更高（0.890/0.887 对融合 0.864/0.871）。
+- **分辨力的诚实说明**：在 C 组的**逐格式格**内，PROBE 与融合都是 AUROC 1.0 / Acc 0.9444（18 样本/格，**封顶**）—— 条件间的差别只在汇总的按源配对 Δ 与整组固定阈值指标上显现。因此"未复现"是**保守结论**（融合没有换来可测增益，却要多背一个外部依赖与四组系数），**不能反读为"融合被证明有害"**。
+
+**判定（按 Step 3 预定规则，以 C 组为准）**：**融合没有收益 → PROBE 作为主检测器；现有专家降为辅助线索（解释性/可核验性），不强行堆工具**。部分格式的"收益"（B 组）是选择组假象，不构成按格式准入的依据。
+**TruFor**：维持研究对照，不接入全局主链（其 A 组反向迹象仍待独立验证，见上文修订）。
+
+### G7-2 产物与可复算（不只存 verdict）
+
+每张图落盘：**原始 logit/score**、校准概率、**输入预处理参数**（尺寸/裁剪/归一化）、**权重文件 MD5 与版本**、运行耗时。目的：以后改阈值、改校准、改融合规则时**离线重算**，不必重跑模型（沿用 G2-b `raw_values.json` 的既有做法，新专家写新文件，不覆盖旧缓存）。
+
+### G7-3 逐工具成本（不得沿用统一调用成本）
+
+- 停止策略记录**实际耗时**与**估计成本**两项；`POLICY_CALL_COST` 改为**逐工具**参数，取值由实测得出（PROBE ViT-L 与 TruFor 的耗时远高于统计型专家）。
+- 实验**分别报告**：冷启动（含模型加载）与模型已加载时的耗时；显存部署（与 Qwen 常驻 / 分阶段）由实测决定并在报告中写明。
+
+### G7-4 TruFor 的 `map` / `conf` 怎么用（守护全局协议）
+
+不开 L1–L3 不等于浪费空间线索。三条规定：
+
+1. **文本层区分"预测"与"证实"**（`measurement_scope=global` 不变）：
+   - **允许**描述模型预测的空间响应，例如"模型的高异常响应集中在画面右下的砖墙区域"——这是**预测**，可以写；
+   - **禁止**把它写成已证实的篡改，例如"该区域已被篡改为…"、"篡改定位为…"、"热图证明此处经过 PS"；
+   - 也**不再要求**把所有描述压成整图统计（前一版过严）。
+2. **空间信息进两个非语义通道**：
+   - **统计量**入 `condition_metadata`：异常图的最大值/高分面积占比/熵、置信图的均值与低置信面积占比、以及**置信加权后的异常质量**；
+   - **图像**入 `visual_artifacts`（与既有专家的残差图、频谱图同等地位），供模型以视觉通道参考。
+3. **校验器规则**：针对含 TruFor 轨迹，热图相关句子不得出现**证实话术**（定位真值、篡改确证），但**允许预测性区域描述**；同时热图必须标注为诊断可视化。注意不能直接复用 C3（C3 禁的是"把全局测量写成局部测量"，而 TruFor 的空间输出是模型预测，属另一种情形），需为它单独设一条规则。
+
+### G7-5 许可姿态（已定，2026-10-11）
+
+- **PROBE-DINOv2 为候选外部依赖**：**许可证条件尚未确认**；本项目**不附带、不再分发**其代码与权重。
+- 仓库内**不落任何 PROBE 代码或权重**（克隆与权重下载都在项目目录之外，例如 `/root/autodl-tmp/third_party/`）。
+- 适配器写成**可选、惰性依赖**：缺依赖时项目照常运行、测试照常通过（`pytest.importorskip` / 显式 skip），只有显式启用时才导入。
+- **两种许可必须分开记录**：①**用户授权**（项目内部）：2026-10-11 用户明确「研究均在本地开展、先行允许 PROBE 研究、可以下载」—— 项目内部的研究用途已获授权；②**上游许可证**：PROBE 仓库**无 LICENSE 文件、权重页未声明条款**，**仍未确认**。因此可以下载与运行（用户授权 + 本地研究），但**不得再分发**、不得声称已获上游授权；论文引用仅为学术归属。TruFor 的上游许可明确为非营利研究用途。
+- 运行时记录**来源 URL、权重哈希、版本**；README 增加一节说明获取方式、不再分发、许可见其原始页面；**论文引用仅为学术归属，不构成使用授权**。
+- TruFor 同理：官方许可为**非营利研究用途**，不随本项目分发。
+
+### 执行入口与顺序（按审核意见固定）
+
+**入口 1｜专家独立评测与校准（CPU/GPU，无 Agent）**
+- 适配器 `experts/probe_dino.py` / `experts/trufor.py`（TruFor 走**子进程**，只调用 + 读 npz，一次前向 —— 走子进程是因其 CLI/npz 接口，**不是因环境**：实测现有 py3.12 / torch 2.5 环境可直接运行其模型代码，独立的 py3.7 环境并非必要）；CPU Mock 冒烟 + GPU 显存/耗时实测。
+- 在 700 条校准集上出原始分数 → 按 G2-b 协议分层评估（分离度/极性/适用条件/内容分层）→ 与现有三专家的**相关性检查**（防重复放大）→ 按 **G7-0 判据**给出准入结论（准入 / 仅研究对照 / 不准入）。
+- 产物：可靠性表条目（或书面结论）+ 相关性报告 + 逐工具成本表。
+
+**入口 1 的落地顺序（2026-10-11 审核给出，逐条执行）**：
+
+1. 校验权重压缩包 **MD5**（TruFor `7bee48f3476c75616c3c5721ab256ff8`）、解压路径、**权重可加载性**；
+2. 取少量 Real/Fake 图，**真实跑通 TruFor**，核对 `score` / `map` / `conf` 的数值范围、尺寸与方向；
+3. 测量**冷启动与推理耗时、显存**；据此决定**批量调用或常驻工作进程**（逐图子进程会重复加载模型），并完善原始结果缓存；
+4. 固定**源级数据划分**（G7-1 的 A/B/C 组），开展**格式分层评测与校准**；
+5. 给出**准入结论**后，才接入 Agent。
+
+（适配器侧已就绪：原始产物固定落盘 `calibration/trufor_raw/<key>/{result.npz,meta.json}`、按"图像+权重+配方"缓存、冷/热计时 `timing_summary()`；Mock 只替换 `_run_tool`，缓存与落盘走生产代码。）
+
+**入口 2｜简单融合基线（无 Qwen）— 已完成（2026-10-11）**
+- ~~PROBE、TruFor、现有专家（noise/jpeg/freq）各自的单专家分数，以及**分数级融合**（逻辑回归 / 加权平均）；融合与阈值**只在 dev 分区拟合**，报告 val，最终 test 验收。~~ 实际执行：三条基线（`existing` / `probe` / `existing+probe`），**标准化后的逻辑回归**，**A 拟合 / B 选择 / C 冻结后验证**（`scripts/g7_baselines.py`）。TruFor 未列条件（入口 1 已判不接入全局主链）。
+- **判据预注册**（在数字出现之前写入脚本，`decide()`）：B 组 `现有+PROBE − PROBE` 的 ΔAUROC ≥ +0.02 才算融合胜出，≤ −0.02 为融合有损，**两者之间一律计为"无收益"**；B 与 C 不一致时**以 C 为准**。
+- **结果**：B 组 Δ = +0.105、CI [0.000, 0.314] → 规则判"融合胜出"并写出冻结文件 `calibration/g7_frozen_scheme.json`；**C 组 Δ = +0.0043、CI [−0.0038, +0.015] → 未复现**；`existing − probe` 在 C 组为 −0.2222、CI [−0.435, −0.051]（整段为负）。
+- **判定**：**PROBE 作为主检测器；现有三专家降为辅助线索（解释性与可核验性），不做按格式强塞**。冻结方案（系数、标准化参数、阈值）与三段数字都留在 `g7_frozen_scheme.json` / `g7_validation_C.json`，判据本身有 17 项测试（`tests/test_g7_baselines.py`）。
+- 目的（保持不变）：先把"不用 Qwen 能做到什么程度"钉死，作为 Agent 的对照基线 —— 现在这个基线是 **PROBE 单独（C 组 AUROC 0.986）**，Agent 必须相对它给出检测或可靠性上的增益，否则只剩成本。
+
+**入口 3｜Agent 接线与小批验收（2026-10-11 用户给定四步；暂不扩量生成 SFT、不训练）**
+
+**1) 决策规则（先固定，接线期间不得改）**
+- `probe_dino` = **主检测器**；`noise`/`jpeg`/`frequency_v2` = **辅助线索**，**不强制调用**；
+- TruFor **不接入**全局主链（D 组复测已确认其系统性反向，且不允许翻符号使用）；
+- 概率映射**只用 A 组拟合**（分位分箱，见下），**禁止用 B/C 或最终测试集重新调参**；B 组只提供操作阈值（0.251），不参与映射；
+- 交付验收只看"接线是否正确"，**不作检测能力结论**（那是入口 6 的事）。若验收通过与否都无法改变装箱决定，就不该在验收里做装箱决定。
+
+**2) 控制链接线（CPU；下面是逐点清单，每点都要有测试）**
+
+| # | 要动的地方 | 具体改动 |
+|---|-----------|---------|
+| a | **校准条目**（运行时概率映射） | `scripts/build_reliability_table.py` 增加"外部专家"来源：读 `calibration/g7_external_probe_dino_A.json`，**只取 A 组行、只取匹配格（png/q95/q85/q70，与既有专家同口径，排除 native 混杂格）**，写出 `probe_dino_expert` 条目：5 个分位分箱（A 组实测边界 0.00218 / 0.1355 / 0.9577 / 0.9998 → p_fake 0.000 / 0.061 / 0.520 / 1.000 / 1.000）、`separation_polarity_corrected`（A 组匹配格整体 AUROC）、`semantics_aligned=true`、`applicability="strong"`（最低格 0.967 ≥ 0.65 门）、`applicability_conditions`（逐格数字 + 未见生成器 0.952）、`n_samples=248`。**条目带 `provenance`**：拟合组 A、源数、权重 sha256、映射版本、冻结文件 hash |
+| b | **注册** | `state_machine/controller.py` `EXPERT_KEY_MAP`/`EXPERT_SOURCE_MAP` 加 `"probe" ↔ "probe_dino_expert"`；`main.py` `build_pipeline` 注册 `ProbeDinoExpert`（CPU/无权重时 `MockProbeExpert`）；`experts/__init__.py` 导出 |
+| c | **解析器** | `utils/parser.py`：`extract_all_calls` 的白名单加 `"probe"`；`_CALL_PATTERNS` 增 `probe`；`_TAG_NORMALIZE` 增别名（`call_probe`/`call_probe_dino`/`call_aigi`）。**注意**：控制器对未注册的调用是**静默跳过**，所以漏注册的表现是"没有证据、也不报错"，测试必须正面断言"出现了 probe token" |
+| d | **提示词** | `mllm/message_builder.py`：`TOOL_ACTIONS`/`TOOL_MEASURES`/`TOOL_ORDER` 增 `probe`，**排在首位**（主检测器）；measures 文案要写清"这是整图 AI 生成判别分数 ∈[0,1]，越高越像 AI；它不指出任何区域"；辅助线索的文案强调"用于解释与可核验，不单独定案"。改后 `FORENSIC_SYSTEM_PROMPT` 的 sha256 会变 → **重钉测试里的指纹**（设计使然） |
+| e | **Evidence Bundle 字段** | token 已带 `raw_metric` / `calibrated_likelihood` / `reliability` / `applicability(+_conditions)`；**新增 `calibration` 块**（来源文件、拟合组、映射类型、provenance）由控制器在校准命中时写入 —— 满足"保存原始分数、校准概率、适用条件、权重、校准版本"。适配器侧文案去状态化：外部适配器只声明"这是一个测量值"，**不再在 token 里声称"未校准"**（否则校准后 trace 里的话与实际字段自相矛盾） |
+| f | **整流器** | 无需新逻辑：校准命中即可（`calibrated_likelihood` 优先级最高），`support` 自动由概率给出、原文保留在 `support_raw`；但要有测试固定"probe 校准前后 `support` 的变化" |
+| g | **停止策略（逐工具成本）** | `config.POLICY_TOOL_COSTS`：统计型三专家保持 **0.15**（既有行为不变），`probe_dino_expert` = **0.25**（ViT-L 前向数十毫秒/图、常驻约 1.6 GB；同量纲下更高，但仍低于其不确定状态下的期望增益 ≈0.46，因此"该调用时仍值得调用"）；`halting_v2.expected_gain/tool_utilities` 改为按工具取成本；trace 记录每次实际耗时与所用成本 |
+| h | **重复计权防护** | 用 A 组实测的专家两两相关性（Spearman）：**只有正相关才折减**（负相关=互补，不折减）。A 组正值对只有两对：`noise↔jpeg +0.330`、`frequency_v2↔probe +0.164`；后调用者的权重乘 `1 − max(0, ρ)`，折减后的有效权重写进计数器/trace。默认生效，**在计划里写明它有副作用**：G2-d/G3-e 的历史数字是旧规则下得到的，跨规则不可直接比较 |
+| i | **校验器** | `utils/final_v2.py`：`TOOL_EXPERTS`、适用性键映射、接地检查的来源元组增 `probe_dino_expert`（否则校验器会把 probe token 标成"unknown expert"） |
+| j | **Mock（CPU 端到端）** | `mllm/mock_client.py` 增一个会发 `<call_probe>` 的模式（先 probe、再一个辅助线索），用于 CPU 全链路测试；控制器测试继续用 `ScriptedMLLM` |
+| k | **轨迹生成器（本轮只接线，不生成）** | `scripts/generate_trajectories_g4.py`：`EXPERT_BY_TOOL`/`build_experts`/`tool_applicable` 增 probe（适用性数据来自 a 的条目，逐格校正分离度全 ≥0.65），并把 probe 从"仅佐证"里排除（`admit_trajectories_g4.py` 的 `CORROBORATION_ONLY` 不加它）；**本轮不跑生成** |
+
+**3) 小批真实运行（GPU，需另行授权）**
+- **批次**：**24 源 = B 组（开发组）18 源 + val 分区补 6 源（3 Real + 3 Fake，与 D 组 64 源互斥）**；每源取 **5 个格式**（native/png/q95/q85/q70）→ **120 样本**（与 G3-e 同量级）。B 组源本来就有扰动样本，本轮不用，避免把"格式覆盖"和"扰动稳定性"混在一起。
+- **对照**：同一批样本上**同时给 PROBE 单独的结果** —— 用 A 组拟合的映射 + B 组选定阈值（0.251），报告口径与入口 2 一致。
+- **采集**：调用成功率（发出的 `<call_*>` 与落地 token 数）、判定变化（Agent vs PROBE 单独：同意/分歧/弃权）、弃权率、逐工具耗时与显存、停止原因分布、每会话调用序列。
+- **新脚本** `scripts/g7_acceptance.py`（CPU 可 `--dry-run`）：驱动完整协议跑批，产出 `calibration/g7_acceptance_report.json` + 可人工审阅的会话清单。
+
+**4) 人工审阅整条轨迹（沿用工作台，逐条对照）**
+1. 有没有把**分类分数编造成具体物理伪影**（"PROBE 检测到右下的纹理异常"这类）；
+2. **辅助专家是否真的被调用**、其结论是否被**忠实使用**（而不是被忽略或反向引用）；
+3. **概率与最终标签是否一致**（`calibrated_likelihood` ↔ verdict ↔ confidence 三处对得上）；
+4. **重复调用 / 遗漏返回 / 过早停止**；视觉自动预筛不可用（D2 结论），**继续人工把关**。
+
+**验收标准（先写后跑）**：接线正确的判据是**结构性**的 —— ①每个会话里如果模型发了 probe 调用，就必须出现对应的 probe token（不静默丢弃）；②probe token 必须带 `calibrated_likelihood` 与 `calibration` 版本块；③辅助线索的调用与不调用都不影响"能出结论"；④没有任何一条轨迹出现"把分数编成物理伪影"或"概率与标签矛盾"。**任一条不满足即回到 2) 修，不进入入口 4。**
+
+**小批验收结果（2026-10-11 实跑，120 样本，GPU 26 分钟，报告 `calibration/g7_acceptance_report.json`、审阅单 `calibration/g7_acceptance_review.md`）**：
+
+*结构判据*：①调用记账恒等式 **120/120 成立**（执行数 = 落地 token 数 + 去重数），**没有一次调用被静默丢弃**；②probe token 全部带 `calibrated_likelihood` 与 `calibration` 块（拟合组 A、权重 sha256）；③PROBE 在 **100/120** 会话被调用，首次调用是 probe 的 97 个（另有 jpeg 19、noise 4 —— 模型有时仍先摸老工具）；④**没有一条轨迹把判别分数写成物理伪影**（自动标记 4 处全部人工复核为"视觉观察与分数并列陈述"，其中一处是模型主动声明"该分数不提供具体区域信息"）。
+
+*判定与对照*（准确率不是本轮结论，仅供记录）：
+| 臂 | 准确率（弃权计错） | 说明 |
+|----|------------------|------|
+| Agent | **91/120 = 0.758**（弃权 25，覆盖 0.792） | 停止原因：candidate_matches_posterior 68 / model_stalled 23 / no_expected_gain 15 / budget_exhausted 14 |
+| PROBE 单独（同分箱映射） | **103/120 = 0.858** | 与 Agent 同映射，差异只来自调度与判定规则 |
+| PROBE 单独（冻结 LR 映射） | 101/120 = 0.842 | 两个参考臂只在 **4/120** 上不同 —— 映射差异小，用户的担心在本批上未被放大 |
+
+**三个必须写下来的发现**：
+1. **重复调用吃掉近一半执行预算（真缺陷）**：311 次执行里 **151 次（48.6%）** 是同一专家对同一张图的重复测量（跨轮 117、同轮 34），108/120 会话至少发生一次；`budget_exhausted` 的 14 个会话全部有重复。**这些测量按构造必然相同**（四个专家都是整图确定性测量），控制器却先执行、后按 `evidence_id` 去重 —— 也就是说 GPU 时间与预算都白花了。**修法（待批准）**：把去重提前到执行前（按"专家 + 图像"判重，整图测量下完全等价），并对跳过的调用不记账、单独计数；同时把提示词的 `Expert Target & Hypothesis` 一栏改成"只写专家名、不要写标签"，减少同轮重复的诱因。
+2. ~~模型会把"近随机"的强度读成方向：34 个 P(Fake)∈[0.4,0.6] 的 token 中，30 个被写进结论并被赋予方向性表述（28 个会话）~~ **该表述经复核后更正（2026-10-11，入口 4 第一步）**：原始计数把**规则允许的"轻微倾向"**（"该分数接近随机，略偏向伪造"）与"夸成强证据"混为一谈。按严格判据（出现强/决定性措辞，或把近随机证据列入自信结论的 `primary_evidence`）重扫 120 条：近随机 token 出现在 **39 个会话**，其中**轻微倾向 128 处、明确否定（"不足以/无法单独作为决定性证据"）56 处**，**真正被标记的只有 1 个会话**（把 P(Fake)=0.52 说成"有力的证据"，同一句里又承认它接近随机）。**结论**：模型对弱证据的措辞基本是克制的；需要盯的是这一处倾向，而**不是**先前说的普遍过读。检查器因此按"夸成强/决定性依据"的窄口径实现（`utils/weak_evidence.py`），标记后人工裁决。
+3. **25 例弃权里 23 例来自 `model_stalled`**，集中在 PROBE 落在中位箱（P(Fake)=0.52）的样本：模型的候选标签被后验驳回→再提→停。这些样本 GT 多为 Fake，PROBE 单独按 0.5 阈值"猜 Fake"反而对得多 —— Agent 用覆盖换可靠性，这个取舍（`POLICY_CONFIDENT_POSTERIOR=0.65` 与"中位箱按 0.52 计"）应留到入口 6 用数据定价，**不在本轮调参**。
+
+**判定**：接线通过（四条结构判据全过），但发现 1 是必须修的执行层缺陷；**修完再进入口 4**。
+
+**收尾修复与重跑（2026-10-11，用户批准）**：
+
+- **修复 ①（执行前去重）**：控制器在**调用执行之前**按"专家"判重 —— 四个专家都是 `measurement_scope="global"` 的确定性整图测量，同一会话内同一专家**不可能**返回不同结果，因此第二次及以后的调用直接跳过执行，复用已有的 `evidence_id` 给模型回一条去重说明。**跳过的调用不记入预算**（预算应当买真实测量，不是买重复），新增 `skipped_duplicate_calls` 计数；执行后的 `evidence_id` 去重保留为兜底（跨专家不可能撞 id，但保留守卫与计数）。
+- **修复 ②（提示词）**：`Expert Target & Hypothesis` 一栏改为"只写专家名与理由，**不要在这里写调用标签**"，去掉同轮重复（34 次）的诱因；计划模板本身不改结构。
+- **重跑的判读（先写后跑）**：①结构判据必须仍然全过（记账恒等式换成 `执行 + 跳过 = 模型发出的调用数`，且 `执行 = 落地 + 抑制`）；②重复执行占比应从 48.6% 降到 ~0；③同一批次、同一提示词变更前后对比：**每会话模型轮数、`budget_exhausted` 数量、弃权数**三个量必须给出来 —— 修复的预期是"同样的证据、更少的浪费"，**不是**准确率提升；若准确率变化，先怀疑是轨迹变短带来的判定时机变化，不得当作收益宣传。
+- **成本**：CPU 实现 + 测试；重跑约 20 分钟 GPU（用户已批准）。
+
+**重跑结果（2026-10-11，同一批次 120 样本，仅差本次修复；报告 `g7_acceptance_report.json`、上一版留档 `..._before.json`）**：
+
+| 指标 | 修复前 | 修复后 |
+|------|--------|--------|
+| 专家执行次数 | 311 | **175**（−44%） |
+| 执行前跳过 | 0 | **154** |
+| 执行后抑制（兜底） | 150 | **0** |
+| 每会话执行均值 | 2.59 | **1.46** |
+| `budget_exhausted` | 14 | **4** |
+| PROBE 被调用 | 100/120 | 110/120 |
+| 与同映射 PROBE 单独：一致/不一致/弃权 | 91 / 4 / 25 | **94 / 2 / 24** |
+| 准确率（弃权计错） | 91/120 = 0.758 | 89/120 = 0.742 |
+| 模型轮数均值 | 3.48 | 3.50 |
+| 记账恒等式（执行 = 落地 + 抑制） | 120/120 | 120/120 |
+
+**判读（按预注册）**：①结构判据仍然全过；②重复执行占比 48.6% → **0**（154 次被提前跳过，不再花 GPU 与预算）；③**准确率没有提升**（0.758 → 0.742，17 个样本判定改变，其中 6 例由错转对、6 例由对转错，其余为弃权与判定互换 —— n=120 下这是噪声，**不得当成收益宣传**）。预算耗尽从 14 降到 4、PROBE 覆盖从 100 升到 110，与"同样的证据、更少的浪费"一致。**入口 3 收尾完成，可进入口 4。**
+
+**入口 4｜新 SFT 生成与复审（小批量验收先行）— 第一步：CPU 准备（2026-10-11 用户给定四项）**
+
+**1) 提示词硬约束**：`RULES` 第 2 条改写为"每个工具每会话最多调用一次；重复调用**不会被再次执行**——系统直接返回已有测量，这一轮等于浪费"。执行层去重（G7 入口 3 已实现）继续兜底，两者是"说清楚"与"做不到也拦得住"的关系。
+
+**2) 弱证据专项检查**（`utils/weak_evidence.py`）：对 `P(Fake) ∈ [0.4, 0.6]` 的每个 token，检查其**在散文层被如何使用**：
+- **允许**：如实描述轻微倾向、明说接近随机/不足以下结论；
+- **不允许**：写成明确支持真/假、强力或决定性依据，或把近随机 token 放进自信结论的 `primary_evidence`。
+- 判据：句子里出现该专家的指代（中英文名/测量名）**且**出现强度词（明确/证明/确凿/决定性/强有力/充分/毫无疑问/强力支持…）→ 标记；标记**不拒收**，进入工作台的红字告警与 `high_risk` 清单，**由人裁决**（与 D2 的教训一致：自动筛选只负责排序，不负责定罪）。
+
+**3) 审核绑定内容哈希与生成版本**（`record_review` / `apply_review` 补齐）：
+- **样本内容哈希** `content_sha256(sample)`：对 `{conversations, ground_truth, type}` 做规范化 JSON 的 sha256（不含 `review` 块、不含时间戳）——**训练内容一旦变化，哈希必变**；
+- **批次指纹** `batch_fingerprint`：该批全部样本 `(id, content_sha256)` 排序后的 sha256（16 位），作为"生成版本"；
+- `record_review`：每条处置**记录当时的 `content_sha256` 与 `batch`**；工作台导出的 JSON **携带批次指纹**，导入时若与当前批次不符**整份拒绝**（没有指纹的旧导出需显式 `--allow-unversioned`，并在输出里说明风险）；
+- `apply_review`：逐条重算哈希，**不一致即视为未审**（不套用旧决、计入 undecided，因此默认拒绝出集并在报告里点名），旧 `accept` 绝不因 id 相同而自动继承。
+
+**4) 新批次独立目录与指纹**（`utils/batch.py`）：批次 = 目录 + 指纹。
+- 旧批次 `g4_trial`（原 237 条）**原地保留**：`sft_data/train/final_v2/`、`sft_data/review/`、`sft_data/train/final_v2_reviewed/` 全部不动；
+- 新批次 `sft_data/train/batches/<batch_id>/`（bucket 文件 + `manifest.json` 含指纹、生成参数、来源分区），审核记录 `sft_data/review/<batch_id>/`，出集 `sft_data/train/batches/<batch_id>_reviewed/`；
+- 三个脚本（工作台构建 / record / apply）统一加 `--batch`，默认仍指向旧批次路径，**新批次不继承任何旧决定**（不同目录 + 指纹校验双保险）。
+
+**第二步（生成，需 GPU）与第三步（全量审核）** 见下。
+
+**入口 4 第二步：第一批训练候选（方案先定，需 GPU 授权）**
+
+- **源的选择：只从 `split_v2` 的 `train` 分区取**，且与 B/C/D、验收批次（`acceptance_batch.json`）、最终 test 分区**逐条断言互斥**（复用入口 3 的检查模式）。规模 **12–20 源 × 5 格式**（native/png/q95/q85/q70）＝ 60–100 个变体。
+- **覆盖目标**（按 *变体* 而非源计，因为同一源在不同格式下的分数差很大）：
+  - **Real/Fake**：Real ≥ 6 源（**入口 4 必须产出"Real 也真的调用工具"的样本**，否则又回到"无工具 ⇒ Real"的捷径）；
+  - **PROBE 分带**：强信号（P≥0.9 或 ≤0.1）与**中位箱**（0.35–0.65）各占相当比例 —— 分带由**候选池的 PROBE 实跑**决定（GPU 几分钟：ViT-L 0.02–0.09 s/图），**不靠猜**；
+  - **生成器**：Fake 尽量铺满 8 个生成器；
+  - **强扰动**：为"专家分歧/合理弃权"留出席位（同源跨格式的 PROBE 读数天然不一致，如 glide 在 native/q95 与其余格式分歧）—— 注意**分歧与弃权是运行结果，不是选出来的**，选择只负责让这些情形**有机会出现**。
+- **不为凑数制造结论**：不给"每个策略必须产出 N 条"的配额；`admit_trajectories_g4.py` 的两级准入照旧，产出多少是多少（上一轮 20 源 → 440 轨迹 → 237 合格样本）。
+- **策略集（用户 2026-10-11 指定，裁剪版）**：`no-tool` / `probe` / `probe+noise` / `noise+jpeg` 四个。
+  - **会话数核算（按会话算不是按变体算）**：56 变体 × 4 策略 = 224，减去 **q70 上被 jpeg 门槛挡掉的 `noise+jpeg` 14 次** → **210 次会话**，按实测 12.9 s/会话 ≈ **45 分钟** GPU（Qwen 17.8 GB + PROBE 1.6 GB 常驻）。
+- **产物落新批次目录（生成全过程隔离，不只是审核与出集）**：`utils/batch.py` 的新批次路径表 = 变体 `sft_data/variants_<id>/`、轨迹 `sft_data/trajectories_<id>/`、准入报告 `sft_data/admission_report_<id>.json`、样本 `sft_data/train/batches/<id>/`、审核 `sft_data/review/<id>/`、出集 `.../<id>_reviewed/`；**四个生成脚本（build_variants / generate_trajectories / admit / build_final_v2）都接 `--batch`**，默认仍是旧批次。互斥性由测试断言（新批次路径与原批次**零重叠**），不靠文档承诺
+- **成本（据上一轮实测换算）**：上一轮 20 源 440 轨迹 ≈ 2.5 h GPU。本轮 60–100 变体 × 全策略 ≈ **1–1.5 h**；加候选池 PROBE 打分与校验，合计约 **1.5–2 h GPU**，Qwen 17.8 GB + PROBE 1.6 GB 常驻。**需用户授权**。
+- **生成后立即跑**：`final_v2` 十项校验 + `utils/weak_evidence.py` 批量扫描 + 泄漏检查，再建工作台（独立批次目录），才进入第三步。
+
+---
+
+**入口 4（原始条目）**
+- **先生成少量、覆盖 Real/Fake × 各格式的轨迹**，人工确认旧问题（重复结案、虚构证据、区域错配、全局写局部、无工具模板）**没有复发**，再扩量。
+- **审核结果绑定样本内容哈希与生成版本**：样本一旦重建，旧 accept 不得沿用（`record_review` / `apply_review` 需加哈希校验）。
+- 原 237 条的审核记录**保留**；新样本**单独版本化**（新目录 + 新指纹）。
+- 偏斜处理：**"无工具 ⇒ Real"结构性修正**（补 Real 侧工具样本 / 配平 / 分桶不混），不能只靠类别权重。
+
+**入口 5｜训练**：以新集合重训 LoRA（沿用 A–E 后的训练脚本与掩码/监督规则）。
+
+**入口 6｜最终配对评测**：五个条件在同一测试分区（`split_v2` 的 test，与 A/B/C 不相交）、同一指纹下配对 —— ① PROBE 单独 ② TruFor 单独 ③ 现有专家组合 ④ 简单融合（无 Qwen，方案已冻结于 `calibration/g7_frozen_scheme.json`，重新拟合需另立冻结） ⑤ Agent；报告分列**检测能力 / 可靠性 / 成本**（调用数、冷启动与热态耗时、显存），并给出明确结论：Qwen 的调度与解释带来的是检测增益、可靠性增益，还是仅成本。
+
+### 风险与开放决策
+
+1. ~~TruFor 面向篡改（tampCOCO/compRAISE/…），对整图生成可能近乎无信号 —— 由入口 1 实测判据决定；ELA 的教训（png 0.96 → q70 0.50）适用。~~ **已实测（2026-10-11）：A 组 AUROC 0.426，判定不接入全局链**（q85 的反向迹象留待独立验证）；ELA 的教训在 PROBE 上**未**复现（q70 反而最强 0.995）。
+2. PROBE 无许可证、TruFor 限非营利：许可与用途写入 README 与报告。**分列用户授权（2026-10-11 已给，可下载运行）与上游许可（仍未确认，不再分发）**。
+3. ~~语义边界待定~~ **已定（2026-10-11）**：**保持全局检测任务，暂不开 L1–L3**；但 TruFor 的 `map`/`conf` 不弃用，按 **G7-4** 以"全局统计 + 可视化产物"的方式使用，**不引入任何 bbox 与 `candidate_manipulation_region` 语义**。
+4. 复现前提：TruFor 所需的三块依赖（`yacs` / `tensorboardX` / `timm`）装入现有环境即可（**无需 py3.7 独立环境**，实测已通过）；外部依赖的获取走替代源（hf-mirror / ModelScope / 镜像），写入 README「运行环境」。
+5. GPU 预算：入口 1 冒烟 + 校准 ≈ 30 min；入口 3 小批 ≈ 1–2 h；入口 4 生成 ≈ 2.5 h；入口 6 对照 ≈ 2–3 h。**均需 GPU 授权。**
+
+### 与既有阶段的关系
+
+- 不改 G4/G5 判据；G5「工具与解释」一节的对照扩展为含新专家的五条件（PROBE / TruFor / 现有专家组合 / 无 Qwen 融合 / Agent）。
+- 排队顺序变化：**F（final_v2 重新生成）顺延到入口 4**。~~先由入口 1–2 决定"工具箱里到底有哪些工具"~~ → **入口 1–2 已完成（2026-10-11）：工具箱 = PROBE-DINOv2（主检测器）+ noise/jpeg/frequency_v2（辅助线索）；TruFor 不入全局链，仅作 L1 研究对照**。
+- 依赖：入口 1/2 大部分为 CPU 可并行；入口 3 起需 GPU 与人工交叉。
+
+---
+
+## 4.17 G7 修复（2026-10-13 交接文档实施计划）：Qwen 主导决策权与忠实数据链
+
+**来源与优先关系**：本节实施 `CLAUDE_CODE_G7_REPAIR_HANDOFF.md`（2026-10-13，作者 HJ/jack H）。该文档**优先于** §4.16 入口 3 中"规则拥有最终标签"的设计：Qwen 拥有工具选择、继续探索、主动停止与**最终判定**的主要权力；控制器是**执行器**（合法调用、去重、预算、防循环），不是第二位判定者；校验器只管**证据忠实性**，**不因模型判断与参考后验不同而认定其错误**。
+
+**本轮范围（硬约束）**：只做 **CPU 修复与离线审计**。不启 GPU、不重生成轨迹、不训练、不扩量、不触碰最终测试集；不覆盖历史轨迹、审核决定与旧策略结果；**禁止直接训练当前 145 条**，也禁止手工补出理想论证后自动接受。GPU 需另行申请（见 D 段）。
+
+**命名固定（文档要求实施者固定）**：
+- 策略版本：**`v3`（代号 `model_led`）**，与 `v2`（规则主导，保留供历史复算与对照）并存；`HALTING_POLICY` 增 `"v3"`。
+- 样本 schema：**`final_v3`**（单动作协议 + 保留模型原始论证 + 标签来源可追溯），`final_v2` 保留为历史 schema；下游（准入评分 / LoRA 训练 / 报告 / 配置指纹）兼容性单列一节审计。
+- 批次：本轮不产新批次；GPU 验证批次的 id 留待 D 段固定（拟 `g7_b2`）。
+
+### A 段：审计（CPU，只用既有产物，先于任何代码修改）
+
+| 步骤 | 内容 | 产出 |
+|------|------|------|
+| **A1 原始轨迹审计** | 为 §2 的六类缺陷各定**可判定判据**（例："结案轮为无 token 的专家陈述了测量值"= 虚构专家；"原始分数在近随机带被当作方向"= 层次误用），逐条给出**样本 ID、原始句子、确认状态**（确认/候选/未验证三档）。**不得用关键词命中数当虚构数**；昨日 35/210 的数字按此重做 | `calibration/g7_audit_raw_traces.json` + 日志小节 |
+| **A2 校准审计（R5）** | 只用缓存分数：①各专家拟合来源/源数/格式/标签比例/分箱边界与样本数；②旧 G2 校准与 A/B/C、train/val/test 的重叠；③运行时映射与逐格式失效条件是否一致；**JPEG q85 的 0.972 可靠度来自哪里、影响什么**；④经验分箱 vs 平滑分箱 vs 简单 LR（比 **Brier / 可靠性 / 按源不确定性**，不只 AUROC）；⑤0/1 经验概率是否过度确定；参考后验聚合与相关性折减**是否依赖调用顺序** | `calibration/g7_calibration_audit.json` + 结论：是否换映射（若换，先冻结版本/来源/权重哈希，且只用事先指定的开发数据） |
+| **A3 弃权专项诊断（R8）** | 区分**首次可解析候选 / 最后可解析模型结案 / 系统最终标签 / 解析失败**，四者不得混为一个 Uncertain 指标；同时报告**全部 210 与入选 145**（说明准入选择效应）；按文档七类原因逐条分类，主因+引用原句；按策略/真值/分带/调用数/真实停止原因分层 | `calibration/g7_abstention_diagnosis.json` + 报告 |
+
+### B 段：代码修复（CPU + 测试）
+
+| 步骤 | 内容（要点） |
+|------|-------------|
+| **B1 新策略 `v3`（R1）** | 合法工具请求在预算内一律执行，**不因参考收益为负否决**；Qwen 合法结案经证据忠实性检查后接受，**不因与参考后验不同静默改标签**；`no_expected_gain` 降为建议/诊断字段，不再自动给标签；参考后验/冲突度/工具效用**各自独立记录**；模型自报 confidence **不得冒充**校准概率；停止原因细分为自主结案/预算截断/防循环截断/格式失败/证据校验失败 |
+| **B2 真实停止原因与防空转（R2）** | 结案反馈按**真实原因**生成（stall ≠ 工具无收益，预算耗尽 ≠ 证据充分）；stall 只由**重复或无效动作**定义，**不得**用"标签与后验不同"或合法结案当停滞；纠正内容准确（已执行/未执行/重复为何无新证据）；纠正次数与循环上限固定写入计划；资源截断后允许**一次**受约束结案，仍无有效结案则标失败，**不用模板造成功答案** |
+| **B3 权威证据账本与收尾防幻觉（R3）** | 唯一证据权威 = 实际执行结果（专家名/evidence_id/原始指标/校准值/测量范围/执行状态）；**调用与结案互斥**；外部截断后不执行新调用，且**不得把调用文本当测量**；检查虚构专家/数值/第二次测量/把跳过请求当独立证据；**允许一次针对性纠正，仍不合格即拒收**；记录原答/纠正/终答，禁止静默删除缺陷；检查器须区分"建议调用/尚未调用/假设结果/声称已获得结果" |
+| **B4 全局接口与首次观察（R4）** | 全局专家调用**解除 bbox 必填**（明确全局调用协议，兼容旧数据并注明版本）；可选视觉关注框独立记录、不限定测量范围、不代表定位真值；首轮允许"未观察到明确异常"；客观观察与待验证假设分开表述；未调用前不得声称测得 SRM/DCT/周期峰/传感器特征 |
+| **B5 忠实转换与审核页（R6）** | 转换前查原始轨迹、转换后再查训练内容；**不再用脚本生成 reasoning 替代模型论证**；缺陷→纠正或拒收，不"规范化洗白"；模型原始标签/最终采用标签/纠正/理由可追溯且报告一致；无工具回答保留视觉论证；**工作台并排展示原始助手轮与最终训练对话**并标注插入/替换/删除（绿色仅表示实际监督内容）；弱证据检查新增：**分数层次混用 / 校准方向误读 / 虚构工具 / 全局证据局部化 / 标签-报告冲突** |
+| **B6 统一结案（R7）** | 让 Qwen 基于**真实已返回证据**重新形成完整结案；纠正提示**不得泄漏真值**、不得指定预定标签；模型改变结论时保留前后回答与依据，仍不一致则拒收；三种置信度各留来源，不合并成一个数；真值仅用于离线评估与训练准入 |
+| **B7 单动作协议（R9）** | 每轮：**一个工具调用或一个结案**，调用后必须等待返回；解析器/提示词/执行器**共同约束**（不只靠提示词）；混合输出给明确协议纠正，**不静默挑选**；"工具预执行 + Qwen 仅解释"作为对照条件而非主线；不新增裁判模型 |
+
+### C 段：回归验收（CPU，用当前审核案例，不生成新数据）
+
+逐条对应交接文档 §4 的 11 项测试，外加本项目既有 921 项回归。**重点**：①参考净收益非正时 Qwen 仍可合法调用未用工具；②合法结案不被静默改标签，Uncertain 不被当作同意；③stall/预算/低收益提示各自准确；④重复调用不测量、不耗专家预算，但反馈明确、模型轮成本照实计；⑤未执行专家的结果与虚构测量被识别，**而否定句、建议调用、免责声明不被误判**；⑥无工具论证不只剩模板；⑦原始错误不被转换掩盖；⑧路径/版本/指纹完整、历史产物不覆盖；⑨新旧 schema 对下游的兼容性检查；⑩纠正提示不泄漏真值；⑪单动作协议三种情形各有测试。
+
+### D 段：GPU 小批验证（需另行授权，本轮不执行）
+
+CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单工具/多工具、强信号/中位箱、冲突与外部截断；**全量人工审核后**再决定扩量。**不得把小批准入合格等同于训练成功或泛化收益**。新策略效果用**同源配对对照**评估，不预设 Qwen 主导必然更优；保留 PROBE 单独与同覆盖率弃权基线；最终泛化结论使用**未触碰的 test**。
+
+### E 段：交付物（对应交接文档 §5）
+
+1. 本节 + 各阶段状态（本表随进度更新）；2. 原子提交 / 针对性测试 / 操作日志；3. **A1 原始轨迹审计报告**（定义、样本 ID、可追溯证据、确认/候选/未验证三档）；4. **A2 校准审计报告**及是否修改映射的结论；5. 文档同步（新旧职责、停止规则、字段定义、工作台说明）；6. **D 段方案（待授权）**；7. **A3 弃权专项诊断报告**（合理/可疑/待人工确认）；8. **人工审核问题覆盖矩阵**：把审核 JSON 的问题与 `4a8e450` 日志的六类缺陷映射到修复项、回归案例与验收结果，未覆盖或无法自动检测的部分明确列为人工检查。
+
+**执行顺序（2026-10-13 用户校正后固定）**：
+
+1. **B3 证据账本 + B2 真实停止反馈**——先堵住"虚构专家结果"与"错误收尾"（A1 的 45 条 + 76 条标签覆盖是它们的直接靶点）
+2. **B1 新策略 `v3`（Qwen 主导）**——不再静默覆盖模型标签；参考收益只作建议
+3. **B4 全局调用协议**——解除 bbox 必填；允许"未观察到明确异常"
+4. **旧专家映射的来源与格式权重修正**（对应 A2：拟合集含 B/C、权重只取 png 单格）——**保留旧表供历史复算**
+5. **B5 忠实转换 + 原始/训练对话并排审核**
+6. **C 段 CPU 回归** → 通过后再申请 **D 段小批 GPU 验证**
+
+（B6 统一结案、B7 单动作协议并入第 1–2 步的协议约束中实现；B5 的弱证据检查扩充随第 5 步。）**每一步单独提交并追加日志。**
+
+**A 段的三条校正（用户 2026-10-13）已落实**：①标签转移改为矩阵 + ID 差集（`g7_label_transitions.json`），不再用相减；②弃权分类保持"候选标记"，无工具**不自动**等于应当弃权；③审计重拟合与运行表 v1 的分箱**分别标注**（运行表 PROBE 分箱 [0.0, 0.061, 0.52, 1.0, 1.0]，0/1 箱 3/5）；④平滑定位为**候选稳健化方案**，需冻结与独立验证。
+
+
+### B 段第 1.5 步：账本收紧与结案统一入口（2026-10-13 用户审阅 B1 后追加，顺序提前于 v3）
+
+用户审阅 B1 提交后列出五处优先缺口（A–E）与停止反馈问题。本轮只做 CPU 侧收紧，不生成数据、不训练、不动 GPU；**五项逐一对应，每项先加回归测试**：
+
+1. **统一结案入口（A）**：此前只有"额外请求的收尾轮"过账本；候选被规则接受且自带 report 时直接采用，可绕过检查。改为：**任何被采用的助手结案文本都经同一入口**（候选直通 / 收尾轮 / 纠正后），记录采用来源与是否含未执行调用；v1 路径只标注不纠正（协议冻结，纠正会改变历史行为）。原始中间轮的审计属于第 5 步（忠实转换前审计），本轮不做。
+2. **账本绑定 专家 → evidence_id → 字段 → 数值（B）**：不再把所有 token 的数字放进一个公共池。跨专家复制（把 PROBE 数值说成 noise 的）、字段错位（把 raw_metric 说成校准概率）、P(Real)/P(Fake) 互换，各自成为可检出的发现类型（`misattributed_value` / `misattributed_field`），并在发现中注明真实来源字段与 evidence_id；token 文本字段（reasoning/interpretation 等）中的数字视为该专家可引用的合法值。
+3. **容差与单位（C）**：删除"0/1/1000 及 >1000 直接跳过"与"0.05 通用容差"。改为按字段类别 + 展示精度：概率类上限 **0.005**、度量类上限 0.05 且随展示精度收紧（细于上限时用更细的容差）；百分数按 /100 换算；**坐标只在坐标表达（方括号、`N×N`）中排除**。判分下限（如 `Fake=0` / `Real=1`）因此可检出。
+4. **否定范围按分句（D）**：整句含否定词即放行改为**逐分句**判定；补两条真实反例测试："噪声专家显示低噪声，但不能单独确定真假"（前一分句仍须检查）、"重复请求已跳过，没有再次测量得到新结果"（不得判为新增测量）。
+5. **四态分离 + failed 硬门禁（E）**：`evidence_check.status`（检查通过与否）之外，另记 `conclusion.verdict_parse`（格式是否可解析）、`conclusion.calls`/`calls_executed`（结案是否混入未执行调用）、转换端 `trainable`（准入结论）。`failed` 在**准入评分**（`admit_trajectories_g4`）与**转换**（`build_final_v2`）两处**拒收**并保留原始记录；历史无 `evidence_check` 字段的轨迹按"未受该检查"计，不回溯改写。
+
+**停止反馈忠实化（用户第 3 点）**：v2 的 stall 提示此前写"连续给出了相同的内容"，而 v2 实际统计的是**连续无新证据**。v2 保留供历史复算，仅改措辞按实际条件描述并附真实轮数（新增诊断字段，不改变任何决策）；"重复/无效动作"的严格语义留待 v3。
+
+**待办（本轮结束仍开放）**：①v3（Qwen 主导，参考收益只作建议，不静默改标签）②全局调用协议 ③旧专家映射与格式权重 ④忠实转换与并排审核 ⑤CPU 回归后的小批 GPU。
+
+**附：账本收紧的真实数据核对（只读回放，不生成数据）**——用新账本对 g7_b1 已落盘的 210 条原始会话的**收尾轮文本**重放一遍，报告会命中的会话数与发现类型，作为"门禁在真实数据上有多少触达"的证据；产物 `calibration/g7_ledger_replay.json`，不改写任何历史轨迹。
+
+### B 段第 1.6 步：方向一致性、否定范围与检查器边界（2026-10-13 用户第二次审阅后）
+
+用户复现了两个仍存在的漏洞并列出五条边界。原则：**未命中不等于已证明忠实**——检查器只覆盖已定义的模式，复杂情形一律记为候选、交人工裁决。
+
+1. **A 证据方向与推断一致性（新检查）**：账本此前只校验"数值属于谁、哪个字段"，不校验"用它推出什么方向"。新增两个发现类型，且**发现分级**（`severity`：defect / candidate）：
+   - `direction_conflict`（**defect**）：token 的校准方向明确（|P(Fake)−P(Real)| ≥ 0.1）而句子断言相反方向；
+   - `direction_overread`（**candidate**）：近随机箱（P(Fake) ∈ [0.4, 0.6]，沿用 `utils/weak_evidence` 的带）上断言**明确方向**且句中无"接近随机／略偏／不足以"等保留措辞；
+   - 只对"**引用了数值 + 断言了方向**"的句子生效；方向断言可跨一个句子（"…0.3431。这表明…"）承接；专家名先遮蔽，避免"AI 生成探测器"被读成方向词；
+   - **只有 defect 触发一次纠正与 failed**；candidate 只记录（trace + 计数器），交人工。
+2. **B 否定范围收窄**：非陈述标记只保留"**未执行／未获得结果**"类（未调用、未获得、无法获得、未执行、已跳过、建议调用、假设…）。删除裸"没有／无法／不能／不应／不再"——"noise 专家显示没有相机噪声，支持生成"是在**声称取得测量**（阴性结果），必须受检；"未获得噪声结果"仍豁免。
+3. **归属按最近提及**（边界 a）：同一句多个专家时，数值先对照**最近提及的专家**，不匹配再对照同句其他被提及者（命中他人仍记 `misattributed_value` 并注明来源），不再"匹配任意被提及专家即通过"。
+4. **token 自由文本数字单列**（边界 b）：数值只命中 token **自由文本**（reasoning 等）时，记为候选 `text_value_as_measurement`（角色不明——校准统计/阈值不可借作当前图像的测量），不再默默通过。
+5. **百分数精度同步换算**（边界 c）："93.9%" 的显示精度是 0.05%（即分数域两位小数），换算后按 **d+2** 位计容差。
+6. **新批次 schema 强制字段完整**（边界 d）：生成器写入 `record_schema="g7_r4"`；门禁对**声明了 schema** 的记录要求 `evidence_check` 与 `conclusion` 必须存在且有效，缺失即拒（不再可能被当作历史记录放行）。历史无声明记录保持兼容。
+7. **中间监督轮**（边界 e）属于第 5 步（忠实转换检查整条被监督对话），本轮不改；本轮把该限制写进记录：`evidence_check.caveat` 明示"未命中不等于已证明忠实"。
+
+**完成后再做**：v3（取消静默标签覆盖）→ 全局调用协议 → 校准来源与格式权重 → 忠实转换与并排审核 → CPU 回归 → 小批 GPU。
+
+### B 段第 2 步：v3 决策权（Qwen 主导；用户 2026-10-13 第三次给定顺序第 1 项）
+
+目标：**取消静默标签覆盖**，低收益只作参考。v2 原样保留供历史复算；v3 通过 `FORENSIC_HALTING_POLICY=v3` 选择并写入配置指纹。
+
+1. **新策略 `state_machine/halting_v3.py`**：策略只决定"会话何时结束、为何结束"，**从不决定标签**。合法结案（Real/Fake/Uncertain）立即结束并把**模型自己的标签**作为结案；后验/冲突度/工具效用照算，但只作为**参考**写入（`reference_posterior`、`reference_recommendation`、`advisory`）。
+2. **停止原因细分**：`model_concluded`（自主结案）/ `budget_exhausted` / `loop_protection`（重复或无效动作）/ `format_failure` / `evidence_check_failed`。预算与防循环停止时**不写标签**（`verdict=None`），由收尾轮产出；收尾轮不可解析则记为不可解析，而不是由策略补一个标签。
+3. **停滞重定义**：v3 的循环保护按**动作**判定（同一动作连续出现 ≥3 次；或连续 ≥3 轮没有形成任何合法动作），不再用 v2 的"连续无新证据"。
+4. **`no_expected_gain` 降级为建议**：不再否决合法调用，也不作为停止理由；参考估计以一条明确标注"只是参考"的系统提示发送（每会话至多一次），并记入 `advisory` 与计数器。
+5. **Uncertain 不是同意**：模型弃权时记 `model_abstained`（而非 `reference_disagrees`），最终标签就是 Uncertain。
+6. **控制器**：v2/v3 共用同一结案入口与账本检查；v3 标签取自被采用的结案文本（`model_candidate`），置信度取自模型自述，**不得**与校准概率混淆。
+
+
+### B 段第 6 步：跨模块 CPU 验收（R5；用户列出的五项在验收前确认）
+
+用户指出五处需在验收前确认的问题，逐条修正并写入回归测试：
+1. **默认仍是 v2**（不能误以为运行即新策略）：`FORENSIC_HALTING_POLICY=v3` 是唯一入口；验收脚本**自动以 v3 重入**（未显式设置时 `os.execv` 带上环境变量，标记防循环）；`scripts/g7_acceptance.py` 新增 `--expect-policy v3`，不一致直接退出。**版本三件套**进入报告与记录：策略版本、`prompt_digest`、校准表身份（`schema`/`fitting_group`/`digest`/`split_hash`，已进配置指纹的 `calibration` 组件）。
+2. **解析失败不再伪装成弃权**：新增 `final_verdict.verdict_status`（`model_concluded` / `no_parseable_conclusion` / `policy_label`）；计数器新增 `verdict_status` 与 `model_abstained`（仅当合法 Uncertain 才为真）；轨迹记录与转换样本同步携带；校验器对 `no_parseable_conclusion` 直接拒收。
+3. **置信度 0 不再被替换**：`value or 0.5` 改为"字段缺失/None → 回退"，并做范围与有限性检查（NaN/inf/越界 → 记为回退值 0.5）。
+4. **转换后的 verdict 语义**：v3 记录 `basis="model_judgement"`、`reference_posterior` 与 `reference_recommendation` 单列，**不再输出 `posterior`**；v2 历史记录保留原语义并另存 `reference_posterior`。校验器**按策略区分**：v3 允许模型标签与参考后验不一致（但必须在 `reference.advisory` 记录），v2 仍按旧规则强制一致。
+5. **映射口径如实标注**：逐格式只改**权重**；`raw_metric → P(Fake)` 仍是**池化分位分箱**。token 的 `calibration.mapping_scope="pooled_quantile_bins"` + `weight_basis`（`condition:<cell>` 或 `pooled`）随 token 传递；会话计数器记录 `calibration_condition`（未知来源输入回退池化并如实记 None）；README 与报告需区分"已知编码条件"与"真实未知来源"。
+
+**验收脚本 `scripts/cpu_acceptance_r5.py`（只读 + 临时目录）**：五项检查端到端跑通"运行 → 记录 → 转换 → 工作台"，产物 `calibration/g7_cpu_acceptance_r5.json`。
+
+### B 段第 7 步：v3 小批 GPU 验收（用户授权 2026-10-13；先冒烟，再 56 次会话）
+
+- **三版本固定**：策略 `FORENSIC_HALTING_POLICY=v3`、提示词 `453342d7e16ad3c8`、校准表 `3d16c70538a1d0bc`（schema 2、拟合组 A）——记录进 `calibration/g7_report_g7_b2.json` 的 `versions`。
+- **独立新批次 `g7_b2`**：选源在候选池阶段即**排除 b1 已选的 14 源**（`--exclude-batch g7_b1`，写进 `prior_batch_sources`），并照旧与 B/C/D、验收集、最终测试断言互斥；新目录（`sft_data/trajectories_g7_b2/`、`variants_g7_b2/`、批次目录）不覆盖任何旧产物。
+- **冒烟 4 次**（`--limit 4`）：v3 记录正常、`verdict_status=model_concluded`、账本全 pass、三类停止原因（自主结案/预算/防循环）都出现过，显存 16.6 GB。
+- **正式小批**：单臂 `probe+noise`，14 源 × 4 编码格 = **56 次会话**（用户"50 个左右、大致看一下"）。
+- **统计口径（`scripts/g7_b2_report.py`）**：合法主动结案、合法弃权、**解析失败（单独计，不并入弃权）**、外部截断（预算/防循环/格式）、证据纠正与缺陷/候选类型、协议违规、平均轮数/调用/成本，以及**用缓存分数离线计算的 PROBE 单独对照臂**（同一批图像，读同一张表）。
+- **人工检查材料（`scripts/build_review_from_trajectories.py`）**：单臂批次没有 no-tool 配对，admission 必然全拒；因此直接由轨迹渲染评审样本（明确标注 `admission=not_applied_review_only`）并建工作台，供"原始回答 vs 最终训练对话"并排查看。
+
+**g7_b2 结果（56 次会话，修复解析器后）**：合法主动结案 **56/56**（其中合法弃权 9）、解析失败 **0**、外部截断 1（format_failure）；标签 Real 24 / Fake 23 / Uncertain 9；停止原因 model_concluded 55；协议违规 0；平均 2.93 轮 / 1.11 次调用 / 成本 2.57；证据检查 54 pass、**2 failed**（虚构数值与方向冲突在纠正后仍存在 → 门禁拒收）；缺陷 fabricated_value 1 + direction_conflict 1，候选 direction_overread 3。**PROBE 单独对照（同图像、缓存分数离线）**：55 条有 probe 令牌的会话里 **53 条判对**，而整条 Agent **44/56**——单检测器在这批图像上优于 Qwen 主导链。逐条看：11 条与 PROBE 不一致里 6 条是 probe≈0.52 近随机箱上的**合法弃权**（符合既定政策），3 条是 probe=1.000 强 Fake 而模型给 Real/Uncertain 的**真失败**，1 条 probe=0.061 强 Real 被弃权。
+
+**本轮发现的两处解析缺陷（均由验收暴露，非模型问题）**：①`<planning>` 内写 `<call_x>`（模板把标签当"专家名"）②`<reasoning>` 内引用 `<call_x>`——都曾被计为"一次额外请求"，导致 56/56 会话被拒。修复为 `Parser.strip_prose`（规划/推理块内的标签一律不是请求）+ 提示词明确"标签只在 `</planning>` 后出现一次"；两批被污染的轨迹分别归档在 `sft_data/trajectories_g7_b2_parser_bug/` 与 `..._reasoning_prose/`，均附 `ARCHIVE_NOTE.json`，不参与任何统计。
+
+### B 段第 8 步：重复请求（41/56）的修复与口径统一 + 格式纠错具体化（用户指出；GPU 已关，效果待验证）
+
+- **口径统一**：轨迹记录此前只带 5 个计数器（`skipped_duplicate_calls`、`protocol_violations` **根本不在里面**），报告读它们得到的是**假零**。现在记录携带 trace 的完整计数块，并新增成对字段 **`requests`（请求）/ `executions`（执行）/ `repeat_requests`（重复请求）**；报告对缺失字段输出 `未记录`（`None`），不再用 0 冒充。重跑同一批数据：**请求 103 / 执行 62，重复请求 41，41/56 会话含重复**（与用户人工计数一致）。
+- **每轮状态行**（用户建议 1、2）：每次测量注入后追加一条 `[System: 本会话状态 —— 已执行的专家：…（P(Fake)/方向/raw/适用）；尚可调用：…；每专家整图只测一次，重复请求会被跳过并白费一轮]`。完整 token 原样保留在其上方，状态行只是把关键字段提到前面。
+- **重复请求 = 无进展动作**（用户建议 3）：动作签名按"执行 / 重复"区分（同一专家即同一次测量，bbox 不参与），重复轮计入防循环信号 → 连续两次重复请求即 `loop_protection`；计数器分别记 **请求次数** 与 **实际执行次数**。
+- **重复轮不作为动作示范**（用户建议 4）：轨迹记录与样本的 `fidelity.dialogue_audit.repeat_request_turns` 记录轮号；弱证据筛查新增候选 `repeat_request_turn`（"无进展动作，不应作为动作示范"）；工作台在对应助手轮上打**"重复请求 · 已被跳过执行（无进展，不能作为动作示范）"**徽章；高风险原因按类型分别命名（`repeat_request_no_progress` 等），不再一律叫 `weak_evidence_promoted`。
+- **格式纠错具体化**（用户新指出）：BigGAN q95 会话连续三次把调用写在 `<planning>` 内，纠错却说"请包含 `<call_*>` 或 `<verdict>`"——让它做已经做过的事。现在 `Parser.prose_only_calls` 识别"只出现在论述块内"的标签，纠错直接点名并给出应输出的行：`<call_probe></call_probe>` 放在 `</planning>` 之后，并说明块内标签"不会被执行"。
+- **未完成**：状态行能否真正降低重复率需要 GPU 对照（用户已关闭 GPU）；已用同一批次的前 8 个变体准备好对照方案（`--output-dir sft_data/trajectories_g7_b2_statefix`），开机即可跑。
+
+### B 段第 9 步：视觉观察的两层修复（用户指出：模板化 + 转换器丢信息）
+
+- **问题 1（模型观察模板化）**：我的提示词把"未观察到明确异常，需要统计证据"写成了可替代描述的句子 → 56/56 会话照抄。**改协议（下一批生效）**：planning 行拆成两行——`Visual Observation:`（客观描述场景、主体、纹理、边缘、光照，**不是判定**）与 `Suspected Anomalies:`（有则说、无则如实说"没有明显异常"；**不得编造看不见的噪声/压缩块/传感器痕迹**）。提示词哈希 `f4e2eda32c60679b → 84bc2c766c6d712a`（`prompt_digest` `c338099c9e2b8a5f`）。
+- **问题 2（转换器丢信息）**：`render_observation` 只读 `record["resolution"]`，而该字段只有一个调用方填；追踪元数据里的 `image_size` 从未被使用 → 56/56 样本打印 `resolution: None`。现在按来源依次取：split 源图分辨率 → **追踪 `image_size`（模型实际所见）** → 证据 token；并**注明来源**；三者皆无时写"未记录"，不再写 `None`。
+- **明确不做的事**：转换器**不补写模型从未说过的视觉描述**；模型只说了通用句，样本就只保留那句（可核对）。工作台构建脚本改为调用 `build_final_v2.extract_observation`（唯一实现，避免两处漂移）——它此前只找 `<observation>` 块，导致 v3 批次的规划行原话全部丢失。
+- **审核材料已重建**：56 页样本的 observation 段现在是「模型原话 + container/quality + 真实分辨率（含来源）」，指纹 `20e7ba4c80984686`。
+
+### 阶段 1 方案修订：目录隔离 + 显式代次参数（用户 2026-10-15 决定）
+
+- **代次由目录承担**：`sft_data/<generation>/{trajectories,variants,review,train/batches}/<batch>/`；批次名**不含代次**（`b1`、`b2`…）。
+- **代次作显式参数**：`batch_paths(batch_id, generation=None)`（None ⇒ 旧平铺布局，仅历史 id）；`assert_not_frozen_batch(batch, purpose, generation, allow=False)` 的 `generation` **必填无默认**；三个写入脚本新增**必填** `--generation`，缺失即报错——**没有代次参数就没有输出路径**，因此不存在猜代次或命名冲突。
+- **冻结身份 = (显式代次, 批次)**；未登记的代次、代次内重名、已冻结的组合一律拒绝。
+- **历史兼容**：旧平铺路径与旧 id（`g4_trial`/`g7_b1`/`g7_b2`）只服务复算；`PATH_MAP.json` 只描述"旧路径→归档路径"。

@@ -444,12 +444,47 @@ def _cuda_available() -> bool:
         return False
 
 
+def assert_not_archived(inputs, allow: bool = False) -> None:
+    """
+    Training on the archived v1 set must be a decision, not a default.
+
+    The v1 batches were archived on 2026-10-15 and the frozen register covers
+    *generation*; this is the training end of the same rule.  A directory that
+    no longer exists and is on record as archived is refused unless
+    `--allow-archived` says the run is a deliberate v1 replay — and then the
+    banner says so too.
+    """
+    from utils.batch import resolve_path
+
+    hits = []
+    for path in inputs:
+        _resolved, from_archive = resolve_path(path)
+        if from_archive and not os.path.exists(path):
+            hits.append(path)
+    if not hits:
+        return
+    listing = "\n".join(f"  - {os.path.relpath(path, PROJECT_ROOT)}" for path in hits)
+    if not allow:
+        raise SystemExit(
+            "拒绝训练：输入已归档（v1 历史产物，见 archive/legacy_v1_20261015/）：\n"
+            f"{listing}\n"
+            "冻结代次（sft_data/FROZEN.json）不得用于训练。"
+            "确为复现 v1 的对照实验时，加 --allow-archived，运行日志会标注。")
+    print("=" * 70)
+    print("警告：本次训练读取的是 **已归档** 的 v1 数据")
+    print(listing)
+    print("产物只作历史对照，不得当作当前代次的结果。")
+    print("=" * 70)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reviewed-dir", default=REVIEWED_DIR)
     parser.add_argument("--final-v2-dir", default=FINAL_V2_DIR)
     parser.add_argument("--from-final-v2", action="store_true",
                         help="train on the validated-but-unreviewed set (provisional trial)")
+    parser.add_argument("--allow-archived", action="store_true",
+                        help="复现 v1 的对照实验：允许读取归档的 v1 数据")
     parser.add_argument("--run-name", default=None)
     parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS)
     parser.add_argument("--lr", type=float, default=DEFAULT_LR)
@@ -459,6 +494,9 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true",
                         help="CPU: build and check the data, load no model")
     args = parser.parse_args()
+
+    used = [args.final_v2_dir] if args.from_final_v2 else [args.reviewed_dir]
+    assert_not_archived(used, allow=args.allow_archived)
 
     samples = load_training_samples(args.reviewed_dir, args.from_final_v2,
                                     args.final_v2_dir)

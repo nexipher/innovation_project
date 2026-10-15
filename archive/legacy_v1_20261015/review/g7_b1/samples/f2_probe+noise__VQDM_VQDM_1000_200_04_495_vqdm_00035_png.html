@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8">
+<title>审核 f2_probe+noise__VQDM_VQDM_1000_200_04_495_vqdm_00035_png</title>
+<style>
+ body { font-family: system-ui, sans-serif; margin: 24px; max-width: 1200px; color: #222; }
+ h1 { font-size: 18px; } h2 { font-size: 15px; margin-top: 28px; border-bottom: 1px solid #ddd; }
+ h3 { font-size: 14px; margin: 4px 0; }
+ img { max-width: 420px; max-height: 420px; border: 1px solid #ccc; }
+ figure { display: inline-block; margin: 6px 12px 6px 0; vertical-align: top; }
+ figcaption { font-size: 12px; color: #555; max-width: 420px; }
+ .missing { background: #f6f6f6; color: #999; padding: 20px; font-size: 12px; }
+ table { border-collapse: collapse; font-size: 13px; width: 100%; margin-bottom: 10px; }
+ th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; vertical-align: top; }
+ th { background: #f4f4f4; }
+ table.kv th { width: 260px; background: #fafafa; font-weight: 600; }
+ .note { color: #666; font-size: 12px; }
+ .flag { background: #fff3cd; border-left: 4px solid #e0a800; padding: 8px 12px; margin: 6px 0; }
+ .warn { background: #fff9e6; border-left: 4px solid #e0a800; padding: 8px 12px; margin: 6px 0; font-size: 13px; }
+ .warn-red { background: #fdecea; border-left: 4px solid #d93025; padding: 8px 12px; margin: 6px 0; font-size: 13px; }
+ .ok { color: #1a7f37; }
+ .badge { font-size: 11px; padding: 1px 6px; border-radius: 8px; }
+ .badge.sup { background: #e6f4ea; color: #137333; border: 1px solid #b7e1c4; }
+ .badge.mask { background: #eee; color: #666; border: 1px solid #ddd; }
+ .turn { border: 1px solid #e5e5e5; border-radius: 4px; margin: 8px 0; }
+ .turn.gpt { border-left: 4px solid #137333; }
+ .turn.user { border-left: 4px solid #9aa0a6; }
+ .turnhead { background: #fafafa; padding: 4px 8px; font-size: 12px; color: #444; border-bottom: 1px solid #eee; }
+ .turnbody { margin: 0; padding: 8px; white-space: pre-wrap; font-size: 12.5px; max-height: 420px; overflow: auto; }
+ .card { border: 1px solid #e5e5e5; border-radius: 4px; padding: 10px; margin: 12px 0; }
+ .pill { font-size: 11px; background: #eef; border: 1px solid #ccd; padding: 1px 6px; border-radius: 8px; margin-left: 8px; }
+ ul.checklist { list-style: none; padding-left: 0; font-size: 13px; }
+ ul.checklist li { margin: 4px 0; }
+ .toolbar { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 8px 0; z-index: 5; }
+ .toolbar button { font-size: 13px; padding: 4px 10px; margin-right: 6px; border: 1px solid #bbb;
+                   background: #f8f8f8; border-radius: 4px; cursor: pointer; }
+ .toolbar button.active { background: #137333; color: #fff; border-color: #137333; }
+ .toolbar textarea { width: 100%; height: 46px; font-size: 13px; margin-top: 6px; }
+ .status { font-size: 12px; color: #555; }
+ tr.decided td[data-cell="decision"] { color: #137333; font-weight: 600; }
+ tr.pending td[data-cell="decision"] { color: #999; }
+</style></head>
+<body data-sample="f2_probe+noise__VQDM_VQDM_1000_200_04_495_vqdm_00035_png" data-samples="145">
+<div class="toolbar"><a id="go-prev" href="f2_probe+noise__VQDM_VQDM_1000_200_04_495_vqdm_00035_jpeg_q95.html">← 上一条</a> ｜ <a id="go-next" href="f2_probe+noise__Wukong_479_wukong_image188_jpeg_q70.html">下一条 →</a> ｜ <button data-decision="accept" title="快捷键 1">接受（内容与格式都可训练）</button><button data-decision="format_only" title="快捷键 2">仅格式（内容不可信，只学格式）</button><button data-decision="revise" title="快捷键 3">待修（修改后才可训练）</button><button data-decision="reject" title="快捷键 4">拒绝（严重错误，永不训练）</button><label class="status"><input type="checkbox" id="auto-advance" checked> 决定后自动跳下一条</label><div><textarea id="notes" placeholder="备注（必填于 revise / reject）：问题在哪、为什么"></textarea></div><div class="status"><label>审核人 <input id="reviewer" size="8" placeholder="你的名字"></label> ｜ <span id="save-status">—</span> ｜ <button id="export">导出全部决定</button><label class="status"> 导入 <input type="file" id="import" accept=".json"></label> ｜ 快捷键：1 接受 / 2 仅格式 / 3 待修 / 4 拒绝 / ← → 翻页 / e 导出</div></div>
+<p><a href="../index.html">← 返回索引</a></p>
+<h1>f2_probe+noise__VQDM_VQDM_1000_200_04_495_vqdm_00035_png</h1>
+<p>桶：<strong>honest_abstention</strong>（合理弃权）
+ ｜ 真值：<strong>Fake</strong>
+ ｜ 策略：probe+noise ｜ 处理：png
+ ｜ 生成器：VQDM ｜ 分区：train</p>
+<div class="flag">高风险标记：uncertain</div><div class="flag">高风险标记：multi_tool</div>
+
+<h2>图像证据</h2>
+<figure><img src="../../../experiments/variants_g7_b1/VQDM_VQDM_1000_200_04_495_vqdm_00035_png.png" alt="模型实际输入的变体（png）"><figcaption>模型实际输入的变体（png）</figcaption></figure><figure><img src="../../../../../dataset/GenImage_Test/VQDM/VQDM_1000_200_04_495_vqdm_00035.png" alt="数据集源图（未经处理）"><figcaption>数据集源图（未经处理）</figcaption></figure>
+
+<h2>判定与置信度（各自的含义不同，别混用）</h2>
+<table class='kv'><tr><th>原始模型判定</th><td>Uncertain（p=0.5）</td><td class='note'>模型自己选的标签与自报概率，未受后验约束</td></tr><tr><th>停止后验 P(Fake)</th><td>0.5866</td><td class='note'>Youden 加权 log-odds 后验</td></tr><tr><th>停止后验 P(Real)</th><td>0.4134</td><td class='note'>1 − P(Fake)</td></tr><tr><th>所选标签置信度</th><td>0.5</td><td class='note'>工具轨迹：所选标签置信度取自停止后验（与 P(Fake)/P(Real) 同源）</td></tr><tr><th>模型 Brier</th><td>0.25</td><td class='note'>模型自报概率的 Brier 分数</td></tr><tr><th>停止后验 Brier</th><td>0.1709</td><td class='note'>后验概率的 Brier 分数</td></tr><tr><th>ΔBrier（模型 → 后验）</th><td>0.0791</td><td class='note'>负值 = 证据让预测更接近真值；这是工具轨迹的增益判据</td></tr><tr><th>停止原因</th><td>no_expected_gain</td><td class='note'>halting_reason: no_expected_gain</td></tr></table><table><thead><tr><th>来源</th><th>判定</th><th>后验 P(Fake)</th><th>后验 Brier</th><th>加权成本</th></tr></thead><tbody><tr><th>本轨迹</th><td>Uncertain</td><td>0.5866</td><td>0.1709</td><td>3.5</td></tr><tr><th>no-tool 基线</th><td>Real</td><td>0.5</td><td>0.25</td><td>0.5</td></tr></tbody></table>
+
+<h2>完整训练对话（共 7 轮：助手 3 轮参与训练，用户/系统 4 轮掩码）</h2>
+<p class="note">训练脚本只对助手轮计算 loss（<code>assistant_spans</code>）：绿色左边框的轮次就是模型要学的内容。
+上面这条对话（含工具调用轮、证据轮）就是该样本将要教给模型的全部内容。</p>
+<div class="turn user"><div class="turnhead">轮 0 ｜ 用户/系统 ｜ <span class="badge mask">掩码 · 不进 loss</span></div><pre class="turnbody">&lt;image&gt;
+请分析这张图像的真实性，并使用法证工具箱开展多轮质证。</pre></div><div class="turn gpt"><div class="turnhead">轮 1 ｜ 助手 ｜ <span class="badge sup">参与训练 · 被监督</span></div><pre class="turnbody">&lt;planning&gt;
+Suspected Region: [100, 50, 200, 150]
+Visual Anomalies: 图像中显示了一个木质的电视柜，柜门上似乎有反光，这可能是由于拍摄角度或光源造成的。
+Expert Target &amp; Hypothesis: &lt;call_probe&gt;[100, 50, 200, 150]&lt;/call_probe&gt;，使用AI生成鉴别器来检测这个区域是否存在伪造痕迹。
+&lt;/planning&gt;</pre></div><div class="turn user"><div class="turnhead">轮 2 ｜ 用户/系统 ｜ <span class="badge mask">掩码 · 不进 loss</span> ｜ 附 1 张图</div><pre class="turnbody">{
+ &quot;evidence_id&quot;: &quot;E-4e03fff23e&quot;,
+ &quot;evidence_name&quot;: &quot;aigi_discriminator_score&quot;,
+ &quot;region&quot;: &quot;patch_coordinates_[26, 13, 51, 38]&quot;,
+ &quot;region_pixels&quot;: [
+  26,
+  13,
+  51,
+  38
+ ],
+ &quot;region_normalized_1000&quot;: [
+  100,
+  50,
+  200,
+  150
+ ],
+ &quot;coordinate_space&quot;: &quot;pixels&quot;,
+ &quot;region_semantics&quot;: &quot;diagnostic_evidence_region&quot;,
+ &quot;measurement_scope&quot;: &quot;global&quot;,
+ &quot;phenomenon&quot;: &quot;整图判别分数 0.9381（外部判别器的原始输出，未经本地校准）。输入预处理：336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。&quot;,
+ &quot;reasoning&quot;: &quot;该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。&quot;,
+ &quot;strength&quot;: 0.9381,
+ &quot;raw_metric&quot;: 0.938109,
+ &quot;source&quot;: &quot;probe_dino_expert&quot;,
+ &quot;support&quot;: &quot;Uncertain&quot;,
+ &quot;interpretation_text&quot;: &quot;Calibration: this measurement band is near chance (P(Fake)=0.52) and does not determine a direction.&quot;,
+ &quot;counter_explanation&quot;: &quot;外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。&quot;,
+ &quot;reliability&quot;: 0.984,
+ &quot;calibrated_likelihood&quot;: {
+  &quot;Real&quot;: 0.48,
+  &quot;Fake&quot;: 0.52
+ },
+ &quot;condition_metadata&quot;: {
+  &quot;bin_samples&quot;: 50,
+  &quot;confound_drop_png_to_q70&quot;: 0.021874999999999978,
+  &quot;separation_polarity_corrected&quot;: 0.98359375,
+  &quot;region_area_ratio&quot;: 0.009537
+ },
+ &quot;semantics_aligned&quot;: true,
+ &quot;applicability&quot;: &quot;strong&quot;,
+ &quot;applicability_conditions&quot;: &quot;五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。&quot;,
+ &quot;calibration&quot;: {
+  &quot;table&quot;: &quot;calibration/reliability_table.json&quot;,
+  &quot;fitted_on&quot;: &quot;A&quot;,
+  &quot;mapping&quot;: &quot;quantile_bins&quot;,
+  &quot;sources&quot;: 62,
+  &quot;samples&quot;: 248,
+  &quot;split_hash&quot;: &quot;37bf2f1db22ccdef&quot;,
+  &quot;weights_sha256&quot;: &quot;c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156&quot;
+ },
+ &quot;direction&quot;: &quot;Uncertain&quot;,
+ &quot;direction_source&quot;: &quot;calibrated_likelihood&quot;,
+ &quot;interpretation_text_raw&quot;: &quot;该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。&quot;,
+ &quot;diagnostic_region_image&quot;: &quot;traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/region_E-4e03fff23e.png&quot;
+}</pre><figure><img src="../../../../../traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/region_E-4e03fff23e.png" alt="第 2 轮附图：region_E-4e03fff23e.png"><figcaption>第 2 轮附图：region_E-4e03fff23e.png</figcaption></figure></div><div class="turn gpt"><div class="turnhead">轮 3 ｜ 助手 ｜ <span class="badge sup">参与训练 · 被监督</span></div><pre class="turnbody">&lt;planning&gt;
+Suspected Region: [100, 50, 200, 150]
+Visual Anomalies: 图像中显示了一个木质的电视柜，柜门上似乎有反光，这可能是由于拍摄角度或光源造成的。
+Expert Target &amp; Hypothesis: &lt;call_noise&gt;[100, 50, 200, 150]&lt;/call_noise&gt;，使用噪声残留专家来检测这个区域是否存在伪造痕迹。
+&lt;/planning&gt;</pre></div><div class="turn user"><div class="turnhead">轮 4 ｜ 用户/系统 ｜ <span class="badge mask">掩码 · 不进 loss</span> ｜ 附 2 张图</div><pre class="turnbody">{
+ &quot;evidence_id&quot;: &quot;E-e0c9f09ead&quot;,
+ &quot;evidence_name&quot;: &quot;noise_residual_inconsistency&quot;,
+ &quot;region&quot;: &quot;patch_coordinates_[26, 13, 51, 38]&quot;,
+ &quot;region_pixels&quot;: [
+  26,
+  13,
+  51,
+  38
+ ],
+ &quot;region_normalized_1000&quot;: [
+  100,
+  50,
+  200,
+  150
+ ],
+ &quot;coordinate_space&quot;: &quot;pixels&quot;,
+ &quot;region_semantics&quot;: &quot;diagnostic_evidence_region&quot;,
+ &quot;measurement_scope&quot;: &quot;global&quot;,
+ &quot;phenomenon&quot;: &quot;Whole-image noise-residual level 2.2628: the generated-imagery end of the G2 calibration band. Variance collapse detected; a band is an association measured on the calibration set, not a physical proof of origin.&quot;,
+ &quot;reasoning&quot;: &quot;Whole-image residual micro-noise level 2.2628 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.&quot;,
+ &quot;strength&quot;: 0.3088,
+ &quot;raw_metric&quot;: 2.26275,
+ &quot;source&quot;: &quot;noise_expert&quot;,
+ &quot;support&quot;: &quot;AI-generated&quot;,
+ &quot;interpretation_text&quot;: &quot;Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.64); the generative reading applies.&quot;,
+ &quot;counter_explanation&quot;: &quot;该指标衡量残差水平而非\&quot;不一致性\&quot;：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始\&quot;异常即伪造\&quot;的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。&quot;,
+ &quot;reliability&quot;: 0.845,
+ &quot;calibrated_likelihood&quot;: {
+  &quot;Real&quot;: 0.359,
+  &quot;Fake&quot;: 0.641
+ },
+ &quot;condition_metadata&quot;: {
+  &quot;bin_samples&quot;: 78,
+  &quot;confound_drop_png_to_q70&quot;: -0.07333333333333333,
+  &quot;separation_polarity_corrected&quot;: 0.8454166666666667,
+  &quot;region_area_ratio&quot;: 0.009537
+ },
+ &quot;semantics_aligned&quot;: false,
+ &quot;applicability&quot;: &quot;inverted:high-metric-means-real&quot;,
+ &quot;applicability_conditions&quot;: &quot;高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。&quot;,
+ &quot;calibration&quot;: {
+  &quot;table&quot;: &quot;calibration/reliability_table.json&quot;,
+  &quot;fitted_on&quot;: null,
+  &quot;mapping&quot;: null,
+  &quot;sources&quot;: null,
+  &quot;samples&quot;: null,
+  &quot;split_hash&quot;: null,
+  &quot;weights_sha256&quot;: null
+ },
+ &quot;support_raw&quot;: &quot;Uncertain&quot;,
+ &quot;direction&quot;: &quot;AI-generated&quot;,
+ &quot;direction_source&quot;: &quot;calibrated_likelihood&quot;,
+ &quot;interpretation_text_raw&quot;: &quot;Intermediate residual level; the calibrated likelihood is close to chance for this band.&quot;,
+ &quot;diagnostic_region_image&quot;: &quot;traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/region_E-e0c9f09ead.png&quot;,
+ &quot;visual_artifacts&quot;: [
+  &quot;traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/noise_residual_map_E-e0c9f09ead.png&quot;
+ ]
+}</pre><figure><img src="../../../../../traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/region_E-e0c9f09ead.png" alt="第 4 轮附图：region_E-e0c9f09ead.png"><figcaption>第 4 轮附图：region_E-e0c9f09ead.png</figcaption></figure><figure><img src="../../../../../traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/noise_residual_map_E-e0c9f09ead.png" alt="第 4 轮附图：noise_residual_map_E-e0c9f09ead.png"><figcaption>第 4 轮附图：noise_residual_map_E-e0c9f09ead.png</figcaption></figure></div><div class="turn user"><div class="turnhead">轮 5 ｜ 用户/系统 ｜ <span class="badge mask">掩码 · 不进 loss</span></div><pre class="turnbody">[System: 当前策略估计继续调用收益不足（no_expected_gain）。请基于已获取的全部证据撰写最终报告，并说明为何现有工具无法进一步降低不确定性。]</pre></div><div class="turn gpt"><div class="turnhead">轮 6 ｜ 助手 ｜ <span class="badge sup">参与训练 · 被监督</span></div><pre class="turnbody">&lt;observation&gt;
+模型视觉观察：图像中显示了一个木质的电视柜，柜门上似乎有反光，这可能是由于拍摄角度或光源造成的。
+- container: png, quality: png
+- resolution: [256, 256]
+&lt;/observation&gt;
+
+&lt;forensic_evidence&gt;
+- evidence_id: E-4e03fff23e
+  expert: probe_dino_expert
+  measurement_scope: global
+  raw_metric: 0.938109
+  region (diagnostic): patch_coordinates_[26, 13, 51, 38]
+  calibrated_likelihood: Real=0.48, Fake=0.52
+  applicability: strong
+  conditions: 五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。
+- evidence_id: E-e0c9f09ead
+  expert: noise_expert
+  measurement_scope: global
+  raw_metric: 2.26275
+  region (diagnostic): patch_coordinates_[26, 13, 51, 38]
+  calibrated_likelihood: Real=0.359, Fake=0.641
+  applicability: inverted:high-metric-means-real
+  conditions: 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。
+&lt;/forensic_evidence&gt;
+
+&lt;reasoning&gt;
+支持的证据：
+- noise_expert: Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.64); the generative reading applies.
+反证与替代解释：
+- 外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。
+- 该指标衡量残差水平而非&quot;不一致性&quot;：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始&quot;异常即伪造&quot;的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。
+专家失效条件：
+- 五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。
+- 高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。
+剩余不确定性：后验 P(Fake)=0.5866，冲突度=0.0，停止原因=no_expected_gain
+&lt;/reasoning&gt;
+
+&lt;verdict&gt;
+{&quot;verdict&quot;: &quot;Uncertain&quot;, &quot;confidence&quot;: 0.5, &quot;basis&quot;: &quot;evidence_posterior&quot;, &quot;posterior&quot;: 0.5866}
+&lt;/verdict&gt;</pre></div>
+
+<h2>Evidence Bundle（逐 token）</h2>
+<p class="note">共 2 个 token，其中 <strong>1</strong> 个 semantics_aligned=false（方向被校准纠正过）。</p><div class="card"><h3>Token 1：aigi_discriminator_score<span class="pill">probe_dino_expert</span></h3><table class="kv"><tr><th>evidence_name</th><td>aigi_discriminator_score</td></tr><tr><th>专家</th><td>probe_dino_expert（E-4e03fff23e）</td></tr><tr><th>测量范围</th><td>global ｜ diagnostic_evidence_region</td></tr><tr><th>区域（region_pixels / region_normalized_1000）</th><td>像素 [26, 13, 51, 38] ｜ 归一化(‰) [100, 50, 200, 150] ｜ 坐标空间 pixels</td></tr><tr><th>原始数值 / 强度</th><td>raw_metric 0.938109 ｜ strength 0.9381</td></tr><tr><th>校准似然</th><td><strong>P(Fake) 0.52</strong> ｜ P(Real) 0.48</td></tr><tr><th>support（整流后主张）</th><td>Uncertain</td></tr><tr><th>support_raw（专家原始主张）</th><td>—（未被改写）</td></tr><tr><th>direction ← direction_source（方向权威）</th><td><strong>Uncertain</strong> ← calibrated_likelihood</td></tr><tr><th>reliability（校准可靠性）</th><td>0.984</td></tr><tr><th>applicability</th><td>strong</td></tr><tr><th>适用条件</th><td>五格式全部适用（匹配格最低校正分离度 0.973，q70 反而最强 0.995）；未见过的生成器上整体分离度 0.952。分数为整图 P(AI-generated)，不指出任何区域。</td></tr><tr><th>phenomenon（现象）</th><td>整图判别分数 0.9381（外部判别器的原始输出，未经本地校准）。输入预处理：336×336 → pad to ≥336 → 1 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。</td></tr><tr><th>reasoning（专家推理）</th><td>该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。</td></tr><tr><th>原始解释 interpretation_text_raw</th><td>该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。</td></tr><tr><th>校准后解释 interpretation_text</th><td>Calibration: this measurement band is near chance (P(Fake)=0.52) and does not determine a direction.</td></tr><tr><th>反解释 counter_explanation</th><td>外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。</td></tr><tr><th>condition_metadata</th><td>bin_samples: 50 ｜ confound_drop_png_to_q70: 0.0219 ｜ separation_polarity_corrected: 0.9836 ｜ region_area_ratio: 0.0095</td></tr></table><figure><img src="../../../../../traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/region_E-4e03fff23e.png" alt="诊断区域（probe_dino_expert）"><figcaption>诊断区域（probe_dino_expert）</figcaption></figure></div><div class="card"><h3>Token 2：noise_residual_inconsistency<span class="pill">noise_expert</span></h3><div class="warn-red">⚠ <strong>semantics_aligned = false</strong>：该专家的原始语义方向与校准实测相反（原始值越高，实际越可能是 Real）。本 token 的方向由 <code>calibrated_likelihood</code> 决定，下列「原始解释」只作历史记录，<strong>不得作为方向依据</strong>。</div><table class="kv"><tr><th>evidence_name</th><td>noise_residual_inconsistency</td></tr><tr><th>专家</th><td>noise_expert（E-e0c9f09ead）</td></tr><tr><th>测量范围</th><td>global ｜ diagnostic_evidence_region</td></tr><tr><th>区域（region_pixels / region_normalized_1000）</th><td>像素 [26, 13, 51, 38] ｜ 归一化(‰) [100, 50, 200, 150] ｜ 坐标空间 pixels</td></tr><tr><th>原始数值 / 强度</th><td>raw_metric 2.26275 ｜ strength 0.3088</td></tr><tr><th>校准似然</th><td><strong>P(Fake) 0.641</strong> ｜ P(Real) 0.359</td></tr><tr><th>support（整流后主张）</th><td>AI-generated</td></tr><tr><th>support_raw（专家原始主张）</th><td>Uncertain</td></tr><tr><th>direction ← direction_source（方向权威）</th><td><strong>AI-generated</strong> ← calibrated_likelihood</td></tr><tr><th>reliability（校准可靠性）</th><td>0.845</td></tr><tr><th>applicability</th><td>inverted:high-metric-means-real</td></tr><tr><th>适用条件</th><td>高 strength 统计上对应 Real（JPEG 压缩引入方差），不得按 AI-generated 解读；低 strength 侧（P(Fake)≈0.8）可作为弱证据使用。</td></tr><tr><th>phenomenon（现象）</th><td>Whole-image noise-residual level 2.2628: the generated-imagery end of the G2 calibration band. Variance collapse detected; a band is an association measured on the calibration set, not a physical proof of origin.</td></tr><tr><th>reasoning（专家推理）</th><td>Whole-image residual micro-noise level 2.2628 (intermediate). This is the band where the calibration set separates the two classes least, so the measurement carries little directional information; what produced the image, and how it was processed, is not recoverable from it.</td></tr><tr><th>原始解释 interpretation_text_raw</th><td>Intermediate residual level; the calibrated likelihood is close to chance for this band.</td></tr><tr><th>校准后解释 interpretation_text</th><td>Calibration: this measurement band corresponds to generated-source statistics (P(Fake)=0.64); the generative reading applies.</td></tr><tr><th>反解释 counter_explanation</th><td>该指标衡量残差水平而非&quot;不一致性&quot;：G2 校准（格式配平，5 格）显示 Real 中位数 3.6 对 Fake 2.0，方向与原始&quot;异常即伪造&quot;的解释相反，且跨格式稳定（AUROC 0.15-0.23）。降噪、锐化与重压缩同样会改变该水平，故只应作为弱证据与校准似然配合使用。</td></tr><tr><th>condition_metadata</th><td>bin_samples: 78 ｜ confound_drop_png_to_q70: -0.0733 ｜ separation_polarity_corrected: 0.8454 ｜ region_area_ratio: 0.0095</td></tr></table><figure><img src="../../../../../traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/region_E-e0c9f09ead.png" alt="诊断区域（noise_expert）"><figcaption>诊断区域（noise_expert）</figcaption></figure><figure><img src="../../../../../traces/evidence/session_20261011_172347_VQDM_VQDM_1000_200_04_495_vqdm_00035_png/noise_residual_map_E-e0c9f09ead.png" alt="专家产物 noise_residual_map_E-e0c9f09ead.png"><figcaption>专家产物 noise_residual_map_E-e0c9f09ead.png</figcaption></figure></div>
+
+<h2>审核清单（本桶适用，逐项勾选）</h2>
+<ul class="checklist"><li><label><input type="checkbox"> <strong>observation</strong> — &lt;observation&gt; 里每条视觉陈述都能在图上直接核验吗？</label></li><li><label><input type="checkbox"> <strong>evidence_fidelity</strong> — &lt;forensic_evidence&gt; 与真实 token 一致吗（evidence_id、测量范围、原始数值、校准概率）？</label></li><li><label><input type="checkbox"> <strong>container</strong> — 有没有把 PNG/JPEG 容器当成真假的理由？（这是必须拒绝的错误）</label></li><li><label><input type="checkbox"> <strong>format</strong> — 四段式与 &lt;verdict&gt; JSON 格式完整、无多余脚手架文字吗？</label></li><li><label><input type="checkbox"> <strong>teaching</strong> — 训练这条样本会不会教出坏习惯（格式捷径 / 模板化 / 空话）？</label></li><li><label><input type="checkbox"> <strong>abstention_reasoned</strong> — Uncertain 是由弱证据 / 证据冲突 / 专家不适用造成的吗？（不要求 ΔBrier&lt;0）</label></li><li><label><input type="checkbox"> <strong>no_lazy_abstention</strong> — 不是「一见不确定就弃权」的懒惰模式吗？</label></li><li><label><input type="checkbox"> <strong>remaining_uncertainty</strong> — 剩余不确定性写清楚了吗（缺什么证据、为何拿不到）？</label></li></ul>
+<p class="note">决定写在页面顶部的工具条，或直接用快捷键。导出后执行：
+<code>python scripts/record_review.py --import review_decisions.json --reviewer &lt;你&gt;</code></p>
+<h2>本页的修改历史（浏览器本地）</h2>
+<ul id="history" class="note"></ul>
+<script>window.__review = {sample: "f2_probe+noise__VQDM_VQDM_1000_200_04_495_vqdm_00035_png"};</script>
+<script>window.__batch = {"id": "g7_b1", "fingerprint": "bb64cb8ec42788df"};</script>
+<script>
+/* One decision per sample, kept in the browser; export feeds record_review.py.
+   No server: localStorage survives a refresh, the export is the record. */
+(function () {
+  /* The batch identity the page was built for.  `batch_script()` sets
+     `window.__batch` before this block runs; it used to be read as a bare
+     `BATCH`, which is undefined — so the export button threw on click and the
+     page looked like it simply ignored the user. */
+  var BATCH = window.__batch || { id: '', fingerprint: '' };
+  var KEY = 'finalv2review.v1';
+  var state = load();
+  var storageOk = true;
+
+  function load() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(KEY)) || {};
+      if (!parsed.decisions) { parsed.decisions = {}; }
+      if (!parsed.reviewer) { parsed.reviewer = ''; }
+      return parsed;
+    } catch (e) { return { reviewer: '', decisions: {} }; }
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
+    catch (e) { return false; }
+  }
+  function decisionOf(id) { return (state.decisions || {})[id] || null; }
+
+  function flash(message) {
+    var box = document.getElementById('save-status');
+    if (box) { box.textContent = message; }
+  }
+  function count() {
+    return Object.keys(state.decisions || {}).filter(function (k) {
+      return state.decisions[k] && state.decisions[k].decision;
+    }).length;
+  }
+  function refreshStatus() {
+    var total = document.body.getAttribute('data-samples');
+    var decided = count();
+    flash('本地已记录 ' + decided + (total ? ' / ' + total : '') + ' 条（导出后才写入仓库）');
+    var progress = document.getElementById('progress');
+    if (progress && total) { progress.textContent = decided + ' / ' + total; }
+  }
+
+  function exportAll() {
+    try { exportPayload(); } catch (err) { flash('导出失败：' + err); }
+  }
+
+  function exportPayload() {
+    var payload = {
+      reviewer: (document.getElementById('reviewer') || {}).value || state.reviewer || '',
+      exported_at: new Date().toISOString(),
+      batch_id: BATCH.id,
+      batch_fingerprint: BATCH.fingerprint,
+      decisions: state.decisions || {}
+    };
+    var text = JSON.stringify(payload, null, 2);
+    var blob = new Blob([text], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'review_decisions_' + (BATCH.id || 'batch') + '.json';
+    document.body.appendChild(link); link.click(); link.remove();
+    // Say so, and leave a copy in the console: a silent export is
+    // indistinguishable from a broken button, and a blocked download on a
+    // file:// page looks exactly the same to the person clicking.
+    console.log('导出的决定（可在此复制）：\n' + text);
+    flash('已导出 ' + Object.keys(payload.decisions).length + ' 条决定到 '
+          + link.download + '（控制台也留了一份）');
+  }
+
+  function importFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var parsed = JSON.parse(reader.result);
+        var incoming = parsed.decisions || parsed;
+        Object.keys(incoming).forEach(function (id) { state.decisions[id] = incoming[id]; });
+        if (parsed.reviewer) { state.reviewer = parsed.reviewer; }
+        persist(); refreshStatus(); renderIndex();
+        flash('已导入 ' + Object.keys(incoming).length + ' 条');
+      } catch (e) { flash('导入失败：不是有效的 JSON'); }
+    };
+    reader.readAsText(file);
+  }
+
+  function apply(id, decision, notes) {
+    state.decisions[id] = { decision: decision, notes: notes || '', saved_at: new Date().toISOString() };
+    storageOk = persist();
+    if (!storageOk) { flash('浏览器禁止本地保存：请改用导出/导入，或经 http 服务打开本页'); }
+    refreshStatus();
+    renderIndex();
+    var buttons = document.querySelectorAll('[data-decision]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].classList.toggle('active', buttons[i].getAttribute('data-decision') === decision);
+    }
+    var history = document.getElementById('history');
+    if (history) {
+      history.innerHTML = '<li>' + new Date().toLocaleString() + ' → <strong>' + decision +
+        '</strong>' + (notes ? '：' + notes.replace(/</g, '&lt;') : '') + '</li>' + history.innerHTML;
+    }
+  }
+
+  function nextLink() { return document.getElementById('go-next'); }
+  function prevLink() { return document.getElementById('go-prev'); }
+
+  function renderIndex() {
+    var rows = document.querySelectorAll('[data-row-sample]');
+    for (var i = 0; i < rows.length; i++) {
+      var id = rows[i].getAttribute('data-row-sample');
+      var entry = decisionOf(id);
+      var cell = rows[i].querySelector('[data-cell="decision"]');
+      var note = rows[i].querySelector('[data-cell="notes"]');
+      var done = entry && entry.decision ? entry.decision : '';
+      if (cell) { cell.textContent = done || '—'; }
+      if (note) { note.textContent = (entry && entry.notes) || ''; }
+      rows[i].classList.toggle('decided', !!done);
+      rows[i].classList.toggle('pending', !done);
+    }
+    var only = document.getElementById('only-pending');
+    for (var j = 0; j < rows.length; j++) {
+      var decided = rows[j].classList.contains('decided');
+      var hide = (only && only.checked && decided) ||
+        (document.getElementById('only-high-risk') && document.getElementById('only-high-risk').checked &&
+         rows[j].getAttribute('data-high-risk') !== '1');
+      rows[j].style.display = hide ? 'none' : '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var id = document.body.getAttribute('data-sample');
+    var notes = document.getElementById('notes');
+    var reviewer = document.getElementById('reviewer');
+    if (reviewer) {
+      reviewer.value = state.reviewer || '';
+      reviewer.addEventListener('change', function () { state.reviewer = reviewer.value; persist(); });
+    }
+    if (id && notes) {
+      var entry = decisionOf(id);
+      notes.value = (entry && entry.notes) || '';
+      notes.addEventListener('change', function () {
+        var existing = decisionOf(id);
+        if (existing) { apply(id, existing.decision, notes.value); }
+      });
+    }
+    var buttons = document.querySelectorAll('[data-decision]');
+    for (var i = 0; i < buttons.length; i++) {
+      if (id && decisionOf(id) &&
+          buttons[i].getAttribute('data-decision') === decisionOf(id).decision) {
+        buttons[i].classList.add('active');
+      }
+      buttons[i].addEventListener('click', function (event) {
+        var decision = event.currentTarget.getAttribute('data-decision');
+        if (!id) { return; }
+        apply(id, decision, notes ? notes.value : '');
+        var jump = document.getElementById('auto-advance');
+        if (jump && jump.checked && decision !== 'revise' && nextLink()) {
+          setTimeout(function () { nextLink().click(); }, 250);
+        }
+      });
+    }
+    var exportButton = document.getElementById('export');
+    if (exportButton) { exportButton.addEventListener('click', exportAll); }
+    var importInput = document.getElementById('import');
+    if (importInput) {
+      importInput.addEventListener('change', function (event) {
+        if (event.target.files.length) { importFile(event.target.files[0]); }
+      });
+    }
+    var onlyPending = document.getElementById('only-pending');
+    var onlyRisk = document.getElementById('only-high-risk');
+    if (onlyPending) { onlyPending.addEventListener('change', renderIndex); }
+    if (onlyRisk) { onlyRisk.addEventListener('change', renderIndex); }
+
+    document.addEventListener('keydown', function (event) {
+      var tag = (event.target.tagName || '').toLowerCase();
+      if (tag === 'textarea' || tag === 'input' || tag === 'select') { return; }
+      var map = { '1': 'accept', '2': 'format_only', '3': 'revise', '4': 'reject' };
+      if (id && map[event.key]) {
+        var button = document.querySelector('[data-decision="' + map[event.key] + '"]');
+        if (button) { button.click(); event.preventDefault(); }
+      } else if (event.key === 'ArrowLeft' && prevLink()) { prevLink().click(); }
+      else if (event.key === 'ArrowRight' && nextLink()) { nextLink().click(); }
+      else if (event.key === 'e') { exportAll(); }
+    });
+
+    if (!(function () { try { localStorage.setItem('probe', '1'); localStorage.removeItem('probe'); return true; }
+                        catch (e) { return false; } })()) {
+      var banner = document.createElement('div');
+      banner.className = 'warn-red';
+      banner.textContent = '本页无法使用浏览器本地保存（file:// 限制）：请在仓库目录运行 ' +
+        'python3 -m http.server 8000 后经 http://localhost:8000/sft_data/review/ 打开，' +
+        '否则刷新会丢失勾选。';
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+    refreshStatus();
+    renderIndex();
+  });
+})();
+</script>
+</body></html>

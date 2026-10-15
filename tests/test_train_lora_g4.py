@@ -384,9 +384,16 @@ class TestTrainingLeak:
 
     def _training_source_paths(self, split):
         """Training sample -> the dataset file it was rendered from."""
+        from utils.batch import resolve_path
+
         by_stem = {key.replace("/", "_"): value for key, value in split["sources"].items()}
         paths, unresolved = set(), []
-        for name in glob.glob(os.path.join(PROJECT_ROOT, "sft_data/train/final_v2/sft_*.json")):
+        # The v1 training set was archived on 2026-10-15; the leak this guards
+        # against is a property of those samples, so the test follows the
+        # mapping rather than passing on an empty glob.
+        samples_dir, _from_archive = resolve_path(
+            os.path.join(PROJECT_ROOT, "sft_data/train/final_v2"))
+        for name in glob.glob(os.path.join(samples_dir, "sft_*.json")):
             for sample in json.load(open(name, encoding="utf-8")):
                 stem = re.sub(r"_(native|png|jpe?g_q\d+)\.[A-Za-z]+$", "",
                               os.path.basename(sample["image_path"]))

@@ -90,13 +90,27 @@ python scripts/batch_inventory.py                                               
 
 ## 7. 数据布局
 
+**两套布局，不混用**（2026-10-15 起）：
+
+- `generation` 显式给出 ⇒ 新嵌套布局 `sft_data/<generation>/<kind>/<batch>/`
+  （`kind` = trajectories / variants / review / train/batches）。
+  批次名是**纯名字**（`b1`），代次是路径的一段，由调用方显式传入——没有"默认代次"。
+- `generation` 省略 ⇒ 旧平铺布局（`sft_data/trajectories_<id>/` …），**只服务于历史复算**，
+  且只对登记表里的历史 id 有效。三个写入入口（+ `build_variants_g4`）**必填 `--generation`**，
+  所以新材料不可能落进平铺布局。
+
 | 路径 | 内容 | 能否训练 |
 |------|------|----------|
-| `sft_data/train/final/`、`final_v2/` | 冻结的历史基线（v1/v2 时代） | 只作对照 |
-| **过去的全部批次**（含 g7_b1、g7_b2、237 集与缺陷归档） | **2026-10-13 起全部冻结为历史实验**：更换专家后这些测量系统将不再存在 | 一律不得用于 SFT；新材料由新版专家生成 |
-| `sft_data/train/batches/<id>/` | 分批产物；`review_only.json` = 评审材料 | 仅当有审核处置且过门禁 |
-| `sft_data/trajectories_<id>/` | 批次轨迹（只读，含 `VERSIONS.json`） | 不直接训练 |
-| `sft_data/trajectories_<id>_<原因>/` | 留证归档（缺陷作废批次） | 不用于任何统计或训练 |
-| `sft_data/review/<id>/` | 工作台页面（可重渲染） | — |
-| `calibration/reliability_table.json` | 当前校准表（A 组拟合，逐格式权重） | — |
+| `sft_data/<generation>/…/<batch>/` | 当前代次（g8）的批次产物 | 走完门禁才行 |
+| `archive/legacy_v1_20261015/` | **v1 全部历史产物**（2026-10-15 归档，34 项 / 2141 文件） | 历史，不训练 |
+| `archive/PATH_MAP.json` | 旧路径 → 归档路径；复算走 `utils.batch.resolve_path()`，命中即写 `resolved_from_archive` | — |
+| `sft_data/FROZEN.json` | 冻结登记，身份是 **(代次, 批次)**；写入入口据此拒收 | — |
+| `sft_data/GENERATIONS.json` | 代次索引（模型身份）；**批次身份仍以各批次 `VERSIONS.json` 为准** | — |
+| `sft_data/review/dispositions.jsonl` | 人工处置台账（append-only，归档时留在原位） | — |
+| `calibration/reliability_table.json` | 当前校准表（A 组拟合，逐格式权重）；运行时读者在阶段 4 归零后随归档移动 | — |
 | `calibration/reliability_table_v1.json` | 修复前的表（旧批次复算用） | — |
+
+**归档的使用规矩**：不删除、不覆盖；读归档路径必须记录 `resolved_from_archive`；
+归档**不解除**冻结门禁；`train_lora_g4.py` 与 `finalize_sft_data.py` 对归档输入直接拒绝
+（前者需 `--allow-archived`，且打印横幅）。清单见
+`archive/legacy_v1_20261015/MANIFEST.json`，逐文件核对输出见操作日志。

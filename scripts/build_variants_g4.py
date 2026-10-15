@@ -39,7 +39,7 @@ import cv2
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import LEGACY_BATCH, batch_paths
+from utils.batch import LEGACY_BATCH, assert_not_frozen_batch, batch_paths
 from scripts.build_calibration_set import build_cells
 
 SPLIT_PATH = os.path.join(PROJECT_ROOT, "sft_data", "split_v2.json")
@@ -155,9 +155,16 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260926)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    # Same rule as the other writers (§ 阶段 1): no output path without an
+    # explicit generation.  Without this the default lands in the flat v1
+    # layout — which is now the archive's, and would recreate a directory that
+    # is on record as archived.
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     args = parser.parse_args()
+    assert_not_frozen_batch(args.batch, "变体生成", args.generation)
     if args.output_dir is None:
-        args.output_dir = batch_paths(args.batch)["variants_dir"]
+        args.output_dir = batch_paths(args.batch, args.generation)["variants_dir"]
 
     with open(SPLIT_PATH, encoding="utf-8") as handle:
         split = json.load(handle)

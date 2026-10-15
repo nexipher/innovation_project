@@ -269,6 +269,12 @@ def _dedupe(findings: List[dict]) -> List[dict]:
 
 
 def audit(traces_dir: str = DEFAULT_TRACES) -> dict:
+    # V1 batches were archived on 2026-10-15; a replay has to say so.  The
+    # path is followed through archive/PATH_MAP.json and the fact that the
+    # numbers below came from an archived copy is written into the report.
+    from utils.batch import resolve_path
+
+    traces_dir, from_archive = resolve_path(traces_dir)
     records = load_trajectory_records(traces_dir)
     if not records:
         raise SystemExit(f"没有轨迹记录：{traces_dir}")
@@ -277,8 +283,9 @@ def audit(traces_dir: str = DEFAULT_TRACES) -> dict:
     unreadable = []
     for trajectory_id, record in sorted(records.items()):
         trace_path = record.get("trace_path")
+        trace_file, _ = resolve_path(os.path.join(PROJECT_ROOT, trace_path or ""))
         try:
-            with open(os.path.join(PROJECT_ROOT, trace_path), encoding="utf-8") as handle:
+            with open(trace_file, encoding="utf-8") as handle:
                 trace = json.load(handle)
         except (OSError, ValueError, TypeError):
             unreadable.append(trajectory_id)
@@ -295,6 +302,7 @@ def audit(traces_dir: str = DEFAULT_TRACES) -> dict:
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "traces_dir": os.path.relpath(traces_dir, PROJECT_ROOT),
+        "resolved_from_archive": bool(from_archive),
         "sessions": len(records),
         "sessions_with_findings": len(findings),
         "unreadable": unreadable,
