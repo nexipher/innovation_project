@@ -21,7 +21,7 @@ compares its verdicts with the recorded dispositions and the reviewer's notes
 (the notes are matched for visual-defect wording, which is a proxy — recorded
 as such in the report).
 
-Model calls need the GPU (agent.md §3.2); `--dry-run` exercises the whole
+Model calls need the GPU (docs/development/agent.md §3.2); `--dry-run` exercises the whole
 pipeline on CPU with a scripted judge.
 
 Usage:
@@ -412,7 +412,7 @@ def main() -> None:
         if not torch.cuda.is_available():
             raise SystemExit(
                 "CUDA not available. Screening needs the local vision model "
-                "(agent.md §3.2: obtain user authorization first). "
+                "(docs/development/agent.md §3.2: obtain user authorization first). "
                 "Use --dry-run for CPU plumbing.")
         from mllm.qwen_client import QwenVLClient
 

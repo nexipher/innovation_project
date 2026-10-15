@@ -6,7 +6,7 @@
 > 执行结果：34 项 / 2141 个文件移入 `archive/legacy_v1_20261015/`，逐文件核对通过
 > （`archive_v1.py --verify` 对 `HEAD` blob 逐文件比对；`archive_inventory.py --verify` 按本表
 > 复核移动过的项）。实际清单与留在原位的资产见
-> [`archive/legacy_v1_20261015/MANIFEST.json`](archive/legacy_v1_20261015/MANIFEST.json)。
+> [`archive/legacy_v1_20261015/MANIFEST.json`](../../archive/legacy_v1_20261015/MANIFEST.json)。
 > **本表的"待归档 30 项 / 118.7 MB"仍是当时的预检口径**，不是最终执行数。
 
 **这张表能证明什么**：路径存在、大小、文件数、内容摘要（大目录只覆盖前 512 MB，已逐行注明）、是否被 git 跟踪。**不能证明什么**：归档目标位置是否足够、移动后历史复算是否仍可跑（需要路径映射）、以及完整性——完整性要用这张表在移动**之后**复核。

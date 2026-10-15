@@ -10,7 +10,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1161%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-1169%20passed-brightgreen)](./tests/)
 
 ---
 
@@ -42,16 +42,21 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 | 文档 | 内容 |
 |------|------|
 | [`plan.md`](plan.md) | 当前代次的计划与阶段状态（v1 计划已归档） |
-| [`CURRENT_PROGRAM_ARCHITECTURE.md`](CURRENT_PROGRAM_ARCHITECTURE.md) | 当前任务、角色分工、入口、专家、运行时序、版本记录规则 |
+| [`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md`](docs/design/CURRENT_PROGRAM_ARCHITECTURE.md) | 当前任务、角色分工、入口、专家、运行时序、版本记录规则 |
 | [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md) | 未完成问题清单（已实现待验证 / 尚未修复 / 暂缓），每项带验收条件 |
-| [`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) | 新专家组与 Agent 重整方案（阶段 2–4 的依据） |
-| [`NEW_GENERATION_NAMING.md`](NEW_GENERATION_NAMING.md) | 代次/冻结/归档映射的实施细节 |
-| [`TESTING.md`](TESTING.md) | 测试三层（core / module / full）与"换专家后哪些测试退役" |
-| [`ARCHIVE_INVENTORY.md`](ARCHIVE_INVENTORY.md) | v1 归档清单（口径、角色、能证明什么/不能证明什么） |
+| [`docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) | 新专家组与 Agent 重整方案（原案；**有效内容已整合进 `plan.md` §2–§7**） |
+| [`docs/archive/NEW_GENERATION_NAMING.md`](docs/archive/NEW_GENERATION_NAMING.md) | 代次/冻结/归档映射的规则记录（§6 已执行完毕） |
+| [`docs/development/TESTING.md`](docs/development/TESTING.md) | 测试三层（core / module / full）与"换专家后哪些测试退役" |
+| [`docs/archive/ARCHIVE_INVENTORY.md`](docs/archive/ARCHIVE_INVENTORY.md) | v1 归档清单快照（口径、角色、能证明什么/不能证明什么） |
 | [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账（自动生成；已归档批次会标明读的是归档副本） |
 
+**文档布局（2026-10-15）**：根目录只保留四份日常文档——`README.md`、`plan.md`、
+`claude_operation_log.md`、`KNOWN_ISSUES.md`；其余在 `docs/design/`（需求与设计资料、
+当前架构、新专家组方案原案）、`docs/development/`（测试与工程协作规范）、
+`docs/archive/`（归档清单快照、代次/冻结规则）。规则与例外见 §8.1。
+
 **当前注册的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`，处置按
-[`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) §1：
+[`docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) §1：
 `jpeg` 与 `freq`(frequency_v2) **已决定退出**；`noise` 是**候选保留**，与 NPR / UnivFD 一起
 按"能否在 Agent 流程里带来增益与互补性"评测，**缺乏收益时才退出**——不预设它退役。
 `frequency`(v1)、`ela` 已退役；`trufor` 不在全局主链，仅作对照。
@@ -184,7 +189,7 @@ pip install -r requirements.txt
 
 ### 3.3 数据挂载
 
-项目假定以下数据目录已就位（见 `agent.md` §4）：
+项目假定以下数据目录已就位（见 `docs/development/agent.md` §4）：
 
 ```
 dataset/
@@ -204,7 +209,7 @@ dataset/
 | 显存 | FP16 ~16 GB（RTX 4090 可承载） |
 | 下一代（g8） | Qwen3-VL-8B，**checkpoint 与推理模式待用户确认**（`sft_data/GENERATIONS.json`） |
 
-> ⚠️ 加载模型权重前必须获得用户 GPU 授权（见 `agent.md` §3.2）。
+> ⚠️ 加载模型权重前必须获得用户 GPU 授权（见 `docs/development/agent.md` §3.2）。
 
 ### 3.4b 外部专家权重（PROBE-DINOv2 / TruFor）— 获取方式、哈希、不再分发
 
@@ -278,7 +283,7 @@ python main.py --image path/to/img.png --mode conflict       # 制造证据冲�
 
 ### 3.8 运行测试
 
-三层（详见 [`TESTING.md`](TESTING.md)）；本机 shell 处于 2 GB cgroup，`full` 层建议用分块运行器：
+三层（详见 [`docs/development/TESTING.md`](docs/development/TESTING.md)）；本机 shell 处于 2 GB cgroup，`full` 层建议用分块运行器：
 
 ```bash
 bash scripts/run_tests.sh core     # 快：门禁、账本、解析、协议（约 30 秒）
@@ -687,7 +692,7 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 
 ### 8.1 四轨文件驱动
 
-本项目严格遵循"文件驱动 + 小步快跑"开发规范（见 `agent.md`）：
+本项目严格遵循"文件驱动 + 小步快跑"开发规范（见 [`docs/development/agent.md`](docs/development/agent.md)）：
 
 | 文件 | 角色 | 修改时机 |
 |------|------|----------|
@@ -695,8 +700,13 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 | `plan.md` | **当前代次的唯一执行计划**（v1 计划在 `archive/`） | 变更前先追加计划，持续更新阶段状态 |
 | `claude_operation_log.md` | 操作审计日志（v1 日志在 `archive/`） | 每完成一个二级小节立即追加 |
 | `README.md` | 项目入口文档 | 每完成一个大节统一更新 |
-| `CURRENT_PROGRAM_ARCHITECTURE.md` | 当前实现、已确认缺陷与论文架构依据 | 源码或架构事实变化时更新，不维护待办 |
-| `Reasoning_Framework.md` | 早期研究动机与概念设计 | 仅作背景参考，不作为当前实现或计划 |
+| `docs/design/CURRENT_PROGRAM_ARCHITECTURE.md` | 当前实现、已确认缺陷与论文架构依据 | 源码或架构事实变化时更新，不维护待办 |
+| `docs/design/Reasoning_Framework.md` | 早期研究动机与概念设计 | 仅作背景参考，不作为当前实现或计划 |
+
+> **根目录只保留四份日常文档**（`README.md` / `plan.md` / `claude_operation_log.md` /
+> `KNOWN_ISSUES.md`，2026-10-15 起）：设计资料在 `docs/design/`、工程规范在
+> `docs/development/`、历史清单与代次规则在 `docs/archive/`。`docs/development/agent.md` 的位置核实过——
+> 没有工具依赖它（无 hook、无代码读取），因此随本次一并移入 `docs/development/`。
 
 > `plan.md` 与 `claude_operation_log.md` 同名换新（2026-10-15）：v1 的两份文件已按原样归档，
 > **归档件不改写**，新文件从当日起记当前代次。
@@ -706,7 +716,7 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 - **原子化提交**：一个 Plan 小节对应一个 commit，严禁合并
 - **提交信息格式**：`<type>(<scope>): <description>`（如 `feat(plan-3.1a): ...`）
 - **提交前置条件**：模块通过导入验证 + 基础功能测试
-- **不自动推送远端**（按 `agent.md` §5.1）
+- **不自动推送远端**（按 `docs/development/agent.md` §5.1）
 
 ```bash
 git add -A
@@ -738,7 +748,7 @@ pytest tests/test_pipeline.py -v        # 单文件
 
 ### 8.5 GPU 使用规范
 
-⚠️ **加载任何模型权重或执行 GPU 任务前，必须先向用户报告算力需求并获得明确授权**（见 `agent.md` §3.2）。
+⚠️ **加载任何模型权重或执行 GPU 任务前，必须先向用户报告算力需求并获得明确授权**（见 `docs/development/agent.md` §3.2）。
 
 ### 8.6 数据与归档规范
 

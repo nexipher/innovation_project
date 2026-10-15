@@ -14,7 +14,7 @@ no-tool baseline is confidently wrong), and training the raw mix would teach a
 
 The dataset construction, the message assembly and the weights are plain CPU
 code and are tested without a model.  The training itself needs the GPU
-approval from agent.md §3.2.
+approval from docs/development/agent.md §3.2.
 
 Usage:
   python scripts/train_lora_g4.py --dry-run                    # CPU: data only
@@ -525,7 +525,7 @@ def main() -> None:
 
     if not _cuda_available():
         raise SystemExit(
-            "CUDA not available. Training requires the RTX 4090 (agent.md §3.2: "
+            "CUDA not available. Training requires the RTX 4090 (docs/development/agent.md §3.2: "
             "obtain user authorization first). Use --dry-run on CPU.")
 
     run_name = args.run_name or datetime.now().strftime("run_%Y%m%d_%H%M%S")

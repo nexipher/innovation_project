@@ -64,3 +64,18 @@
 * **涉及/修改的文件清单**：`scripts/g7_calibration_audit.py`、`scripts/screen_visual_grounding.py`、`claude_operation_log.md`
 * **执行结果与验证状态**：`module` **919 通过**、`full` **1161 通过 / 3 跳过**；两条口径的审计输出已打印在会话中（9 写入 ✅ / 3 复算 ✅ / 其余逐个判定）。**未运行 GPU。**
 * **置信度或遗留待办（TODO）**：①分档仍是"当前文件状态"的结论，不是不变量——判据已写进测试（写入入口）与日志（两条口径的命令）②阶段 2 仍需用户事实（Qwen3-VL 版本/推理模式、NPR/UnivFD 权重与许可、noise 评测口径、重复轮处置口径）
+
+### 2026-10-15 - 根目录文档归类：根目录只留四份，其余进 docs/{design,development,archive}
+
+* **当前操作动作**：按用户七条规则整理根目录文档——九个文件归类移动、提案有效内容整合进 `plan.md`、新旧路径引用全部同步。**不改写历史资料、不改运行逻辑、不删数据。**
+* **对应计划锚点**：`plan.md` §1b（本轮新增的计划节，先写计划后动手）
+* **核心变更说明**：
+  1. **移动九个文件**（全部 `git mv`，`git status` 只见 `R`）：`docs/design/` 收 `active_forensic_agent_tasks.md`、`Reasoning_Framework.md`、`CURRENT_PROGRAM_ARCHITECTURE.md`、`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`；`docs/archive/` 收 `ARCHIVE_INVENTORY.md`、`archive_inventory.json`、`NEW_GENERATION_NAMING.md`；`docs/development/` 收 `TESTING.md`、`agent.md`。根目录只剩 `README.md`/`plan.md`/`claude_operation_log.md`/`KNOWN_ISSUES.md`。
+  2. **`agent.md` 的位置先核实后移动**：`.claude/settings.local.json` 无 hook、无任何代码 `open()` 它、根目录不存在 Claude Code 会读的 `CLAUDE.md`；代码里的引用都是散文（"agent.md §3.2"）。结论：**没有工具依赖其位置**，因此不保留根目录入口，随本次移入 `docs/development/`，并把散文引用补上目录前缀（10 个文件）。
+  3. **提案整合进 plan.md**（避免两份并行维护）：`plan.md` §2–§6 重写为「已确认决策（D1–D10）／八步实施与验收／视觉分析前置验收／证据包与分数边界／通用问题对照」，提案原文顶部加横幅"内容已整合进 plan.md §2–§6，不再是执行依据"，移入 `docs/design/` 留存。
+  4. **配套脚本与测试改路径**：`scripts/archive_inventory.py` 的产物改为 `docs/archive/{ARCHIVE_INVENTORY.md,archive_inventory.json}`、`scripts/archive_v1.py` 改读新位置、`tests/test_config_fingerprint.py` 读 `docs/design/CURRENT_PROGRAM_ARCHITECTURE.md` 与 `docs/development/TESTING.md`。
+  5. **新增 `tests/test_doc_layout.py`（8 项）**：①根目录 `.md` 集合必须恰好是那四份；②九个归类文件都在预期位置；③**当前文档的相对链接全部可解析**（归档的 v1 文档豁免——它们保持原样）；④提案横幅仍在。链接这一项以前没有任何机器检查，靠人看。
+  6. **执行中发现两处"核验失效"并修掉**（都是核验本身不成立）：①`archive_v1.py --verify` 以 `HEAD` 为移动前参照，移动提交后 `HEAD:plan.md` 已是新计划，把归档的 v1 计划误报成"内容变更"——改为以**新增归档路径的提交（即移动提交）的父提交**为参照，比原来"必须提交前跑"更强；②`archive_inventory.py --verify` 不认识文档归类，把移入 `docs/design/` 的提案误报为"缺失"——改为按新位置说明并计数（快照仍保持原样，不重生成）。
+* **涉及/修改的文件清单**：移动：`active_forensic_agent_tasks.md`→`docs/design/`、`Reasoning_Framework.md`→`docs/design/`、`CURRENT_PROGRAM_ARCHITECTURE.md`→`docs/design/`、`NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`→`docs/design/`、`ARCHIVE_INVENTORY.md`→`docs/archive/`、`archive_inventory.json`→`docs/archive/`、`NEW_GENERATION_NAMING.md`→`docs/archive/`、`TESTING.md`→`docs/development/`、`agent.md`→`docs/development/`；修改：`plan.md (Modified — §1b 计划与结果、§2–§8 整合提案、指针路径)`、`README.md (Modified — 文档表/维护表/§0 布局说明/agent.md 路径/badge)`、`KNOWN_ISSUES.md (Modified — 四处文档路径)`、`scripts/archive_inventory.py`、`scripts/archive_v1.py`、`tests/test_config_fingerprint.py`、`tests/test_doc_layout.py (Created)`、`docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md (Modified — 状态横幅)`、`docs/design/Reasoning_Framework.md (Modified — 位置说明)`、`docs/archive/ARCHIVE_INVENTORY.md (Modified — 相对链接)`、`docs/development/agent.md (Modified — 位置说明)`、七个代码文件（`agent.md` 散文引用补前缀）
+* **执行结果与验证状态**：`git status` 九个 `R` 无内容增删；**链接检查 20 条相对链接、0 失效**（并入 `tests/test_doc_layout.py`）；`core` **348 通过**、`module` **927 通过**、`full` **1169 通过 / 3 跳过**；`python scripts/archive_v1.py --verify`（34 项 / 2141 文件 / 438 页登记改写）与 `python scripts/archive_inventory.py --verify`（移动过的 25 项一致 + 1 项文档归类 + 19 项未移动）在改动后**复跑通过**。**未运行 GPU，未删除任何文件。**
+* **置信度或遗留待办（TODO）**：①归档的 v1 文档（`archive/legacy_v1_20261015/**`）保持原样、其内部链接不再维护——`docs/**` 的链接测试只覆盖当前文档，这个边界写在测试文件的注释里②`agent.md` 仍写着"项目根目录维护四个核心控制文件"，已加一句位置说明而未改条文（规范内容不动，等用户决定是否重写）③`docs/design/Reasoning_Framework.md` 与 `active_forensic_agent_tasks.md` 里的 plan 小节号指向 v1 计划，已在 `Reasoning_Framework.md` 顶部注明去归档里找，任务书保持原样

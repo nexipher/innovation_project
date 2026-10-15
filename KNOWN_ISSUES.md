@@ -59,8 +59,8 @@
 
 | 件 | 位置 | 说明 |
 |---|---|---|
-| 归档预检清单 | `ARCHIVE_INVENTORY.md` + `archive_inventory.json`（`scripts/archive_inventory.py` 生成，只读） | 46 项：路径/大小/文件数/摘要/git 跟踪/角色（runtime 不可盲搬）；移动后 `--verify` 复核 |
-| 代次命名与冻结升级方案 | `NEW_GENERATION_NAMING.md` | (代次, 批次) 身份、`FROZEN.json` 升级、`GENERATIONS.json`、`PATH_MAP.json` 与 `resolve_path`、阶段 1 动作清单 |
+| 归档预检清单 | `docs/archive/ARCHIVE_INVENTORY.md` + `docs/archive/archive_inventory.json`（`scripts/archive_inventory.py` 生成，只读） | 46 项：路径/大小/文件数/摘要/git 跟踪/角色（runtime 不可盲搬）；移动后 `--verify` 复核 |
+| 代次命名与冻结升级方案 | `docs/archive/NEW_GENERATION_NAMING.md` | (代次, 批次) 身份、`FROZEN.json` 升级、`GENERATIONS.json`、`PATH_MAP.json` 与 `resolve_path`、阶段 1 动作清单 |
 
 ## 4. 推进顺序与运行条件
 
@@ -116,7 +116,7 @@
 |---|----|------|----------|
 | C1 | 冻结旧版本（v2 策略、旧校准表、b1/b2 批次、提示词哈希链） | **已完成**（2026-10-13）：`VERSIONS.json` + 台账 + 归档批次 + `reliability_table_v1.json`；全部历史批次标记「冻结 · 历史实验」 | 台账可读、旧批次复算命令可用 —— 已满足 |
 | C2 | 新神经网络专家接入评测 | **可开始**（依赖 C1 —— 已完成）；等待新专家的接入方案（权重/接口/输入尺寸） | 在 A 组拟合、B/C 组评估：分离度、跨生成器、跨格式；与 PROBE 单独对照；**替换后的默认工具箱能跑通一次完整会话** |
-| C3 | jpeg/noise/frequency 退出工具箱 | 暂缓（依赖 C2 结论） | 退出前后同源配对对照：准确率不下降且成本下降；退出有书面理由；旧专家的测试组按 `TESTING.md` 退役 |
+| C3 | jpeg/noise/frequency 退出工具箱 | 暂缓（依赖 C2 结论） | 退出前后同源配对对照：准确率不下降且成本下降；退出有书面理由；旧专家的测试组按 `docs/development/TESTING.md` 退役 |
 | C4 | 每次专家/权重更换后的**重新校准** | 尚未修复（流程缺失） | 校准表身份（`schema`/`fitting_group`/`digest`）随新表更新；`VERSIONS.json` 记录；旧表归档 |
 | C5 | **概率映射仍是池化分位分箱**（只有权重按格式） | **尚未修复**（如实标注为 `mapping_scope=pooled_quantile_bins`） | 逐格式概率映射在 A 组拟合、B 组评估，Brier/可靠性不劣于池化；否则明确不做并写原因 |
 
@@ -144,7 +144,7 @@
 | # | 项 | 状态 | 验收条件 |
 |---|----|------|----------|
 | F1 | 默认策略 = 当前版本（v3） | **已完成**：`config.HALTING_POLICY` 默认 v3；历史复算显式 `FORENSIC_HALTING_POLICY=v2` | 文档与代码一致；任何会话记录 `policy_version` |
-| F2 | 测试分层（core / module / full） | **已完成**：`scripts/run_tests.sh`、`pytest.ini` 标记、`TESTING.md` | core ≤ 1 分钟且覆盖全部不变量；换专家后的退役清单已写明 |
+| F2 | 测试分层（core / module / full） | **已完成**：`scripts/run_tests.sh`、`pytest.ini` 标记、`docs/development/TESTING.md` | core ≤ 1 分钟且覆盖全部不变量；换专家后的退役清单已写明 |
 | F3 | GPU 依赖项（A4 观察协议、B2 状态行效果、C2 新专家评测） | **被环境阻塞**：`nvidia-smi` 当前报 No devices | GPU 可见后按各项验收条件补跑；在此之前不得把这些标为已验证 |
 
 ---

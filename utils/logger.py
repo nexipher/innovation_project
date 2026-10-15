@@ -5,7 +5,7 @@ Two responsibilities:
 1. SessionLogger — records every conversation turn during a forensic session
    and exports to ShareGPT-format JSON for SFT training.
 2. Operation log — appends structured Markdown entries to claude_operation_log.md
-   per the project audit specification (agent.md §1.2).
+   per the project audit specification (docs/development/agent.md §1.2).
 """
 
 import json
@@ -228,7 +228,7 @@ def log_operation(
     """
     Append a structured Markdown entry to claude_operation_log.md.
 
-    Follows the format mandated by agent.md §1.2.
+    Follows the format mandated by docs/development/agent.md §1.2.
 
     Args:
         action: Short description of what was done.

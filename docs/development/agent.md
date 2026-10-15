@@ -2,7 +2,7 @@
 
 ## 一、 工程生命周期与文件驱动规范（核心控制流）
 
-为了确保 Claude Code 的开发过程具有高度的计划性、渐进性和可审计性，项目根目录维护四个核心控制文件：`{project}_tasks.md`、`plan.md`、`claude_operation_log.md` 和 `README.md`。开发必须严格遵循“文件驱动”与“小步快跑”原则。
+为了确保 Claude Code 的开发过程具有高度的计划性、渐进性和可审计性，项目维护四个核心控制文件：`{project}_tasks.md`、`plan.md`、`claude_operation_log.md` 和 `README.md`。（2026-10-15 位置调整：`plan.md`、`claude_operation_log.md`、`README.md` 仍在**根目录**；本文件与测试规范移入 `docs/development/`，原始任务书与设计资料移入 `docs/design/`。规范内容未改。）开发必须严格遵循“文件驱动”与“小步快跑”原则。
 
 ### 1.1 四轨文件定义与生命周期
 *   **`{project}_tasks.md`（项目原始需求，只读）**：

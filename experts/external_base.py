@@ -285,7 +285,7 @@ class MockExternalScoreExpert(ExternalScoreExpert):
 
     Same `source_name` as the real expert, so a pipeline exercised with the
     mock behaves like one exercised with the model — which is the point of the
-    project's mock rule (agent.md §3.2.2).  The score is a stable function of
+    project's mock rule (docs/development/agent.md §3.2.2).  The score is a stable function of
     the image content, so a test can assert on it.
     """
 

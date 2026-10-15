@@ -43,7 +43,7 @@ from config import PROJECT_ROOT
 
 ARCHIVE_ROOT = os.path.join(PROJECT_ROOT, "archive", "legacy_v1_20261015")
 PATH_MAP = os.path.join(PROJECT_ROOT, "archive", "PATH_MAP.json")
-INVENTORY = os.path.join(PROJECT_ROOT, "archive_inventory.json")
+INVENTORY = os.path.join(PROJECT_ROOT, "docs", "archive", "archive_inventory.json")
 
 # old path -> (section, new name).  Sections follow the proposal's layout.
 MOVES = [
@@ -233,9 +233,48 @@ def rewrite_links(archive_path: str, moved: List[dict]) -> int:
     return rewritten
 
 
-def _git_blob(path: str) -> Optional[bytes]:
-    """The committed content of a path (the state before the move)."""
-    result = subprocess.run(["git", "show", f"HEAD:{path}"],
+def _blob_revision(old_path: str, new_path: Optional[str] = None) -> Optional[str]:
+    """
+    The revision whose tree still holds `old_path` as it was **before the move**.
+
+    Reading `HEAD:<old_path>` is only right while the move is uncommitted —
+    once it lands, `HEAD:plan.md` is the *new* plan and the check compares the
+    archived v1 document against a different file (two false "content changed"
+    failures, seen when this first ran after the commit).
+
+    Nor is "the commit that deleted the old path" correct in general: the old
+    path may still exist (`plan.md` does — it is the new plan).  What is always
+    true is that the move **added** the new path; the commit that added it is
+    the move, and its parent holds the pre-move state.
+    """
+    if new_path:
+        added = subprocess.run(
+            ["git", "log", "--diff-filter=A", "--format=%H", "-1", "--", new_path],
+            cwd=PROJECT_ROOT, capture_output=True, text=True).stdout.split()
+        if added:
+            parent = subprocess.run(["git", "rev-parse", "--verify", f"{added[0]}^"],
+                                    cwd=PROJECT_ROOT, capture_output=True, text=True)
+            if parent.returncode == 0:
+                return f"{parent.stdout.strip()}:{old_path}"
+    # No recorded addition (or a root commit): fall back to the last state
+    # before the path disappeared, which is the deletion commit's parent.
+    log = subprocess.run(["git", "log", "--format=%H", "-1", "--", old_path],
+                         cwd=PROJECT_ROOT, capture_output=True, text=True).stdout.split()
+    if not log:
+        return None
+    parent = subprocess.run(["git", "rev-parse", "--verify", f"{log[0]}^"],
+                            cwd=PROJECT_ROOT, capture_output=True, text=True)
+    if parent.returncode != 0:
+        return None
+    return f"{parent.stdout.strip()}:{old_path}"
+
+
+def _git_blob(old_path: str, new_path: Optional[str] = None) -> Optional[bytes]:
+    """The content of `old_path` at the revision where it last had that content."""
+    revision = _blob_revision(old_path, new_path)
+    if revision is None:
+        return None
+    result = subprocess.run(["git", "show", revision],
                             cwd=PROJECT_ROOT, capture_output=True)
     return result.stdout if result.returncode == 0 else None
 
@@ -250,7 +289,9 @@ def record_links(moved: List[dict]) -> List[dict]:
     if the result is not byte-for-byte what is on disk, the page was changed by
     something other than the recorded rewrite, and the move stops here.
 
-    This runs against `HEAD`, so it must run **before the move is committed**.
+    The reference is the revision *before the move* (`_blob_revision`), so this
+    keeps working after the move is committed — the earlier version read `HEAD`
+    and began comparing the archived plan against the new one.
     """
     import hashlib
 
@@ -265,7 +306,7 @@ def record_links(moved: List[dict]) -> List[dict]:
             old_page = _mapped(page_relative, reverse_map)
             if old_page is None:
                 continue
-            blob = _git_blob(old_page)
+            blob = _git_blob(old_page, page_relative)
             if blob is None:
                 continue
             disk = open(page, "rb").read()
@@ -315,7 +356,7 @@ def verify(moved: List[dict]) -> int:
             relative = os.path.relpath(full, PROJECT_ROOT).replace(os.sep, "/")
             suffix = relative[len(entry["to"].rstrip("/")):].lstrip("/")
             old_relative = (entry["from"].rstrip("/") + ("/" + suffix if suffix else ""))
-            blob = _git_blob(old_relative)
+            blob = _git_blob(old_relative, relative)
             digest = hashlib.sha256(open(full, "rb").read()).hexdigest()
             if blob is None:  # never in git: covered by the count/bytes check
                 untracked_files += 1
@@ -431,7 +472,7 @@ def main() -> None:
     manifest = {
         "archived_at": generated_at,
         "generation": "g7（含更早的 g4_trial/237 集）",
-        "why": "新版专家组与 Qwen3-VL 迁移（NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md §2）："
+        "why": "新版专家组与 Qwen3-VL 迁移（docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md §2）："
                "旧实验全部冻结，不删除、不覆盖；新代次在新目录生成",
         "docs": [entry for entry in moved if entry["section"] == "docs"],
         "experiments": [entry for entry in moved if entry["section"] == "experiments"],

@@ -543,7 +543,7 @@ def main() -> None:
     else:
         import torch
         if not torch.cuda.is_available():
-            raise SystemExit("CUDA 不可用。真实验收需要 GPU（agent.md §3.2：先取得授权）。")
+            raise SystemExit("CUDA 不可用。真实验收需要 GPU（docs/development/agent.md §3.2：先取得授权）。")
         from mllm.qwen_client import QwenVLClient
         tags = [ForensicStateMachine.EXPERT_SOURCE_MAP[name] for name in experts]
         prompt = build_forensic_prompt(tags)

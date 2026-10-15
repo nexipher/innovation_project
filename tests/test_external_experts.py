@@ -5,7 +5,7 @@ Everything here runs on CPU: the adapters' job is to be a well-behaved
 boundary, and the parts that are testable without their weights — availability,
 preprocessing arithmetic, statistic summarisation, artifact painting, the CLI
 they would run — are exactly the parts that break silently when the model is
-finally loaded (agent.md §3.2.2).
+finally loaded (docs/development/agent.md §3.2.2).
 """
 
 import os

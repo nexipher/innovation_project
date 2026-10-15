@@ -194,18 +194,21 @@ class TestTheCurrentDocsAgreeWithTheDefault:
             text = text.split(stop_marker)[0]
         return text
 
+    # Paths follow the 2026-10-15 doc reorg: the root keeps four daily documents
+    # and the rest live under docs/ (design / development / archive).
+    CURRENT = ("plan.md", "README.md", "KNOWN_ISSUES.md",
+               "docs/design/CURRENT_PROGRAM_ARCHITECTURE.md",
+               "docs/development/TESTING.md")
+
     def test_no_current_doc_claims_the_old_default(self):
         current = [
             self._current_text("plan.md", "# 历史计划档案"),
             self._current_text("README.md", "以下为历史档案"),
-            self._current_text("CURRENT_PROGRAM_ARCHITECTURE.md"),
-            self._current_text("KNOWN_ISSUES.md"),
-            self._current_text("TESTING.md"),
-        ]
+        ] + [self._current_text(path) for path in self.CURRENT[2:]]
         for text in current:
             for stale in self.STALE:
                 assert stale not in text, f"过时表述仍在当前文档中：{stale}"
 
     def test_the_architecture_doc_states_the_default_correctly(self):
-        text = self._current_text("CURRENT_PROGRAM_ARCHITECTURE.md")
+        text = self._current_text("docs/design/CURRENT_PROGRAM_ARCHITECTURE.md")
         assert "默认配置就是当前版本 v3" in text

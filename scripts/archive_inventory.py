@@ -37,8 +37,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
 
-MD_PATH = os.path.join(PROJECT_ROOT, "ARCHIVE_INVENTORY.md")
-JSON_PATH = os.path.join(PROJECT_ROOT, "archive_inventory.json")
+# The list and its JSON live with the archive material they describe
+# (`docs/archive/`), not in the root — 根目录只保留四份日常文档（2026-10-15）。
+MD_PATH = os.path.join(PROJECT_ROOT, "docs", "archive", "ARCHIVE_INVENTORY.md")
+JSON_PATH = os.path.join(PROJECT_ROOT, "docs", "archive", "archive_inventory.json")
 
 # role: docs      source of truth for what was decided, archive wholesale
 #       history   produced material (trajectories, calibrations, reviews)
@@ -51,7 +53,8 @@ ASSETS = [
     ("plan.md", "docs", "计划与档案；顶部当前阶段一并封存"),
     ("claude_operation_log.md", "docs", "操作日志（增量追加）"),
     ("CLAUDE_CODE_G7_REPAIR_HANDOFF.md", "docs", "G7 修复交接文档"),
-    ("NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md", "docs", "本方案本身（随代次留存，不归档）"),
+    ("docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md", "docs",
+     "本方案本身（随代次留存，不归档）；有效内容已整合进 plan.md"),
     ("KNOWN_ISSUES.md", "docs", "问题清单（新版由 `KNOWN_ISSUES.md` 重写）"),
     ("sft_data/trajectories", "history", "237 集轨迹（v1/v2 时代）"),
     ("sft_data/trajectories_g7_b1", "history", "b1 轨迹 + VERSIONS.json"),
@@ -314,7 +317,7 @@ def render(rows: List[dict]) -> str:
         "",
         "1. `PATH_MAP.json`：原路径 → 归档路径，供历史复算解析（提案 §2.5）；",
         "2. 移动**之后**用本清单复跑一次，逐行核对摘要（本文件的 `--verify`）；",
-        "3. 代次命名与冻结登记升级（见 `NEW_GENERATION_NAMING.md`），"
+        "3. 代次命名与冻结登记升级（见 `docs/archive/NEW_GENERATION_NAMING.md`），"
         "避免冻结身份永久占用新版批次名。",
     ]
     return "\n".join(lines) + "\n"
@@ -350,6 +353,26 @@ def _head_digest(path: str) -> Optional[str]:
     return hashlib.sha256(result.stdout).hexdigest()[:16]
 
 
+def _relocated_doc(row: dict) -> Optional[str]:
+    """
+    A doc-role asset that the 2026-10-15 reorganisation moved under `docs/`.
+
+    The snapshot records where each document was *before* the archive; the docs
+    were re-filed afterwards (`docs/{design,development,archive}/`), so a
+    missing doc is not a lost doc.  Reporting it as "缺失" would be a false
+    alarm; reporting it by name here says where it went instead.
+    """
+    if row.get("role") != "docs" or row.get("kind") == "dir":
+        return None
+    name = os.path.basename(row["path"])
+    for base, dirs, files in os.walk(os.path.join(PROJECT_ROOT, "docs")):
+        dirs.sort()
+        if name in files:
+            return os.path.relpath(os.path.join(base, name),
+                                   PROJECT_ROOT).replace(os.sep, "/")
+    return None
+
+
 def _resolve(path: str) -> tuple:
     """(存在的路径, 是否取自归档) —— 归档之后，原路径按 PATH_MAP.json 解析。"""
     from utils.batch import resolve_path
@@ -379,6 +402,7 @@ def verify(rows: List[dict]) -> int:
     followed = 0
     rewritten = _rewritten_pages()
     skipped = 0
+    relocated_docs = 0
     in_place = 0
     stale_snapshot = 0
     for row in rows:
@@ -388,6 +412,11 @@ def verify(rows: List[dict]) -> int:
             PROJECT_ROOT, row["path"])
         path, from_archive = _resolve(path)
         if not os.path.exists(path):
+            relocated = _relocated_doc(row)
+            if relocated:
+                print(f"  已按文档归类移入 {relocated}（非归档，不进摘要核对）：{row['path']}")
+                relocated_docs += 1
+                continue
             problems.append(f"缺失：{row['path']}")
             continue
         if not from_archive:  # 从未移动：快照不是一致性判据
@@ -424,6 +453,8 @@ def verify(rows: List[dict]) -> int:
              if stale_snapshot else "")
           + (f"；{skipped} 项含登记的链接改写，改由 `archive_v1.py --verify` 逐页核对"
              if skipped else "")
+          + (f"；{relocated_docs} 项文档在归档后被重新归类（非归档，按新位置说明）"
+             if relocated_docs else "")
           + f"；{in_place} 项从未移动（快照不构成一致性判据，未检）")
     return 0
 

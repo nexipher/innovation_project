@@ -12,7 +12,7 @@ the signal:
   both   Evidence Token JSON + images               (G2-c default)
 
 The Qwen client loads once and is reused across samples. Running the real
-comparison requires a GPU (see agent.md §3.2); `--dry-run` validates the
+comparison requires a GPU (see docs/development/agent.md §3.2); `--dry-run` validates the
 whole harness with MockMLLMClient on CPU.
 
 Note on the dry run: MockMLLMClient derives its verdict from the Evidence
@@ -402,7 +402,7 @@ def main() -> None:
         if not _cuda_available():
             raise SystemExit(
                 "CUDA not available. The real comparison requires the RTX 4090 "
-                "(agent.md §3.2: obtain user authorization first). "
+                "(docs/development/agent.md §3.2: obtain user authorization first). "
                 "Use --dry-run for CPU plumbing validation."
             )
         from mllm.qwen_client import QwenVLClient

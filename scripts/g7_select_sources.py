@@ -381,7 +381,7 @@ def main() -> None:
 
     import torch
     if not torch.cuda.is_available():
-        raise SystemExit("CUDA 不可用；PROBE 打分需要 GPU（agent.md §3.2）。")
+        raise SystemExit("CUDA 不可用；PROBE 打分需要 GPU（docs/development/agent.md §3.2）。")
     rows = score_variants(candidates, variants)
     summary = summarise_per_source(rows)
     chosen = choose(summary)
