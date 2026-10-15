@@ -130,8 +130,35 @@
             "note": "README 标注为 ProGAN-4class checkpoint（AIGCDetectBenchmark 表格所用）"
           }
         ],
-        "selection": "在 val 上二选一（用户 2026-10-15 决定），选定后写入 selected 字段",
-        "selected": null,
+        "selection": "已在 val 全量上二选一（用户 2026-10-15 定口径：val 负责专家选择）。选定 **npr-a**：整体 AUROC 0.6363 vs 0.5870，且三个 JPEG 格一致领先（q70 0.470/0.393｜q85 0.512/0.457｜q95 0.564/0.507）；npr-b 仅在 PNG 格高 0.0012、acc@0.5 高 0.004，属噪声量级。",
+        "selected": {
+          "checkpoint_id": "npr-a",
+          "decided_on": "2026-10-15",
+          "decided_on_partition": "val（284 源 × 4 格式 = 1136 张，错误 0）",
+          "evidence": {
+            "npr-a": {
+              "auroc": 0.6363,
+              "acc@0.5": 0.6206,
+              "per_format": {
+                "png": 0.9975,
+                "jpeg_q70": 0.47,
+                "jpeg_q85": 0.5115,
+                "jpeg_q95": 0.5644
+              }
+            },
+            "npr-b": {
+              "auroc": 0.587,
+              "acc@0.5": 0.625,
+              "per_format": {
+                "png": 0.9987,
+                "jpeg_q70": 0.3925,
+                "jpeg_q85": 0.457,
+                "jpeg_q95": 0.5073
+              }
+            }
+          },
+          "caveat": "两者都很弱且都只在 PNG 格有效：作为整图检测器，NPR 在本数据（Real=JPEG / Fake=PNG）上是格式受限的。它的价值在于 PNG 格的强信号与是否提供互补信息，由阶段三总结与阶段四的证据语义决定（分数必须带上适用格式条件）。"
+        },
         "source": "GitHub chuangchuangtan/NPR-DeepfakeDetection（经 ghfast.top 代理）",
         "licence": "**未明确**：仓库根无 LICENSE 文件（已核实 404）。仅本地研究；其他用途须向作者确认"
       },
@@ -166,7 +193,7 @@
         "note": "本项目若另选阈值，只能在 val 上选"
       },
       "status": {
-        "evaluated": "待本阶段",
+        "evaluated": "2026-10-15 val 全量（A/B 对比，选定 npr-a）",
         "mock_equivalent": "无"
       },
       "limits": [

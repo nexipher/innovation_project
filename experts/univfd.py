@@ -88,9 +88,14 @@ class UnivFDEvaluator:
                 f"官方地址：{self._record['weights']['backbone']['url']}")
         # OpenAI 的 .pt 是 TorchScript 存档；官方 clip.load 也是这么用的。
         self._clip = torch.jit.load(self.backbone_path, map_location="cpu")
+        # 设备与精度必须一致：.pt 里的权重是 fp16，CPU 上 fp16 卷积又慢又未必支持，
+        # 所以 CPU 跑时把主干整体转 fp32，GPU 跑时保持 fp16 并一起搬过去。
+        if self.device.startswith("cuda"):
+            self._clip = self._clip.to(self.device)
+        else:
+            self._clip = self._clip.float()
         self._clip.eval()
-        parameter = next(self._clip.parameters())
-        self._dtype = parameter.dtype
+        self._dtype = next(self._clip.parameters()).dtype
         self._loader_used = "torch.jit.load"
 
         head = torch.nn.Linear(768, 1)

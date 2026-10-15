@@ -120,11 +120,25 @@ class TestTheCheckpointsCarryTheirLoadingConvention:
             assert len(item["sha256"]) == 64
             assert item["bytes"] > 0
 
-    def test_the_npr_selection_is_still_open_and_that_is_visible(self):
-        """A、B 都在 val 上测（用户 2026-10-15 决定）：未选之前不能假装已选。"""
-        record = entry("npr_expert")
-        assert record["weights"]["selected"] is None
-        assert "val" in record["weights"]["selection"]
+    def test_the_npr_selection_carries_its_evidence(self):
+        """
+        A checkpoint may only be marked selected together with the val evidence
+        that decided it (用户 2026-10-15：val 负责专家选择).  A bare name would
+        be "we chose this" with nothing to check it against.
+        """
+        selected = entry("npr_expert")["weights"]["selected"]
+        assert selected["checkpoint_id"] == "npr-a"
+        assert "val" in selected["decided_on_partition"]
+        evidence = selected["evidence"]
+        assert evidence["npr-a"]["auroc"] > evidence["npr-b"]["auroc"]
+        assert set(evidence["npr-a"]["per_format"]) == {"png", "jpeg_q70",
+                                                        "jpeg_q85", "jpeg_q95"}
+        # and the honest caveat travels with the choice
+        assert "格式受限" in selected["caveat"]
+
+    def test_the_selected_checkpoint_is_one_of_the_registered_ones(self):
+        ids = {item["id"] for item in checkpoints("npr_expert")}
+        assert entry("npr_expert")["weights"]["selected"]["checkpoint_id"] in ids
 
     def test_univfd_records_that_the_backbone_is_required(self):
         backbone = entry("univfd_expert")["weights"]["backbone"]
