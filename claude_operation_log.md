@@ -175,3 +175,15 @@
 * **执行结果与验证状态**：源级 bootstrap 复跑通过；三份测试文件 **46 通过**；`module` 全绿。**test 分区仍未触碰。**
 * **置信度或遗留待办（TODO）**：①下一轮按用户指令进入**阶段四接线**（证据接口/调用规则/提示词）与**小批 Agent 人工验收**，三者定稿后才打开 test ②NPR 许可未明确（仅本地研究）③noise 的历史实现与结果保留、不再进默认工具箱；其 GPU 成本未计时（已标注）
 
+### 2026-10-15 - noise 的字段说明更正 + 阶段四开工（4.1 正式入口切 Qwen3）
+
+* **当前操作动作**：先按用户指正更正 noise 的分数语义（我此前只做消费者留档，没查斜率），再按用户五项开始阶段四，完成第 1 项。
+* **对应计划锚点**：`plan.md` §3d（阶段四执行计划）、§3c（登记表）
+* **核心变更说明**：
+  1. **noise 的更正（用户对）**：代码是 `strength = 1/(1+exp(−s·(x−m)))`，对 `inconsistency`（= `raw_metric`）**单调递增** ⇒ 两个字段**同号**，专家内部没有翻转。真正相反的是**算法原始假设**（"不一致度 ⇒ 篡改 ⇒ Fake"）与**经验数据关联**（G2 与今日 val：高残差落在**相机/Real 端**，mean(Real) 0.61 vs mean(Fake) 0.39）。登记表改为：两个字段同向、**差别只在量纲**（[0,1] vs 无上界）；新增 `direction_history` 把"算法假设 / 经验关联 / 代码状态 / 本次更正"分开写清；测试从"断言方向相反"改为"断言同号 + 量纲不同 + 假设与经验分开"。该专家已退出候选主线，**只补历史说明，不再优化**。
+  2. **阶段四计划 §3d**：五项按用户给定顺序写成可验收条目（入口切换／真正关闭参考后验与预计收益／精简证据包与原始分数检查／旧专家退出与提示词重写／小批 Agent 人工验收），并写死 **test 仍关闭**，直到证据接口、调用规则、提示词三者定稿。
+  3. **4.1 正式入口切 Qwen3**：`--mllm qwen` → `Qwen3VLClient`（固定 revision）；旧客户端移到 `--mllm qwen25`，**标注仅历史复算**（与 `FORENSIC_HALTING_POLICY=v2` 同性质）。顺带修三处：①PROBE 的 mock/real 判据原写作 `mllm_type != "qwen"`，会让历史客户端拿到 **mock 探测器**；②`main.py` 顶层导入 torch 与旧客户端，**CPU 路径一直为 GPU 栈付费**（正是惰性导出要避免的回归，在入口处又出现了一次）——现在导入 main 既不加载 torch 也不加载 transformers；③启动打印假定客户端必有 `revision`/`identity()`，改为有则打印、无则降级。
+* **涉及/修改的文件清单**：`experts/score_semantics.json (Modified — noise 字段与 direction_history)`、`tests/test_score_semantics.py (Modified — 2 项改为同号/量纲/假设-经验分离断言)`、`plan.md (Modified — §3d 阶段四计划)`、`main.py (Modified — 客户端切换 + 惰性导入 + 身份降级)`、`tests/test_g8_entry.py (Created — 7 项)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`core` **413 通过**（新增 7 项入口测试）；`python main.py --image <Midjourney 图>` CPU mock 跑通；`import main` 后 `torch`/`transformers` 均未加载。**未运行 GPU**（入口切换的 GPU 验证放在 4.5 小批验收里）。
+* **置信度或遗留待办（TODO）**：①4.2 真正关闭参考后验与预计收益（控制器仍加载校准表）②4.3 精简证据包与原始分数检查（含 field_consumers 审计里的那个缺陷）③4.4 旧专家退出注册 + 提示词按登记表重建④4.5 小批 Agent 人工验收⑤`--mllm qwen25` 的 GPU 复算未在真机跑过（属历史路径，必要时再验）
+
