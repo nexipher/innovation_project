@@ -243,6 +243,58 @@ def check_three_records_kept(trace: dict, result: dict) -> dict:
 # Run
 # ---------------------------------------------------------------------------
 
+def check_the_processor_makes_image_tokens(image: str, local_files_only: bool = True) -> dict:
+    """
+    Verify the image path with the **real** processor, before any GPU time.
+
+    The processor is small (a few MB) and already on disk, and it is the
+    component that turns (text, PIL image) into `input_ids`.  If the placeholder
+    tokens are not there, no amount of GPU time would fix check 1 — so this runs
+    first, on CPU, and reports the count instead of a claim.
+
+    Mirrors where the id comes from: `config.json`'s `image_token_id`, with the
+    tokenizer's `<|image_pad|>` id as a cross-check.
+    """
+    from huggingface_hub import hf_hub_download
+
+    from mllm.message_builder import build_messages
+    from mllm.qwen3_client import MODEL_ID, MODEL_REVISION
+
+    processor = _load_processor(MODEL_ID, MODEL_REVISION, local_files_only)
+    messages = build_messages(image, [{"from": "user", "value": "<image>\n请分析这张图像。"}])
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    images = collect_images(messages)
+    inputs = processor(text=[text], images=images if images else None, return_tensors="pt")
+    ids = inputs["input_ids"]
+
+    # One file, not the whole snapshot: `snapshot_download(local_files_only=True)`
+    # refuses while the weight shards are still arriving (it checks completeness),
+    # and this check exists precisely to run *before* they land.
+    config_path = hf_hub_download(MODEL_ID, "config.json", revision=MODEL_REVISION,
+                                  local_files_only=local_files_only)
+    with open(config_path, encoding="utf-8") as handle:
+        image_token_id = json.load(handle).get("image_token_id")
+    cross_check = processor.tokenizer.convert_tokens_to_ids("<|image_pad|>")
+    count = int((ids == image_token_id).sum()) if image_token_id is not None else None
+    return {"ok": bool(images) and (count or 0) > 0,
+            "template_has_thinking_switch": "enable_thinking" in (
+                getattr(processor, "chat_template", "") or ""),
+            "pil_images": len(images),
+            "input_ids_shape": list(ids.shape),
+            "image_token_id": image_token_id,
+            "image_token_id_from_tokenizer": cross_check,
+            "image_tokens_in_input": count,
+            "pixel_values_shape": (list(inputs["pixel_values"].shape)
+                                   if "pixel_values" in inputs else None)}
+
+
+def _load_processor(model_id: str, revision: str, local_files_only: bool):
+    from transformers import Qwen3VLProcessor
+
+    return Qwen3VLProcessor.from_pretrained(model_id, revision=revision,
+                                            local_files_only=local_files_only)
+
+
 def build_client(kind: str, system_prompt: str, inference_mode: str, greedy: bool,
                  local_files_only: bool = False):
     if kind == "mock":
@@ -331,12 +383,19 @@ def main() -> None:
                         default="non-thinking")
     parser.add_argument("--greedy", action="store_true", help="贪心解码，便于复现")
     parser.add_argument("--out-dir", default=None)
+    parser.add_argument("--processor-check", action="store_true",
+                        help="只用 processor 验证图像->token 路径（CPU，不需权重）")
     parser.add_argument("--local-files-only", action="store_true",
                         help="只用已下载的权重（revision 已固定；避免加载时再走网络）")
     args = parser.parse_args()
 
     if not os.path.exists(args.image):
         raise SystemExit(f"图像不存在：{args.image}")
+    if args.processor_check:
+        result = check_the_processor_makes_image_tokens(args.image, local_files_only=True)
+        for key, value in result.items():
+            print(f"  {key}: {value}")
+        raise SystemExit(0 if result["ok"] else 1)
     if args.client == "qwen3" and os.environ.get("FORENSIC_ALLOW_GPU") != "1":
         # GPU work needs the user's authorization; this is the switch they flip.
         raise SystemExit(

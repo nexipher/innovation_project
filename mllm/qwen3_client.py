@@ -178,7 +178,9 @@ class Qwen3VLClient(QwenVLClient):
             local_files_only=self._local_files_only)
         self._model = Qwen3VLForConditionalGeneration.from_pretrained(
             self._model_id, revision=self._revision,
-            torch_dtype=dtype, device_map="auto",
+            # `dtype=`, not `torch_dtype=`: transformers 5.x keeps the old name
+            # only for backward compatibility and warns on every load.
+            dtype=dtype, device_map="auto",
             local_files_only=self._local_files_only)
         if self._adapter_path:
             from peft import PeftModel

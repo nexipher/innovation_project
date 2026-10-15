@@ -113,3 +113,33 @@ class TestTheGpuGate:
         assert result.returncode != 0
         assert "FORENSIC_ALLOW_GPU" in result.stdout + result.stderr
         assert not (tmp_path / "out" / "smoke_report.json").exists()
+
+
+class TestTheRealProcessorTurnsTheImageIntoTokens:
+    """
+    The image path, verified with the actual Qwen3-VL processor — on CPU, before
+    any GPU time.  Skips when the pinned snapshot is not on this machine, the
+    same way the batch tests skip when a batch is absent.
+    """
+
+    def test_the_placeholder_tokens_are_in_the_input(self, tmp_path):
+        import pytest as _pytest
+
+        from scripts.g8_smoke import check_the_processor_makes_image_tokens
+
+        snapshot = os.path.expanduser(
+            "~/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct")
+        if not os.path.isdir(snapshot):
+            _pytest.skip("Qwen3-VL 权重快照不在这台机器上")
+
+        result = check_the_processor_makes_image_tokens(
+            str(_image(tmp_path)), local_files_only=True)
+        assert result["ok"] is True
+        assert result["pil_images"] == 1
+        assert result["image_tokens_in_input"] > 0
+        # the two sources of the id must agree, or the counting means nothing
+        assert result["image_token_id"] == result["image_token_id_from_tokenizer"]
+        assert result["pixel_values_shape"] is not None
+        # and the template really has no thinking switch (Instruct variant)
+        assert result["template_has_thinking_switch"] is False
+
