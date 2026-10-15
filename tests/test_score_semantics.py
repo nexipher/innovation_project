@@ -175,3 +175,79 @@ class TestTheSummaryReadsLikeATable:
 
     def test_the_registry_file_is_the_one_the_docs_point_at(self):
         assert os.path.exists(os.path.join(PROJECT_ROOT, "experts", "score_semantics.json"))
+
+
+class TestTheDirectionRules:
+    """阶段 4.2b：方向由登记表逐值判定，而不是由"这个专家大概偏哪边"决定。"""
+
+    def test_a_low_npr_score_carries_no_direction(self):
+        """
+        用户 2026-10-15 的边界：JPEG 格几乎全低分，那说明它没看到上采样痕迹，
+        **不得解释成强 Real 证据**。低分因此判 Uncertain，而不是 Real。
+        """
+        from utils.score_semantics import direction_for_value
+
+        direction, rule = direction_for_value("npr_expert", 0.02)
+        assert direction == "Uncertain"
+        assert "不得解释成强 Real 证据" in rule["note"]
+
+    def test_a_low_probe_score_does_carry_a_direction(self):
+        """PROBE 四个格式格 0.975–0.988，低分可以作 Real 证据。"""
+        from utils.score_semantics import direction_for_value
+
+        direction, _rule = direction_for_value("probe_dino_expert", 0.02)
+        assert direction == "Real"
+
+    def test_high_scores_mean_generated_for_both_discriminators(self):
+        from utils.score_semantics import direction_for_value
+
+        for source in ("probe_dino_expert", "npr_expert", "univfd_expert"):
+            assert direction_for_value(source, 0.99)[0] == "AI-generated", source
+
+    def test_noise_reads_high_as_real(self):
+        from utils.score_semantics import direction_for_value
+
+        assert direction_for_value("noise_expert", 0.9)[0] == "Real"
+        assert direction_for_value("noise_expert", 0.1)[0] == "AI-generated"
+
+
+class TestTheRectifierTakesItsDirectionFromTheRegistry:
+    def _token(self, source, raw):
+        return {"source": source, "raw_metric": raw, "strength": raw,
+                "support": "AI-generated",
+                "interpretation_text": "This looks AI-generated to me."}
+
+    def test_v3_prefers_the_registry(self):
+        from state_machine.evidence_rectifier import EvidenceRectifier
+
+        token = EvidenceRectifier.rectify(self._token("npr_expert", 0.01),
+                                          prefer_registry=True)
+        assert token["direction_source"] == "score_semantics"
+        assert token["direction"] == "Uncertain"      # 低分不带方向
+        assert token["support"] == "Uncertain"
+        assert token["support_raw"] == "AI-generated"
+
+    def test_a_high_score_rectifies_toward_generated(self):
+        from state_machine.evidence_rectifier import EvidenceRectifier
+
+        token = EvidenceRectifier.rectify(self._token("probe_dino_expert", 0.97),
+                                          prefer_registry=True)
+        assert token["direction"] == "AI-generated"
+        assert token["direction_source"] == "score_semantics"
+
+    def test_v2_replay_does_not_consult_the_registry(self):
+        """v2 复算必须复现它产出的批次：没有校准字段时方向仍记为专家自述。"""
+        from state_machine.evidence_rectifier import EvidenceRectifier
+
+        token = EvidenceRectifier.rectify(self._token("probe_dino_expert", 0.97),
+                                          prefer_registry=False)
+        assert token["direction_source"] == "expert_claim_uncalibrated"
+
+    def test_an_unregistered_expert_is_left_alone(self):
+        from state_machine.evidence_rectifier import EvidenceRectifier
+
+        token = EvidenceRectifier.rectify({"source": "some_offline_expert",
+                                           "raw_metric": 0.9},
+                                          prefer_registry=True)
+        assert token["direction_source"] == "expert_claim_uncalibrated"
+

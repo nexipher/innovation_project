@@ -187,3 +187,16 @@
 * **执行结果与验证状态**：`core` **413 通过**（新增 7 项入口测试）；`python main.py --image <Midjourney 图>` CPU mock 跑通；`import main` 后 `torch`/`transformers` 均未加载。**未运行 GPU**（入口切换的 GPU 验证放在 4.5 小批验收里）。
 * **置信度或遗留待办（TODO）**：①4.2 真正关闭参考后验与预计收益（控制器仍加载校准表）②4.3 精简证据包与原始分数检查（含 field_consumers 审计里的那个缺陷）③4.4 旧专家退出注册 + 提示词按登记表重建④4.5 小批 Agent 人工验收⑤`--mllm qwen25` 的 GPU 复算未在真机跑过（属历史路径，必要时再验）
 
+### 2026-10-15 - 阶段四 4.2：真正关闭参考后验与预计收益（并把它欠的检查补上）
+
+* **当前操作动作**：按用户第 2 项执行"真正停止计算与提示注入，而不是只在提示词里藏字段"。做完发现关闭动作**会静默削弱证据检查**，于是同一项里把方向权威从校准表换到分数语义登记表（4.2b）——这正是提案 §7 警告过的那种"因校准字段消失而静默跳过"。
+* **对应计划锚点**：`plan.md` §3d 的 4.2
+* **核心变更说明**：
+  1. **开关按运行策略求值，不是 import 时常量**：第一版写成 `config.USES_REFERENCE_POSTERIOR` 常量，结果 v2 复算的测试（fixture 在运行中切策略）也丢了校准表——48 个测试红。改为 `config.uses_reference_posterior(policy)` 函数，控制器在 `__init__` 里按当时的 `HALTING_POLICY` 求值，v3 策略改由参数 `compute_reference` 接收（跨模块不共享常量）。
+  2. **v3 一次都不算**：校准表不加载（`ReliabilityTable.load()` 只在参考路径调用）、token 不再带 `calibrated_likelihood`/`reliability`/`applicability`/`semantics_aligned`、结案不再有 `posterior`/`tool_utilities`/`conflict_score`/`redundancy_discounts`、`_expert_weights()` 直接返回空（没有读者就不读表）、v3_signals 不再写参考派生键。**字段是"不出现"，不是写 0.5/0.0**——缺省值看起来像算过。
+  3. **方向权威换到登记表（4.2b）**：整流器的优先级变为「登记表 → 校准表 → 专家自述」，并新增 `direction_rules`（逐专家：分数 → 方向，`Uncertain` 是合法结果）。**用户那条边界就此可执行**：NPR 低分判 `Uncertain`（"没看到它擅长的东西"≠"Real 证据"），PROBE/UnivFD 低分才判 Real。`prefer_registry` 是**调用方的策略决定**，不是默认值——v2 复算必须走校准表才能复现它产出的批次。
+  4. **测试按新契约重写**：v3 的三条会话语义测试改为"没有参考块/没有参考建议"，且保留"把后验 patch 成极端反对方"——用来证明**这个值根本不会被咨询**；一组参考机制的测试显式挂 `v2_policy`（它们测的是 v2 机器，不是默认策略）；新增 8 条定点测试（低分 NPR→Uncertain、低分 PROBE→Real、整流器优先级、v2 不回退登记表、未登记专家不动）。
+* **涉及/修改的文件清单**：`config.py (Modified — uses_reference_posterior 函数)`、`state_machine/controller.py (Modified — 运行时求值 + 四处写入分流 + _build_counters 显式传参)`、`state_machine/halting_v3.py (Modified — compute_reference 参数 + docstring)`、`state_machine/evidence_rectifier.py (Modified — 三级权威 + 共用的纠正方法 + 登记表取值)`、`utils/evidence_consistency.py (Modified — 认 score_semantics 方向来源)`、`experts/score_semantics.json (Modified — direction_rules + 说明)`、`utils/score_semantics.py (Modified — direction_for_value + 校验)`、`tests/{test_halting_v3,test_controller,test_controller_v3,test_probe_wiring,test_score_semantics}.py (Modified)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`core`/`module`/`full` 全绿（**full 1235 通过 / 3 跳过**）；CPU mock 会话复核：`posterior`/`tool_utilities`/`calibrated_likelihood`/`reliability`/`applicability` 在 v3 会话里**出现次数为 0**。**未运行 GPU**。
+* **置信度或遗留待办（TODO）**：①4.3 精简证据包（模型可见 vs 后台完整）与原始分数检查（含账本"任一字段都接受"的缺陷）②4.4 旧专家退出注册 + 提示词按登记表重建③4.5 小批 Agent 人工验收④v2 复算的"逐字节一致"尚未用真实批次验证（本轮只保证计算路径仍在；冻结批次复跑留待需要时做）
+

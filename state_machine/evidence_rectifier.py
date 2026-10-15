@@ -10,8 +10,12 @@ G2-d showed the model follows whichever field it happens to trust.
 
 The rectifier makes the precedence explicit and enforces it:
 
-    1. `calibrated_likelihood` decides the direction (it is the empirical
-       mapping for that metric band);
+    0. **`score_semantics.json` decides the direction** (stage 4.2b): the
+       expert's score → direction rule, verified per expert, and able to say
+       "this value carries no direction" (NPR's low JPEG scores).  In v3 this
+       is the authority, because the calibration table is no longer read;
+    1. failing that, `calibrated_likelihood` decides (v1/v2 replay, where the
+       mapping exists);
     2. `support` is rewritten to it, the expert's original kept as
        `support_raw`;
     3. free text may not contradict it: offending sentences are replaced by a
@@ -46,7 +50,9 @@ _NEAR_CHANCE_CLAIM = re.compile(
     r"校准似然[^。.;\n]{0,6}(接近随机|随机水平)|(?:后验|校准)[^。.;\n]{0,4}位于随机水平)", re.I)
 
 SOURCE_CALIBRATED = "calibrated_likelihood"
+SOURCE_REGISTRY = "score_semantics"
 SOURCE_EXPERT = "expert_claim_uncalibrated"
+
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
@@ -58,6 +64,18 @@ CANONICAL_SENTENCE = {
                      "generative reading applies."),
     "Uncertain": ("Calibration: this measurement band is near chance "
                   "(P(Fake)={p:.2f}) and does not determine a direction."),
+}
+
+CANONICAL_SENTENCE[SOURCE_REGISTRY] = {
+    "Real": ("Score semantics: this expert's score ({raw:.4g}) sits on the "
+             "camera side of its recorded threshold ({threshold}); the benign "
+             "reading applies."),
+    "AI-generated": ("Score semantics: this expert's score ({raw:.4g}) sits on "
+                     "the generated side of its recorded threshold "
+                     "({threshold}); the generative reading applies."),
+    "Uncertain": ("Score semantics: this expert's score ({raw:.4g}) does not "
+                  "determine a direction under the recorded conditions "
+                  "({note})"),
 }
 
 
@@ -81,12 +99,72 @@ class EvidenceRectifier:
         return "Uncertain"
 
     @classmethod
-    def rectify(cls, token: dict) -> dict:
+    def _direction_from_registry(cls, token: dict) -> "Optional[tuple]":
+        """
+        The registry's verdict on this token's score, or None when the expert
+        is not registered (legacy tokens, mocks, offline experts).
+
+        `raw` is the expert's primary field per the registry — not whichever
+        numeric field happens to be present, because noise's two fields differ
+        in scale and the wrong one would be read against the wrong threshold.
+        """
+        from utils.score_semantics import SemanticsError, direction_for_value, entry
+
+        source = token.get("source")
+        if not source:
+            return None
+        try:
+            record = entry(source)
+        except SemanticsError:
+            return None
+        field = record["raw_score"]["field"]
+        raw = token.get(field)
+        if raw is None:
+            raw = token.get("raw_metric", token.get("strength"))
+        if raw is None:
+            return None
+        direction, rule = direction_for_value(source, float(raw))
+        canonical = CANONICAL_SENTENCE[SOURCE_REGISTRY][direction].format(
+            raw=float(raw), threshold=record["threshold"]["value"],
+            note=rule.get("note", "该条件下不构成方向"))
+        return direction, canonical
+
+    @classmethod
+    def _apply_direction(cls, token: dict, direction: str, canonical: str,
+                         source: str) -> None:
+        """Steps 2–3 of the precedence: support and free text follow the direction."""
+        if "support_raw" not in token and token.get("support") != direction:
+            token["support_raw"] = token.get("support")
+        token["support"] = direction
+        token["direction"] = direction
+        token["direction_source"] = source
+        original_text = token.get("interpretation_text")
+        if original_text and original_text != canonical:
+            token["interpretation_text_raw"] = original_text
+        token["interpretation_text"] = canonical
+
+    @classmethod
+    def rectify(cls, token: dict, prefer_registry: bool = False) -> dict:
         """
         Apply the precedence order to one token, in place.
 
+        `prefer_registry` is the caller's policy decision, not a default:
+        v3 (no calibration table) must take its direction from the registry;
+        **v2 replay must not**, because it has to reproduce the batches it
+        produced, and those directions came from the calibration table.
+
         Returns the same token for call chaining.
         """
+        # 0. 登记表（v3 的权威）：分数 → 方向，逐专家核实过，且能表达"该值不带方向"
+        registry = cls._direction_from_registry(token) if prefer_registry else None
+        if registry is not None:
+            direction, canonical = registry
+            cls._apply_direction(token, direction, canonical, SOURCE_REGISTRY)
+            if direction != "Uncertain":
+                cls._correct_near_chance_claims(token, canonical)
+            cls._rewrite_contradicting_prose(token, direction, canonical)
+            return token
+
         direction = cls.direction_from_calibration(token)
         if direction is None:
             # Nothing to rectify against; the expert's claim stands, labelled
@@ -96,40 +174,35 @@ class EvidenceRectifier:
 
         likelihood = float(token["calibrated_likelihood"]["Fake"])
         canonical = CANONICAL_SENTENCE[direction].format(p=likelihood)
+        cls._apply_direction(token, direction, canonical, SOURCE_CALIBRATED)
+        if not (NEUTRAL_LOW < likelihood < NEUTRAL_HIGH):
+            cls._correct_near_chance_claims(token, canonical)
+        cls._rewrite_contradicting_prose(token, direction, canonical)
+        return token
 
-        # 2. the structured measurement wins over the expert's own label
-        if "support_raw" not in token and token.get("support") != direction:
-            token["support_raw"] = token.get("support")
-        token["support"] = direction
-        token["direction"] = direction
-        token["direction_source"] = SOURCE_CALIBRATED
+    @classmethod
+    def _correct_near_chance_claims(cls, token: dict, canonical: str) -> None:
+        """
+        A token may not *assert* near-chance while its measurement decides.
 
-        # 3. free text may not contradict the measurement.  `interpretation_text`
-        # is the expert's direction sentence by construction, so it is replaced
-        # outright; the longer prose is edited sentence by sentence so the
-        # measurements and the benign-cause discussion survive.
-        original_text = token.get("interpretation_text")
-        if original_text and original_text != canonical:
-            token["interpretation_text_raw"] = original_text
-        token["interpretation_text"] = canonical
+        The review found "the calibrated likelihood is near chance" sitting next
+        to P(Fake)=0.861 in one token: near-chance wording contradicts neither
+        direction, so the direction rewrite above cannot see it.
+        """
+        for field in ("reasoning", "phenomenon"):
+            text = token.get(field)
+            if not text or not _NEAR_CHANCE_CLAIM.search(str(text)):
+                continue
+            rewritten = cls._replace_matching_sentences(
+                str(text), _NEAR_CHANCE_CLAIM, canonical)
+            if rewritten != text:
+                token[f"{field}_raw"] = text
+                token[field] = rewritten
 
-        # A sentence may not *assert* what the calibration says unless it says
-        # it correctly: the review found "the calibrated likelihood is near
-        # chance" sitting next to P(Fake)=0.861 in the same token, and the
-        # claim-direction rewrite above cannot see it (near-chance wording
-        # contradicts neither direction).
-        likelihood = (token.get("calibrated_likelihood") or {}).get("Fake")
-        if likelihood is not None and not (NEUTRAL_LOW < float(likelihood) < NEUTRAL_HIGH):
-            for field in ("reasoning", "phenomenon"):
-                text = token.get(field)
-                if not text or not _NEAR_CHANCE_CLAIM.search(str(text)):
-                    continue
-                rewritten = cls._replace_matching_sentences(
-                    str(text), _NEAR_CHANCE_CLAIM, canonical)
-                if rewritten != text:
-                    token[f"{field}_raw"] = text
-                    token[field] = rewritten
-
+    @classmethod
+    def _rewrite_contradicting_prose(cls, token: dict, direction: str,
+                                     canonical: str) -> None:
+        """Free text may not argue the other way; the measurement survives."""
         contradictory = cls._contradicting_claims(direction)
         for field in ("reasoning", "phenomenon"):
             text = token.get(field)
@@ -139,8 +212,6 @@ class EvidenceRectifier:
             if rewritten != text:
                 token[f"{field}_raw"] = text
                 token[field] = rewritten
-
-        return token
 
     @staticmethod
     def _contradicting_claims(direction: str):

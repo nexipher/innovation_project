@@ -98,7 +98,13 @@ class TestCalibrationEntry:
         lookup = ReliabilityTable.load().lookup("probe_dino_expert", 0.5)
         assert lookup["calibrated_likelihood"]["Fake"] == pytest.approx(0.52)
 
+@pytest.mark.usefixtures("v2_policy")
 class TestTheSession:
+    """
+    这一组断言的是**参考机制**（校准概率、方向来自校准表、折减、工具计价）。
+    阶段 4.2 之后 v3 不再计算这些——所以它们必须在 v2 复算路径下跑，
+    否则测的不是"机制还在不在"，而是"默认策略变没变"。
+    """
     def test_a_probe_call_lands_as_a_token(self, run_session):
         result = run_session()
         sources = [token["source"] for token in result["evidence_chain"]]

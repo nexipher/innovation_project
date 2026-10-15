@@ -189,10 +189,14 @@ class TestEvidenceDeduplication:
                    if t["from"] == "user" and "已跳过执行" in t.get("value", "")]
         assert len(notices) == 1
 
+    @pytest.mark.usefixtures("v2_policy")
     def test_the_trace_records_what_the_policy_could_have_called(self):
         """
         E (2026-10-11): 0 of 3237 traces recorded this, so a stop reason like
         "no expected gain" could not be audited after the fact.
+
+        阶段 4.2 起 `tool_utilities` 只在 v2 复算里计算，故本条目显式跑 v2：
+        `available_experts` 两种策略都记，`tool_utilities` 只属于参考路径。
         """
         import json as _json
 

@@ -21,12 +21,15 @@ ends and why**:
     format_failure      turns that never became a legal action or verdict
     evidence_check_failed  recorded by the controller, not decided here
 
-The posterior, the conflict score and the tool utilities are still computed —
-but as a **reference**: they are written into the trace next to the model's
-label (`reference_posterior`, `reference_recommendation`, `advisory`), and a
-low expected gain is an advisory note, never a reason to refuse a legal call.
+Stage 4.2 (2026-10-15): the reference posterior, the conflict score and the tool
+utilities are **not computed here any more**.  They used to be written beside the
+model's label as a reference; the decision was already the model's, but keeping
+the numbers alive kept the calibration table loaded and kept a v2-shaped object
+in every v3 trace — and a number that exists tends to get read.  Offline
+comparison can compute them deliberately; a session does not.
 
-v2 stays exactly as it is, for replaying the batches it produced.
+`FORENSIC_HALTING_POLICY=v2` keeps that machinery (and its halting rules) exactly
+as it was, for replaying the batches it produced.
 """
 
 from __future__ import annotations
@@ -94,6 +97,7 @@ class HaltingPolicyV3:
         repeated_actions: int = 0,
         invalid_actions: int = 0,
         tools_available: bool = True,
+        compute_reference: bool = False,
     ) -> HaltingDecision:
         """
         Decide whether the session ends, and record the reference beside it.
@@ -102,27 +106,29 @@ class HaltingPolicyV3:
         the controller still has to accept the *text*, but the label is not
         this policy's to change.
         """
-        posterior = HaltingPolicyV2.posterior(evidence_chain)
-        conflict = HaltingPolicyV2.conflict_score(evidence_chain)
-        utilities = HaltingPolicyV2.tool_utilities(
-            evidence_chain, available_experts, called_experts)
-        best_expert = max(utilities, key=utilities.get) if utilities else None
-        best_utility = utilities.get(best_expert, 0.0) if best_expert else 0.0
-
-        decision = HaltingDecision(
-            action="continue",
-            posterior=posterior,
-            tool_utilities=utilities,
-            conflict_score=conflict,
-            expected_tool_gain=best_utility + (
-                HaltingPolicyV2.call_cost(best_expert) if best_expert else 0.0),
-            expected_net_utility=best_utility,
-            next_expert=best_expert if tools_available else None,
-            # No evidence means no reference opinion at all — 0.5 is the
-            # starting point of the posterior, not a recommendation.
-            reference_label=(("Fake" if posterior >= 0.5 else "Real")
-                             if evidence_chain else None),
-        )
+        # 参考后验、冲突度、预计收益只在 v1/v2 复算里计算（提案 §7，阶段 4.2）：
+        # v3 一次都不算——不算就没有可注入的东西，也就不会有人误读它。
+        if compute_reference:
+            posterior = HaltingPolicyV2.posterior(evidence_chain)
+            conflict = HaltingPolicyV2.conflict_score(evidence_chain)
+            utilities = HaltingPolicyV2.tool_utilities(
+                evidence_chain, available_experts, called_experts)
+            best_expert = max(utilities, key=utilities.get) if utilities else None
+            best_utility = utilities.get(best_expert, 0.0) if best_expert else 0.0
+            decision = HaltingDecision(
+                action="continue",
+                posterior=posterior,
+                tool_utilities=utilities,
+                conflict_score=conflict,
+                expected_tool_gain=best_utility + (
+                    HaltingPolicyV2.call_cost(best_expert) if best_expert else 0.0),
+                expected_net_utility=best_utility,
+                next_expert=best_expert if tools_available else None,
+                reference_label=(("Fake" if posterior >= 0.5 else "Real")
+                                 if evidence_chain else None),
+            )
+        else:
+            decision = HaltingDecision(action="continue")
 
         proposed = (candidate_verdict or {}).get("verdict")
         if proposed in cls.LEGAL_LABELS:
@@ -131,9 +137,10 @@ class HaltingPolicyV3:
             decision.confidence = cls._confidence(candidate_verdict.get("confidence"))
             decision.primary_reason = cls.MODEL_CONCLUDED
             decision.all_reasons = [cls.MODEL_CONCLUDED]
-            decision.advisory = cls.advisory_notes(
-                decision.reference_label, conflict, best_utility, proposed,
-                tools_available)
+            if compute_reference:
+                decision.advisory = cls.advisory_notes(
+                    decision.reference_label, decision.conflict_score,
+                    decision.expected_net_utility, proposed, tools_available)
             return decision
 
         if candidate_verdict:
@@ -163,8 +170,10 @@ class HaltingPolicyV3:
         # Nothing to stop for: keep going, advise, never compel.
         decision.primary_reason = cls.AWAITING_ACTION
         decision.all_reasons = [cls.AWAITING_ACTION]
-        decision.advisory = cls.advisory_notes(
-            decision.reference_label, conflict, best_utility, None, tools_available)
+        if compute_reference:
+            decision.advisory = cls.advisory_notes(
+                decision.reference_label, decision.conflict_score,
+                decision.expected_net_utility, None, tools_available)
         return decision
 
     # ------------------------------------------------------------------

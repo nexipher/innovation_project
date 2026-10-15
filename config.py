@@ -4,6 +4,7 @@ All paths, thresholds, and hyperparameters are defined here as a single source o
 """
 
 import os
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Project paths
@@ -51,6 +52,21 @@ KL_THRESHOLD = 1e-3                 # halt when KL divergence between successive
 # v2/v1 explicitly; the choice is recorded in the config fingerprint and in
 # every batch's VERSIONS.json.
 HALTING_POLICY = os.environ.get("FORENSIC_HALTING_POLICY", "v3").strip().lower() or "v3"
+
+def uses_reference_posterior(policy: "Optional[str]" = None) -> bool:
+    """
+    Whether this session computes the reference posterior and expected gain.
+
+    True only for the v1/v2 replay paths.  v3 — the current version — does not
+    compute them, does not inject them and does not read the calibration table
+    (提案 §7；用户 2026-10-15："真正停止计算与提示注入，而不是只在提示词里藏字段"）。
+
+    A **function of the policy**, not an import-time constant: the policy is
+    switchable at runtime (tests patch the controller's name, `FORENSIC_
+    HALTING_POLICY` picks a replay), and a constant froze the answer at import —
+    which silently stripped the calibration table from v2 replay tests.
+    """
+    return (policy or HALTING_POLICY) in ("v1", "v2")
 if HALTING_POLICY not in ("v1", "v2", "v3"):
     raise ValueError(f"unknown halting policy: {HALTING_POLICY!r}")
 POLICY_STEP_LOG_ODDS = 1.5          # log-odds one perfectly-weighted token contributes

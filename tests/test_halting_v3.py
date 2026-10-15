@@ -36,19 +36,27 @@ def _decide(**overrides):
     return HaltingPolicyV3.decide(**kwargs)
 
 class TestTheModelOwnsTheLabel:
-    def test_a_conclusion_the_reference_disagrees_with_is_kept(self):
+    """
+    Stage 4.2: the reference is not computed in v3 at all, so "the label is the
+    model's, not the posterior's" is no longer a promise about precedence — it is
+    a fact about what exists.  These tests assert that nothing reference-shaped
+    is produced, which is the stronger statement.
+    """
+
+    def test_a_conclusion_is_kept_and_no_reference_is_produced(self):
         decision = _decide(candidate_verdict={"verdict": "Real", "confidence": 0.9})
         assert decision.action == "halt"
-        assert decision.verdict == "Real", "参考后验不得改写模型标签"
+        assert decision.verdict == "Real"
         assert decision.primary_reason == HaltingPolicyV3.MODEL_CONCLUDED
-        assert "reference_disagrees" in decision.advisory
-        assert decision.reference_label == "Fake"      # recorded, not imposed
+        # 参考量在 v3 里根本不计算：不是"算了但没用"，而是"没有"
+        assert decision.reference_label is None
+        assert decision.advisory == []
+        assert decision.tool_utilities == {}
 
     def test_uncertain_is_the_models_conclusion_not_agreement(self):
         decision = _decide(candidate_verdict={"verdict": "Uncertain", "confidence": 0.4})
         assert decision.action == "halt" and decision.verdict == "Uncertain"
-        assert "model_abstained" in decision.advisory
-        assert "reference_disagrees" not in decision.advisory
+        assert decision.advisory == []
 
     def test_a_matching_conclusion_carries_no_disagreement_note(self):
         decision = _decide(candidate_verdict={"verdict": "Fake", "confidence": 0.8})
@@ -63,10 +71,17 @@ class TestTheModelOwnsTheLabel:
         assert decision.confidence == 0.5              # the model said nothing
 
 class TestAdvisoryNotAuthority:
-    def test_no_expected_gain_is_a_note_and_not_a_stop(self):
+    def test_the_expected_gain_machinery_is_absent_from_v3(self):
+        """
+        The "no expected gain" note existed because the gain was computed.  With
+        the computation gone the note is gone too — and a legal conclusion is
+        still not refused, which is what the note used to be protecting.
+        """
         decision = _decide(available_experts={"jpeg_expert": 0.0})
         assert decision.action == "continue"
-        assert "reference_no_expected_gain" in decision.advisory
+        assert "reference_no_expected_gain" not in decision.advisory
+        assert decision.expected_net_utility == 0.0
+        assert decision.next_expert is None
 
     def test_a_continue_decision_has_no_label_of_its_own(self):
         decision = _decide()

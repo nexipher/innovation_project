@@ -54,15 +54,21 @@ class TestTheLabelIsTheModels:
         assert result["final_verdict"]["verdict"] == "Real"
         assert result["halting_reason"] == "model_concluded"
 
-    def test_the_reference_is_recorded_beside_it(self, v3, monkeypatch):
+    def test_no_reference_is_recorded_and_the_label_survives(self, v3, monkeypatch):
+        """
+        阶段 4.2：参考后验在 v3 里不再计算。把后验 patch 成极端反对方仍有意义——
+        它证明**这个值根本不会被咨询**：标签不变，而且会话里没有参考块可查。
+        """
         monkeypatch.setattr(HaltingPolicyV2, "posterior", classmethod(lambda cls, chain: 0.95))
         result = v3([CALL, _verdict("Real", 0.9)])
-        reference = result["final_verdict"]["reference"]
-        assert reference["recommendation"] == "Fake"
-        assert "reference_disagrees" in reference["advisory"]
+        verdict = result["final_verdict"]
+        assert verdict["verdict"] == "Real"
+        assert "reference" not in verdict
+        assert "posterior" not in verdict
         counters = _trace(result)["metadata"]
         assert counters["model_label"] == "Real"
-        assert counters["reference_recommendation"] == "Fake"
+        assert "reference_recommendation" not in counters
+        assert "posterior" not in counters
 
     def test_no_override_note_is_sent(self, v3, monkeypatch):
         monkeypatch.setattr(HaltingPolicyV2, "posterior", classmethod(lambda cls, chain: 0.95))
@@ -75,9 +81,12 @@ class TestTheLabelIsTheModels:
     def test_uncertain_is_kept_as_the_models_own_conclusion(self, v3, monkeypatch):
         monkeypatch.setattr(HaltingPolicyV2, "posterior", classmethod(lambda cls, chain: 0.95))
         result = v3([CALL, _verdict("Uncertain", 0.4)])
-        assert result["final_verdict"]["verdict"] == "Uncertain"
-        advisory = result["final_verdict"]["reference"]["advisory"]
-        assert "model_abstained" in advisory and "reference_disagrees" not in advisory
+        verdict = result["final_verdict"]
+        assert verdict["verdict"] == "Uncertain"
+        # 合法弃权仍是"模型结案"：弃权与否由单独的计数器区分，不是另一个 verdict_status
+        assert verdict["verdict_status"] == "model_concluded"
+        assert _trace(result)["metadata"]["model_abstained"] is True
+        assert "reference" not in verdict
 
 class TestLowGainIsOnlyAdvice:
     def test_a_call_with_no_expected_gain_still_runs(self, v3, monkeypatch):
@@ -88,14 +97,19 @@ class TestLowGainIsOnlyAdvice:
         assert result["skipped_duplicate_calls"] == 1
         assert result["halting_reason"] == "model_concluded"
 
-    def test_the_advice_is_sent_once_and_says_it_is_advice(self, v3, monkeypatch):
+    def test_no_reference_estimate_advice_is_sent(self, v3, monkeypatch):
+        """
+        阶段 4.2：那句"参考估计……只是参考"是**因为算了增益才存在**的。
+        计算关掉之后它也不该出现——留着一段解释"某个没算的数只是参考"的文字，
+        比删掉它更容易让人以为系统还在算。
+        """
         monkeypatch.setattr(HaltingPolicyV2, "tool_utilities",
                             classmethod(lambda cls, *args, **kwargs: {}))
         result = v3([CALL, SECOND_CALL, _verdict("Fake", 0.8)])
         advice = [turn["value"] for turn in result["conversation"]
                   if turn["from"] == "user" and "参考估计" in turn["value"]]
-        assert len(advice) == 1
-        assert "只是参考" in advice[0]
+        assert advice == []
+        assert result["halting_reason"] == "model_concluded"
 
 class TestStopReasons:
     def test_the_same_action_three_times_is_loop_protection(self, v3):

@@ -127,9 +127,13 @@ class EvidenceConsistencyChecker:
         # having measured the mapping.  Judging such a token by strength would
         # re-create the contradiction the rectifier just removed (for
         # frequency_v2 the two discretisations disagree on 15 of 64 samples).
+        # 方向权威有两种来源：v1/v2 的校准表，与 v3 的分数语义登记表
+        # （阶段 4.2b）。两者形状相同——"某个被核实过的方向"——所以走同一分支：
+        # 否则 v3 的 token 会退回强度带判据，把刚统一好的方向又打散。
         calibrated_direction = (
             token.get("direction")
-            if token.get("direction_source") == "calibrated_likelihood"
+            if token.get("direction_source") in ("calibrated_likelihood",
+                                                 "score_semantics")
             else None
         )
 

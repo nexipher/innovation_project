@@ -16,6 +16,7 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from config import (
+    uses_reference_posterior,
     EVIDENCE_ARTIFACT_DIR,
     HALTING_POLICY,
     MAX_EXPERT_CALLS,
@@ -137,8 +138,11 @@ class ForensicStateMachine:
         self._evidence_injection = evidence_injection
         self._allow_exploration = allow_exploration
 
-        # G2 §4.9: empirical reliability table (None before calibration exists)
-        self._reliability_table = ReliabilityTable.load()
+        # 参考后验只属于 v1/v2 复算；v3 没有读者，就不加载校准表——"关闭"必须是
+        # 真的不读。这里按**运行中的策略**求值（策略可在运行时切换），不是 import 时常量。
+        self._uses_reference = uses_reference_posterior(HALTING_POLICY)
+        self._reliability_table = (ReliabilityTable.load()
+                                   if self._uses_reference else None)
 
         # Build reverse lookup for expert dispatch
         self._expert_by_call: Dict[str, str] = {}
@@ -378,7 +382,10 @@ class ForensicStateMachine:
                     # G3-b: settle the token's direction before anything reads
                     # it — the calibrated likelihood is the authority, the
                     # expert's claim and its prose are brought into line.
-                    EvidenceRectifier.rectify(evidence_token)
+                    # v3 的方向权威是分数语义登记表；v2 复算仍走校准表
+                    # （replay 必须复现它产出的批次，方向不能换来源）。
+                    EvidenceRectifier.rectify(
+                        evidence_token, prefer_registry=not self._uses_reference)
 
                     # Deterministic semantic-consistency gate (plan.md §4.8 G1):
                     # for a rectified token this is now a verification that
@@ -522,6 +529,7 @@ class ForensicStateMachine:
 
                 if HALTING_POLICY == "v3":
                     decision = HaltingPolicyV3.decide(
+                        compute_reference=self._uses_reference,
                         model_turns=model_turn_count,
                         expert_calls=expert_call_count,
                         evidence_chain=evidence_chain,
@@ -704,10 +712,14 @@ class ForensicStateMachine:
                         if verdict_status == "no_parseable_conclusion"
                         else "基于校准后验与已获取证据的判定。"
                     ),
-                    "posterior": round(decision.posterior, 4),
-                    "tool_utilities": dict(decision.tool_utilities or {}),
-                    "conflict_score": round(decision.conflict_score, 4),
-                    "redundancy_discounts": HaltingPolicyV2.discount_report(evidence_chain),
+                    # 参考后验与预计收益只属于 v1/v2 复算；v3 里这些字段**不出现**，
+                    # 而不是写成 0.5/0.0 那种"看起来像算过"的缺省值。
+                    **({
+                        "posterior": round(decision.posterior, 4),
+                        "tool_utilities": dict(decision.tool_utilities or {}),
+                        "conflict_score": round(decision.conflict_score, 4),
+                        "redundancy_discounts": HaltingPolicyV2.discount_report(evidence_chain),
+                    } if self._uses_reference else {}),
                     "policy_reason": decision.primary_reason,
                     "policy_reasons": list(decision.all_reasons),
                     "model_candidate": model_candidate.get("verdict"),
@@ -716,12 +728,15 @@ class ForensicStateMachine:
                     # / trainable are four different things.  This block is the
                     # first three; `trainable` is the conversion gate's call.
                     "conclusion": conclusion,
-                    # §4.17 R5: the reference opinion, kept as a reference.
-                    "reference": {
-                        "recommendation": getattr(decision, "reference_label", None),
-                        "advisory": list(getattr(decision, "advisory", []) or []),
-                        "note": "参考后验与建议不构成标签；标签一律取自模型结案",
-                    },
+                    # §4.17 R5 的参考块只在 v1/v2 复算里出现；v3 没有参考，
+                    # 就不留一个"空参考"字段让人以为它算了但没算出来。
+                    **({
+                        "reference": {
+                            "recommendation": getattr(decision, "reference_label", None),
+                            "advisory": list(getattr(decision, "advisory", []) or []),
+                            "note": "参考后验与建议不构成标签；标签一律取自模型结案",
+                        },
+                    } if self._uses_reference else {}),
                 }
                 break
 
@@ -782,15 +797,18 @@ class ForensicStateMachine:
         # 6. Finalise SFT data with observable counters
         v3_signals = None
         if HALTING_POLICY == "v3":
-            reference = (final_verdict or {}).get("reference") or {}
             v3_signals = {
                 "repeated_action_turns": repeated_action_turns,
                 "invalid_action_turns": invalid_action_turns,
                 "format_failure_turns": format_failure_turns,
-                "advisory_notes": list(reference.get("advisory") or []),
                 "model_label": (final_verdict or {}).get("model_candidate"),
-                "reference_recommendation": reference.get("recommendation"),
             }
+            # 参考派生信号只在真算了参考时记录（阶段 4.2）：不写 None，
+            # 免得读者以为"算了但没算出来"。
+            if self._uses_reference:
+                reference = (final_verdict or {}).get("reference") or {}
+                v3_signals["advisory_notes"] = list(reference.get("advisory") or [])
+                v3_signals["reference_recommendation"] = reference.get("recommendation")
         counters = self._build_counters(
             model_turn_count, expert_call_count,
             suppressed_duplicate_count, evidence_chain,
@@ -804,6 +822,7 @@ class ForensicStateMachine:
             condition=self._condition,
             verdict_status=(final_verdict or {}).get("verdict_status"),
             verdict_label=(final_verdict or {}).get("verdict"),
+            reference_fields=self._uses_reference,
         )
         self._logger.finalize_sft(
             final_verdict, model_turn_count, halting_reason, counters=counters
@@ -890,6 +909,9 @@ class ForensicStateMachine:
         experts without a measurement get no weight, so the policy will not
         pay for calling them.
         """
+        if not self._uses_reference:
+            # v3 不预计收益，也就不必读校准表：没有读者。
+            return {}
         separations: Dict[str, Optional[float]] = {}
         for source_name in self._experts:
             entry = None
@@ -1043,6 +1065,7 @@ class ForensicStateMachine:
         v3_signals: Optional[dict] = None,
         protocol_violations: int = 0,
         condition: Optional[str] = None,
+        reference_fields: bool = True,
         verdict_status: Optional[str] = None,
         verdict_label: Optional[str] = None,
     ) -> dict:
@@ -1078,19 +1101,22 @@ class ForensicStateMachine:
             counters.update({
                 "policy_reason": policy_decision.primary_reason,
                 "policy_reasons": list(policy_decision.all_reasons),
-                "posterior": round(policy_decision.posterior, 4),
-                "conflict_score": round(policy_decision.conflict_score, 4),
-                "candidate_overridden": (
-                    HaltingPolicyV2.CANDIDATE_OVERRIDDEN in policy_decision.all_reasons
-                ),
-                # The estimate the reason rests on, per expert still uncalled.
-                "tool_utilities": dict(policy_decision.tool_utilities or {}),
-                # Which tokens were read at less than full weight, and after whom.
-                "redundancy_discounts": HaltingPolicyV2.discount_report(
-                    evidence_chain or []),
                 # The evidence ledger's verdict on the closing turn (§4.17 R3).
                 "evidence_check_status": (evidence_check or {}).get("status"),
             })
+            if reference_fields:
+                counters.update({
+                    "posterior": round(policy_decision.posterior, 4),
+                    "conflict_score": round(policy_decision.conflict_score, 4),
+                    "candidate_overridden": (
+                        HaltingPolicyV2.CANDIDATE_OVERRIDDEN
+                        in policy_decision.all_reasons),
+                    # The estimate the reason rests on, per expert still uncalled.
+                    "tool_utilities": dict(policy_decision.tool_utilities or {}),
+                    # Which tokens were read at less than full weight, and after whom.
+                    "redundancy_discounts": HaltingPolicyV2.discount_report(
+                        evidence_chain or []),
+                })
         if v3_signals:
             counters.update(v3_signals)
         if conclusion is not None:

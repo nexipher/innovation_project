@@ -96,6 +96,13 @@ def _validate(data: dict, path: str) -> None:
             raise SemanticsError(f"{name}.raw_score.field 未写明（token 里的哪个字段）")
         if "value" not in entry["threshold"] or "chosen_on" not in entry["threshold"]:
             raise SemanticsError(f"{name}.threshold 必须写明 value 与 chosen_on")
+        rules = entry.get("direction_rules")
+        if not rules:
+            raise SemanticsError(
+                f"{name} 缺少 direction_rules：方向必须逐条写明（阶段 4.2b 的权威）")
+        covered = {rule["when"] for rule in rules}
+        if covered != {"raw >= threshold", "raw < threshold"}:
+            raise SemanticsError(f"{name}.direction_rules 必须覆盖阈值两侧，实际 {covered}")
 
 
 def entry(source_name: str, variant: Optional[str] = None) -> dict:
@@ -115,6 +122,36 @@ def entry(source_name: str, variant: Optional[str] = None) -> dict:
         raise SemanticsError(
             f"{source_name} 的 variant 是 {record.get('variant')!r}，不是 {variant!r}")
     return record
+
+
+def direction_for_value(source_name: str, raw: float) -> "tuple":
+    """
+    (direction, rule) for a measured value — the stage-4.2b authority.
+
+    A direction is not a property of the expert alone: NPR's *low* scores carry
+    no direction under JPEG conditions ("it did not see what it looks for"),
+    and calling that "Real" would turn a blind spot into evidence.  So each
+    expert lists ordered rules (`direction_rules`) and the first whose
+    condition holds decides; `Uncertain` is a legal, recorded outcome.
+    """
+    record = entry(source_name)
+    rules = record.get("direction_rules")
+    if not rules:
+        raise SemanticsError(f"{source_name} 没有 direction_rules：方向无法判定时不得默认")
+    threshold = (record.get("threshold") or {}).get("value")
+    if threshold is None:
+        raise SemanticsError(f"{source_name} 没有阈值，无法按值判方向")
+    for rule in rules:
+        when = rule["when"]
+        if when == "raw >= threshold":
+            matched = raw >= threshold
+        elif when == "raw < threshold":
+            matched = raw < threshold
+        else:
+            raise SemanticsError(f"{source_name} 的方向规则写法不认识：{when!r}")
+        if matched:
+            return rule["direction"], rule
+    raise SemanticsError(f"{source_name} 的规则没有覆盖 raw={raw}")
 
 
 def direction_of(source_name: str) -> str:
