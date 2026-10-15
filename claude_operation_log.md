@@ -305,3 +305,16 @@
 * **涉及/修改的文件清单**：`scripts/g8_review_workstation.py (Modified — CSS/顶栏/调用状态)`、`tests/test_g8_review_workstation.py (Modified — 新增 15 条：顶栏结构、控件唯一性、链接状态、四类调用状态互不混淆)`；**重建产物**：`sft_data/g8/review/b1/`（索引 + 32 会话页）；`claude_operation_log.md`
 * **执行结果与验证状态**：**重建前后指纹逐条比对完全一致**（32/32，重建只动排版），且页面里的指纹与 `utils.review_store.sample_fingerprint()` 独立复算一致；台账进度保持 0/32、`repo_decisions` 未被清空；真实页面上核对：顶栏是 body 第一个块、粘顶/不透明/层叠/换行/备注高度齐备、控件各 id 只出现一次、链接四种状态样式齐备、`调用异常：无` 与未调用专家列出、`缺席 []` 字样消失。`full` **1418 通过 / 3 跳过**（1405 → 1418：新增 13 条，另 2 条为既有用例的措辞对齐）；**未跑 GPU、未动批次材料与台账**。
 * **置信度或遗留待办（TODO）**：①**滚动可见性与"正文不遮挡"是按 CSS 与结构核对的，没有真浏览器实测**（本机无浏览器）：sticky 在文档流内、顶栏为不透明背景且有 z-index，属标准用法；建议用户在浏览器里滚一次确认②索引页与会话页都有审核人输入与导出/导入（**同一份草稿与同一个审核人**，跨页一致），这是刻意的：索引页是批量视图、会话页是逐条视图③四类调用状态的"轮次"来自 trace 里对应的提示轮；若将来某类事件没有对应提示轮，会如实写"未记录"，不推测
+
+### 2026-10-15 - 阶段四 4.6c：旧模型（Qwen2.5-VL-7B）下架核查与改名隔离
+
+* **当前操作动作**：按用户要求核查 `psychology_video_project` 里的 Qwen2.5-VL 对当前项目是否还有影响、审核该目录内容、**先改名不删除**，并跑全套验证。**未删除任何文件**；改名是同盘 `rename`，改回即恢复。
+* **对应计划锚点**：`plan.md` §3b（模型固定与历史复算入口）、`GENERATIONS.json`（g7 用 Qwen2.5-VL、g8 用 Qwen3-VL）；用户 2026-10-15 的指示
+* **核心变更说明**：
+  1. **依赖面（逐处列出，不是印象）**：当前项目里只有三处读那条路径——`config.QWEN_MODEL_PATH`（常量）、`mllm/qwen_client.py`（`--mllm qwen25` 历史复算客户端）、`scripts/train_lora_g4.py`（LoRA 基座）。主线（`--mllm mock`/`qwen`、批次生成、审核工作台、转换、评测）**一处都不读**：`Qwen3VLClient` 有自己的 `_ensure_loaded`，既不调用父类那份、源码里也不出现 `QWEN_MODEL_PATH`（已核对）。文档层面 README §? 与 `docs/development/agent.md` 只是写明路径，删除时需同步改。
+  2. **改名**：`models/models/qwen--Qwen2.5-VL-7B-Instruct` → `.../qwen--Qwen2.5-VL-7B-Instruct.PENDING-DELETE-20261015`（16 GB，同盘 rename 瞬时完成、不释放空间）。该目录在它自己的 `.gitignore` 里，改名后那个仓库 `git status` 仍然干净。改名**不是因为确定要删**，而是为了把"谁在用"变成可观测：路径一旦悬空，真正的依赖会立刻暴露。
+  3. **暴露出的失败方式很糟，顺手修掉**：`build_pipeline("qwen25")` 在权重缺失时**照样构造成功**（懒加载），直到第一次推理才由 transformers 抛出 `Repo id must be in the form 'namespace/repo_name'`——因为它把不存在的本地路径当成了 hub 仓库名。现在两条路径都在加载前明说：客户端 `_ensure_loaded` 与 `main.build_pipeline` 各加一条存在性检查，报错点名缺失目录、说明"这是历史复算用的旧模型，g8 主线用 Qwen3-VL 不受影响"，并指出去哪条路（`--mllm qwen`）。加 2 条测试。
+  4. **删除会影响的另一个项目（必须报给用户）**：`psychology_video_project` **自己**把这份权重当作主模型——`scripts/run_streaming_batch.py` 与 `scripts/run_streaming_pipeline.py` 都按 `Path(__file__).parent.parent/"models"/"models"/"qwen--Qwen2.5-VL-7B-Instruct"/"snapshots"/"master"` 加载（硬编码，无环境变量可覆盖），README 也写明"Qwen2.5-VL 用于 A3 事件复核"。也就是说：删掉它，那个项目的场景语义复核阶段会跑不起来。**这一条属于用户决定，不是我能代答的。**
+* **涉及/修改的文件清单**：`mllm/qwen_client.py (Modified — 缺失即明说 + 补 `import os`)`、`main.py (Modified — qwen25 分支前置检查)`、`tests/test_g8_entry.py (Modified — 新增 2 条 + 1 条既有用例适配前置检查)`、`claude_operation_log.md`；**文件系统**：`/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct{,.PENDING-DELETE-20261015}`（改名，未删）
+* **执行结果与验证状态**：**改名后** `full` **1420 通过 / 3 跳过**（新增 2 条）；**改名后在真实 GPU 上跑通主线冒烟**：Qwen3-VL 六项检查全绿（64.9 s、峰值 19.65 GB，产物 `sft_data/g8_smoke/20261015_224341/`）——这是"前项目不依赖它"的直接证据；`--mllm qwen25` 现在报的是明确的一句话而不是 hub 报错。当前项目未改动任何批次材料/轨迹/台账。**未跑训练、未删除任何文件。**
+* **置信度或遗留待办（TODO）**：①**改名不释放空间**；确认无影响后再删才释放 16 GB②删除时需同步：`config.QWEN_MODEL_PATH` 的处置（删常量还是保留）、README 与 `docs/development/agent.md` 里的路径段落、以及"g7 复算"能力说明（g7 已冻结，复算要真权重）③`train_lora_g4.py` 若还要用，得改基座或改路径④`psychology_video_project` 其余内容（321 MB `.git`、~1.8 MB 源码与文档、6.6 MB `yolov8n-pose.pt`、空的 `dataset/`）与当前项目**无任何交叉引用**，删不删是那个项目自己的事。

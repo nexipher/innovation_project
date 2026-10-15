@@ -148,7 +148,14 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE,
         else:
             # 历史复算专用：与 FORENSIC_HALTING_POLICY=v2 同一性质，不用于新会话
             from mllm.qwen_client import QwenVLClient
+            from config import QWEN_MODEL_PATH
 
+            # 旧模型若已下架，**在加载专家与权重之前**就说清楚：懒加载会让它
+            # "构造成功"，直到第一次推理才抛一句与真实原因无关的 hub 报错。
+            if not os.path.exists(QWEN_MODEL_PATH):
+                raise RuntimeError(
+                    f"--mllm qwen25 需要 Qwen2.5-VL 权重，但 {QWEN_MODEL_PATH} 不存在。\n"
+                    "该模型仅供**历史复算**；g8 主线请用 `--mllm qwen`（Qwen3-VL）。")
             print("Using Qwen2.5-VL-7B-Instruct (GPU, 仅历史复算)")
             mllm = QwenVLClient(system_prompt=system_prompt)
     else:

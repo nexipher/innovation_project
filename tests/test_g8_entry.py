@@ -49,10 +49,13 @@ class TestTheCurrentModelIsTheDefault:
         main.build_pipeline("qwen", "probe_then_corroborate")
         assert built.get("class") == "Qwen3VLClient"
 
-    def test_qwen25_builds_the_historical_client(self, monkeypatch):
+    def test_qwen25_builds_the_historical_client(self, monkeypatch, tmp_path):
         import main
         from mllm.mock_client import MockMLLMClient
 
+        # 权重存在于否现在是**前置检查**（见 TestTheHistoricalClientSaysWhatIsMissing）：
+        # 这个用例测的是"分派到哪个客户端"，所以先把路径指向一个真目录。
+        monkeypatch.setattr("config.QWEN_MODEL_PATH", str(tmp_path))
         built = {}
 
         class StubQwen25(MockMLLMClient):
@@ -124,6 +127,38 @@ class TestTheRealEntryRefusesToDegradeToMock:
         import main
 
         assert main.build_pipeline("mock") is not None
+
+
+class TestTheHistoricalClientSaysWhatIsMissing:
+    """
+    旧模型下架后暴露出来的失败方式：`build_pipeline("qwen25")` 构造成功（懒加载），
+    直到第一次推理才由 transformers 抛出 "Repo id must be in the form ..."——
+    一句和真实原因（权重目录不在）毫无关系的话。现在两条路径都在加载前明说。
+    """
+
+    def test_the_entry_refuses_before_loading_anything(self, monkeypatch, tmp_path):
+        import main
+
+        missing = str(tmp_path / "gone")
+        # 改配置而不是改 `os.path.exists`：后者是全局模块属性，会波及同一进程里的
+        # 其它代码（第一次写成了 lambda 里再调 exists，直接递归爆栈）。
+        monkeypatch.setattr("config.QWEN_MODEL_PATH", missing)
+        with pytest.raises(RuntimeError) as caught:
+            main.build_pipeline("qwen25")
+        message = str(caught.value)
+        assert missing in message
+        assert "Qwen2.5-VL 权重" in message
+        assert "--mllm qwen" in message            # 指出去哪条路
+
+    def test_the_client_refuses_with_the_same_reason(self, monkeypatch, tmp_path):
+        from mllm import qwen_client
+
+        monkeypatch.setattr(qwen_client, "QWEN_MODEL_PATH", str(tmp_path / "gone"))
+        client = qwen_client.QwenVLClient(system_prompt="x")
+        monkeypatch.setattr("torch.cuda.is_available", lambda: True)
+        with pytest.raises(RuntimeError) as caught:
+            client._ensure_loaded()
+        assert "Qwen2.5-VL 权重不在" in str(caught.value)
 
 
 class TestProbesMockChoiceFollowsTheClientKind:

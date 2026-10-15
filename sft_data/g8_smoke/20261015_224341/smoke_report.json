@@ -1,0 +1,159 @@
+{
+  "generated_at": "2026-10-15T22:44:46",
+  "client": "qwen3",
+  "model": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "licence": "apache-2.0",
+    "dtype": "bfloat16",
+    "inference_mode": "non-thinking",
+    "thinking_supported_by_template": false,
+    "generation": {
+      "temperature": 0.0,
+      "do_sample": false,
+      "max_new_tokens": 1024
+    },
+    "snapshot": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "shards": [
+      "model-00001-of-00004.safetensors",
+      "model-00002-of-00004.safetensors",
+      "model-00003-of-00004.safetensors",
+      "model-00004-of-00004.safetensors"
+    ],
+    "shard_bytes": 17534339512,
+    "index_sha256": "520b2e05079402e9",
+    "local_files_only": true
+  },
+  "experts": [
+    "npr_expert",
+    "probe_dino_expert"
+  ],
+  "image": "dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+  "elapsed_s": 64.86,
+  "vram_peak_gb": 19.65,
+  "checks": {
+    "1_image_enters_the_multimodal_message": {
+      "ok": true,
+      "builder_image_parts": 1,
+      "builder_payload_types": [
+        "Image"
+      ],
+      "model_input_stats": {
+        "input_tokens": 3171,
+        "image_tokens": 1024,
+        "pil_images_attached": 1
+      },
+      "model_received_image_tokens": true,
+      "detail": "消息里带 PIL 图像；模型输入含图像 token"
+    },
+    "2_one_legal_call_executed": {
+      "ok": true,
+      "executed_sources": [
+        "probe_dino_expert"
+      ],
+      "counters": {
+        "expert_call_count": 1,
+        "unique_evidence_count": 1,
+        "skipped_duplicate_calls": 0,
+        "suppressed_duplicate_count": 0,
+        "weighted_cost": 2.0
+      },
+      "detail": "执行 1 次工具调用（记账 1）"
+    },
+    "3_result_referenced_later": {
+      "ok": true,
+      "needles": [
+        "E-20d673f3be",
+        "aigi_discriminator_score",
+        "probe_dino_expert",
+        0.999933,
+        0.9999,
+        0.4242
+      ],
+      "matched": "aigi_discriminator_score",
+      "kind": "evidence_id_or_name",
+      "tried": [
+        "E-20d673f3be",
+        "aigi_discriminator_score"
+      ],
+      "detail": "后续轮引用了证据 aigi_discriminator_score"
+    },
+    "4_conclusion_parses_with_image_context": {
+      "ok": true,
+      "verdict": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.99,
+        "report": "图像经外部判别器检测，aigi_discriminator_score高达0.9999，明确指向AI生成。视觉上鱼体纹理过于规整、背景透视不自然，符合AI合成特征。",
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "pass",
+          "findings": [],
+          "candidates": [],
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "candidate",
+          "calls": [],
+          "calls_executed": true,
+          "verdict_parse": "ok"
+        }
+      },
+      "halting_reason": "model_concluded",
+      "builder_image_parts_on_final_turn": 1,
+      "closing_call_input_stats": {
+        "input_tokens": 3171,
+        "image_tokens": 1024,
+        "pil_images_attached": 1
+      },
+      "detail": "结案可解析；收尾轮的构造消息仍带图像，模型输入含图像 token"
+    },
+    "5_three_records_kept_separately": {
+      "ok": true,
+      "raw_reply": "<reasoning>\nprobe_dino_expert 的测量结果显示 aigi_discriminator_score 为 0.999933，方向为“AI-generated”，表明该图像极大概率为AI生成。此分数是基于整图滑窗分析得出，未指向任何局部区域，且其判别能力在当前会话中为最强证据。视觉观察中鱼体纹理过于规整、背景透视略显不自然，与AI生成图像的常见特征相符。无其他专家可调用，且已有足够证据支持结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.99, \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"图像经外部判别器检测，aigi_discriminator_score高达0.9999，明确指向AI生成。视觉上鱼体纹理过于规整、背景透视不自然，符合AI合成特征。\"}\n</verdict>",
+      "adopted": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.99,
+        "report": "图像经外部判别器检测，aigi_discriminator_score高达0.9999，明确指向AI生成。视觉上鱼体纹理过于规整、背景透视不自然，符合AI合成特征。",
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "pass",
+          "findings": [],
+          "candidates": [],
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "candidate",
+          "calls": [],
+          "calls_executed": true,
+          "verdict_parse": "ok"
+        }
+      },
+      "control_reason": "model_concluded",
+      "detail": "三类记录分别留存"
+    },
+    "6_first_turn_has_a_specific_visual_account": {
+      "ok": true,
+      "applicable": true,
+      "observation": "图像展示三条鱼在水下环境中，背景为河岸与树木，光线从上方透入，整体色调偏黄绿色。鱼体表面光滑，鳞片纹理均匀，边缘清晰，但鱼体与背景的交界处存在轻微模糊感，水下环境的光线散射效果较为理想化。",
+      "anomalies": "鱼体形态与纹理过于规整，缺乏自然水下摄影中常见的微小瑕疵或噪点；背景树木与河岸的透视关系略显不自然，可能为AI生成图像。",
+      "chars": 94,
+      "detail": "首轮视觉观察 94 字，另列疑似异常"
+    }
+  },
+  "passed": true,
+  "not_applicable": [],
+  "session_record": "/root/autodl-tmp/innovation_project/sft_data/g8_smoke/20261015_224341/forensic_sft_session_20261015_224341_0_midjourney_169.json"
+}

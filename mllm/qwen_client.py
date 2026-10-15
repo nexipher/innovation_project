@@ -7,6 +7,7 @@ re-prompts the model if XML tags are missing or malformed.
 """
 
 import json
+import os
 import re
 import time
 from typing import Dict, List, Optional
@@ -87,6 +88,16 @@ class QwenVLClient(BaseMLLMClient):
                 "QwenVLClient requires CUDA GPU. "
                 "Use MockMLLMClient for CPU mode."
             )
+        # 权重不在就**明说**。不查的话，`from_pretrained(不存在的本地路径)` 会把路径
+        # 当成 hub 仓库名，报 "Repo id must be in the form 'namespace/repo_name'" ——
+        # 一句和真实原因毫无关系的话，而且发生在第一次推理时（构造是懒加载）。
+        # 阶段 4.6 的旧模型下架就是靠这一步暴露的。
+        if not os.path.exists(QWEN_MODEL_PATH):
+            raise RuntimeError(
+                f"Qwen2.5-VL 权重不在：{QWEN_MODEL_PATH}\n"
+                "这是**历史复算**用的旧模型（g8 主线用 Qwen3-VL，不受影响）。\n"
+                "若它已被改名/删除：把目录改回原名，或把 config.QWEN_MODEL_PATH "
+                "指向一份完整的 ModelScope 快照。")
 
         print("[QwenVLClient] Loading Qwen2.5-VL-7B-Instruct (FP16)...")
         t0 = time.time()
