@@ -89,3 +89,19 @@
 * **执行结果与验证状态**：`core` **348 通过**、`module` **928 通过**、`full` **1170 通过 / 3 跳过**；`--verify` 复跑仍通过（25 项一致 + 1 项文档归类 + 19 项未移动）。**未重写快照。**
 * **置信度或遗留待办（TODO）**：①下一次真正的归档才需要 `--refresh`（届时新快照会覆盖旧的，属预期）②同类"默认就覆盖证据"的脚本若还有，判据是"产物是不是核对基准"
 
+### 2026-10-15 - 阶段 2 开工：模型固定 revision、权重下载、Qwen3 客户端与最小冒烟（CPU 部分）
+
+* **当前操作动作**：按用户指令推进阶段 2 的前三件事——①固定模型与 revision ②核实依赖/磁盘/权重目录并准备下载 ③实现 Qwen3 客户端与最小冒烟入口，先跑 CPU 协议测试。
+* **对应计划锚点**：`plan.md` §3b（本轮先写的执行细则）、§3 步骤 2
+* **核心变更说明**：
+  1. **模型与 revision 固定**：`Qwen/Qwen3-VL-8B-Instruct` @ **`0c351dd01ed87e9c1b53cbc748cba10e6187ff3b`**（2025-10-15）；许可 **apache-2.0**（模型卡明示）；16 个文件、17.55 GB（4 个 safetensors 分片）。已核实镜像可达。
+  2. **依赖核实（先查再下）**：本机 `transformers 5.14.0` **已含** `Qwen3VLForConditionalGeneration` / `Qwen3VLProcessor`（无需升级）；`torch 2.5.1+cu124`；无 `flash_attn`（走 sdpa/eager）；`huggingface_hub 1.23.0`。
+  3. **磁盘与目录**：`autodl-tmp` 可用 17.50 GB < 模型 17.55 GB（**差 50 MB，放不下**）；`/` 12.42 GB。用户批准后**只删**中断残留 `~/.cache/huggingface/hub/models--Qwen--Qwen2.5-VL-7B-Instruct`（8.1 GB、3 个 `.incomplete`、5 分片只到 2 个）——删除前展示了绝对路径与分片证据，并确认项目实际加载的是另一份完整 ModelScope 快照（`config.QWEN_MODEL_PATH`，5 分片 16.58 GB、0 不完整）；dinov2 缓存（PROBE 主干）与旧模型**未动**。删除后 `/` 可用 21.08 GB。
+  4. **下载**：只进 HF 缓存（**不设 `--local-dir`**，避免缓存与本地目录各存一份），带**空间看门狗**（低于 1.5 GB 即停）。第一次失败于 **Xet 传输**（镜像不代理 `cas-server.xethub.hf.co`，权重分片 401，只有小文件下来）→ 加 `HF_HUB_DISABLE_XET=1` 重跑。日志 `/root/autodl-tmp/qwen3vl_download.log`。
+  5. **客户端** `mllm/qwen3_client.py`：`Qwen3VLClient` 继承既有 `QwenVLClient`，复用协议实现（消息构建、格式纠错环、`ask()`），只换模型类/处理器；revision **写进代码**；`inference_mode` 必须**验证模板真有 `enable_thinking` 开关**才设置，否则报错（不记录没真正设上的模式）；权重身份（snapshot/分片/字节/index 摘要）load 时免费记录，全量 `weights_sha256` 按需算；新增 `last_input_stats`（输入 token 数、**图像 token 数**、附着的 PIL 图像数）——"图真的进了模型"由此可测。`mllm/__init__.py` 懒导出同步（不破坏 CPU 路径的导入基线）。
+  6. **冒烟入口** `scripts/g8_smoke.py`：只注册新版工具箱（CPU：MockProbe + 固定值 noise 桩；GPU：真 PROBE + 固定值桩），产物写 `sft_data/g8_smoke/<时间戳>/`（**不是批次目录**，不触发冻结门禁）。五项断言 + GPU 授权闸门（无 `FORENSIC_ALLOW_GPU=1` 直接拒，避免未经授权就加载 17.5 GB 权重）。
+  7. **自查抓到自己一个错**：检查 4 原本在 `result["conversation"]`（字符串转录）里找图像部件——那里按构造永远没有；改为查真正的构造者 `build_messages`（收尾轮历史）+ 真模型时读收尾调用的 `last_input_stats`。
+* **涉及/修改的文件清单**：`plan.md (Modified — §3b)`、`mllm/qwen3_client.py (Created)`、`mllm/__init__.py (Modified — 懒导出)`、`scripts/g8_smoke.py (Created)`、`tests/test_g8_smoke.py (Created — 9 项，core)`、`sft_data/g8_smoke/20261015_111456/ (Created — CPU 冒烟产物)`、`claude_operation_log.md`；数据侧：删除中断缓存一项（用户批准），`sft_data/GENERATIONS.json` 待随模型身份一并更新
+* **执行结果与验证状态**：**CPU 协议测试五项全过**（图像以 PIL 进入消息、2 次合法调用 probe→noise、后续轮准确引用 0.4242、结案可解析且收尾轮仍带图像、三类记录分别留存）；`core` **357 通过**、`module` **937 通过**；下载进行中（11:07 起，已落地约 4 GB，`/` 余 17 GB，看门狗在跑）。**尚未加载任何权重、未做 GPU 推理。**
+* **置信度或遗留待办（TODO）**：①权重下完后才做 GPU 五项验证与显存实测（授权已获，入口 `FORENSIC_ALLOW_GPU=1 python scripts/g8_smoke.py --client qwen3`）②`inference_mode` 的模板开关要在真模板上验证一次（代码里写了断言，尚未在真实模板上跑过）③`SFT_DATA/GENERATIONS.json` 与 README 的模型表要随 revision 一并更新④用户随后会删除 2.5-VL 旧模型腾空间给专家组——我不代删
+

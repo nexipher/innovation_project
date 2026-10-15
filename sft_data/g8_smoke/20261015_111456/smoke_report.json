@@ -1,0 +1,187 @@
+{
+  "generated_at": "2026-10-15T11:14:56",
+  "client": "mock",
+  "model": {
+    "name": "MockMLLMClient(probe_then_corroborate)"
+  },
+  "experts": [
+    "noise_expert",
+    "probe_dino_expert"
+  ],
+  "image": "dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+  "elapsed_s": 0.08,
+  "vram_peak_gb": null,
+  "checks": {
+    "1_image_enters_the_multimodal_message": {
+      "ok": true,
+      "builder_image_parts": 1,
+      "builder_payload_types": [
+        "Image"
+      ],
+      "model_input_stats": null,
+      "model_received_image_tokens": null,
+      "detail": "消息里带 PIL 图像（CPU Mock：模型输入无此概念）"
+    },
+    "2_one_legal_call_executed": {
+      "ok": true,
+      "executed_sources": [
+        "probe_dino_expert",
+        "noise_expert"
+      ],
+      "counters": {},
+      "detail": "执行 2 次工具调用"
+    },
+    "3_result_referenced_later": {
+      "ok": true,
+      "needle": 0.4242,
+      "matched_form": "0.4242",
+      "checked_forms": [
+        "0.4242",
+        "0.4242",
+        "0.42",
+        "42.4%"
+      ],
+      "detail": "后续轮准确引用了工具数值（0.4242）"
+    },
+    "4_conclusion_parses_with_image_context": {
+      "ok": true,
+      "verdict": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.8771,
+        "report": "经多轮法证分析，图像在频域和噪声层面展现出典型的AI生成特征。微观物理痕迹与视觉层面的异常在因果链上高度吻合，综合判定为伪造图像。",
+        "posterior": 0.6667,
+        "tool_utilities": {
+          "probe_dino_expert": -0.25,
+          "noise_expert": -0.15
+        },
+        "conflict_score": 0.0,
+        "redundancy_discounts": [],
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "failed",
+          "findings": [
+            {
+              "kind": "misattributed_value",
+              "source": "noise_expert",
+              "field": "raw_metric",
+              "severity": "defect",
+              "evidence_id": "E-1ba387a8a3",
+              "why": "0.4242 是 noise_expert 的 raw_metric，不属于句子提到的专家",
+              "value": 0.4242,
+              "sentence": "物理现象: 整图判别分数 0.4242（外部判别器的原始输出"
+            }
+          ],
+          "after_correction": [
+            {
+              "kind": "misattributed_value",
+              "source": "noise_expert",
+              "field": "raw_metric",
+              "severity": "defect",
+              "evidence_id": "E-1ba387a8a3",
+              "why": "0.4242 是 noise_expert 的 raw_metric，不属于句子提到的专家",
+              "value": 0.4242,
+              "sentence": "物理现象: 整图判别分数 0.4242（外部判别器的原始输出"
+            }
+          ],
+          "candidates": [],
+          "correction_note": "[System: 你的结论引用了本会话不存在的证据：misattributed_value。已执行的专家：noise_expert（E-1ba387a8a3；condition_metadata.bin_samples=50, condition_metadata.confound_drop_png_to_q70=-0.074, condition_metadata.region_area_ratio=0.160313, condition_metadata.separation_polarity_corrected=0.794, condition_metadata.weight=0.794, raw_metric=0.4242, reliability=0.794, strength=0.4242；校准概率 2 项（数值见该专家的 token））；probe_dino_expert（E-442e3c0119；condition_metadata.bin_samples=50, condition_metadata.confound_drop_png_to_q70=0.021875, condition_metadata.region_area_ratio=0.160313, condition_metadata.separation_polarity_corrected=0.983594, condition_metadata.weight=0.983594, raw_metric=0.378111, reliability=0.984, strength=0.3781；校准概率 2 项（数值见该专家的 token））；本会话未执行的专家：（无）。“物理现象: 整图判别分数 0.4242（外部判别器的原始输出…”（0.4242 是 noise_expert 的 raw_metric，不属于句子提到的专家）。请只使用上面“已执行”的专家返回过的数值重写结论；如果这些测量不足以判定，就如实说明还缺什么测量，不要为任何未执行的专家编造结果、也不要引用任何 token 里没有的数值。]",
+          "original_closing": "<reasoning>\n【物理-语义一致性校验】底层 noise 专家反馈中等异常（strength=0.42，判定: AI-generated）。\n物理现象: 整图判别分数 0.4242（外部判别器的原始输出，未经本地校准）。输入预处理：mock（确定性哈希）。。\n这与视觉层的观察在因果链上不完全吻合，需进一步分析。\n已考虑图像后处理（如社交媒体压缩）可能对物理指纹造成的衰减影响。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.9206, \"primary_evidence\": [\"probe\", \"noise\"], \"report\": \"经多轮法证分析，图像在频域和噪声层面展现出典型的AI生成特征。微观物理痕迹与视觉层面的异常在因果链上高度吻合，综合判定为伪造图像。\"}\n</verdict>\n",
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "correction",
+          "calls": [],
+          "calls_executed": false,
+          "verdict_parse": "ok"
+        },
+        "reference": {
+          "recommendation": "Fake",
+          "advisory": [
+            "reference_no_expected_gain"
+          ],
+          "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+        }
+      },
+      "halting_reason": "model_concluded",
+      "builder_image_parts_on_final_turn": 2,
+      "closing_call_input_stats": null,
+      "detail": "结案可解析；收尾轮的构造消息仍带图像（CPU Mock：模型输入无此概念）"
+    },
+    "5_three_records_kept_separately": {
+      "ok": true,
+      "raw_reply": "<reasoning>\n【物理-语义一致性校验】底层 noise 专家反馈中等异常（strength=0.42，判定: AI-generated）。\n物理现象: 整图判别分数 0.4242（外部判别器的原始输出，未经本地校准）。输入预处理：mock（确定性哈希）。。\n这与视觉层的观察在因果链上不完全吻合，需进一步分析。\n已考虑图像后处理（如社交媒体压缩）可能对物理指纹造成的衰减影响。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.8771, \"primary_evidence\": [\"probe\", \"noise\"], \"report\": \"经多轮法证分析，图像在频域和噪声层面展现出典型的AI生成特征。微观物理痕迹与视觉层面的异常在因果链上高度吻合，综合判定为伪造图像。\"}\n</verdict>\n",
+      "adopted": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.8771,
+        "report": "经多轮法证分析，图像在频域和噪声层面展现出典型的AI生成特征。微观物理痕迹与视觉层面的异常在因果链上高度吻合，综合判定为伪造图像。",
+        "posterior": 0.6667,
+        "tool_utilities": {
+          "probe_dino_expert": -0.25,
+          "noise_expert": -0.15
+        },
+        "conflict_score": 0.0,
+        "redundancy_discounts": [],
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "failed",
+          "findings": [
+            {
+              "kind": "misattributed_value",
+              "source": "noise_expert",
+              "field": "raw_metric",
+              "severity": "defect",
+              "evidence_id": "E-1ba387a8a3",
+              "why": "0.4242 是 noise_expert 的 raw_metric，不属于句子提到的专家",
+              "value": 0.4242,
+              "sentence": "物理现象: 整图判别分数 0.4242（外部判别器的原始输出"
+            }
+          ],
+          "after_correction": [
+            {
+              "kind": "misattributed_value",
+              "source": "noise_expert",
+              "field": "raw_metric",
+              "severity": "defect",
+              "evidence_id": "E-1ba387a8a3",
+              "why": "0.4242 是 noise_expert 的 raw_metric，不属于句子提到的专家",
+              "value": 0.4242,
+              "sentence": "物理现象: 整图判别分数 0.4242（外部判别器的原始输出"
+            }
+          ],
+          "candidates": [],
+          "correction_note": "[System: 你的结论引用了本会话不存在的证据：misattributed_value。已执行的专家：noise_expert（E-1ba387a8a3；condition_metadata.bin_samples=50, condition_metadata.confound_drop_png_to_q70=-0.074, condition_metadata.region_area_ratio=0.160313, condition_metadata.separation_polarity_corrected=0.794, condition_metadata.weight=0.794, raw_metric=0.4242, reliability=0.794, strength=0.4242；校准概率 2 项（数值见该专家的 token））；probe_dino_expert（E-442e3c0119；condition_metadata.bin_samples=50, condition_metadata.confound_drop_png_to_q70=0.021875, condition_metadata.region_area_ratio=0.160313, condition_metadata.separation_polarity_corrected=0.983594, condition_metadata.weight=0.983594, raw_metric=0.378111, reliability=0.984, strength=0.3781；校准概率 2 项（数值见该专家的 token））；本会话未执行的专家：（无）。“物理现象: 整图判别分数 0.4242（外部判别器的原始输出…”（0.4242 是 noise_expert 的 raw_metric，不属于句子提到的专家）。请只使用上面“已执行”的专家返回过的数值重写结论；如果这些测量不足以判定，就如实说明还缺什么测量，不要为任何未执行的专家编造结果、也不要引用任何 token 里没有的数值。]",
+          "original_closing": "<reasoning>\n【物理-语义一致性校验】底层 noise 专家反馈中等异常（strength=0.42，判定: AI-generated）。\n物理现象: 整图判别分数 0.4242（外部判别器的原始输出，未经本地校准）。输入预处理：mock（确定性哈希）。。\n这与视觉层的观察在因果链上不完全吻合，需进一步分析。\n已考虑图像后处理（如社交媒体压缩）可能对物理指纹造成的衰减影响。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.9206, \"primary_evidence\": [\"probe\", \"noise\"], \"report\": \"经多轮法证分析，图像在频域和噪声层面展现出典型的AI生成特征。微观物理痕迹与视觉层面的异常在因果链上高度吻合，综合判定为伪造图像。\"}\n</verdict>\n",
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "correction",
+          "calls": [],
+          "calls_executed": false,
+          "verdict_parse": "ok"
+        },
+        "reference": {
+          "recommendation": "Fake",
+          "advisory": [
+            "reference_no_expected_gain"
+          ],
+          "note": "参考后验与建议不构成标签；标签一律取自模型结案"
+        }
+      },
+      "control_reason": "model_concluded",
+      "detail": "三类记录分别留存"
+    }
+  },
+  "passed": true
+}

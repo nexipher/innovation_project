@@ -3,7 +3,7 @@
 from .base import BaseMLLMClient
 from .mock_client import MockMLLMClient
 
-__all__ = ["BaseMLLMClient", "MockMLLMClient", "QwenVLClient"]
+__all__ = ["BaseMLLMClient", "MockMLLMClient", "QwenVLClient", "Qwen3VLClient"]
 
 
 def __getattr__(name: str):
@@ -20,4 +20,8 @@ def __getattr__(name: str):
         from .qwen_client import QwenVLClient
 
         return QwenVLClient
+    if name == "Qwen3VLClient":
+        from .qwen3_client import Qwen3VLClient
+
+        return Qwen3VLClient
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
