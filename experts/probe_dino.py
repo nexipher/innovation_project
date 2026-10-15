@@ -70,7 +70,7 @@ class ProbeDinoExpert(ExternalScoreExpert):
     crop_size = 336
     backbone = DEFAULT_BACKBONE
 
-    def __init__(self, weights_path: Optional[str] = None, device: str = "cpu",
+    def __init__(self, weights_path: Optional[str] = None, device: Optional[str] = None,
                  backbone: Optional[str] = None, enabled: bool = True):
         # G7 entry 3: PROBE's probability mapping lives in the calibration
         # table (`calibration/reliability_table.json`, entry `probe_dino_expert`),

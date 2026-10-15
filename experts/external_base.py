@@ -173,10 +173,17 @@ class ExternalScoreExpert(BaseExpert):
     score_reference = ""
 
     def __init__(self, weights_path: Optional[str] = None,
-                 device: str = "cpu", enabled: bool = True,
+                 device: Optional[str] = None, enabled: bool = True,
                  calibrated: bool = False):
         self.weights_path = weights_path or self._resolve_weights_path()
-        self.device = device
+        # 设备**自动选**：这几个专家的权重是 GPU 取向的（UnivFD 的官方 .pt 在
+        # CPU 上根本跑不了），默认 cpu 会让整批数据在 CPU 上量出来——与登记表里
+        # 那次 `--device cuda` 的 val 数字不是同一个测量条件（阶段 3 的记录写的是
+        # `device: cuda`）。阶段 4.5 真机冒烟就是这么发现的：默认构造 → CPU →
+        # UnivFD 每次调用都抛异常、被记成 failed 工具，"照跑不误"。
+        from experts.device import resolve_device
+
+        self.device = resolve_device(device)
         self.enabled = enabled
         # Whether a probability mapping for this score exists in the project's
         # calibration table.  It is a statement about the project, not about

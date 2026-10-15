@@ -74,6 +74,59 @@ class TestProvenance:
             expert.analyze(np.zeros((32, 32, 3), dtype=np.uint8))
 
 
+class TestTheUnivfdScoringPathRunsWithoutItsWeights:
+    """
+    UnivFD 的**打分路径本身**要在没有权重的情况下也能被执行到。
+
+    真机一跑就抓到：`_score` 里 `np` 没导入（`NameError`），也就是说这个专家
+    的真实路径**一调用就崩**——在小批里它会被 4.4 的失败包装记成一次 `failed`
+    工具调用，会话照跑、数据照收（"看起来跑通"）。这正是本文件开头那句话说的
+    那类：没权重也能测的部分，恰恰是加载权重时才会暴露的部分。
+
+    这里用一个假 evaluator 顶替 CLIP：路径真的走一遍，不加载 1.7 GB 主干。
+    """
+
+    def _expert(self, tmp_path, monkeypatch):
+        from experts import univfd as module
+
+        head = tmp_path / "fc_weights.pth"
+        head.write_bytes(b"head" * 64)
+        backbone = tmp_path / "ViT-L-14.pt"
+        backbone.write_bytes(b"backbone" * 64)
+
+        class _FakeEvaluator:
+            def __init__(self, **kwargs):
+                pass
+
+            def score(self, image):
+                from PIL import Image as _Image
+                assert isinstance(image, _Image.Image)
+                return 0.77
+
+            def identity(self):
+                return {"preprocess_detail": "centre crop（假 evaluator）"}
+
+        monkeypatch.setattr(module, "DEFAULT_HEAD", str(head))
+        monkeypatch.setattr(module, "DEFAULT_BACKBONE", str(backbone))
+        monkeypatch.setattr(module, "UnivFDEvaluator", _FakeEvaluator)
+        return module
+
+    def test_analyze_returns_a_score_through_the_real_code_path(self, tmp_path,
+                                                                monkeypatch):
+        import numpy as np
+
+        module = self._expert(tmp_path, monkeypatch)
+        expert = module.UnivFDExpert()
+        result = expert.analyze(np.zeros((240, 240, 3), dtype=np.uint8))
+        assert result.raw_metric == pytest.approx(0.77)
+        assert result.source == "univfd_expert"
+
+    def test_the_module_actually_imports_numpy(self, tmp_path, monkeypatch):
+        """那次真机崩溃的直接原因（`_score` 用了 `np`，模块里没有它）。"""
+        module = self._expert(tmp_path, monkeypatch)
+        assert hasattr(module, "np"), "univfd 的打分路径用 np，模块必须导入它"
+
+
 class TestLicencePosture:
     """G7-5: the adapter may exist before the terms do."""
 

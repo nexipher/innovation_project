@@ -65,10 +65,12 @@ from experts.external_base import (ExternalScoreExpert,  # noqa: E402
 class NPREvaluator:
     """Loads one named NPR checkpoint and scores whole images."""
 
-    def __init__(self, checkpoint: str = "npr-a", device: str = "cpu",
+    def __init__(self, checkpoint: str = "npr-a", device: Optional[str] = None,
                  repo: str = DEFAULT_REPO, variant: str = "npr"):
         self.checkpoint_id = checkpoint
-        self.device = device
+        from experts.device import resolve_device
+
+        self.device = resolve_device(device)
         self.repo = repo
         self._record = entry(SOURCE_NAME, variant=variant)
         self._checkpoint = self._find_checkpoint(checkpoint)
@@ -221,7 +223,8 @@ class NPRExpert(ExternalScoreExpert):
     weight_source = "GitHub chuangchuangtan/NPR-DeepfakeDetection（经 ghfast.top）"
     licence_note = "许可未明确：仓库根无 LICENSE（仅本地研究，不再分发）"
 
-    def __init__(self, checkpoint: str = "npr-a", device: str = "cpu", **kwargs):
+    def __init__(self, checkpoint: str = "npr-a", device: Optional[str] = None,
+                 **kwargs):
         record = entry(SOURCE_NAME, variant="npr")
         chosen = record["weights"]["selected"]["checkpoint_id"] \
             if record["weights"].get("selected") else "npr-a"

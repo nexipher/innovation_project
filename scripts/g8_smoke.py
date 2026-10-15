@@ -20,7 +20,9 @@ identity, no freeze gate, nothing a later stage can mistake for training data.
 
 Usage:
   python scripts/g8_smoke.py --client mock                       # CPU, protocol only
-  python scripts/g8_smoke.py --client qwen3 --experts probe,mock # GPU (needs authorization)
+  python scripts/g8_smoke.py --client qwen3 --experts probe,mock  # GPU (needs authorization)
+  FORENSIC_ALLOW_GPU=1 python scripts/g8_smoke.py --client qwen3 \
+      --experts probe,npr,univfd --local-files-only --greedy      # 小批前的真实工具箱
 """
 
 from __future__ import annotations
@@ -75,10 +77,15 @@ def build_toolbox(names: List[str], client_kind: str) -> Dict[str, object]:
     """
     `source_name -> expert`, restricted to what the smoke asked for.
 
-    `probe` resolves to the real PROBE when its weights are present and to the
-    project's mock otherwise; `mock` is a fixed-value expert whose token is
-    predictable, so check 3 ("the result is referenced accurately") compares
-    against a value this script chose rather than one the model invented.
+    `probe` / `npr` / `univfd` resolve to the real experts when their weights
+    are present; the mock client gets the project's mocks instead.  `npr-stub`
+    is a fixed-value expert whose token is predictable, so check 3 ("the result
+    is referenced accurately") compares against a value this script chose rather
+    than one the model invented.
+
+    阶段 4.5：真实工具箱就是 probe/npr/univfd，而**后两个的真实路径在小批前从没
+    在本机上跑过**（阶段 3 评测走的是评测入口）——冒烟要能同时点它们，否则"专家
+    能加载、能出分、能被模型引用"这件事只对 PROBE 成立过。
     """
     toolbox: Dict[str, object] = {}
     for name in names:
@@ -93,15 +100,26 @@ def build_toolbox(names: List[str], client_kind: str) -> Dict[str, object]:
             if reason:
                 raise SystemExit(f"PROBE 不可用（{reason}）：GPU 冒烟需要它的权重。")
             toolbox["probe_dino_expert"] = expert
+        elif name in ("npr", "univfd"):
+            if name == "npr":
+                from experts.npr import NPRExpert, MockNPRExpert
+
+                expert = MockNPRExpert() if client_kind == "mock" else NPRExpert()
+            else:
+                from experts.univfd import MockUnivFDExpert, UnivFDExpert
+
+                expert = (MockUnivFDExpert() if client_kind == "mock"
+                          else UnivFDExpert())
+            if client_kind != "mock":
+                reason = expert.unavailable_reason()
+                if reason:
+                    raise SystemExit(f"{name} 不可用（{reason}）：GPU 冒烟需要它的权重。")
+            toolbox[f"{name}_expert"] = expert
         elif name in ("npr-stub", "mock"):
-            # Registered under the `noise` tag on purpose: the prompt's tool
-            # table only knows probe/freq/noise/jpeg, so a brand-new tag would
-            # be a tool the model is never told about.  The score is fixed by
-            # this script, which is what makes check 3 a fact rather than an
-            # impression.
+            # 固定值桩：分数由本脚本给定，check 3 才是在比对事实而不是印象。
             toolbox["npr_expert"] = NPRStubExpert(score=STUB_SCORE)
         else:
-            raise SystemExit(f"未知工具：{name}（冒烟只允许 probe / npr-stub）")
+            raise SystemExit(f"未知工具：{name}（冒烟允许 probe / npr / univfd / npr-stub）")
     if not toolbox:
         raise SystemExit("空工具箱：至少注册一个专家")
     return toolbox
@@ -472,7 +490,9 @@ def main() -> None:
     parser.add_argument("--client", choices=("mock", "qwen3"), default="mock")
     parser.add_argument("--image", default=DEFAULT_IMAGE)
     parser.add_argument("--experts", default="probe,npr-stub",
-                        help="冒烟工具箱（probe / npr-stub，逗号分隔）")
+                        help=("冒烟工具箱（probe / npr / univfd / npr-stub，逗号分隔）。"
+                              "npr-stub 是固定值桩，用于 check 3 的精确比对；"
+                              "真实小批前建议用 probe,npr,univfd 点齐三个。")),
     parser.add_argument("--inference-mode", choices=("thinking", "non-thinking"),
                         default="non-thinking")
     parser.add_argument("--greedy", action="store_true", help="贪心解码，便于复现")

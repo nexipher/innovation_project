@@ -290,6 +290,16 @@
 **证据（用户要的"打印几份实际模型输入"）**：`python scripts/g8_dump_model_inputs.py` →
 `sft_data/g8_model_inputs/<时间戳>/model_inputs.md`，内容为系统提示词原文、一次真实会话的全部对话（CPU/mock）、逐值证据包（含 NPR 低分＝`Uncertain` 的边界与失败包）、内部标记词表扫描。**当前扫描结果：0 命中。**
 
+### 4.5b 小批的生成入口（`scripts/g8_generate_batch.py`）
+
+现成的 `generate_trajectories_g4.py` 是 **G4 多策略矩阵**的入口：它的策略表是旧工具箱（noise/jpeg/freq/probe）、客户端是 Qwen2.5、还要过 applicability 门禁——拿它跑 g8 小批意味着"验收看的管线"和"生成数据的管线"不是同一条。按 §5"必须在计划里写死"的精神，小批用**自己的入口**：
+
+- **与验收入口同源**：会话由 `main.build_pipeline("qwen")` 构造（CUDA 门禁、专家不可用即拒、设备自动解析并打印），不是另写一份等价物；
+- **闸门照旧**：`assert_not_frozen_batch`（生成新轨迹）、真实会话需 `FORENSIC_ALLOW_GPU=1`、`--dry-run` 走 mock（CPU 管道验证），`--limit` 可小跑；
+- **可续跑**：已存在记录的变体跳过（断电/中断不必重跑）；
+- **选源不藏**：变体来自 `build_variants_g4.py`（`--partition train`、类平衡抽样、固定 seed），清单与计数写进批次 `metadata.json`，与记录里的 `split/treatment/source_id` 对得上；
+- **批次身份写进 `metadata.json`**：模型 revision 与精度、提示词 digest、三个专家各自的**设备**与权重身份、停机策略、投递形状（`model_delivered`）、以及"这批数据是用哪条入口跑的"。批次名 `b1`（用户 2026-10-15 选定），规模 **8 源 × 4 格式 = 32 会话**。
+
 ### 4.5 小批 Agent 人工验收（test 之前）
 
 - 小批（先 8–16 源 × 4 格式）跑真实 Qwen3-VL + 新工具箱，产出**最小审阅视图**：原始图像、实际投递的证据包、

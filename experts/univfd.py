@@ -22,6 +22,7 @@ from __future__ import annotations
 import os
 from typing import Optional
 
+import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms
@@ -43,10 +44,12 @@ from experts.external_base import (ExternalScoreExpert,  # noqa: E402
 class UnivFDEvaluator:
     def __init__(self, head_path: str = DEFAULT_HEAD,
                  backbone_path: str = DEFAULT_BACKBONE,
-                 device: str = "cpu"):
+                 device: Optional[str] = None):
+        from experts.device import resolve_device
+
         self.head_path = head_path
         self.backbone_path = backbone_path
-        self.device = device
+        self.device = resolve_device(device)
         self._record = entry(SOURCE_NAME, variant="univfd")
         self._clip = None
         self._head = None
@@ -142,7 +145,7 @@ class UnivFDExpert(ExternalScoreExpert):
     weight_source = "GitHub WisconsinAIVision/UniversalFakeDetect + OpenAI CLIP"
     licence_note = "仓库 MIT（WAIV 2025）；主干条款归 OpenAI，另行留档"
 
-    def __init__(self, device: str = "cpu", **kwargs):
+    def __init__(self, device: Optional[str] = None, **kwargs):
         kwargs.setdefault("weights_path", DEFAULT_HEAD)
         kwargs.setdefault("device", device)
         super().__init__(**kwargs)
@@ -157,6 +160,13 @@ class UnivFDExpert(ExternalScoreExpert):
             return f"缺 UnivFD 分类头：{DEFAULT_HEAD}"
         if not os.path.exists(DEFAULT_BACKBONE):
             return f"缺 CLIP 主干：{DEFAULT_BACKBONE}"
+        # 官方 ViT-L-14.pt 是 fp16/fp32 **混合**的 TorchScript 存档：CPU 上
+        # 无论输入 fp32、fp16 还是把主干整体 .float()，都在图内 dtype 处失败
+        # （阶段 4.5 真机三次实测）。所以这个专家**只能在 CUDA 上跑**——
+        # 说清楚比让它跑到一半抛异常好：那样会被记成一次 failed 工具。
+        if not self.device.startswith("cuda"):
+            return ("UnivFD 的官方 CLIP 主干（ViT-L-14.pt）无法在 CPU 上运行"
+                    "（TorchScript 图内 dtype 不匹配，实测如此）；需要 CUDA。")
         return ""
 
     def _score(self, img_patch):

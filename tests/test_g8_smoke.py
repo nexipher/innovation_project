@@ -115,6 +115,40 @@ class TestTheReportSaysWhatItWas:
         assert "train/batches" not in relative
 
 
+class TestTheSmokeCanServeTheCurrentToolbox:
+    """
+    冒烟的工具箱必须能点齐**当前工具箱**——阶段 4.5 前它只认 probe 与一个桩，
+    于是 npr/univfd 的真实路径在小批前从未在本机上跑过。
+    """
+
+    def test_the_mock_client_registers_all_three_real_members(self):
+        from scripts.g8_smoke import build_toolbox
+        from state_machine.controller import ForensicStateMachine
+
+        toolbox = build_toolbox(list(ForensicStateMachine.CURRENT_TOOL_TAGS), "mock")
+        assert set(toolbox) == {"probe_dino_expert", "npr_expert", "univfd_expert"}
+
+    def test_the_keys_are_the_names_the_controller_dispatches_by(self):
+        from scripts.g8_smoke import build_toolbox
+        from state_machine.controller import ForensicStateMachine
+
+        toolbox = build_toolbox(["probe", "npr", "univfd"], "mock")
+        for key in toolbox:
+            assert key in ForensicStateMachine.EXPERT_SOURCE_MAP, key
+
+    def test_the_fixed_value_stub_still_exists_for_the_precise_check(self):
+        from scripts.g8_smoke import build_toolbox
+
+        assert "npr_expert" in build_toolbox(["npr-stub"], "mock")
+
+    def test_an_unknown_name_is_refused_by_name(self):
+        from scripts.g8_smoke import build_toolbox
+
+        with pytest.raises(SystemExit) as caught:
+            build_toolbox(["jpeg"], "mock")
+        assert "未知工具" in str(caught.value)
+
+
 class TestTheGpuGate:
     def test_the_real_client_refuses_without_authorization(self, tmp_path):
         """

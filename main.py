@@ -77,13 +77,20 @@ def require_cuda_for_real_sessions(mllm_type: str) -> None:
         "  * 想跑真实模型：换到有 GPU 的机器，或申请 GPU 后再跑")
 
 
-def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
+def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE,
+                   greedy: bool = False, inference_mode: str = "non-thinking",
+                   local_files_only: bool = False) -> ForensicStateMachine:
     """
     Construct the forensic pipeline with the **g8 toolbox** (stage 4.4).
 
     probe / npr / univfd — the three the val evaluation selected.  freq, jpeg and
     noise are retired from the default toolbox (their code and results stay, for
     replay); a session that still wants them registers them explicitly.
+
+    解码条件（`greedy`/`inference_mode`/`local_files_only`）走这里传入，而不是让
+    调用方自己造一个等价客户端：验收、冒烟与批次生成必须是**同一条构造路径**——
+    否则"我看的那批"与"跑出来的那批"会在没人注意的地方分叉（默认是采样解码，
+    温度 0.1；批次与冒烟都用贪心，便于复现）。
     """
     if mllm_type in ("qwen", "qwen25"):
         require_cuda_for_real_sessions(mllm_type)   # 先拒，再加载任何权重
@@ -93,11 +100,21 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> Foren
 
         npr_expert, univfd_expert = MockNPRExpert(), MockUnivFDExpert()
     else:
+        # 真实会话里，工具箱少一个专家就是**另一种工具箱**：不是"少一次调用"，
+        # 而是这批数据的口径变了。所以缺权重/设备不满足时直接拒绝并说明，
+        # 不静默降级（阶段 4.5 真机就是这么发现 UnivFD 在 CPU 上必崩的）。
         from experts.npr import NPRExpert
         from experts.univfd import UnivFDExpert
 
-        npr_expert = NPRExpert()
-        univfd_expert = UnivFDExpert()
+        npr_expert, univfd_expert = NPRExpert(), UnivFDExpert()
+        for expert in (npr_expert, univfd_expert):
+            reason = expert.unavailable_reason()
+            if reason:
+                raise RuntimeError(f"{expert.source_name} 不可用：{reason}\n"
+                                   "真实会话不缩减工具箱——请修好它，或用显式的其他策略跑。")
+        print("专家设备：" + "，".join(
+            f"{expert.source_name}={expert.device}"
+            for expert in (npr_expert, univfd_expert)))
     experts = {
         "probe_dino_expert": build_probe_expert(mllm_type),
         "npr_expert": npr_expert,
@@ -118,7 +135,11 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> Foren
             # 当前版本：Qwen3-VL-8B-Instruct（固定 revision，见 mllm/qwen3_client.py）
             from mllm.qwen3_client import Qwen3VLClient
 
-            mllm = Qwen3VLClient(system_prompt=system_prompt)
+            mllm = Qwen3VLClient(system_prompt=system_prompt,
+                                 inference_mode=inference_mode,
+                                 do_sample=not greedy,
+                                 temperature=0.0 if greedy else 0.1,
+                                 local_files_only=local_files_only)
             # 身份可得就写出来（批次版本绑定要用）；客户端没这个接口也不该崩在启动路径上。
             revision = getattr(mllm, "revision", None)
             print(f"Using {mllm.name}" + (f" @ {revision[:8]}" if revision else "") + " (GPU)")
