@@ -40,7 +40,7 @@ def smoke_report(tmp_path_factory):
 
     work = tmp_path_factory.mktemp("g8_smoke")
     image = _image(work)
-    return run(str(image), "mock", ["probe", "noise-stub"],
+    return run(str(image), "mock", ["probe", "npr-stub"],
                inference_mode="non-thinking", greedy=True, out_dir=str(work))
 
 
@@ -69,8 +69,9 @@ class TestTheFiveChecks:
 
         check = smoke_report["checks"]["3_result_referenced_later"]
         assert check["ok"] is True
-        # the stub's fixed score is offered first, so a match names it
-        assert check["needles"][0] == pytest.approx(STUB_SCORE)
+        # 桩的固定分在可接受集合里（顺序按证据链），且确实命中了一个
+        assert any(isinstance(n, (int, float)) and abs(n - STUB_SCORE) < 1e-9
+                   for n in check["needles"])
         assert check["matched"]
 
     def test_the_three_records_are_separate(self, smoke_report):
@@ -81,13 +82,13 @@ class TestTheFiveChecks:
 
     def test_it_ran_two_tool_calls_and_named_them(self, smoke_report):
         check = smoke_report["checks"]["2_one_legal_call_executed"]
-        assert check["executed_sources"] == ["probe_dino_expert", "noise_expert"]
+        assert check["executed_sources"] == ["probe_dino_expert", "npr_expert"]
 
 
 class TestTheReportSaysWhatItWas:
     def test_the_report_records_the_client_and_the_toolbox(self, smoke_report):
         assert smoke_report["client"] == "mock"
-        assert smoke_report["experts"] == ["noise_expert", "probe_dino_expert"]
+        assert smoke_report["experts"] == ["npr_expert", "probe_dino_expert"]
         # CPU runs have no VRAM to report, and say so rather than writing 0
         assert smoke_report["vram_peak_gb"] is None
 

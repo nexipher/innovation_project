@@ -51,7 +51,7 @@ DEFAULT_IMAGE = os.path.join(PROJECT_ROOT, "dataset", "GenImage_Test",
 # ---------------------------------------------------------------------------
 
 
-class NoiseStubExpert(MockExternalScoreExpert):
+class NPRStubExpert(MockExternalScoreExpert):
     """
     Fixed-value stand-in for the corroborating expert, under the real tag.
 
@@ -61,11 +61,12 @@ class NoiseStubExpert(MockExternalScoreExpert):
     evidence names — downstream lookups (controller dispatch, ledger checks)
     key on those — while returning a score this script chose, which is what
     lets check 3 compare against a known value.
-    """
 
-    source_name = "noise_expert"
-    evidence_name = "noise_residual_inconsistency"
-    score_reference = "SRM 噪声残差一致性（冒烟固定值桩）"
+    阶段 4.4：注册在 `npr_expert` 下——那是 mock 的候补动作现在会调用的标签。
+    """
+    source_name = "npr_expert"
+    evidence_name = "npr_upsampling_artefact_score"
+    score_reference = "NPR（CVPR 2024）冒烟固定值桩"
     weights_env = ""
     weight_source = "smoke stub"
     licence_note = "stub（不涉及任何权重）"
@@ -92,15 +93,15 @@ def build_toolbox(names: List[str], client_kind: str) -> Dict[str, object]:
             if reason:
                 raise SystemExit(f"PROBE 不可用（{reason}）：GPU 冒烟需要它的权重。")
             toolbox["probe_dino_expert"] = expert
-        elif name in ("noise-stub", "mock"):
+        elif name in ("npr-stub", "mock"):
             # Registered under the `noise` tag on purpose: the prompt's tool
             # table only knows probe/freq/noise/jpeg, so a brand-new tag would
             # be a tool the model is never told about.  The score is fixed by
             # this script, which is what makes check 3 a fact rather than an
             # impression.
-            toolbox["noise_expert"] = NoiseStubExpert(score=STUB_SCORE)
+            toolbox["npr_expert"] = NPRStubExpert(score=STUB_SCORE)
         else:
-            raise SystemExit(f"未知工具：{name}（冒烟只允许 probe / noise-stub）")
+            raise SystemExit(f"未知工具：{name}（冒烟只允许 probe / npr-stub）")
     if not toolbox:
         raise SystemExit("空工具箱：至少注册一个专家")
     return toolbox
@@ -177,10 +178,8 @@ def token_needles(result: dict) -> List:
     """
     needles: List = []
     for entry in result.get("evidence_chain") or []:
-        if entry.get("source") == "noise_expert":
-            value = entry.get("raw_metric", entry.get("strength"))
-            if isinstance(value, (int, float)):
-                needles.insert(0, float(value))
+        # 顺序＝证据链顺序（谁先执行谁在前），不做特例偏好：特例会在换工具后过期。
+        value = entry.get("raw_metric", entry.get("strength"))
         for key in ("evidence_id", "evidence_name", "source"):
             if entry.get(key):
                 needles.append(str(entry[key]))
@@ -472,8 +471,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--client", choices=("mock", "qwen3"), default="mock")
     parser.add_argument("--image", default=DEFAULT_IMAGE)
-    parser.add_argument("--experts", default="probe,noise-stub",
-                        help="冒烟工具箱（probe / noise-stub，逗号分隔）")
+    parser.add_argument("--experts", default="probe,npr-stub",
+                        help="冒烟工具箱（probe / npr-stub，逗号分隔）")
     parser.add_argument("--inference-mode", choices=("thinking", "non-thinking"),
                         default="non-thinking")
     parser.add_argument("--greedy", action="store_true", help="贪心解码，便于复现")

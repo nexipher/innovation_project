@@ -13,13 +13,15 @@ FAKE_PATH = "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"
 
 @pytest.fixture
 def state_machine(mock_mllm_default):
-    from experts.frequency_v2 import FrequencyExpertV2
-    from experts.noise import NoiseExpert
-    from experts.jpeg import JPEGExpert
+    # 当前工具箱（阶段 4.4）：probe / npr / univfd 的 CPU 桩
+    from experts.npr import MockNPRExpert
+    from experts.probe_dino import MockProbeExpert
+    from experts.univfd import MockUnivFDExpert
+
     experts = {
-        "frequency_expert_v2": FrequencyExpertV2(),
-        "noise_expert": NoiseExpert(),
-        "jpeg_expert": JPEGExpert(),
+        "probe_dino_expert": MockProbeExpert(),
+        "npr_expert": MockNPRExpert(),
+        "univfd_expert": MockUnivFDExpert(),
     }
     return ForensicStateMachine(mock_mllm_default, experts)
 

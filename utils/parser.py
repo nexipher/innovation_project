@@ -3,9 +3,9 @@ Regex-based parser for extracting structured forensic tags from MLLM output.
 
 Handles the following XML-like tags:
   <planning>...</planning>
-  <call_freq>[ymin, xmin, ymax, xmax]</call_freq>
-  <call_noise>[ymin, xmin, ymax, xmax]</call_noise>
-  <call_jpeg>[ymin, xmin, ymax, xmax]</call_jpeg>
+  <call_probe>[ymin, xmin, ymax, xmax]</call_probe>
+  <call_npr>[ymin, xmin, ymax, xmax]</call_npr>
+  <call_univfd>[ymin, xmin, ymax, xmax]</call_univfd>
   <reasoning>...</reasoning>
   <verdict>{"verdict": "...", "confidence": ..., ...}</verdict>
 """
@@ -76,18 +76,32 @@ class Parser:
         re.DOTALL | re.IGNORECASE,
     )
 
+    _RE_CALL_NPR = re.compile(
+        r"<call_npr>\s*\[?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]?\s*</call_npr>",
+        re.DOTALL | re.IGNORECASE,
+    )
+
+    _RE_CALL_UNIVFD = re.compile(
+        r"<call_univfd>\s*\[?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]?\s*</call_univfd>",
+        re.DOTALL | re.IGNORECASE,
+    )
+
     _CALL_PATTERNS = {
-        "freq": _RE_CALL_FREQ,
-        "noise": _RE_CALL_NOISE,
-        "jpeg": _RE_CALL_JPEG,
+        # 当前工具箱（阶段 4.4）
         "probe": _RE_CALL_PROBE,
+        "npr": _RE_CALL_NPR,
+        "univfd": _RE_CALL_UNIVFD,
+        "noise": _RE_CALL_NOISE,
+        # 退役工具：旧 trace 的解析与 v2 复算仍要认
+        "freq": _RE_CALL_FREQ,
+        "jpeg": _RE_CALL_JPEG,
     }
 
     # The names `extract_all_calls` will hand to the controller.  A call tag
     # outside this set is dropped silently — which is why adding a tool means
-    # adding it here, and why a test has to assert the token shows up rather
-    # than trusting the absence of an error.
-    CALLABLE_TOOLS = ("probe", "freq", "noise", "jpeg")
+    # adding it here, and why a test asserts this set covers every expert in
+    # the score-semantics registry rather than trusting the absence of an error.
+    CALLABLE_TOOLS = tuple(_CALL_PATTERNS)
 
     # ------------------------------------------------------------------
     # Public API

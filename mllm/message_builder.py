@@ -60,7 +60,56 @@ TOOL_MEASURES: Dict[str, str] = {
     "jpeg": "- <call_jpeg>  JPEG compression history (blockiness / DCT structure). A HIGH level\n  points to Real (a camera JPEG that was saved or re-saved), NOT to forgery. After\n  heavy re-compression (quality <= 70) this measurement is near chance and must be\n  ignored.",
 }
 
-TOOL_ORDER = ("probe", "freq", "noise", "jpeg")
+# 登记表支持的工具有序表；freq/jpeg/noise 是待退役的旧工具，保留其手写文本供
+# 历史复算与 v2 对照装配提示词（阶段 4.4：提示词由登记表生成，不再手写新工具）。
+TOOL_ORDER = ("probe", "npr", "univfd", "noise", "freq", "jpeg")
+REGISTRY_TAGS = ("probe", "npr", "univfd", "noise")
+
+
+def _registry_entries() -> Dict[str, dict]:
+    """variant（probe/npr/univfd/noise）→ 登记表条目。"""
+    try:
+        from utils.score_semantics import load
+    except Exception:                     # 登记表不可用时不阻断历史装配
+        return {}
+    out = {}
+    for _name, record in load()["experts"].items():
+        variant = record.get("variant")
+        if variant:
+            out[variant] = record
+    return out
+
+
+def _registry_tool_text(tag: str, record: dict) -> str:
+    """
+    一个工具的动作行 + 它到底测什么 + 该怎么读——全部来自登记表。
+
+    手写表就是漂移的来源：工具换了、条件变了，提示词还在说旧话。这里每个字段
+    只有一个出处（`experts/score_semantics.json`），改一处就够。
+    """
+    semantics = record["raw_score"]
+    threshold = record["threshold"]
+    scope = record["preprocess"]["measurement_scope"]
+    direction = {
+        "higher_is_fake": "HIGH points to Fake, LOW points to Real",
+        "higher_is_real": "COUNTER-INTUITIVE: HIGH points to Real, LOW points to Fake",
+        "none": "no direction",
+    }[semantics["direction"]]
+    action = (f"- <call_{tag}>[ymin, xmin, ymax, xmax]</call_{tag}> → {record['display_name']}")
+    lines = [
+        action,
+        f"  Range {semantics['range'][0]}–{semantics['range'][1]}, threshold "
+        f"{threshold['value']} (chosen on: {threshold['chosen_on']}). {direction}.",
+        f"  It is NOT a calibrated probability; do not average it with another expert's score.",
+        f"  Scope: {scope} — " + (
+            "it measures the WHOLE image and locates nothing."
+            if scope == "global" else
+            "it does NOT see the image edges; do not read it as a whole-image measurement."),
+    ]
+    # 只投喂给模型看的那一句；内部说明（含统计数值与写法备注）不进提示词。
+    if record.get("prompt_note"):
+        lines.append(f"  Condition: {record['prompt_note']}")
+    return "\n".join(lines)
 
 PROMPT_HEAD = "You are an AI forensic image analyst. You MUST follow this EXACT format in EVERY response. Do NOT write free-form analysis.\n\n"
 PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe>, <call_frequency>, or any other variation.\n\n"
@@ -97,7 +146,28 @@ PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe
     "{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n"
     "</verdict>\n\n")
 
-PROMPT_TAIL_BASE = "\n1. `calibrated_likelihood` is the authoritative direction — it is the empirical\n   P(Real)/P(Fake) for that metric band. `strength` is NOT a probability and NOT\n   comparable between experts (each has its own scale); never rank experts by it.\n2. Check `applicability` and `applicability_conditions` before using a token. A token\n   labelled `disabled:*` must not influence the verdict; `weak:*` may only corroborate.\n3. `counter_explanation` lists the benign causes of the same phenomenon — if it also\n   explains what you see, do not treat the evidence as incriminating.\n4. Weight the evidence by `reliability`; conflicting tokens cancel out.\n5. `measurement_scope: \"global\"` means the expert measured the WHOLE image. The bbox\n   you provide locates the diagnostic region — the crop and the artifacts you receive\n   — it does not restrict the measurement. Judge the whole image, not the crop.\n"
+PROMPT_TAIL_BASE = (
+    "\nEach evidence token you receive has EXACTLY these fields:\n"
+    "  `evidence_id`, `expert`, `measurement`, `status`, `scope`,\n"
+    "  `score` = {`name`, `value`, `range`, `direction`, `threshold`,\n"
+    "             `is_calibrated_probability`: always false},\n"
+    "  `reading` = a short account of what was measured and the conditions under which\n"
+    "              the number may be read, and optionally `visual_artifacts`.\n"
+    "\n1. There is ONE score per token. Its `direction` says which side means what —\n"
+    "   follow it, never your own expectation about the expert. Scores from different\n"
+    "   experts are NOT comparable and must not be averaged or ranked against each other.\n"
+    "2. Read the `reading` before using the number: it states the conditions. A score\n"
+    "   outside those conditions carries no direction — say so instead of forcing one.\n"
+    "3. The number is not a probability, even when it lies between 0 and 1.\n"
+    "4. `status` tells you whether a measurement happened: a `failed` or missing\n"
+    "   measurement is NOT a neutral result, and must never be reported as one.\n"
+    "5. `scope` says what the expert could see: `global` = the whole image;\n"
+    "   `center_crop` = it never saw the edges. Do not restate a crop-based measurement\n"
+    "   as a whole-image finding, and do not restate a whole-image score as describing\n"
+    "   an area.\n"
+    "6. `visual_artifacts` are diagnostic products for human review, not your evidence:\n"
+    "   the number above is.\n"
+)
 
 # Reading rules that only make sense when the tool is served.  A session
 # without PROBE must not be told how to read PROBE's token: the prompt's job is
@@ -131,11 +201,22 @@ def build_forensic_prompt(allowed_tools: Optional[Iterable[str]] = None) -> str:
         raise ValueError("a forensic prompt needs at least one tool; use the "
                          "baseline prompt for a no-tool session")
 
-    actions = "\n".join(TOOL_ACTIONS[t] for t in tools)
+    registry = _registry_entries()
+    actions_list = []
+    for tag in tools:
+        record = registry.get(tag)
+        if record is not None:
+            actions_list.append(_registry_tool_text(tag, record))
+        else:
+            actions_list.append(TOOL_ACTIONS[tag])
+    actions = "\n".join(actions_list)
     if len(tools) < len(TOOL_ORDER):
         actions = actions + "\n" + SUBSET_NOTE
-    measures = "\n".join(TOOL_MEASURES[t] for t in tools)
-    read_notes = "".join(TOOL_READ_NOTES[t] for t in tools if t in TOOL_READ_NOTES)
+    # 登记表已把"测什么、怎么读、什么条件"写进了 action 段，故旧的两段仅用于
+    # 没有登记条目的旧工具（freq/jpeg/noise），且只在被允许时才出现。
+    measures = "\n".join(TOOL_MEASURES[t] for t in tools if t not in REGISTRY_TAGS)
+    read_notes = "".join(TOOL_READ_NOTES[t] for t in tools
+                         if t in TOOL_READ_NOTES and t not in REGISTRY_TAGS)
 
     return (PROMPT_HEAD
             + "AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):\n"

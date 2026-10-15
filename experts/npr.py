@@ -58,6 +58,10 @@ def _import_resnet(repo: str):
     return module
 
 
+from experts.external_base import (ExternalScoreExpert,  # noqa: E402
+                                   MockExternalScoreExpert)
+
+
 class NPREvaluator:
     """Loads one named NPR checkpoint and scores whole images."""
 
@@ -198,3 +202,93 @@ def _repo_commit(repo: str) -> Optional[str]:
         return ref
     except OSError:
         return None
+
+
+class NPRExpert(ExternalScoreExpert):
+    """
+    NPR as an *expert* (the interface the controller serves).
+
+    Stage 3 measured it with `NPREvaluator` (a scorer); a session needs a
+    token-producing expert, so this wraps the same evaluator: one measurement
+    path, two callers.  BGR in (the expert interface's convention), the
+    evaluator's own preprocessing inside.
+    """
+
+    source_name = "npr_expert"
+    evidence_name = "npr_upsampling_artefact_score"
+    score_reference = "NPR（CVPR 2024，官方权重，整图不缩放）"
+    weights_env = ""
+    weight_source = "GitHub chuangchuangtan/NPR-DeepfakeDetection（经 ghfast.top）"
+    licence_note = "许可未明确：仓库根无 LICENSE（仅本地研究，不再分发）"
+
+    def __init__(self, checkpoint: str = "npr-a", device: str = "cpu", **kwargs):
+        record = entry(SOURCE_NAME, variant="npr")
+        chosen = record["weights"]["selected"]["checkpoint_id"] \
+            if record["weights"].get("selected") else "npr-a"
+        self._checkpoint_id = checkpoint or chosen
+        if self._checkpoint_id != chosen:
+            raise ValueError(
+                f"登记表选定的是 {chosen}，这里要用 {self._checkpoint_id}——"
+                "换 checkpoint 是方案变更，不是运行参数")
+        path_of = {item["id"]: item["file"] for item in record["weights"]["checkpoints"]}
+        kwargs.setdefault("weights_path", path_of[chosen])
+        kwargs.setdefault("device", device)
+        super().__init__(**kwargs)
+        self._evaluator = None
+
+    @classmethod
+    def _resolve_weights_path(cls) -> str:
+        return ""
+
+    def unavailable_reason(self) -> str:
+        from utils.score_semantics import SemanticsError
+        try:
+            record = entry(SOURCE_NAME, variant="npr")
+        except SemanticsError as exc:
+            return str(exc)
+        chosen = (record["weights"].get("selected") or {}).get("checkpoint_id")
+        if not chosen:
+            return "NPR 尚未在 val 上选定 checkpoint"
+        path_of = {item["id"]: item["file"] for item in record["weights"]["checkpoints"]}
+        if not os.path.exists(path_of.get(chosen, "")):
+            return f"NPR 权重不存在：{path_of.get(chosen)}"
+        return ""
+
+    def _score(self, img_patch):
+        from PIL import Image as _Image
+
+        if self._evaluator is None:
+            self._evaluator = NPREvaluator(checkpoint=self._checkpoint_id,
+                                           device=self.device)
+        rgb = np.ascontiguousarray(img_patch[:, :, ::-1])
+        value = self._evaluator.score(_Image.fromarray(rgb))
+        return self._result(value,
+                            preprocess=self._evaluator.identity()["preprocess_detail"])
+
+
+class MockNPRExpert(MockExternalScoreExpert):
+    """
+    Deterministic NPR stand-in: same source name, no weights, CPU-only.
+
+    Same convention as `MockProbeExpert`: a pipeline exercised with the mock
+    behaves like one exercised with the model, which is what makes the CPU
+    acceptance runs meaningful.
+    """
+
+    source_name = "npr_expert"
+    evidence_name = "npr_upsampling_artefact_score"
+    score_reference = "NPR（CVPR 2024）判别分数（Mock）"
+    weights_env = ""
+    weight_source = "mock"
+    licence_note = "mock（不涉及上游权重）"
+
+    def __init__(self, score: Optional[float] = None, **kwargs):
+        kwargs.setdefault("calibrated", False)
+        super().__init__(score, **kwargs)
+
+    @classmethod
+    def _resolve_weights_path(cls) -> str:
+        return "/dev/null"
+
+    def unavailable_reason(self) -> str:
+        return "" if self.enabled else f"{self.source_name} 已停用"

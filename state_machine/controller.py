@@ -75,11 +75,13 @@ class ForensicStateMachine:
     # v2 entry rather than v1's disabled:no-signal one.  v1 is never
     # registered; ELA stays out too (its G2-b skill is compression history).
     EXPERT_KEY_MAP = {
-        # G7 entry 3: PROBE is the main detector — C-group AUROC 0.986 against
-        # the old toolkit's 0.764, and the fusion that would have combined them
-        # showed no gain outside noise.  The three below stay as corroborating
-        # clues: they are offered, never required.
+        # 阶段 4.4：默认工具箱只保留经 val 评测选定的三个（PROBE 主检测器、
+        # NPR-A 作 PNG 条件补充、UnivFD 进小批对照）。freq/jpeg/noise 已退役，
+        # 保留映射只为旧会话/旧 trace 的派发与解析，不再进入新提示词。
         "probe": "probe_dino_expert",
+        "npr": "npr_expert",
+        "univfd": "univfd_expert",
+        # retired (replay only)
         "freq": "frequency_expert_v2",
         "noise": "noise_expert",
         "jpeg": "jpeg_expert",
@@ -88,11 +90,17 @@ class ForensicStateMachine:
     # Expert registry — maps source_name to MLLM call tag
     EXPERT_SOURCE_MAP = {
         "probe_dino_expert": "probe",
+        "npr_expert": "npr",
+        "univfd_expert": "univfd",
+        # retired (replay only)
         "frequency_expert_v2": "freq",
         "frequency_expert": "freq",      # deprecated v1 (old traces only)
         "noise_expert": "noise",
         "jpeg_expert": "jpeg",
     }
+
+    # 新提示词只描述这些工具（退役的三个仍可派发、不再被宣传）
+    CURRENT_TOOL_TAGS = ("probe", "npr", "univfd")
 
     def __init__(
         self,
@@ -196,6 +204,9 @@ class ForensicStateMachine:
         expert_call_count = 0
         suppressed_duplicate_count = 0
         skipped_duplicate_calls = 0
+        # 阶段 4.4：工具缺席与执行失败都要在 trace 里看得见，且分别计数。
+        unavailable_tool_calls: List[str] = []
+        failed_tool_calls: List[str] = []
         evidence_check: dict = {"status": "not_run", "findings": []}
         skipped_sources: List[str] = []
         measured_sources: Dict[str, str] = {}     # source_name → evidence_id
@@ -309,6 +320,19 @@ class ForensicStateMachine:
                     source_name = self._expert_by_call.get(expert_name, "")
                     expert = self._experts.get(source_name)
                     if expert is None:
+                        # 工具缺席要如实呈现（阶段 4.4）。旧行为是静默 continue：
+                        # 于是"会话没有这个工具"与"模型没调用它"在 trace 里长得一样，
+                        # 而模型会一直重试同一个不存在的工具直到预算耗尽。
+                        unavailable_tool_calls.append(expert_name)
+                        turn_calls_executed = False
+                        turn_signature_parts.append(("unavailable", expert_name))
+                        available = ", ".join(sorted(self._expert_by_call)) or "（无）"
+                        notice = (
+                            f"[System: 本次会话不提供 {expert_name}。可用工具：{available}。"
+                            "请从可用工具中选择，或直接给出结论。]"
+                        )
+                        self._logger.add_system_message(notice)
+                        conversation.append({"from": "user", "value": notice})
                         continue
 
                     # G7 entry 3 (measured in the acceptance run): every expert
@@ -350,7 +374,33 @@ class ForensicStateMachine:
                     # binned the evidence against the wrong population (noise
                     # crop median 1.262 vs 2.529 full).  The model's bbox keeps
                     # its role as the diagnostic and visualisation region.
-                    expert_result = expert.analyze(img)
+                    try:
+                        expert_result = expert.analyze(img)
+                    except Exception as exc:                      # noqa: BLE001
+                        # 加载失败、超时、NaN、缺权重——如实记录为 failed，
+                        # 会话继续（提案：不得伪装成正常返回，也不该让整个会话崩掉）。
+                        failed_tool_calls.append(f"{source_name}: "
+                                                 f"{type(exc).__name__}: {exc}")
+                        turn_calls_executed = False
+                        turn_signature_parts.append(("failed", source_name))
+                        evidence_chain.append({
+                            "evidence_id": f"E-failed-{source_name}",
+                            "source": source_name,
+                            "evidence_name": getattr(expert, "evidence_name", source_name),
+                            "status": "failed",
+                            "reason": f"{type(exc).__name__}: {exc}",
+                            "measurement_scope": "global",
+                            "model_delivered": "slim",
+                        })
+                        self._logger.add_evidence(evidence_chain[-1])
+                        notice = (
+                            f"[System: {source_name} 执行失败（{type(exc).__name__}）。"
+                            "**这不是中性测量，也不是证据**：不要把它当作已获得的测量。"
+                            "可以改用其他工具或直接给出结论。]"
+                        )
+                        self._logger.add_system_message(notice)
+                        conversation.append({"from": "user", "value": notice})
+                        continue
 
                     # G2 §4.9: attach empirical reliability / calibrated
                     # likelihood from the calibration table when available.
@@ -834,6 +884,8 @@ class ForensicStateMachine:
             conclusion=(final_verdict or {}).get("conclusion"),
             v3_signals=v3_signals,
             protocol_violations=protocol_violations,
+            unavailable_tool_calls=list(unavailable_tool_calls),
+            failed_tool_calls=list(failed_tool_calls),
             condition=self._condition,
             verdict_status=(final_verdict or {}).get("verdict_status"),
             verdict_label=(final_verdict or {}).get("verdict"),
@@ -1079,6 +1131,8 @@ class ForensicStateMachine:
         conclusion: Optional[dict] = None,
         v3_signals: Optional[dict] = None,
         protocol_violations: int = 0,
+        unavailable_tool_calls: Optional[List[str]] = None,
+        failed_tool_calls: Optional[List[str]] = None,
         condition: Optional[str] = None,
         reference_fields: bool = True,
         verdict_status: Optional[str] = None,
@@ -1110,6 +1164,9 @@ class ForensicStateMachine:
             # §4.17 R9: how many turns carried more than one action and were
             # refused unexecuted.
             "protocol_violations": protocol_violations,
+            # 阶段 4.4：工具缺席与执行失败各自留痕——缺字段会读成"没发生"。
+            "unavailable_tool_calls": list(unavailable_tool_calls or []),
+            "failed_tool_calls": list(failed_tool_calls or []),
         }
         if policy_decision is not None:
             # A replay must be able to explain the stop from the trace alone.

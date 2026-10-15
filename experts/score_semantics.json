@@ -66,7 +66,8 @@
           "direction": "Real",
           "note": "格式鲁棒（四格 AUROC 0.975–0.988），低分可以作 Real 证据"
         }
-      ]
+      ],
+      "prompt_note": "Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area."
     },
     "noise_expert": {
       "variant": "noise",
@@ -161,7 +162,8 @@
           "when": "raw < threshold",
           "direction": "AI-generated"
         }
-      ]
+      ],
+      "prompt_note": "Retired from the default toolbox; kept for replay only."
     },
     "npr_expert": {
       "variant": "npr",
@@ -278,7 +280,8 @@
           "direction": "Uncertain",
           "note": "**低分不得解释成强 Real 证据**（用户 2026-10-15）：JPEG 格几乎全低且 AUROC 0.47–0.56，低分只说明它没看到上采样痕迹。只有在本轮 val 的 PNG 编码条件下，低分才勉强算弱 Real 信号，且仍不足以单独定方向"
         }
-      ]
+      ],
+      "prompt_note": "Validated under this collection's PNG encoding. Under JPEG its scores are near zero: that only means it did not see the up-sampling artefacts it looks for — a low score there is NOT evidence of a real photograph."
     },
     "univfd_expert": {
       "variant": "univfd",
@@ -353,7 +356,8 @@
           "direction": "Real",
           "note": "各格 0.817–0.893，低分可以作 Real 证据；但测量只覆盖中心裁剪的 224×224"
         }
-      ]
+      ],
+      "prompt_note": "Measures a 224x224 centre crop: it never sees the image edges."
     }
   },
   "mock_experts": {
@@ -393,5 +397,6 @@
       }
     ]
   },
-  "direction_rules_note": "方向规则：分数 → 证据方向的**唯一权威**（阶段 4.2b）。按已知条件逐条列，表达“该情形下不构成方向”时写 Uncertain——不允许把“专家没看到它擅长的东西”读成反向证据。"
+  "direction_rules_note": "方向规则：分数 → 证据方向的**唯一权威**（阶段 4.2b）。按已知条件逐条列，表达“该情形下不构成方向”时写 Uncertain——不允许把“专家没看到它擅长的东西”读成反向证据。",
+  "prompt_note_note": "`prompt_note` 是**给模型看的一句话适用条件**，与 `usage_conditions`（内部说明，含 bootstrap 数值与写法备注）分开：内部笔记不该出现在提示词里。提示词由本字段生成（阶段 4.4）。"
 }

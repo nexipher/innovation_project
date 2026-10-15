@@ -32,10 +32,14 @@ def _experts(with_probe=True, score=0.99):
     from experts.noise import NoiseExpert
     from experts.jpeg import JPEGExpert
 
+    from experts.npr import MockNPRExpert
+
     experts = {
         "frequency_expert_v2": FrequencyExpertV2(),
         "noise_expert": NoiseExpert(),
         "jpeg_expert": JPEGExpert(),
+        # 阶段 4.4：mock 的候补调用已改为 npr（当前工具箱），这里必须能服务它
+        "npr_expert": MockNPRExpert(),
     }
     if with_probe:
         from experts.probe_dino import MockProbeExpert
@@ -152,15 +156,30 @@ class TestTheSession:
         result = fsm.run(REAL_PATH, "Real")
         assert result["final_verdict"]["verdict"] in ("Real", "Uncertain")
 
-    def test_the_trace_records_what_was_discounted(self, run_session):
+    def test_the_trace_records_what_was_discounted(self, tmp_path):
         """
-        explore_all calls freq, then noise, then jpeg — and noise/jpeg are the
-        one positively correlated pair in the toolkit, so the jpeg token is the
-        one that gets read at less than full weight.  The trace has to say so:
-        a posterior rule that silently changes weights is not auditable from
-        the record alone.
+        explore_all called freq, then noise, then jpeg — and noise/jpeg are the
+        one positively correlated pair in the toolkit, so the jpeg token was the
+        one read at less than full weight.  The trace has to say so: a posterior
+        rule that silently changes weights is not auditable from the record
+        alone.
+
+        这条验证的是 **v2 复算路径的可审计性**，而它依赖的 freq/noise/jpeg
+        工具箱已退役（阶段 4.4）：所以这里用显式脚本按当年的顺序调用它们，
+        而不是依赖 mock 的当前脚本——mock 跟的是现在的工具箱。
         """
-        result = run_session(mode="explore_all")
+        from state_machine.controller import ForensicStateMachine
+        from tests.test_controller import ScriptedMLLM, _build_experts
+        from utils.logger import SessionLogger
+
+        call = "<planning>\nSuspected Region: [10, 10, 90, 90]\n</planning>\n<call_{}>[10, 10, 90, 90]</call_{}>"
+        verdict = ('<reasoning>三件测量都看过了。</reasoning>\n<verdict>'
+                   '{"verdict": "Fake", "confidence": 0.8}</verdict>')
+        responses = [call.format("freq", "freq"), call.format("noise", "noise"),
+                     call.format("jpeg", "jpeg"), verdict]
+        fsm = ForensicStateMachine(ScriptedMLLM(responses), _build_experts(),
+                                   logger=SessionLogger(sft_dir=str(tmp_path)))
+        result = fsm.run(FAKE_PATH, "Fake")
         with open(result["sft_data_path"], encoding="utf-8") as handle:
             trace = json.load(handle)
         discounts = trace["metadata"]["redundancy_discounts"]
@@ -190,5 +209,7 @@ class TestTheShippedRegistry:
         fsm = build_pipeline("mock")
         tags = [FSM.EXPERT_SOURCE_MAP[name] for name in fsm._experts]
         prompt = build_forensic_prompt(tags)
-        for tag in ("probe", "freq", "noise", "jpeg"):
+        for tag in ("probe", "npr", "univfd"):
             assert f"<call_{tag}>" in prompt
+        for retired in ("freq", "jpeg", "noise"):
+            assert f"<call_{retired}>" not in prompt, retired

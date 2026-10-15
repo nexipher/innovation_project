@@ -1,0 +1,104 @@
+{
+  "id": "session_20261015_194719_0_midjourney_169",
+  "image_path": "dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+  "ground_truth": "Fake",
+  "source_model": "Midjourney",
+  "final_verdict": {
+    "verdict": "Uncertain",
+    "verdict_status": "no_parseable_conclusion",
+    "confidence": 0.5,
+    "report": "取证后仍未形成可判定方向，按疑罪从无输出 Uncertain。",
+    "policy_reason": "loop_protection",
+    "policy_reasons": [
+      "loop_protection",
+      "repeated_actions=2"
+    ],
+    "model_candidate": null,
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "closing_turn",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "conclusion": {
+      "source": "closing_turn",
+      "calls": [
+        "freq"
+      ],
+      "calls_executed": false,
+      "verdict_parse": "failed"
+    }
+  },
+  "conversations": [
+    {
+      "from": "user",
+      "value": "<image>\n请分析这张图像的真实性，并使用法证工具箱开展多轮质证。"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [150, 150, 850, 850]\nVisual Anomalies: unnaturally smooth textures, suspicious edges\nExpert Target & Hypothesis: 根据视觉异常特征，需要调用法证专家进行微观物理痕迹分析。\n</planning>\n<call_freq>[50, 50, 450, 450]</call_freq>\n"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [50, 50, 450, 450]\nVisual Anomalies: unnaturally smooth textures, suspicious edges\nExpert Target & Hypothesis: 根据视觉异常特征，需要调用法证专家进行微观物理痕迹分析。\n</planning>\n<call_freq>[550, 550, 950, 950]</call_freq>\n"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [550, 550, 950, 950]\nVisual Anomalies: unnaturally smooth textures, suspicious edges\nExpert Target & Hypothesis: 根据视觉异常特征，需要调用法证专家进行微观物理痕迹分析。\n</planning>\n<call_freq>[100, 500, 500, 900]</call_freq>\n"
+    },
+    {
+      "from": "user",
+      "value": "[System: 会话因重复或无效的动作而终止（同一动作连续出现，或始终没有形成合法的调用/结案）。已执行的专家：（无）；本会话未执行的专家：npr_expert, probe_dino_expert, univfd_expert。请只使用已执行的专家返回过的数值给出结论；若这些测量不足以判定，如实说明还缺哪种测量。]"
+    },
+    {
+      "from": "gpt",
+      "value": "<planning>\nSuspected Region: [100, 500, 500, 900]\nVisual Anomalies: unnaturally smooth textures, suspicious edges\nExpert Target & Hypothesis: 根据视觉异常特征，需要调用法证专家进行微观物理痕迹分析。\n</planning>\n<call_freq>[500, 100, 900, 500]</call_freq>\n"
+    }
+  ],
+  "evidence_chain": [],
+  "metadata": {
+    "image_size": [
+      1024,
+      1024
+    ],
+    "total_steps": 4,
+    "halting_reason": "loop_protection",
+    "mock_mode": "two_calls",
+    "session_timestamp": "2026-10-15T19:47:19.234617",
+    "task_type": "fully_generated",
+    "evidence_scope": "global",
+    "region_semantics": "diagnostic_evidence_region",
+    "model_turn_count": 4,
+    "expert_call_count": 0,
+    "unique_evidence_count": 0,
+    "suppressed_duplicate_count": 0,
+    "skipped_duplicate_calls": 0,
+    "weighted_cost": 2.0,
+    "policy_version": "v3",
+    "available_experts": [
+      "npr_expert",
+      "probe_dino_expert",
+      "univfd_expert"
+    ],
+    "calibration_condition": null,
+    "protocol_violations": 0,
+    "policy_reason": "loop_protection",
+    "policy_reasons": [
+      "loop_protection",
+      "repeated_actions=2"
+    ],
+    "evidence_check_status": "pass",
+    "repeated_action_turns": 2,
+    "invalid_action_turns": 0,
+    "format_failure_turns": 0,
+    "model_label": null,
+    "conclusion_source": "closing_turn",
+    "conclusion_verdict_parse": "failed",
+    "conclusion_calls_unexecuted": true,
+    "verdict_status": "no_parseable_conclusion",
+    "model_abstained": false,
+    "evidence_candidates": 0,
+    "evidence_candidate_kinds": []
+  }
+}

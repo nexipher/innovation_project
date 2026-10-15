@@ -36,6 +36,10 @@ CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
 CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 
 
+from experts.external_base import (ExternalScoreExpert,  # noqa: E402
+                                   MockExternalScoreExpert)
+
+
 class UnivFDEvaluator:
     def __init__(self, head_path: str = DEFAULT_HEAD,
                  backbone_path: str = DEFAULT_BACKBONE,
@@ -126,3 +130,63 @@ class UnivFDEvaluator:
         with torch.no_grad():
             logit = self._head(features.to(self.device))
         return float(torch.sigmoid(logit).flatten()[0].item())
+
+
+class UnivFDExpert(ExternalScoreExpert):
+    """UnivFD as an expert: same evaluator, wrapped for the controller."""
+
+    source_name = "univfd_expert"
+    evidence_name = "univfd_clip_linear_score"
+    score_reference = "UnivFD（CVPR 2023，CLIP ViT-L/14 + 官方线性头）"
+    weights_env = ""
+    weight_source = "GitHub WisconsinAIVision/UniversalFakeDetect + OpenAI CLIP"
+    licence_note = "仓库 MIT（WAIV 2025）；主干条款归 OpenAI，另行留档"
+
+    def __init__(self, device: str = "cpu", **kwargs):
+        kwargs.setdefault("weights_path", DEFAULT_HEAD)
+        kwargs.setdefault("device", device)
+        super().__init__(**kwargs)
+        self._evaluator = None
+
+    @classmethod
+    def _resolve_weights_path(cls) -> str:
+        return DEFAULT_HEAD
+
+    def unavailable_reason(self) -> str:
+        if not os.path.exists(DEFAULT_HEAD):
+            return f"缺 UnivFD 分类头：{DEFAULT_HEAD}"
+        if not os.path.exists(DEFAULT_BACKBONE):
+            return f"缺 CLIP 主干：{DEFAULT_BACKBONE}"
+        return ""
+
+    def _score(self, img_patch):
+        from PIL import Image as _Image
+
+        if self._evaluator is None:
+            self._evaluator = UnivFDEvaluator(device=self.device)
+        rgb = np.ascontiguousarray(img_patch[:, :, ::-1])
+        value = self._evaluator.score(_Image.fromarray(rgb))
+        return self._result(value,
+                            preprocess=self._evaluator.identity()["preprocess_detail"])
+
+
+class MockUnivFDExpert(MockExternalScoreExpert):
+    """Deterministic UnivFD stand-in: same source name, no CLIP, CPU-only."""
+
+    source_name = "univfd_expert"
+    evidence_name = "univfd_clip_linear_score"
+    score_reference = "UnivFD（CVPR 2023）CLIP 线性头分数（Mock）"
+    weights_env = ""
+    weight_source = "mock"
+    licence_note = "mock（不涉及上游权重与主干）"
+
+    def __init__(self, score: Optional[float] = None, **kwargs):
+        kwargs.setdefault("calibrated", False)
+        super().__init__(score, **kwargs)
+
+    @classmethod
+    def _resolve_weights_path(cls) -> str:
+        return "/dev/null"
+
+    def unavailable_reason(self) -> str:
+        return "" if self.enabled else f"{self.source_name} 已停用"

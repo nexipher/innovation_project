@@ -349,6 +349,13 @@ def _build_experts(dry_run: bool = False) -> Dict[str, Any]:
     # G7: the shipped toolkit now leads with PROBE.  Without it here the
     # comparison would measure a pipeline the controller can no longer be
     # configured as — and the test below exists to catch exactly that.
+    # 阶段 4.4：当前工具箱是 probe/npr/univfd。这个 v1 时代的增益对照若要复跑，
+    # dry-run 也必须能服务控制器现在能派发的工具，否则它测的是另一个管线。
+    from experts.npr import MockNPRExpert
+    from experts.univfd import MockUnivFDExpert
+
+    experts["npr_expert"] = MockNPRExpert()
+    experts["univfd_expert"] = MockUnivFDExpert()
     if dry_run:
         from experts.probe_dino import MockProbeExpert
         experts["probe_dino_expert"] = MockProbeExpert()

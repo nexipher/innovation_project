@@ -200,9 +200,9 @@ class MockMLLMClient(BaseMLLMClient):
         if evidence is None:
             # Turn 0: planning + call
             if self._image_label == "Real":
-                return self._planning("blurred edge, possible smoothing") + self._call("jpeg")
+                return self._planning("smooth sensor texture") + self._call("univfd")
             else:
-                return self._planning("overly smooth textures, lack of natural noise") + self._call("freq")
+                return self._planning("overly smooth textures, lack of natural noise") + self._call("probe")
         else:
             # Turn 1: reasoning + verdict
             return self._reasoning(evidence) + self._verdict()
@@ -214,9 +214,9 @@ class MockMLLMClient(BaseMLLMClient):
         if evidence is None:
             # Turn 0: first call
             if self._image_label == "Real":
-                return self._planning("mild compression artifacts, possible re-save") + self._call("jpeg")
+                return self._planning("mild compression artifacts, possible re-save") + self._call("univfd")
             else:
-                return self._planning("unnaturally smooth textures, suspicious edges") + self._call("freq")
+                return self._planning("unnaturally smooth textures, suspicious edges") + self._call("probe")
 
         elif n_calls < 2 and self._should_call_another(evidence):
             # Turn 1: reason over evidence, then call second expert
@@ -235,7 +235,7 @@ class MockMLLMClient(BaseMLLMClient):
         n_calls = len(self._called_experts)
 
         if evidence is None:
-            return self._planning("comprehensive multi-region scan needed") + self._call("freq")
+            return self._planning("comprehensive multi-region scan needed") + self._call("probe")
         else:
             reasoning = self._reasoning(evidence)
             # Keep calling while experts remain
@@ -260,7 +260,8 @@ class MockMLLMClient(BaseMLLMClient):
         if evidence is None:
             return self._planning("whole-image AI-generation check") + self._call("probe")
         if len(self._called_experts) < 2:
-            remaining = [e for e in ("noise", "jpeg", "freq")
+            # 当前工具箱（阶段 4.4）：probe 主检测器 + npr / univfd 补充
+            remaining = [e for e in ("npr", "univfd")
                          if e not in self._called_experts]
             return self._reasoning(evidence) + self._call(remaining[0] if remaining else "noise")
         return self._reasoning(evidence) + self._verdict()
@@ -270,10 +271,10 @@ class MockMLLMClient(BaseMLLMClient):
         n_calls = len(self._called_experts)
 
         if evidence is None:
-            return self._planning("suspicious frequency patterns detected") + self._call("freq")
+            return self._planning("suspicious up-sampling patterns detected") + self._call("npr")
         elif n_calls == 1:
             # After freq, call noise (which will likely give opposite result)
-            return self._reasoning(evidence) + self._call("noise")
+            return self._reasoning(evidence) + self._call("univfd")
         else:
             # Conflict reflection + uncertain verdict
             return self._conflict_reasoning() + self._uncertain_verdict()

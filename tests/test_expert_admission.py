@@ -14,7 +14,8 @@ import pytest
 from experts.frequency_v2 import FrequencyExpertV2
 from experts.jpeg import JPEGExpert
 from experts.noise import NoiseExpert
-from mllm.message_builder import FORENSIC_SYSTEM_PROMPT
+from mllm.message_builder import (FORENSIC_SYSTEM_PROMPT,
+                                  build_forensic_prompt)
 from state_machine.controller import ForensicStateMachine
 
 PATCH = (np.random.default_rng(0).integers(0, 255, (128, 128, 3))
@@ -90,8 +91,12 @@ class TestRuntimeRegistration:
         fsm = ForensicStateMachine(None, {"noise_expert": NoiseExpert()})
         assert "ela" not in fsm._expert_by_call
         # G7 added PROBE (the main detector); TruFor, measured and refused,
-        # must not appear here either.
-        assert set(fsm.EXPERT_KEY_MAP) == {"probe", "freq", "noise", "jpeg"}
+        # must not appear here either.  Stage 4.4 added NPR and UnivFD (val
+        # selected them) and retired freq/jpeg/noise from the default toolbox —
+        # the retired tags remain dispatchable for old sessions.
+        assert set(fsm.EXPERT_KEY_MAP) == {"probe", "npr", "univfd",
+                                          "freq", "noise", "jpeg"}
+        assert set(ForensicStateMachine.CURRENT_TOOL_TAGS) == {"probe", "npr", "univfd"}
         assert not any("trufor" in source for source in fsm.EXPERT_KEY_MAP.values())
 
     def test_source_names_are_distinct(self):
@@ -103,6 +108,8 @@ class TestRuntimeRegistration:
     def test_call_tags_map_to_shipped_sources(self):
         assert ForensicStateMachine.EXPERT_KEY_MAP == {
             "probe": "probe_dino_expert",
+            "npr": "npr_expert",
+            "univfd": "univfd_expert",
             "freq": "frequency_expert_v2",
             "noise": "noise_expert",
             "jpeg": "jpeg_expert",
@@ -120,28 +127,40 @@ def _prompt_text() -> str:
 
 
 class TestPromptGuidance:
-    """The prompt is the model's only interface to the calibration."""
+    """
+    The prompt is the model's only interface to what the scores mean.
 
-    def test_prompt_states_the_inverted_directions(self):
+    阶段 4.4：方向与条件由**分数语义登记表**生成（不再是手写段落），
+    权威也从"校准似然"换成 token 自带的 `score.direction`。
+    """
+
+    def test_prompt_states_the_counter_intuitive_direction(self):
         text = _prompt_text()
-        assert "COUNTER-INTUITIVE" in text
-        assert "a HIGH level points to Real" in text
-        assert "NOT to forgery" in text
+        assert "COUNTER-INTUITIVE" in text          # noise：高=偏 Real
+        assert "HIGH points to Real, LOW points to Fake" in text
+        assert "HIGH points to Fake, LOW points to Real" in text   # 判别器
 
-    def test_prompt_makes_calibration_authoritative(self):
-        assert "calibrated_likelihood` is the authoritative direction" in \
-            _prompt_text()
+    def test_the_direction_is_the_tokens_own_field(self):
+        text = _prompt_text()
+        assert "`direction` says which side means what" in text
+        assert "calibrated_likelihood" not in text, \
+            "模型已经收不到校准似然字段，提示词不该再让它去读"
 
-    def test_prompt_forbids_cross_expert_strength_comparison(self):
-        assert "NOT comparable between experts" in _prompt_text()
+    def test_prompt_forbids_cross_expert_score_comparison(self):
+        assert "NOT comparable" in _prompt_text()
 
-    def test_prompt_marks_frequency_as_weak(self):
-        assert "WEAK evidence" in FORENSIC_SYSTEM_PROMPT
+    def test_prompt_marks_retired_tools_as_out_of_the_toolbox(self):
+        """freq/jpeg/noise 已退出默认工具箱：提示词不宣传它们（历史复算除外）。"""
+        current = build_forensic_prompt(list(ForensicStateMachine.CURRENT_TOOL_TAGS))
+        for retired in ("<call_freq>", "<call_jpeg>", "<call_noise>"):
+            assert retired not in current, retired
+        for current_tag in ("<call_probe>", "<call_npr>", "<call_univfd>"):
+            assert current_tag in current, current_tag
 
     def test_prompt_keeps_the_format_contract(self):
-        for token in ("<call_freq>", "<call_noise>", "<call_jpeg>",
-                      "<planning>", "<verdict>", "<reasoning>"):
+        for token in ("<planning>", "<verdict>", "<reasoning>"):
             assert token in FORENSIC_SYSTEM_PROMPT
+        assert "<call_probe>" in FORENSIC_SYSTEM_PROMPT
 
     def test_prompt_never_advertises_a_retired_tool(self):
         assert "<call_ela>" not in FORENSIC_SYSTEM_PROMPT

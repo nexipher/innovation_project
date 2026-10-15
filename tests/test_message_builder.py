@@ -149,8 +149,10 @@ class TestPromptMeasurementContract:
     """G3-a: the prompt must describe whole-image measurement truthfully."""
 
     def test_experts_are_described_as_measuring_the_whole_image(self):
-        assert "the expert measured the WHOLE image" in FORENSIC_SYSTEM_PROMPT
-        assert "Judge the whole image, not the crop" in FORENSIC_SYSTEM_PROMPT
+        # 阶段 4.4：工具段由登记表生成，措辞随之更新（语义不变）。
+        assert "it measures the WHOLE image and locates nothing" in FORENSIC_SYSTEM_PROMPT
+        # 4.4 的读 token 契约用同样意思的新句子（区分 global 与 center_crop）
+        assert "Do not restate a crop-based measurement" in FORENSIC_SYSTEM_PROMPT
 
     def test_repeat_calls_are_forbidden_by_expert_not_by_region(self):
         """A repeat call is a repeat measurement, wherever the bbox points."""
@@ -158,8 +160,10 @@ class TestPromptMeasurementContract:
         assert "hard rule, not advice" in FORENSIC_SYSTEM_PROMPT
         assert "Do not repeat a call for a region you already measured" not in FORENSIC_SYSTEM_PROMPT
 
-    def test_the_read_contract_explains_the_global_scope_field(self):
-        assert "measurement_scope" in FORENSIC_SYSTEM_PROMPT
+    def test_the_read_contract_explains_the_scope_field(self):
+        """精简包（4.3）把字段改名为 `scope`，并新增 center_crop 的读法。"""
+        assert "`scope`" in FORENSIC_SYSTEM_PROMPT
+        assert "never saw the edges" in FORENSIC_SYSTEM_PROMPT
 
 class TestToolPolicies:
     """G4-b: the prompt must describe only the tools a session will serve."""
@@ -186,8 +190,11 @@ class TestToolPolicies:
         "未观察到明确异常，需要统计证据" in all 56 sessions because the template
         offered it *in place of* a description, so the planning line now asks
         for a scene description and names the anomalies separately:
-        84bc2c766c6d712a.  Anything that moves it again has to say so in a
-        commit.
+        84bc2c766c6d712a.  Stage 4.4 moved it again, twice over: the tool
+        sections are now generated from the score-semantics registry (so each
+        expert's conditions travel with it), and the reading contract describes
+        the slim pack the model actually receives — b6d8a47c514dfe6c.  Anything
+        that moves it again has to say so in a commit.
         """
         import hashlib
 
@@ -196,14 +203,15 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "84bc2c766c6d712a"
+            "b6d8a47c514dfe6c"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER
 
         assert TOOL_ORDER[0] == "probe"
         assert "<call_probe>" in FORENSIC_SYSTEM_PROMPT
-        assert "PRIMARY detector" in FORENSIC_SYSTEM_PROMPT
+        # 主检测器的定位现在写在登记表的 prompt_note 里（同一句话进提示词）
+        assert "Strongest available evidence" in FORENSIC_SYSTEM_PROMPT
 
     def test_a_policy_without_probe_never_advertises_it(self):
         """The shared FORBIDDEN sentence names variants, not tools — but nothing
@@ -229,10 +237,16 @@ class TestToolPolicies:
     def test_subset_drops_other_tools_measurement_guidance(self):
         from mllm.message_builder import build_forensic_prompt
 
-        prompt = build_forensic_prompt(["noise"])
-        measures = prompt.split("WHAT EACH TOOL ACTUALLY MEASURES")[1]
-        assert "<call_noise>" in measures
-        assert "<call_jpeg>" not in measures
+        # 登记表支撑的工具其说明已并入 ACTIONS 段，所以"子集只给自己的说明"
+        # 要整篇检查，而不是只看 MEASURES 段。
+        prompt = build_forensic_prompt(["probe"])
+        assert "<call_probe>" in prompt
+        assert "<call_npr>" not in prompt
+        assert "<call_univfd>" not in prompt
+        assert "<call_jpeg>" not in prompt
+        # 旧工具仍走手写段，子集过滤照旧生效
+        legacy = build_forensic_prompt(["noise"])
+        assert "<call_jpeg>" not in legacy.split("WHAT EACH TOOL ACTUALLY MEASURES")[1]
 
     def test_subset_says_other_tools_do_not_exist(self):
         from mllm.message_builder import build_forensic_prompt

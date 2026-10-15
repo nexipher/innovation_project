@@ -214,3 +214,18 @@
 * **执行结果与验证状态**：`core` **452 通过**、`module` **1032 通过**、`full` **1274 通过 / 3 跳过**；实测会话：模型看到的字段为那 9 个，完整 token（20 字段，含 strength/raw_metric/support）仍在证据链里。**未运行 GPU。**
 * **置信度或遗留待办（TODO）**：①4.4 旧专家退出注册 + 提示词按登记表重建（提示词现在还在描述旧工具箱与旧 token 形状，属于"接线未完成"）②4.5 小批 Agent 人工验收（全接通后才跑 GPU）③转换器（`utils/final_v2.py`）对新 token 形状（`model_delivered`、精简包）的适配在 4.4 一并检查
 
+### 2026-10-15 - 阶段四 4.4：工具箱换代（注册表 + 提示词按登记表重建 + 缺席/失败如实呈现）
+
+* **当前操作动作**：按用户指令完成 4.4——旧专家退出注册、提示词按登记表重建；并把"工具缺席/执行失败"从静默与崩溃改成如实呈现。
+* **对应计划锚点**：`plan.md` §3d 的 4.4
+* **核心变更说明**：
+  1. **默认工具箱＝val 选定的三个**：probe / npr / univfd（`CURRENT_TOOL_TAGS`），jpeg/frequency_v2/noise 退出默认注册但**保留派发与解析**（v2 复算与旧 trace 需要）。CPU 侧补了 `MockNPRExpert`/`MockUnivFDExpert`，并把两个阶段三的评测器桥接成专家接口（`NPRExpert`/`UnivFDExpert`）：一条测量路径、两种调用方。
+  2. **提示词由登记表生成**：工具动作行、量程、阈值、方向、测量范围、适用条件全部来自 `experts/score_semantics.json`，手写表只留给退役工具。**顺带抓到两件事**：①提示词"如何读 token"那段仍在描述**模型已经收不到的字段**（`calibrated_likelihood`/`applicability`）——4.3 改了投递、提示词没跟上，属真不一致；②我最初把 NPR 的内部说明（bootstrap CI、"适用条件写…不写…"）直接喂给了模型 ✗ → 登记表拆出 `prompt_note`（给模型的一句话）与 `usage_conditions`（内部，含统计与写法备注）。
+  3. **解析器认新标签**：`Parser.extract_all_calls` 原先只认 probe/freq/noise/jpeg，**新的 npr/univfd 根本解析不出来**（产品缺陷：整条新链会"0 次调用"跑到底）；`CALLABLE_TOOLS` 改为由模式表派生，并加测试要求它覆盖登记表里的每个专家。
+  4. **缺席与失败如实呈现（4.4b）**：调用了未注册工具 → 系统消息告知"本次会话不提供 X，可用工具：…"并计入 `unavailable_tool_calls`（旧行为是裸 `continue`，"没有这个工具"和"模型没调用"在 trace 里长得一样）；专家执行抛错 → 不再崩会话，留一条 `status="failed"` 的 token（含错误类型与原因）＋告知模型"这不是中性测量"＋计入 `failed_tool_calls`。失败 token 在账本里"投递零字段"，引用它给出的任何数字即 `fabricated_value` ✓（与 4.3 的字段规则接上）。
+  5. **提示词哈希重钉**：`84bc2c766c6d712a` → **`b6d8a47c514dfe6c`**（进 VERSIONS/指纹，属必须记录的变更），并在测试里写明两次变更的原因。
+  6. **"换工具箱会牵动所有编码了旧工具箱的地方"**：16 处测试随之更新（注入模式、mock 工具选择、控制器 fixture、提示词断言、解析器覆盖、增益对照的 dry-run 工具箱、端到端管线 fixture），其中折减审计那条改为**显式脚本驱动退役工具**——它验证的是 v2 可复算性，不该依赖当前 mock 的脚本。
+* **涉及/修改的文件清单**：`mllm/message_builder.py (Modified — 登记表驱动 + 新读 token 契约 + 哈希变化)`、`mllm/mock_client.py (Modified — 工具选择换当前工具箱 + 两种 token 形状)`、`utils/parser.py (Modified — npr/univfd 标签 + CALLABLE_TOOLS 派生)`、`state_machine/controller.py (Modified — 注册表 + 缺席/失败处理 + 两个计数器)`、`main.py (Modified — 新工具箱接线 + 惰性导入)`、`experts/{npr,univfd}.py (Modified — 专家桥接 + Mock)`、`scripts/{g8_smoke,qwen_gain_baseline}.py (Modified)`、`experts/score_semantics.json (Modified — prompt_note)`、`tests/{test_toolbox(new,10),test_tool_absence(new,8),test_message_builder,test_expert_admission,test_controller,test_pipeline,test_probe_wiring,test_mock_mllm,test_qwen_gain_baseline,test_g8_entry,test_g8_smoke} (Modified/Created)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`core` **470 通过**、`full` **1292 通过 / 3 跳过**；CPU mock 会话用新工具箱跑通（probe 被调用、model_concluded）；提示词里出现的每个专家都在登记表中（测试锁定）。**未运行 GPU**——按用户口径，小批 GPU 验收放在 4.5。
+* **置信度或遗留待办（TODO）**：①4.5 小批 Agent 人工验收（真实 Qwen3-VL + 新工具箱 + 最小审阅视图）②`utils/final_v2.py` 对新 token 形状（`model_delivered`、精简包）的适配仍需检查（转换器读 token 的地方）③NPR/UnivFD 的真机路径（GPU）尚未在会话里跑过——它们只在阶段三的离线评测里跑过④退役工具的代码与结果保留，未删除
+

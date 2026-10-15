@@ -252,8 +252,11 @@ class TestConditionSpec:
         # (MockProbeExpert shares PROBE's), which is what this pins; the real
         # one additionally depends on weights being present on the box.
         experts = _build_experts(dry_run=True)
-        dispatchable = set(ForensicStateMachine.EXPERT_KEY_MAP.values())
-        assert dispatchable <= set(experts), dispatchable - set(experts)
+        # 只要求**当前工具箱**在里面：退役标签（freq/noise/jpeg）不需要这个
+        # v1 时代的增益实验去服务它们（阶段 4.4）。
+        current = {ForensicStateMachine.EXPERT_KEY_MAP[tag]
+                   for tag in ForensicStateMachine.CURRENT_TOOL_TAGS}
+        assert current <= set(experts), current - set(experts)
 
 
 class TestRunCondition:

@@ -26,9 +26,8 @@ from mllm.mock_client import MockMLLMClient
 
 # 两个真实客户端都在函数里导入：mock 路径（CPU、测试、dry-run）不该为
 # torch+transformers 付导入代价（曾把导入基线从 116 MB 抬到 586 MB）。
-from experts.frequency_v2 import FrequencyExpertV2
-from experts.noise import NoiseExpert
-from experts.jpeg import JPEGExpert
+# 专家的导入放在函数里：npr/univfd 模块会拉 torch，而 mock 路径（CPU、测试、
+# dry-run）不该为 GPU 栈付导入代价——这条不变量由 tests/test_g8_entry.py 守着。
 from state_machine.controller import ForensicStateMachine
 from utils.logger import SessionLogger, log_operation
 
@@ -56,21 +55,37 @@ def build_probe_expert(mllm_type: str):
 
 
 def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> ForensicStateMachine:
-    """Construct the full forensic pipeline."""
+    """
+    Construct the forensic pipeline with the **g8 toolbox** (stage 4.4).
+
+    probe / npr / univfd — the three the val evaluation selected.  freq, jpeg and
+    noise are retired from the default toolbox (their code and results stay, for
+    replay); a session that still wants them registers them explicitly.
+    """
+    if mllm_type == "mock":
+        from experts.npr import MockNPRExpert
+        from experts.univfd import MockUnivFDExpert
+
+        npr_expert, univfd_expert = MockNPRExpert(), MockUnivFDExpert()
+    else:
+        from experts.npr import NPRExpert
+        from experts.univfd import UnivFDExpert
+
+        npr_expert = NPRExpert()
+        univfd_expert = UnivFDExpert()
     experts = {
-        "frequency_expert_v2": FrequencyExpertV2(),
-        "noise_expert": NoiseExpert(),
-        "jpeg_expert": JPEGExpert(),
+        "probe_dino_expert": build_probe_expert(mllm_type),
+        "npr_expert": npr_expert,
+        "univfd_expert": univfd_expert,
     }
-    probe = build_probe_expert(mllm_type)
-    if probe is not None:
-        experts["probe_dino_expert"] = probe
+    experts = {name: expert for name, expert in experts.items() if expert is not None}
 
     # The prompt may only promise what the session can serve: a model told
     # about a tool that is not registered spends turns on calls that are
-    # dropped silently (controller dispatch is a no-op on an unknown name).
-    tags = [ForensicStateMachine.EXPERT_SOURCE_MAP[name]
-            for name in experts if name in ForensicStateMachine.EXPERT_SOURCE_MAP]
+    # dropped silently.  Tool order follows the current toolbox (probe first).
+    available = {ForensicStateMachine.EXPERT_SOURCE_MAP[name]
+                 for name in experts if name in ForensicStateMachine.EXPERT_SOURCE_MAP}
+    tags = [tag for tag in ForensicStateMachine.CURRENT_TOOL_TAGS if tag in available]
     system_prompt = build_forensic_prompt(tags)
 
     if mllm_type in ("qwen", "qwen25"):

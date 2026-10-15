@@ -19,11 +19,17 @@ SD15_IMAGE = "dataset/GenImage_Test/SD15/001_sdv5_00003.png"
 ADM_IMAGE = "dataset/GenImage_Test/ADM/0_adm_174.PNG"
 
 def _build_fsm(mode="two_calls"):
+    # 当前工具箱（阶段 4.4）：probe / npr / univfd 的 CPU 桩。
+    # 旧专家仍可被显式注册，但默认管线不再服务它们——端到端测试必须走默认管线。
+    from experts.npr import MockNPRExpert
+    from experts.probe_dino import MockProbeExpert
+    from experts.univfd import MockUnivFDExpert
+
     mllm = MockMLLMClient(mode=mode, seed=42)
     experts = {
-        "frequency_expert_v2": FrequencyExpertV2(),
-        "noise_expert": NoiseExpert(),
-        "jpeg_expert": JPEGExpert(),
+        "probe_dino_expert": MockProbeExpert(),
+        "npr_expert": MockNPRExpert(),
+        "univfd_expert": MockUnivFDExpert(),
     }
     return ForensicStateMachine(mllm, experts)
 
