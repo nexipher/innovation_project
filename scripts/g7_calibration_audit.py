@@ -43,7 +43,12 @@ MANIFEST_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "manifest.json"
 SPLIT_PATH = os.path.join(PROJECT_ROOT, "calibration", "set", "g7_split.json")
 PROBE_TEMPLATE = os.path.join(PROJECT_ROOT, "calibration", "g7_external_probe_dino_{group}.json")
 OUTPUT_PATH = os.path.join(PROJECT_ROOT, "calibration", "g7_calibration_audit.json")
-TRACES_DIR = os.path.join(PROJECT_ROOT, "sft_data", "trajectories_g7_b1")
+# g7_b1 was archived on 2026-10-15; the audit reads the archived copy and the
+# empty read is refused rather than reported as a zero.
+from utils.batch import resolve_path as _resolve_path  # noqa: E402
+
+TRACES_DIR = _resolve_path(os.path.join(PROJECT_ROOT, "sft_data",
+                                        "trajectories_g7_b1"))[0]
 
 MATCHED_CELLS = ("real_png", "fake_png", "real_jpeg_q95", "fake_jpeg_q95",
                  "real_jpeg_q85", "fake_jpeg_q85", "real_jpeg_q70", "fake_jpeg_q70")
@@ -331,6 +336,8 @@ def order_dependence(traces_dir: str = TRACES_DIR) -> dict:
     from state_machine.halting_v2 import HaltingPolicyV2
 
     records = load_trajectory_records(traces_dir)
+    if not records:
+        raise SystemExit(f"没有轨迹记录：{traces_dir}")
     deltas = []
     for record in records.values():
         chain = [{"source": t.get("source"),

@@ -48,7 +48,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import PROJECT_ROOT
 from utils.final_v2 import validate_sample
 
-FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
+# The v1 training set was archived on 2026-10-15: resolve it through the map,
+# and refuse an empty read (an empty screen is not a passing screen).
+from utils.batch import resolve_path as _resolve_path  # noqa: E402
+
+FINAL_V2_DIR = _resolve_path(os.path.join(PROJECT_ROOT, "sft_data", "train",
+                                          "final_v2"))[0]
 OUTPUT_PATH = os.path.join(PROJECT_ROOT, "calibration", "visual_grounding_screen.json")
 BUCKET_FILES = ("sft_tool_positive.json", "sft_no_tool_positive.json",
                 "sft_honest_abstention.json")
@@ -367,6 +372,9 @@ def main() -> None:
     args = parser.parse_args()
 
     samples = load_samples(args.final_v2_dir)
+    if not samples:
+        # An empty read is not a clean screen; say which directory was empty.
+        raise SystemExit(f"没有可筛查的样本：{args.final_v2_dir}")
     samples_by_id = {s["id"]: s for s in samples}
     if args.only_clean:
         samples = [s for s in samples if not validate_sample(s)]
