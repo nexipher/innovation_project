@@ -51,3 +51,16 @@
 * **涉及/修改的文件清单**：`utils/batch.py (Modified — generation_register/generation_status/assert_generation_is_writable + 两级判定顺序)`、`scripts/build_review_from_trajectories.py`、`scripts/g7_select_sources.py`、`scripts/g7_abstention_diagnosis.py`、`scripts/g7_ledger_replay.py`、`scripts/build_g7_group_d.py`、`scripts/cpu_acceptance_r5.py`、`scripts/g7_b2_report.py (Modified — 必填代次/归档感知)`、`tests/test_batch_binding.py (Modified — WRITERS 扩到九个 + 三项代次级冻结测试)`、`plan.md`、`README.md`、`CURRENT_PROGRAM_ARCHITECTURE.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
 * **执行结果与验证状态**：`core` **348 通过**、`module` **919 通过**、`full` **1161 通过 / 3 跳过**；真 CLI 验证：`--generation g7 --batch b9` 被拒（提到"不得在其下新建任何批次"）、`--generation g9` 被拒（列出登记表只有 g7/g8）、`--generation g7 --batch g7_b2 --allow-frozen` 放行。**未运行 GPU。**
 * **置信度或遗留待办（TODO）**：①"九个"是**当前**的完整清单，不是永久结论——同一轮就补了两次，故把清单放进测试并写明判据（sweep `batch_paths(` 调用方 + 直接写 `sft_data/` 的脚本）②`apply_review.py`/`build_review_workstation.py` 等模块级默认常量（如 `FINAL_V2_DIR`）仍在文件里，但 `main()` 一律用 `batch_paths(batch, generation)` 覆盖；常量是历史默认值，清理由阶段 4 的退役一并做③阶段 2 仍需用户事实（Qwen3-VL 版本/推理模式、NPR/UnivFD 权重与许可、noise 评测口径、重复轮处置口径）
+
+### 2026-10-15 - 收口复查：把"完整性"从口头结论改成可复核的分档
+
+* **当前操作动作**：上一条只按 `batch_paths(` 调用方判完整性，结论被用户指出不成立。改为**两条独立口径**重查：①调用 `batch_paths` 的脚本；②**直接写/读 `sft_data/` 路径**而不经它的脚本。后一条又查出两个只读分析脚本会空读归档。
+* **对应计划锚点**：`plan.md` §1 第 3 项（写入入口清单）
+* **核心变更说明**：
+  1. **`g7_calibration_audit.py`**：读 g7_b1 轨迹做"参考后验是否依赖调用顺序"的审计——归档后会在**零会话里找不到任何顺序依赖**，看起来像结论。改走 `resolve_path`，并在零轨迹时直接报错（点明目录）。
+  2. **`screen_visual_grounding.py`**：读 v1 训练集做视觉落地筛查——空筛查会被当成"没有可疑项"。同样改走映射 + 空读报错。
+  3. **`g7_acceptance.py` 无需改动**（读校准集与 `split_v2.json`，二者都没移动）——这一条也写进日志，避免下次有人再查一遍。
+  4. **分档口径固定下来**：脚本只有三种状态，且状态在文件里可见——**九个写入入口**（必填 `--generation` + 冻结拒收）、**十个只读/复算脚本**（走 `PATH_MAP` 解析，空读报错或标注）、**v1 流水线脚本**（对归档输入直接拒绝）。这比"全部已迁移"这种断言更可复核。
+* **涉及/修改的文件清单**：`scripts/g7_calibration_audit.py`、`scripts/screen_visual_grounding.py`、`claude_operation_log.md`
+* **执行结果与验证状态**：`module` **919 通过**、`full` **1161 通过 / 3 跳过**；两条口径的审计输出已打印在会话中（9 写入 ✅ / 3 复算 ✅ / 其余逐个判定）。**未运行 GPU。**
+* **置信度或遗留待办（TODO）**：①分档仍是"当前文件状态"的结论，不是不变量——判据已写进测试（写入入口）与日志（两条口径的命令）②阶段 2 仍需用户事实（Qwen3-VL 版本/推理模式、NPR/UnivFD 权重与许可、noise 评测口径、重复轮处置口径）
