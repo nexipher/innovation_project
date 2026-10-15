@@ -2651,3 +2651,10 @@ CPU 修复通过后申请：**约 50–100 次会话**，覆盖 Real/Fake、单�
 - **问题 2（转换器丢信息）**：`render_observation` 只读 `record["resolution"]`，而该字段只有一个调用方填；追踪元数据里的 `image_size` 从未被使用 → 56/56 样本打印 `resolution: None`。现在按来源依次取：split 源图分辨率 → **追踪 `image_size`（模型实际所见）** → 证据 token；并**注明来源**；三者皆无时写"未记录"，不再写 `None`。
 - **明确不做的事**：转换器**不补写模型从未说过的视觉描述**；模型只说了通用句，样本就只保留那句（可核对）。工作台构建脚本改为调用 `build_final_v2.extract_observation`（唯一实现，避免两处漂移）——它此前只找 `<observation>` 块，导致 v3 批次的规划行原话全部丢失。
 - **审核材料已重建**：56 页样本的 observation 段现在是「模型原话 + container/quality + 真实分辨率（含来源）」，指纹 `20e7ba4c80984686`。
+
+### 阶段 1 方案修订：目录隔离 + 显式代次参数（用户 2026-10-15 决定）
+
+- **代次由目录承担**：`sft_data/<generation>/{trajectories,variants,review,train/batches}/<batch>/`；批次名**不含代次**（`b1`、`b2`…）。
+- **代次作显式参数**：`batch_paths(batch_id, generation=None)`（None ⇒ 旧平铺布局，仅历史 id）；`assert_not_frozen_batch(batch, purpose, generation, allow=False)` 的 `generation` **必填无默认**；三个写入脚本新增**必填** `--generation`，缺失即报错——**没有代次参数就没有输出路径**，因此不存在猜代次或命名冲突。
+- **冻结身份 = (显式代次, 批次)**；未登记的代次、代次内重名、已冻结的组合一律拒绝。
+- **历史兼容**：旧平铺路径与旧 id（`g4_trial`/`g7_b1`/`g7_b2`）只服务复算；`PATH_MAP.json` 只描述"旧路径→归档路径"。

@@ -18,15 +18,22 @@
 | `g7`（含更早的 `g4_trial`/237 集） | Qwen2.5-VL + PROBE/noise/jpeg/frequency_v2（v2/v3 策略时代） | **冻结**（`FROZEN.json` 已登记，代码层拒收） |
 | `g8` | **本次新代次**：Qwen3-VL-8B（待定版本）+ PROBE / noise / NPR / UnivFD（候选），v3 原则、无参考后验 | 待建 |
 
-命名规则（新版批次一律带代次前缀）：
+**目录承担代次，批次名保持单纯**（不采用 `g8_b1` 这类把两层含义挤进一个名字的写法）：
 
 ```text
-sft_data/trajectories_g8_b1/        sft_data/variants_g8_b1/
-sft_data/train/batches/g8_b1/       sft_data/review/g8_b1/
-sft_data/admission_report_g8_b1.json
+sft_data/g8/
+├── trajectories/b1/
+├── variants/b1/
+├── review/b1/
+└── train/batches/b1/
 ```
 
-旧目录（`trajectories_g7_b1` 等）**保持原名**——它们将被归档，改名只会让历史引用更难解析。
+- 批次名就是 `b1`、`b2`……**不含代次**；代次是路径的一段，由调用方**显式传入**。
+- 因此不存在"猜代次"这回事：没有代次参数就没有输出路径，冲突无从产生。
+- 旧布局（`sft_data/trajectories_g7_b1/`、`sft_data/train/batches/g7_b1/` 等平铺命名）
+  **保持原样并被归档**，只服务于历史复算；新版一律走 `sft_data/<generation>/`。
+- 两套布局并存但**不混用**：`generation` 给 `None` ⇒ 旧平铺布局（且只允许历史 id）；
+  给了 `generation` ⇒ 新嵌套布局。见 §3.1。
 
 ## 3. 三处代码改动（实施阶段 1 执行，改动很小）
 
@@ -47,17 +54,29 @@ sft_data/admission_report_g8_b1.json
 }
 ```
 
-`utils/batch.py` 的三处小改：
-- `frozen_batches()` 返回 `{(generation, batch): entry}`；
-- `assert_not_frozen_batch(batch_id, purpose, allow=False, generation=None)`：
-  **代次必须显式给出，或能从批次 id 推导出来**（`g8_b1 → g8`）。推导不出又没有显式代次
-  → **直接报错**，不猜默认值——"默认 g8"就是下一个"默认 v2"。
-- 裸名称回退**只对历史批次开放**：`g4_trial`/`g7_*` 这些在登记表里有明确 `generation` 的
-  旧 id 走"裸名 → (g7, id)"映射；**新代次的 id 必须自带可推导的代次**，否则拒绝。
-  这样既保住旧调用，又不会让新版批次重新掉进"裸名冻结歧义"。
+`utils/batch.py` 的改动（约四处）：
 
-**验收**：`g8_b1` 通过；`g7_b1`/`g7_b2`/`g4_trial` 仍拒绝（现有 5 项测试保持通过）；
-`"b1"`（无代次、又不在历史登记表里）**报错**而不是被当成某个后代次。
+```python
+def batch_paths(batch_id: str, generation: Optional[str] = None) -> Dict[str, str]:
+    """generation=None -> 旧平铺布局（仅历史 id）；否则 sft_data/<generation>/<kind>/<batch>/。"""
+
+def assert_not_frozen_batch(batch: str, purpose: str, generation: str,
+                            allow: bool = False) -> None:
+    """generation 必填、无默认值：不猜，也不从批次名推——名字里已经没有代次了。"""
+```
+
+- **显式代次**：三个写入入口（`generate_trajectories_g4` / `build_final_v2` / `apply_review`）
+  新增**必填** `--generation`；缺了就报错退出（不允许"默认 g8"）。
+- **冻结身份 = (显式代次, 批次)**：`frozen_batches()` 返回 `{(generation, batch): entry}`。
+- **历史兼容**：`generation=None` 时走旧平铺布局，且**只允许登记表里已有的历史 id**
+  （`g4_trial`、`g7_b1`、`g7_b2`）——它们各自的代次写在登记表里（都是 `g7`）。
+  新版脚本不经过这条路径。
+- **冲突即报错**：`(generation, batch)` 已在冻结登记中 ⇒ 拒绝；未登记的代次 ⇒ 拒绝；
+  同一代次目录内批次名重复 ⇒ 拒绝。
+
+**验收**：`sft_data/g8/...` 下的新批次 `b1` 通过；`g7_b1`/`g7_b2`/`g4_trial` 仍拒绝
+（现有 5 项测试保持通过）；**不带 `--generation` 的新版调用直接报错**；
+历史 id 不带 generation 仍可解析到旧布局（只读/复算场景）。
 
 ### 3.2 代次登记表 `sft_data/GENERATIONS.json`（**不能替代批次身份**）
 
@@ -66,9 +85,9 @@ sft_data/admission_report_g8_b1.json
 不能靠"同代次"推断。`write_batch_versions` 因此要扩展为：
 
 ```json
-{"generation": "g8", "created_at": "…",
+{"generation": "g8", "root": "sft_data/g8", "created_at": "…",
  "model": {"name": "Qwen3-VL-8B", "checkpoint": "<待确认>", "inference_mode": "<待确认>"},
- "experts": ["probe", "noise", "nPR", "univfd"],
+ "experts": ["probe", "noise", "npr", "univfd"],
  "prompt_digest": "…", "calibration": {"digest": "…", "fitted_on": "…"},
  "status": "active"}
 ```
@@ -99,6 +118,9 @@ sft_data/admission_report_g8_b1.json
     "kind": "dir", "files": 61, "digest": "4aa50568ff820f03", "digest_covers_content": true}
  ]}
 ```
+
+**新布局不产生新的映射需求**：`sft_data/g8/...` 是全新路径，与归档无关；
+`PATH_MAP.json` 只描述"旧平铺路径 → 归档路径"，且只在 `generation=None` 的历史复算里被查询。
 
 配套一个只读解析器（`utils/batch.py`）：
 
@@ -153,7 +175,9 @@ def resolve_path(path: str) -> tuple[str, bool]:
 4. 建新版 `plan.md`、`claude_operation_log.md`（同名，顶部注明历史入口）；
    **并按提案 §2 的批注统一更新一次 README、删除旧字段**——即把 README 里
    描述 v1 代次的语句收敛成"指向归档"的一句话，只保留当前能运行的内容；
-5. 改 `FROZEN.json` + `utils/batch.py` 三处（§3.1）、加 `GENERATIONS.json`（§3.2）、加 `resolve_path`（§3.3）；
+5. 改 `FROZEN.json`（加 `generation` 字段）与 `utils/batch.py`（`batch_paths` 支持嵌套布局、
+   `assert_not_frozen_batch` 要求显式代次）、加 `GENERATIONS.json`（§3.2）、加 `resolve_path`（§3.3）；
+   三个写入脚本加**必填** `--generation`；建 `sft_data/g8/` 空骨架（trajectories/variants/review/train/batches）；
 6. 跑 `scripts/run_tests.sh core`，确认门禁与路径相关测试全绿（预计需要改 3–5 处测试里的硬编码路径）。
 
 **归档体量（按新口径）**：待归档 = docs+history 共 30 项、**约 119 MB**（已去父子重叠）；
