@@ -21,10 +21,11 @@ from config import (
     GENIMAGE_SUBDIRS,
     MOCK_MLLM_MODE,
 )
-import torch
 from mllm.message_builder import build_forensic_prompt
 from mllm.mock_client import MockMLLMClient
-from mllm.qwen_client import QwenVLClient
+
+# 两个真实客户端都在函数里导入：mock 路径（CPU、测试、dry-run）不该为
+# torch+transformers 付导入代价（曾把导入基线从 116 MB 抬到 586 MB）。
 from experts.frequency_v2 import FrequencyExpertV2
 from experts.noise import NoiseExpert
 from experts.jpeg import JPEGExpert
@@ -41,7 +42,8 @@ def build_probe_expert(mllm_type: str):
     from the prompt.  CPU sessions get the mock, which is what makes the
     whole PROBE path testable without a GPU.
     """
-    if mllm_type != "qwen":
+    # CPU 会话用 mock 专家；`qwen`（Qwen3）与 `qwen25`（历史复算）都是真会话。
+    if mllm_type == "mock":
         from experts.probe_dino import MockProbeExpert
         return MockProbeExpert()
     from experts.probe_dino import ProbeDinoExpert
@@ -71,12 +73,27 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE) -> Foren
             for name in experts if name in ForensicStateMachine.EXPERT_SOURCE_MAP]
     system_prompt = build_forensic_prompt(tags)
 
-    if mllm_type == "qwen":
+    if mllm_type in ("qwen", "qwen25"):
+        import torch                      # 只有真会话分支才需要它
+
         if not torch.cuda.is_available():
             print("Warning: CUDA not available. Falling back to MockMLLMClient.")
             mllm = MockMLLMClient(mode=mode)
+        elif mllm_type == "qwen":
+            # 当前版本：Qwen3-VL-8B-Instruct（固定 revision，见 mllm/qwen3_client.py）
+            from mllm.qwen3_client import Qwen3VLClient
+
+            mllm = Qwen3VLClient(system_prompt=system_prompt)
+            # 身份可得就写出来（批次版本绑定要用）；客户端没这个接口也不该崩在启动路径上。
+            revision = getattr(mllm, "revision", None)
+            print(f"Using {mllm.name}" + (f" @ {revision[:8]}" if revision else "") + " (GPU)")
+            if callable(getattr(mllm, "identity", None)):
+                print(f"  model identity: {mllm.identity()}")
         else:
-            print("Using Qwen2.5-VL-7B-Instruct (GPU)")
+            # 历史复算专用：与 FORENSIC_HALTING_POLICY=v2 同一性质，不用于新会话
+            from mllm.qwen_client import QwenVLClient
+
+            print("Using Qwen2.5-VL-7B-Instruct (GPU, 仅历史复算)")
             mllm = QwenVLClient(system_prompt=system_prompt)
     else:
         mllm = MockMLLMClient(mode=mode)
@@ -182,8 +199,9 @@ def main():
         help="Path to a single image file for forensic analysis.",
     )
     parser.add_argument(
-        "--mllm", type=str, default="mock", choices=["mock", "qwen"],
-        help="MLLM backend: 'mock' (template) or 'qwen' (Qwen2.5-VL-7B, needs GPU).",
+        "--mllm", type=str, default="mock", choices=["mock", "qwen", "qwen25"],
+        help=("MLLM backend: 'mock' (template, CPU), 'qwen' = Qwen3-VL-8B-Instruct"
+              "（当前，需 GPU）, 'qwen25' = Qwen2.5-VL-7B（仅历史复算）。"),
     )
     parser.add_argument(
         "--batch", "-b", type=str,

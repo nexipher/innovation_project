@@ -83,13 +83,14 @@
         ],
         "direction": "higher_is_real",
         "is_calibrated_probability": false,
-        "note": "**两个字段方向相反**：strength 是 sigmoid 归一化后的带内位置（高=像相机传感器=偏 Real）；raw_metric 是 SRM 不一致度原始值（高=残差被破坏=偏 Fake，取值不在 [0,1]）。token 的 `strength` 与 `raw_metric` 因此不能互换，评测必须写明用的是哪一个。",
+        "note": "**代码里 strength 与 raw_metric 同号**：strength = 1/(1+exp(−s·(x−m)))，对 inconsistency（= raw_metric）单调递增，专家内部**没有翻转**。两者差别只在量纲：strength ∈ [0,1]，inconsistency 无上界。",
         "also_recorded": [
           {
             "field": "raw_metric",
             "meaning": "SRM 局部方差一致性被破坏的程度",
             "range": "≥0（无上界）",
-            "direction": "higher_is_fake"
+            "direction": "higher_is_real",
+            "note": "与 strength 同号（见上）；校准表按本字段建分箱"
           }
         ]
       },
@@ -132,7 +133,14 @@
           "reads": "raw_metric 或 strength（任一）",
           "defect": "把两者都当作“模型引用的那个数”接受：模型引用方向相反的另一个字段，检查仍然通过。阶段 4 必须按语义登记判定模型指的是哪个字段。"
         }
-      ]
+      ],
+      "direction_history": {
+        "algorithm_assumption": "原始读法（文献直觉）：不一致度越高 ⇒ 越可能被篡改 ⇒ 偏 Fake",
+        "empirical_finding": "本项目 G2-b/G2-e 经验关联相反：高残差落在**相机（Real）端**，故登记方向为 higher_is_real；G2-g8 的 val 复核一致（mean(Real) 0.61 vs mean(Fake) 0.39，AUROC 0.66）。",
+        "code_state": "代码未做符号翻转，只做 sigmoid 归一化；方向反转是**经验结论**，记在这里而不是藏在字段名里",
+        "scope": "该专家已退出候选主线（用户 2026-10-15），本条只作历史说明，不再优化",
+        "correction": "2026-10-15：此前登记写成“raw_metric 与 strength 方向相反”**是错的**——两者同号；相反的是“算法原始假设”与“经验数据关联”。"
+      }
     },
     "npr_expert": {
       "variant": "npr",
@@ -338,7 +346,7 @@
       {
         "consumer": "utils/evidence_ledger.py 的数值核对",
         "reads": "raw_metric 或 strength（任一）",
-        "defect": "把两者都当作“模型引用的那个数”接受：模型引用方向相反的另一个字段，检查仍然通过。阶段 4 必须按语义登记判定模型指的是哪个字段。"
+        "defect": "数值核对把 raw_metric 与 strength 任一都当作“模型引用的那个数”接受，但两者量纲不同（[0,1] vs 无上界）、且语义要靠登记方向解释：模型引用另一个字段时数值对不上却仍通过。阶段四按语义登记判定引用的是哪个字段。"
       }
     ]
   }

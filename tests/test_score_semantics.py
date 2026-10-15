@@ -72,20 +72,28 @@ class TestTheDirectionsAreTheCorrectedOnes:
         """
         assert direction_of("noise_expert") == "higher_is_real"
 
-    def test_noises_two_fields_point_in_opposite_directions(self):
+    def test_noises_two_fields_share_a_direction_and_differ_in_scale(self):
         """
-        `raw_metric` is the SRM inconsistency (higher = more disrupted = Fake),
-        `strength` is its normalised position inside the G2 band (higher = looks
-        like a camera sensor = Real).  Treating them as interchangeable inverts
-        this expert — which is the mistake this registry exists to prevent.
+        The code maps `raw_metric` (SRM inconsistency) to `strength` through a
+        **monotone increasing** sigmoid, so the two fields point the same way;
+        the registry used to claim they were opposite, which was wrong.  What is
+        actually inverted is the *empirical* association against the algorithm's
+        original assumption — that distinction is what has to survive.
         """
         score = entry("noise_expert")["raw_score"]
         assert score["field"] == "strength"
         assert score["direction"] == "higher_is_real"
         recorded = score["also_recorded"][0]
         assert recorded["field"] == "raw_metric"
-        assert recorded["direction"] == "higher_is_fake"
-        assert "无上界" in recorded["range"]
+        assert recorded["direction"] == score["direction"], "两个字段同号，不是相反"
+        assert "无上界" in recorded["range"], "量纲不同才是两者的差别"
+
+    def test_the_assumption_and_the_empirical_finding_are_kept_apart(self):
+        history = entry("noise_expert")["direction_history"]
+        assert "Fake" in history["algorithm_assumption"]          # 算法原读法
+        assert "Real" in history["empirical_finding"]              # 经验关联
+        assert "没有翻转" in history["code_state"] or "未做符号翻转" in history["code_state"]
+        assert "是错的" in history["correction"], "要留下这次更正的痕迹"
 
     def test_the_discriminators_point_at_fake(self):
         for name in ("probe_dino_expert", "npr_expert", "univfd_expert"):
