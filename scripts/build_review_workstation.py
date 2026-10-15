@@ -46,7 +46,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
 from utils import weak_evidence
-from utils.batch import LEGACY_BATCH, batch_fingerprint, batch_paths
+from utils.batch import (
+    LEGACY_BATCH,
+    assert_not_frozen_batch,
+    batch_fingerprint,
+    batch_paths,
+)
 
 FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
 BUCKET_FILES = ("sft_tool_positive.json", "sft_no_tool_positive.json",
@@ -1124,16 +1129,23 @@ def main() -> None:
     parser.add_argument("--variants-manifest", default=None)
     parser.add_argument("--split-path", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    # Same rule as the other batch writers (§ 阶段 1): the workstation is part
+    # of a batch's material, so it cannot be written without saying which
+    # generation it belongs to.
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     args = parser.parse_args()
+    assert_not_frozen_batch(args.batch, "审核工作台", args.generation)
+    paths = batch_paths(args.batch, args.generation)
 
     if args.final_v2_dir is None:
-        args.final_v2_dir = batch_paths(args.batch)["samples"]
+        args.final_v2_dir = paths["samples"]
     if args.output_dir is None:
-        args.output_dir = batch_paths(args.batch)["review"]
+        args.output_dir = paths["review"]
     if args.trajectories_dir is None:
-        args.trajectories_dir = batch_paths(args.batch)["trajectories"]
+        args.trajectories_dir = paths["trajectories"]
     if args.variants_manifest is None:
-        args.variants_manifest = batch_paths(args.batch)["variants"]
+        args.variants_manifest = paths["variants"]
 
     report = build(args.final_v2_dir, args.output_dir, args.trajectories_dir,
                    args.variants_manifest, args.split_path, args.batch)

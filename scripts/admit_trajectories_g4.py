@@ -44,7 +44,7 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import LEGACY_BATCH, batch_paths
+from utils.batch import LEGACY_BATCH, assert_not_frozen_batch, batch_paths
 from scripts.generate_trajectories_g4 import (
     APPLICABILITY_THRESHOLD,
     load_applicability,
@@ -304,9 +304,15 @@ def main() -> None:
     parser.add_argument("--trajectories-dir", default=None)
     parser.add_argument("--output", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    # Same rule as the other batch writers (§ 阶段 1): no output path without an
+    # explicit generation.  Without it the default lands on the archived v1
+    # report path, and `--batch b1` would create new material in the flat layout.
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--threshold", type=float, default=APPLICABILITY_THRESHOLD)
     args = parser.parse_args()
-    paths = batch_paths(args.batch)
+    assert_not_frozen_batch(args.batch, "准入判定", args.generation)
+    paths = batch_paths(args.batch, args.generation)
     if args.trajectories_dir is None:
         args.trajectories_dir = paths["trajectories"]
     if args.output is None:

@@ -41,8 +41,9 @@ from typing import Dict, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import PROJECT_ROOT
-from utils.batch import (BUCKET_FILES, LEGACY_BATCH, batch_fingerprint,
-                         batch_paths, content_sha256, load_samples)
+from utils.batch import (BUCKET_FILES, LEGACY_BATCH, assert_not_frozen_batch,
+                         batch_fingerprint, batch_paths, content_sha256,
+                         load_samples)
 
 DISPOSITIONS_PATH = os.path.join(PROJECT_ROOT, "sft_data", "review", "dispositions.jsonl")
 FINAL_V2_DIR = os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2")
@@ -274,15 +275,21 @@ def main() -> None:
     parser.add_argument("--dispositions", default=None)
     parser.add_argument("--final-v2-dir", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    # The dispositions ledger is batch material too: it is written next to the
+    # batch's review directory, so it takes the same explicit generation as the
+    # other writers (§ 阶段 1).
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--allow-unversioned", action="store_true",
                         help="接受没有批次指纹的旧导出（默认拒绝）")
     args = parser.parse_args()
+    assert_not_frozen_batch(args.batch, "审核处置记录", args.generation)
+    paths = batch_paths(args.batch, args.generation)
 
     if args.dispositions is None:
-        args.dispositions = os.path.join(batch_paths(args.batch)["review"],
-                                         "dispositions.jsonl")
+        args.dispositions = os.path.join(paths["review"], "dispositions.jsonl")
     if args.final_v2_dir is None:
-        args.final_v2_dir = batch_paths(args.batch)["samples"]
+        args.final_v2_dir = paths["samples"]
     if args.import_file:
         report = import_decisions(args.import_file, args.reviewer,
                                   args.dispositions, args.final_v2_dir, args.batch,

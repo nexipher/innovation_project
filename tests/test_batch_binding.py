@@ -250,16 +250,41 @@ class TestGenerationIsolation:
         for key in ("variants", "variants_dir", "trajectories", "admission", "samples"):
             assert "g7_small" in paths[key], key
 
+    WRITERS = ("build_variants_g4.py", "generate_trajectories_g4.py",
+               "admit_trajectories_g4.py", "build_final_v2.py",
+               "apply_review.py", "build_review_workstation.py", "record_review.py")
+
     def test_the_generation_scripts_take_the_batch_id(self):
         """The id has to reach the scripts, or the paths are theory."""
         import subprocess
 
-        for script in ("build_variants_g4.py", "generate_trajectories_g4.py",
-                       "admit_trajectories_g4.py", "build_final_v2.py"):
+        for script in self.WRITERS:
             output = subprocess.run(
                 [sys.executable, os.path.join(PROJECT_ROOT, "scripts", script), "--help"],
                 capture_output=True, text=True, timeout=120).stdout
             assert "--batch" in output, script
+
+    def test_every_batch_writer_demands_an_explicit_generation(self):
+        """
+        All seven, not just the three the plan first named.
+
+        A writer that can be run without `--generation` has a default output
+        path, and the default is the flat v1 layout — which is now the archive;
+        `admit_trajectories_g4.py` defaulted straight onto the archived
+        `sft_data/admission_report.json`.  This test is what keeps the list
+        complete: adding a writer means adding it here.
+        """
+        import subprocess
+
+        for script in self.WRITERS:
+            # Run it with no arguments: argparse refuses before any work is
+            # done, and its message names every required option — so this
+            # checks "required", not merely "accepted".
+            result = subprocess.run(
+                [sys.executable, os.path.join(PROJECT_ROOT, "scripts", script)],
+                capture_output=True, text=True, timeout=120)
+            assert result.returncode != 0, script
+            assert "--generation" in result.stderr, (script, result.stderr[-400:])
 
 class TestNoSharedOutputs:
     """Every script that writes a report must write it inside its batch."""
