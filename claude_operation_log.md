@@ -200,3 +200,17 @@
 * **执行结果与验证状态**：`core`/`module`/`full` 全绿（**full 1235 通过 / 3 跳过**）；CPU mock 会话复核：`posterior`/`tool_utilities`/`calibrated_likelihood`/`reliability`/`applicability` 在 v3 会话里**出现次数为 0**。**未运行 GPU**。
 * **置信度或遗留待办（TODO）**：①4.3 精简证据包（模型可见 vs 后台完整）与原始分数检查（含账本"任一字段都接受"的缺陷）②4.4 旧专家退出注册 + 提示词按登记表重建③4.5 小批 Agent 人工验收④v2 复算的"逐字节一致"尚未用真实批次验证（本轮只保证计算路径仍在；冻结批次复跑留待需要时做）
 
+### 2026-10-15 - 阶段四 4.3：精简证据包与"模型看到过哪些字段"的引用检查
+
+* **当前操作动作**：按用户指令做 4.3——模型可见的精简包与后台完整记录分开，并修掉账本"任一字段都接受"的缺陷。
+* **对应计划锚点**：`plan.md` §3d 的 4.3
+* **核心变更说明**：
+  1. **`EvidenceTokenizer.model_visible()`**：模型可见字段固定为 9 个（证据 ID／专家／测量名／执行状态／测量范围／**一个主分数 + 范围 + 方向 + 阈值 + 是否本地校准概率**／读数／产物与其含义）。`strength`、`raw_metric`、`support`、校准似然、适用性标签等**一律只在后台**——一个 token 曾经同时带五个可能互相打架的数值（G2-e 实测 frequency_v2 在 64 个样本里 15 个自相矛盾）。
+  2. **适用条件随分数走**：读数里**先放判定这个值所依据的那条规则说明**，再放该专家的登记条件。于是 NPR 的包自带"在本次 val 的 PNG 编码条件下强、JPEG 低分不等于强 Real"，UnivFD 自带"中心裁剪、看不到边缘"——限制不再躺在一段没人更新的提示词里。
+  3. **投递形态盖在 token 上**（`model_delivered: slim|full|none`）：账本、转换与审计据此判断"模型当时能引用什么"，无需调用方传参；**归档 trace 因此能自证模型看到了什么**。没有戳的 token 按旧批次处理（当时投递的就是完整 token），不倒扣。
+  4. **账本新增 `undelivered_field_reference`（defect）**：引用了**没投递给它**的字段值——数字可能千真万确，引用仍不成立。这正是 noise 的 `strength`/`raw_metric` 场景（量纲不同、方向不同）。命中投递字段是正常路径，不受影响。
+  5. **mock 客户端同步认两种形状**：包一改，三条冒烟检查立刻红——因为 mock 还在按旧字段解析、于是"后续轮引用数值"落空。它必须跟着活协议走，否则管线自检会在协议变更时**假装通过**。
+* **涉及/修改的文件清单**：`state_machine/evidence_tokenizer.py (Modified — model_visible + 字段集合常量)`、`state_machine/controller.py (Modified — 两处注入改用精简包 + 投递形态盖戳)`、`utils/evidence_ledger.py (Modified — delivered 字段 + _delivered_fields + 新缺陷类型)`、`mllm/mock_client.py (Modified — 两种形状归一化)`、`tests/{test_evidence_pack.py(new,27),test_evidence_ledger.py,test_controller.py,test_g8_smoke.py} (Modified/Created)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`core` **452 通过**、`module` **1032 通过**、`full` **1274 通过 / 3 跳过**；实测会话：模型看到的字段为那 9 个，完整 token（20 字段，含 strength/raw_metric/support）仍在证据链里。**未运行 GPU。**
+* **置信度或遗留待办（TODO）**：①4.4 旧专家退出注册 + 提示词按登记表重建（提示词现在还在描述旧工具箱与旧 token 形状，属于"接线未完成"）②4.5 小批 Agent 人工验收（全接通后才跑 GPU）③转换器（`utils/final_v2.py`）对新 token 形状（`model_delivered`、精简包）的适配在 4.4 一并检查
+

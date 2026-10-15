@@ -454,7 +454,9 @@ class TestEvidenceInjectionModes:
 
         turns = self._evidence_turns(result)
         assert len(turns) == 1
-        assert json.loads(turns[0]["value"])["evidence_name"]  # token JSON
+        pack = json.loads(turns[0]["value"])            # 精简包（阶段 4.3）
+        assert pack["measurement"] and pack["score"]["value"] is not None
+        assert "strength" not in pack, "完整 token 不该再投给模型"
         assert not turns[0].get("image_paths")
 
         token = result["evidence_chain"][0]
@@ -497,7 +499,8 @@ class TestEvidenceInjectionModes:
         for result in (default, explicit):
             turns = self._evidence_turns(result)
             assert len(turns) == 1
-            assert json.loads(turns[0]["value"])["evidence_name"]
+            pack = json.loads(turns[0]["value"])
+            assert pack["measurement"] and "score" in pack
             assert turns[0]["image_paths"]
 
 @pytest.mark.usefixtures("v2_policy")

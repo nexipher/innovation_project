@@ -341,3 +341,56 @@ class TestProseNumbersHaveARole:
         assert [f["kind"] for f in findings] == ["text_value_as_measurement"] * 2
         assert {f["value"] for f in findings} == {2.0, 3.6}
         assert all(f["severity"] == "candidate" for f in findings)
+
+
+class TestTheDeliveredFieldRule:
+    """
+    阶段 4.3：引用"没投递给模型的字段"不算忠实引用。
+
+    用户的场景：noise 的 strength（[0,1]，高=偏 Real）与 raw_metric（SRM 不一致度，
+    无上界）方向不同、量纲不同。模型只拿到一个；引用另一个的数值，即便数字本身是真的，
+    也是在讨论它没见过的量。
+    """
+
+    def _slim_token(self, source, delivered_field, delivered_value, other_field, other_value):
+        return {"source": source, "evidence_id": "E-1", "model_delivered": "slim",
+                delivered_field: delivered_value, other_field: other_value}
+
+    def test_quoting_the_delivered_field_is_fine(self):
+        from utils.evidence_ledger import Ledger
+
+        token = self._slim_token("noise_expert", "strength", 0.71, "raw_metric", 2.5)
+        ledger = Ledger.from_session([token])
+        assert ledger.measured["noise_expert"].delivered == {"strength": 0.71}
+
+    def test_quoting_the_undelivered_field_is_a_defect(self):
+        from utils.evidence_ledger import Ledger
+
+        token = self._slim_token("noise_expert", "strength", 0.71, "raw_metric", 2.5)
+        ledger = Ledger.from_session([token])
+        finding = ledger._check_number(2.5, 1, "noise_expert", ["noise_expert"],
+                                       strict=False, label=None, system_cue=False,
+                                       clause="噪声残留专家报告了 2.5")
+        assert finding is not None
+        assert finding["kind"] == "undelivered_field_reference"
+        assert finding["severity"] == "defect"
+        assert "raw_metric" in finding["why"]
+
+    def test_a_token_without_the_stamp_is_treated_as_fully_delivered(self):
+        """旧批次的 token 没有戳，当时投递的就是完整 token——不能倒扣它。"""
+        from utils.evidence_ledger import Ledger
+
+        token = {"source": "noise_expert", "evidence_id": "E-2",
+                 "strength": 0.71, "raw_metric": 2.5}
+        ledger = Ledger.from_session([token])
+        assert ledger.measured["noise_expert"].delivered == {"strength": 0.71,
+                                                             "raw_metric": 2.5}
+
+    def test_a_none_delivery_delivers_nothing(self):
+        from utils.evidence_ledger import Ledger
+
+        token = {"source": "probe_dino_expert", "evidence_id": "E-3",
+                 "raw_metric": 0.93, "model_delivered": "none"}
+        ledger = Ledger.from_session([token])
+        assert ledger.measured["probe_dino_expert"].delivered == {}
+

@@ -199,6 +199,9 @@ class ExpertRecord:
     source: str
     evidence_id: str = ""
     fields: Dict[str, float] = field(default_factory=dict)
+    # 模型当时**真的能看到**的字段（阶段 4.3）。引用了此表以外的字段值，
+    # 就是把没给它看过的东西说成测量——数值可能千真万确，引用仍不成立。
+    delivered: Dict[str, float] = field(default_factory=dict)
     text_values: List[float] = field(default_factory=list)
     # What this measurement supports, and on what basis.  `support_label` when
     # there is no calibration: the direction is then the expert's own label,
@@ -215,6 +218,34 @@ class ExpertRecord:
     def metric_fields(self) -> Dict[str, float]:
         return {name: value for name, value in self.fields.items()
                 if not name.startswith("calibrated_likelihood.")}
+
+
+def _delivered_fields(token: dict) -> Optional[Dict[str, float]]:
+    """
+    模型当时能看到的数值字段。
+
+    `model_delivered` 是投递时盖的戳：`slim`（只给一个主分数，阶段 4.3 起）、
+    `full`（v2 复算与旧批次：整个 token）、`none`（本轮不注入证据）。
+    没有戳的 token 一律按 `full` 算——它们正是旧批次，当时投递的就是完整 token。
+    """
+    mode = token.get("model_delivered")
+    if mode is None or mode == "full":
+        return None                      # None = 调用方按"全部字段"处理
+    if mode == "none":
+        return {}
+    source = token.get("source")
+    if not source:
+        return {}
+    try:
+        from utils.score_semantics import SemanticsError, entry
+
+        field = entry(source)["raw_score"]["field"]
+    except Exception:
+        field = "raw_metric"
+    value = token.get(field)
+    if value is None:
+        value = token.get("raw_metric", token.get("strength"))
+    return {field: float(value)} if isinstance(value, (int, float)) else {}
 
 
 @dataclass
@@ -242,6 +273,9 @@ class Ledger:
                 value = token.get(key)
                 if isinstance(value, (int, float)):
                     record.fields[key] = float(value)
+            delivered = _delivered_fields(token) if _delivered_fields(token) is not None \
+                else dict(record.fields)
+            record.delivered = delivered
             for name, value in (token.get("calibrated_likelihood") or {}).items():
                 if isinstance(value, (int, float)):
                     record.fields[f"calibrated_likelihood.{name}"] = float(value)
@@ -520,6 +554,24 @@ class Ledger:
                     if _matches_any(record.text_values, value, decimals, metric_cap):
                         text_only = primary
             else:
+                # 先看"模型能引用的字段"；命中即通过（这是正常路径）。
+                if _matches_any(list(record.delivered.values()), value, decimals, metric_cap):
+                    return None
+                # 数值对得上，但对的是**没投递给它**的字段（阶段 4.3）：
+                # 典型是 noise 的 raw_metric 与 strength 方向不同、量纲不同，
+                # 引用另一个字段的数值等于在讨论一个它没见过的量。
+                for name, known in record.fields.items():
+                    if name in record.delivered:
+                        continue
+                    if _matches(value, known, decimals, metric_cap):
+                        return {
+                            "kind": "undelivered_field_reference", "source": primary,
+                            "field": name, "severity": DEFECT,
+                            "evidence_id": record.evidence_id,
+                            "why": (f"{value:g} 是 {primary} 的 {name}，但本轮只向模型"
+                                    f"投递了 {sorted(record.delivered) or ['（未投递）']}；"
+                                    "引用未被投递的字段不能算忠实引用"),
+                        }
                 if _matches_any(list(record.fields.values()), value, decimals, metric_cap):
                     return None
                 if system_cue and _matches_any(self.system_values, value, decimals, metric_cap):

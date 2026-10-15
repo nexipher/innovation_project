@@ -206,6 +206,93 @@ class EvidenceTokenizer:
         else:
             return STRENGTH_SUPPORT_MAP["high"]
 
+    # 模型可见字段：固定集合，测试锁定。多一个字段就是多一层要解释的数值。
+    MODEL_VISIBLE_KEYS = ("evidence_id", "expert", "measurement", "status", "scope",
+                          "score", "reading", "visual_artifacts", "artifact_meaning")
+
+    @classmethod
+    def model_visible(cls, token: dict) -> dict:
+        """
+        The slim pack: what the model is shown, versus what the trace keeps.
+
+        Proposal §5's split, and the reason for it is in this project's history:
+        one token used to carry `strength`, `raw_metric`, `support`, a calibrated
+        likelihood, an applicability label and a direction — five numbers that
+        could disagree, and did (G2-e measured frequency_v2 contradicting itself
+        in 15 of 64 samples, and the model followed whichever field it trusted).
+
+        So the model gets **one** score, with what the score-semantics registry
+        says about it: its scale, its direction, the threshold that was recorded,
+        and the conditions under which it may be read (NPR is strong only under
+        this val's PNG encoding; UnivFD never sees the image edges).  Everything
+        else stays in the token for the ledger, the converter and the reviewer.
+
+        `status` is here because "no measurement" and "a measurement that came
+        out neutral" are different facts, and a missing field must not read as
+        the second one.
+        """
+        from utils.score_semantics import SemanticsError, direction_for_value, entry
+
+        source = token.get("source") or ""
+        record = None
+        try:
+            record = entry(source)
+        except SemanticsError:
+            record = None
+
+        score_field = (record or {}).get("raw_score", {}).get("field", "raw_metric")
+        raw = token.get(score_field)
+        if raw is None:
+            raw = token.get("raw_metric", token.get("strength"))
+
+        score: dict = {
+            "name": token.get("evidence_name"),
+            "value": raw,
+        }
+        reading_parts: list = []
+        if record is None:
+            # Unregistered expert (offline, mock, legacy): say so rather than
+            # borrow another expert's semantics.
+            score["direction"] = "未登记（无已核实的尺度与方向）"
+        else:
+            semantics = record["raw_score"]
+            score.update({
+                "range": semantics["range"],
+                "direction": semantics["direction"],
+                "is_calibrated_probability": False,
+                "threshold": record["threshold"]["value"],
+                "threshold_chosen_on": record["threshold"]["chosen_on"],
+            })
+            # 判定**这个值**所用的那条规则的说明排在最前：适用限制要跟着分数走，
+            # 而不是躺在一段没人更新的提示词里。
+            try:
+                _direction, rule = direction_for_value(source, float(raw))
+                if rule.get("note"):
+                    reading_parts.append(rule["note"])
+            except (SemanticsError, TypeError, ValueError):
+                pass
+            reading_parts.extend(record.get("usage_conditions") or [])
+            reading_parts.extend((record.get("limits") or [])[:2])
+
+        visible = {
+            "evidence_id": token.get("evidence_id"),
+            "expert": source,
+            "measurement": token.get("evidence_name"),
+            "status": token.get("status", "measured"),
+            "scope": token.get("measurement_scope"),
+            "score": score,
+            "reading": (
+                (token.get("phenomenon") or "").strip()
+                + ((" " + " ".join(reading_parts)) if reading_parts else "")
+            ).strip(),
+        }
+        artifacts = token.get("visual_artifacts")
+        if artifacts:
+            visible["visual_artifacts"] = list(artifacts)
+            visible["artifact_meaning"] = (
+                "诊断用可视化产物（供人核对，不是模型的判据；数值以上面的 score 为准）")
+        return visible
+
     @classmethod
     def to_json(cls, token: dict) -> str:
         """Serialize an Evidence Token dict to a JSON string for MLLM injection."""

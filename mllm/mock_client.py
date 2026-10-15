@@ -124,15 +124,48 @@ class MockMLLMClient(BaseMLLMClient):
         except Exception:
             self._image_shape = (512, 512)  # fallback
 
+    def _normalise_evidence(self, blob: dict) -> dict:
+        """
+        Accept both shapes: the slim pack the model now receives (stage 4.3) and
+        the full token older tests feed in directly.
+
+        A mock that only speaks the retired shape stops exercising the protocol —
+        it would answer from nothing and the pipeline's own checks would look
+        like they passed (this is exactly what broke here).
+        """
+        if "score" in blob and "expert" in blob:          # 精简包
+            score = blob.get("score") or {}
+            direction = score.get("direction")
+            value = score.get("value")
+            threshold = score.get("threshold")
+            support = "Uncertain"
+            if isinstance(value, (int, float)) and isinstance(threshold, (int, float)):
+                if direction == "higher_is_fake":
+                    support = "AI-generated" if value >= threshold else "Real"
+                elif direction == "higher_is_real":
+                    support = "Real" if value >= threshold else "AI-generated"
+            return {
+                "source": blob.get("expert", ""),
+                "evidence_name": blob.get("measurement", ""),
+                "strength": value if isinstance(value, (int, float)) else 0.5,
+                "phenomenon": blob.get("reading", ""),
+                "support": support,
+                "direction": direction,
+                "_raw_pack": blob,
+            }
+        return blob
+
     def _extract_last_evidence(self, history: List[Dict]) -> Optional[dict]:
-        """Extract the most recent Evidence Token JSON from conversation history."""
+        """The most recent evidence JSON in the conversation, in either shape."""
         for h in reversed(history):
             if h.get("from") != "user":
                 continue
             val = h.get("value", "")
-            if '"evidence_name"' in val and '"strength"' in val:
+            is_pack = '"evidence_id"' in val and '"score"' in val
+            is_token = '"evidence_name"' in val and '"strength"' in val
+            if is_pack or is_token:
                 try:
-                    evidence = json.loads(val)
+                    evidence = self._normalise_evidence(json.loads(val))
                     self._last_evidence_strength = evidence.get("strength", 0.5)
                     return evidence
                 except json.JSONDecodeError:

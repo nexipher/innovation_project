@@ -441,6 +441,16 @@ class ForensicStateMachine:
                         if len(artifact_rels) > 1:
                             evidence_token["visual_artifacts"] = artifact_rels[1:]
 
+                    # 这次投递给模型的是什么形状（阶段 4.3）：token 自己记住，
+                    # 账本、转换与审计都据此判断"模型当时能引用哪些字段"，
+                    # 不必由调用方传参——归档 trace 也因此能自证模型看到了什么。
+                    if self._uses_reference:
+                        evidence_token["model_delivered"] = "full"   # v2 复算投递完整 token
+                    elif self._evidence_injection == "none":
+                        evidence_token["model_delivered"] = "none"
+                    else:
+                        evidence_token["model_delivered"] = "slim"
+
                     # Record (always — the chain is the audit source of truth)
                     evidence_chain.append(evidence_token)
                     self._logger.add_evidence(evidence_token)
@@ -450,7 +460,11 @@ class ForensicStateMachine:
                     if self._evidence_injection == "none":
                         pass
                     elif self._evidence_injection == "text":
-                        evidence_json = EvidenceTokenizer.to_json(evidence_token)
+                        # 模型只看到精简包（提案 §5）：一个主分数 + 尺度/方向/阈值 +
+                        # 执行状态 + 测量范围 + 适用条件；完整 token 仍在 evidence_chain
+                        # 与 trace 里，供账本、转换与人工复核。
+                        evidence_json = EvidenceTokenizer.to_json(
+                            EvidenceTokenizer.model_visible(evidence_token))
                         self._logger.add_conversation_turn("user", evidence_json)
                         conversation.append({"from": "user", "value": evidence_json})
                     elif self._evidence_injection == "image":
@@ -472,8 +486,9 @@ class ForensicStateMachine:
                             "from": "user", "value": marker,
                             "image_paths": artifact_rels,
                         })
-                    else:  # "text+image" (default)
-                        evidence_json = EvidenceTokenizer.to_json(evidence_token)
+                    else:  # "text+image" (default) —— 同样只投递精简包
+                        evidence_json = EvidenceTokenizer.to_json(
+                            EvidenceTokenizer.model_visible(evidence_token))
                         self._logger.add_conversation_turn(
                             "user", evidence_json, image_paths=artifact_rels or None
                         )
