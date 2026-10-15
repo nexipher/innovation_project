@@ -3,17 +3,37 @@
   "decision": "过去的所有批次冻结为历史实验（用户 2026-10-13）；换专家后生成新版",
   "frozen": [
     {
+      "generation": "g7",
       "batch": "g4_trial",
       "reason": "最早的 237 集（v1/v2 时代），只作回归对照"
     },
     {
+      "generation": "g7",
       "batch": "g7_b1",
-      "reason": "v2 时代批次；已完成浏览器审核但未写回，不再与 SFT 挂钩"
+      "reason": "v2 时代批次；已导出审核但未写回，不与 SFT 挂钩"
     },
     {
+      "generation": "g7",
       "batch": "g7_b2",
       "reason": "v3 验收批次；换专家后由新版重新生成，不用于训练"
     }
   ],
-  "note": "本文件是**训练入口的硬约束**：apply_review / build_final_v2 / 轨迹生成都会读它并拒绝写入冻结批次；确需对冻结批次做分析时加 --allow-frozen，产物会被标注 frozen_batch_used=true。"
+  "note": "本文件是**训练入口的硬约束**：apply_review / build_final_v2 / 轨迹生成都会读它并拒绝写入冻结批次；确需对冻结批次做分析时加 --allow-frozen，产物会被标注 frozen_batch_used=true。",
+  "generations": [
+    {
+      "generation": "g7",
+      "status": "frozen",
+      "since": "2026-10-15",
+      "root": null,
+      "note": "平铺布局时代（sft_data/trajectories_g7_* 等）；随归档封存"
+    },
+    {
+      "generation": "g8",
+      "status": "active",
+      "since": null,
+      "root": "sft_data/g8",
+      "note": "Qwen3-VL 新代次；批次名为 b1、b2…，代次由目录与显式参数承担"
+    }
+  ],
+  "rule": "冻结身份 = (显式代次, 批次)。代次不是从批次名里猜的：新代次走 sft_data/<generation>/... 且写入脚本必须显式 --generation。"
 }

@@ -465,10 +465,10 @@ class TestFrozenBatchesAreRefusedByTheCode:
     def test_the_register_names_the_produced_batches(self):
         from utils.batch import frozen_batches, is_frozen
 
-        frozen = frozen_batches()
+        frozen = frozen_batches()          # {(generation, batch): entry}
         for batch_id in ("g4_trial", "g7_b1", "g7_b2"):
             assert is_frozen(batch_id), batch_id
-            assert frozen[batch_id]["reason"]
+            assert frozen[("g7", batch_id)]["reason"]
 
     def test_generating_trajectories_into_a_frozen_batch_is_refused(self, tmp_path):
         import subprocess
@@ -478,8 +478,8 @@ class TestFrozenBatchesAreRefusedByTheCode:
 
         result = subprocess.run(
             [_sys.executable, "scripts/generate_trajectories_g4.py",
-             "--batch", "g7_b2", "--dry-run", "--limit", "1",
-             "--output-dir", str(tmp_path / "out")],
+             "--batch", "g7_b2", "--generation", "g7", "--dry-run",
+             "--limit", "1", "--output-dir", str(tmp_path / "out")],
             cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=180)
         assert result.returncode != 0
         assert "已冻结为历史实验" in (result.stdout + result.stderr)
@@ -491,15 +491,97 @@ class TestFrozenBatchesAreRefusedByTheCode:
         from utils.batch import assert_not_frozen_batch
 
         with pytest.raises(SystemExit, match="已冻结为历史实验"):
-            assert_not_frozen_batch("g7_b1", "转换/出集")
+            assert_not_frozen_batch("g7_b1", "转换/出集", "g7")
 
     def test_analysis_runs_may_opt_in_and_are_labelled(self, tmp_path):
         from utils.batch import assert_not_frozen_batch
 
         # explicit opt-in does not raise; the caller records the label
-        assert assert_not_frozen_batch("g7_b2", "分析", allow=True) is None
+        assert assert_not_frozen_batch("g7_b2", "分析", "g7", allow=True) is None
 
     def test_an_unfrozen_batch_passes(self):
         from utils.batch import assert_not_frozen_batch
 
-        assert assert_not_frozen_batch("g7_b3_new", "训练出集") is None
+        assert assert_not_frozen_batch("b1", "训练出集", "g8") is None
+
+    def test_the_freeze_identity_is_the_pair(self):
+        """The same name in a new generation is a different batch."""
+        from utils.batch import is_frozen
+
+        assert is_frozen("g7_b1", "g7") is True
+        assert is_frozen("g7_b1", "g8") is False
+
+    def test_a_generation_must_be_given_not_guessed(self):
+        """No default: a missing --generation is an error, not a guess."""
+        import subprocess
+        import sys as _sys
+
+        from config import PROJECT_ROOT
+
+        result = subprocess.run(
+            [_sys.executable, "scripts/build_final_v2.py",
+             "--batch", "b1", "--dry-run"],
+            cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=60)
+        assert result.returncode != 0
+        assert "--generation" in (result.stdout + result.stderr)
+
+
+class TestTheGenerationLayout:
+    """代次是目录与显式参数；批次名只有一个含义（用户 2026-10-15 决定）。"""
+
+    def test_the_nested_layout_puts_the_generation_in_the_path(self):
+        from utils.batch import batch_paths
+
+        paths = batch_paths("b1", "g8")
+        for key in ("samples", "review", "reviewed", "trajectories", "variants_dir",
+                    "variants", "admission"):
+            assert f"sft_data/g8/" in paths[key].replace(os.sep, "/"), key
+            assert "b1" in paths[key], key
+        assert paths["trajectories"].replace(os.sep, "/").endswith("g8/trajectories/b1")
+        assert paths["samples"].replace(os.sep, "/").endswith("g8/train/batches/b1")
+
+    def test_the_historical_layout_is_unchanged_without_a_generation(self):
+        from utils.batch import batch_paths
+
+        legacy = batch_paths("g7_b2")
+        assert legacy["trajectories"].replace(os.sep, "/").endswith(
+            "sft_data/trajectories_g7_b2")
+
+    def test_the_generation_index_records_each_side(self):
+        import json
+
+        from config import PROJECT_ROOT
+
+        with open(os.path.join(PROJECT_ROOT, "sft_data", "GENERATIONS.json"),
+                  encoding="utf-8") as handle:
+            payload = json.load(handle)
+        by_name = {entry["generation"]: entry for entry in payload["generations"]}
+        assert by_name["g7"]["status"] == "frozen"
+        assert by_name["g8"]["status"] == "active"
+        assert by_name["g8"]["root"] == "sft_data/g8"
+        # the index is an index: batch identity stays in VERSIONS.json
+        assert "每份 VERSIONS.json" in payload["note"]
+
+    def test_resolve_path_prefers_the_live_file_and_falls_back_to_the_map(
+            self, tmp_path, monkeypatch):
+        import json
+
+        import utils.batch as batch
+
+        monkeypatch.setattr(batch, "PROJECT_ROOT", str(tmp_path))
+        monkeypatch.setattr(batch, "PATH_MAP_PATH", str(tmp_path / "archive" / "PATH_MAP.json"))
+        live = tmp_path / "sft_data" / "trajectories_g7_b9"
+        live.mkdir(parents=True)
+        assert batch.resolve_path("sft_data/trajectories_g7_b9") == (str(live), False)
+
+        (tmp_path / "archive").mkdir()
+        archived = tmp_path / "archive" / "legacy" / "experiments" / "trajectories_g7_b9"
+        archived.mkdir(parents=True)
+        (tmp_path / "archive" / "PATH_MAP.json").write_text(json.dumps({
+            "moved": [{"from": "sft_data/trajectories_g7_b9",
+                       "to": "archive/legacy/experiments/trajectories_g7_b9"}]}),
+            encoding="utf-8")
+        import shutil
+        shutil.rmtree(live)
+        path, from_archive = batch.resolve_path("sft_data/trajectories_g7_b9")
+        assert str(archived) == path and from_archive is True

@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-15T08:48:13",
+  "note": "代次索引：只回答“这一代大体是什么”。**批次身份仍以每份 VERSIONS.json 为准**（模型版本/权重摘要/预处理可能在同一代次内变化）。",
+  "generations": [
+    {
+      "generation": "g7",
+      "root": null,
+      "status": "frozen",
+      "model": {
+        "name": "Qwen2.5-VL-7B-Instruct",
+        "checkpoint": "Qwen/Qwen2.5-VL-7B-Instruct",
+        "inference_mode": "chat"
+      },
+      "experts": [
+        "probe",
+        "noise",
+        "jpeg",
+        "frequency_v2"
+      ],
+      "policy": "v2→v3（冻结时为 v3 默认）",
+      "created_at": "2026-09-24",
+      "frozen_at": "2026-10-15"
+    },
+    {
+      "generation": "g8",
+      "root": "sft_data/g8",
+      "status": "active",
+      "model": {
+        "name": "Qwen3-VL-8B",
+        "checkpoint": "待确认",
+        "inference_mode": "待确认"
+      },
+      "experts": [
+        "待定：probe / noise / npr / univfd（评测后确定）"
+      ],
+      "policy": "v3 原则，运行时关闭参考后验与预计收益",
+      "created_at": "2026-10-15"
+    }
+  ]
+}

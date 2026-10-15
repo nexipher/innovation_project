@@ -305,12 +305,15 @@ def main() -> None:
     parser.add_argument("--admission-report", default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--allow-frozen", action="store_true",
                         help="只用于分析：允许读取冻结批次，产物会标注 frozen_batch_used")
     args = parser.parse_args()
     # §4.17: the freeze is enforced here, not only written in the docs
-    assert_not_frozen_batch(args.batch, "转换/出集", allow=args.allow_frozen)
-    paths = batch_paths(args.batch)
+    assert_not_frozen_batch(args.batch, "转换/出集", args.generation,
+                            allow=args.allow_frozen)
+    paths = batch_paths(args.batch, args.generation)
     if args.trajectories_dir is None:
         args.trajectories_dir = paths["trajectories"]
     if args.admission_report is None:

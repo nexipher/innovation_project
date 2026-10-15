@@ -88,13 +88,36 @@ def load_trajectory_records(directory: str) -> Dict[str, dict]:
     return records
 
 
-def batch_paths(batch_id: str = LEGACY_BATCH) -> Dict[str, str]:
+def batch_paths(batch_id: str = LEGACY_BATCH,
+                generation: Optional[str] = None) -> Dict[str, str]:
     """
     Where a batch's samples, reviews and output live.
 
-    The legacy batch is addressed by its historical paths so the existing
-    records keep working; every other batch gets a directory of its own.
+    Two layouts, never mixed (§ 阶段 1，2026-10-15):
+
+      * `generation` given — the nested layout, `sft_data/<generation>/...`,
+        with a **plain** batch name (`b1`, not `g8_b1`).  The generation is a
+        directory and an explicit argument; a batch name carries one meaning.
+      * `generation` omitted — the historical flat layout
+        (`sft_data/trajectories_<batch_id>` …), which exists so the frozen
+        g7-era records keep resolving.  Writing scripts require an explicit
+        `--generation`, so nothing new can be created in the flat layout by
+        accident.
+
+    The legacy batch keeps its historical paths either way (it has no
+    generation of its own beyond `g7`).
     """
+    if generation is not None:
+        root = os.path.join(PROJECT_ROOT, "sft_data", generation)
+        return {
+            "samples": os.path.join(root, "train", "batches", batch_id),
+            "review": os.path.join(root, "review", batch_id),
+            "reviewed": os.path.join(root, "train", "batches", batch_id + "_reviewed"),
+            "trajectories": os.path.join(root, "trajectories", batch_id),
+            "variants_dir": os.path.join(root, "variants", batch_id),
+            "variants": os.path.join(root, "variants", batch_id, "manifest.json"),
+            "admission": os.path.join(root, f"admission_report_{batch_id}.json"),
+        }
     if batch_id == LEGACY_BATCH:
         return {
             "samples": os.path.join(PROJECT_ROOT, "sft_data", "train", "final_v2"),
@@ -107,10 +130,10 @@ def batch_paths(batch_id: str = LEGACY_BATCH) -> Dict[str, str]:
                                      "manifest.json"),
             "admission": os.path.join(PROJECT_ROOT, "sft_data", "admission_report.json"),
         }
-    # Every stage of a new batch lives under its own name, generation included:
-    # variants, trajectories and the admission report are what the samples are
-    # built *from*, so sharing them would leave the new batch depending on the
-    # old batch's files — and overwriting them would rewrite the 237's inputs.
+    # Historical flat layout: every stage of a batch lives under its own name.
+    # Variants, trajectories and the admission report are what the samples are
+    # built *from*, so sharing them would leave a batch depending on another
+    # batch's files — and overwriting them would rewrite the 237's inputs.
     root = os.path.join(PROJECT_ROOT, "sft_data", "train", "batches", batch_id)
     return {
         "samples": root,
@@ -191,6 +214,36 @@ def _counts(samples: List[dict]) -> dict:
 VERSIONS_FILE = "VERSIONS.json"
 
 
+PATH_MAP_PATH = os.path.join(PROJECT_ROOT, "archive", "PATH_MAP.json")
+
+
+def resolve_path(path: str) -> "tuple":
+    """
+    (existing path, resolved_from_archive).
+
+    Stage 1 moves the historical material into `archive/legacy_v1_20261015/`;
+    the old flat paths stop existing.  A replay that needs one asks here: the
+    map answers, and the caller records `resolved_from_archive=True` in its
+    report — the archive is a copy being read, and that is part of the result,
+    not a hidden assumption.
+    """
+    absolute = path if os.path.isabs(path) else os.path.join(PROJECT_ROOT, path)
+    if os.path.exists(absolute):
+        return absolute, False
+    try:
+        with open(PATH_MAP_PATH, encoding="utf-8") as handle:
+            mapping = json.load(handle)
+    except (OSError, ValueError):
+        return absolute, False
+    relative = os.path.relpath(absolute, PROJECT_ROOT).replace(os.sep, "/")
+    for entry in mapping.get("moved", []):
+        if relative == entry["from"] or relative.startswith(entry["from"].rstrip("/") + "/"):
+            suffix = relative[len(entry["from"].rstrip("/")):].lstrip("/")
+            archived = os.path.join(PROJECT_ROOT, entry["to"].rstrip("/"), suffix)
+            return archived.rstrip(os.sep) or archived, os.path.exists(archived)
+    return absolute, False
+
+
 def batch_versions(experts: Optional[dict] = None, extra: Optional[dict] = None) -> dict:
     """
     The four versions a batch must record to be readable later.
@@ -233,36 +286,58 @@ def write_batch_versions(directory: str, experts: Optional[dict] = None,
 FROZEN_PATH = os.path.join(PROJECT_ROOT, "sft_data", "FROZEN.json")
 
 
-def frozen_batches() -> Dict[str, dict]:
-    """batch id -> {reason, ...} for every batch declared frozen."""
+def frozen_payload() -> dict:
     try:
         with open(FROZEN_PATH, encoding="utf-8") as handle:
-            payload = json.load(handle)
+            return json.load(handle)
     except (OSError, ValueError):
         return {}
-    return {entry["batch"]: entry for entry in payload.get("frozen", [])}
 
 
-def is_frozen(batch_id: str) -> bool:
-    return batch_id in frozen_batches()
+def frozen_batches() -> Dict[tuple, dict]:
+    """(generation, batch) -> entry, for every frozen batch."""
+    return {(entry.get("generation"), entry["batch"]): entry
+            for entry in frozen_payload().get("frozen", [])}
 
 
-def assert_not_frozen_batch(batch_id: str, purpose: str,
+def generation_of(batch_id: str, generation: Optional[str] = None) -> Optional[str]:
+    """
+    The generation of a batch: what the caller said, else what the register
+    knows.  Nothing is guessed from the shape of the name.
+    """
+    if generation:
+        return generation
+    for (registered, batch), _entry in frozen_batches().items():
+        if batch == batch_id:
+            return registered
+    return None
+
+
+def is_frozen(batch_id: str, generation: Optional[str] = None) -> bool:
+    return (generation_of(batch_id, generation), batch_id) in frozen_batches()
+
+
+def assert_not_frozen_batch(batch_id: str, purpose: str, generation: str,
                             allow: bool = False) -> None:
     """
-    Refuse to write training material (or new trajectories) into a frozen
-    batch.
+    Refuse to write material into a frozen batch.
 
-    The freeze used to be a documentation convention: nothing stopped
-    `apply_review` or `build_final_v2` from producing a training set out of a
-    batch the project had decided to retire.  `--allow-frozen` exists for
-    analysis runs and labels its output, so an artifact can never quietly come
-    from a frozen batch.
+    The generation is **required and never guessed**: the batch name no longer
+    carries one (`b1` under `sft_data/g8/`), so there is nothing to derive it
+    from — a default would be the next "default v2".  Historical ids are
+    registered with their generation (`g4_trial`/`g7_b1`/`g7_b2` are all
+    `g7`), so a replay passes `generation="g7"` explicitly.
+
+    `--allow-frozen` exists for analysis runs and labels its output, so an
+    artifact can never quietly come from a frozen batch.
     """
-    entry = frozen_batches().get(batch_id)
+    entry = frozen_batches().get((generation, batch_id))
+    if entry is None:
+        entry = frozen_batches().get((generation_of(batch_id), batch_id))
     if entry is None or allow:
         return
     raise SystemExit(
-        f"批次 {batch_id} 已冻结为历史实验（{entry.get('reason', '未注明理由')}），"
-        f"不能用于{purpose}。请新建批次 id（如 g7_b3）在换专家后生成新版；"
+        f"批次 {batch_id}（代次 {generation}）已冻结为历史实验"
+        f"（{entry.get('reason', '未注明理由')}），不能用于{purpose}。"
+        f"新版请用新代次目录（如 --generation g8 下的 b1）；"
         f"若确需分析该批次，显式加 --allow-frozen，产物会标注 frozen_batch_used=true。")

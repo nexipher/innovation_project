@@ -218,7 +218,7 @@ class TestDryRunEndToEnd:
             "--output-dir", str(out),
             # the batch id is frozen, but this run writes into a temp dir for
             # plumbing; the freeze refusal itself is tested in test_batch_binding
-            "--allow-frozen",
+            "--generation", "g7", "--allow-frozen",
         ])
         module.main()
 
@@ -247,7 +247,7 @@ class TestDryRunEndToEnd:
         argv = ["generate_trajectories_g4.py", "--dry-run",
                 "--manifest", self._manifest(tmp_path),
                 "--policies", "no-tool", "--output-dir", str(out),
-                "--allow-frozen"]
+                "--generation", "g7", "--allow-frozen"]
         monkeypatch.setattr("sys.argv", argv)
         module.main()
         module.main()

@@ -399,13 +399,16 @@ def main() -> None:
                         help="MockMLLMClient (CPU plumbing validation only)")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--batch", default=LEGACY_BATCH)
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--allow-frozen", action="store_true",
                         help="只用于分析/重放：允许向冻结批次补写轨迹")
     args = parser.parse_args()
     # A frozen batch is a record of what was measured: adding sessions to it
     # would make the record say something that never happened in one run.
-    assert_not_frozen_batch(args.batch, "生成新轨迹", allow=args.allow_frozen)
-    paths = batch_paths(args.batch)
+    assert_not_frozen_batch(args.batch, "生成新轨迹", args.generation,
+                            allow=args.allow_frozen)
+    paths = batch_paths(args.batch, args.generation)
     if args.manifest is None:
         args.manifest = paths["variants"]
     if args.output_dir is None:

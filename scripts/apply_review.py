@@ -183,6 +183,8 @@ def main() -> None:
     parser.add_argument("--require-hashes", action="store_true",
                         help="拒绝没有内容哈希的旧格式决定（新批次应当开启）")
     parser.add_argument("--allow-partial", action="store_true")
+    parser.add_argument("--generation", required=True,
+                        help="代次目录（如 g8）：新版批次必须显式指定，不猜默认值")
     parser.add_argument("--allow-frozen", action="store_true",
                         help="只用于分析：允许读取冻结批次，产物会标注 frozen_batch_used")
     args = parser.parse_args()
@@ -190,15 +192,16 @@ def main() -> None:
     # §4.17: the freeze is enforced here, not only written in the docs.  The
     # 237 集 (g4_trial) is frozen too, so a default run now refuses — that is
     # the intended behaviour; analysis passes --allow-frozen and is labelled.
-    assert_not_frozen_batch(args.batch, "生成训练集", allow=args.allow_frozen)
+    assert_not_frozen_batch(args.batch, "生成训练集", args.generation,
+                            allow=args.allow_frozen)
 
+    paths = batch_paths(args.batch, args.generation)
     if args.final_v2_dir is None:
-        args.final_v2_dir = batch_paths(args.batch)["samples"]
+        args.final_v2_dir = paths["samples"]
     if args.output_dir is None:
-        args.output_dir = batch_paths(args.batch)["reviewed"]
+        args.output_dir = paths["reviewed"]
     if args.dispositions is None:
-        args.dispositions = os.path.join(batch_paths(args.batch)["review"],
-                                         "dispositions.jsonl")
+        args.dispositions = os.path.join(paths["review"], "dispositions.jsonl")
     dispositions = load_dispositions(args.dispositions)
     metadata = apply(dispositions, args.final_v2_dir, args.output_dir,
                      args.allow_partial, args.require_hashes, args.batch)
