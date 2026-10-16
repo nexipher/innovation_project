@@ -318,3 +318,16 @@
 * **涉及/修改的文件清单**：`mllm/qwen_client.py (Modified — 缺失即明说 + 补 `import os`)`、`main.py (Modified — qwen25 分支前置检查)`、`tests/test_g8_entry.py (Modified — 新增 2 条 + 1 条既有用例适配前置检查)`、`claude_operation_log.md`；**文件系统**：`/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct{,.PENDING-DELETE-20261015}`（改名，未删）
 * **执行结果与验证状态**：**改名后** `full` **1420 通过 / 3 跳过**（新增 2 条）；**改名后在真实 GPU 上跑通主线冒烟**：Qwen3-VL 六项检查全绿（64.9 s、峰值 19.65 GB，产物 `sft_data/g8_smoke/20261015_224341/`）——这是"前项目不依赖它"的直接证据；`--mllm qwen25` 现在报的是明确的一句话而不是 hub 报错。当前项目未改动任何批次材料/轨迹/台账。**未跑训练、未删除任何文件。**
 * **置信度或遗留待办（TODO）**：①**改名不释放空间**；确认无影响后再删才释放 16 GB②删除时需同步：`config.QWEN_MODEL_PATH` 的处置（删常量还是保留）、README 与 `docs/development/agent.md` 里的路径段落、以及"g7 复算"能力说明（g7 已冻结，复算要真权重）③`train_lora_g4.py` 若还要用，得改基座或改路径④`psychology_video_project` 其余内容（321 MB `.git`、~1.8 MB 源码与文档、6.6 MB `yolov8n-pose.pt`、空的 `dataset/`）与当前项目**无任何交叉引用**，删不删是那个项目自己的事。
+
+### 2026-10-16 - 阶段四 4.6d：人工审核结果写回台账（只做写回，未改任何协议/代码）
+
+* **当前操作动作**：把用户上传的审核导出 `review_g8_b1.json` 写回验收台账并重建页面显示；**未改提示词、未改代码逻辑、未动 b1 记录与轨迹**。
+* **对应计划锚点**：`plan.md` §4.6（审核工作台与写回路径）、§4.5（b1 小批）；用户 2026-10-16 指示"先只做 a"
+* **核心变更说明**：
+  1. **写回**：`python scripts/g8_review_import.py sft_data/g8/review/b1/review_g8_b1.json` → 追加 32 行到 `sft_data/g8/review/b1/dispositions.jsonl`。校验前置 `--dry-run` 一致：接受 32、过期 0、拒收 0。
+  2. **内容**：审核人 hj；**通过 14 / 待修 18 / 拒绝 0**；分类 `evidence_citation` 17、`visual_grounding` 1；每条待修都填了原因；32 条指纹与当前样本完全一致（无过期、无跨批混入）。台账字段不含任何训练标记（`scope` 为验收用途）。
+  3. **页面**：重建后索引与会话页显示"仓库台账"状态（32 条已写回），本地草稿与仓库台账两种状态在页面上分开。
+  4. **意见主题（供下一轮修协议参考，本次不改）**：5 条＝拿"没有其他专家冲突"当已完成交叉验证；4 条＝误用 "presumption of innocence"；3 条＝画质/分辨率当生成佐证或由观感推出高分辨率；3 条＝声称已排除压缩/编码影响；2 条＝声称未发现传感器噪声；1 条＝把整图分类说成未检测到局部异常。其中"疑罪从无"与"注明压缩"两句**出自我们自己的提示词模板**（`FORENSIC_SYSTEM_PROMPT` 的 Structure B），属协议层问题而非模型自由发挥。
+* **涉及/修改的文件清单**：`sft_data/g8/review/b1/dispositions.jsonl (Created — 32 行)`、`sft_data/g8/review/b1/*.html (Rebuilt — 显示台账状态)`、`claude_operation_log.md`
+* **执行结果与验证状态**：写回 32/32；台账字段与唯一性核对通过（g8/b1、审核人一致、无 `trainable` 字段）；页面 `repo_decisions` 32 条、样本页显示台账审核人。**未改提示词/代码；未触发任何训练产物。**
+* **置信度或遗留待办（TODO）**：①修协议的具体方案待与用户讨论后实施（涉及提示词哈希重钉，b1 保持不动作为对照）②"是否要求第二意见"是行为决定，需用户定③b1 的 18 条待修是否要按意见重跑，取决于①的结果
