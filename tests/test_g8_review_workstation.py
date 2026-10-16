@@ -444,6 +444,25 @@ class TestTheLedgerShowsOnThePage:
         assert report["progress"]["stale"] == 1
 
 
+class TestTheTwoNumbersAreNotConfused:
+    """审核要求：专家原始分数与模型自报置信度分别显示，且不得渲染成百分比结论。"""
+
+    def test_the_confidence_row_says_it_is_uncalibrated(self):
+        plain = html.unescape(re.sub(r"<[^>]+>", "", _page()))
+        assert "模型自报置信度（未校准）" in plain
+        assert "不是 P(Real/Fake)" in plain
+
+    def test_the_evidence_table_is_labelled_as_expert_scores(self):
+        plain = html.unescape(re.sub(r"<[^>]+>", "", _page()))
+        assert "本次得到的专家原始分数（未校准；非百分比）" in plain
+        assert "该值的方向" in plain
+
+    def test_no_percentage_style_verdict_is_rendered(self):
+        """不得出现"98% 真实/伪造"这类把两个数揉成一个结论的写法。"""
+        plain = html.unescape(re.sub(r"<[^>]+>", "", _page()))
+        assert not re.search(r"\d+(\.\d+)?%\s*(真实|伪造|生成|real|fake)", plain, re.I)
+
+
 class TestReviewDoesNotTouchTraining:
     def test_building_the_view_writes_no_training_artifact(self, tmp_path):
         records_dir = os.path.join(str(tmp_path), "records")

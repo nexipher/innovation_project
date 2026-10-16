@@ -165,6 +165,76 @@ class TestPromptMeasurementContract:
         assert "`scope`" in FORENSIC_SYSTEM_PROMPT
         assert "never saw the edges" in FORENSIC_SYSTEM_PROMPT
 
+class TestThePromptContractAfterB1:
+    """
+    b1 的人工审核（18/32 待修）里，有两类是**这份提示词请它这么说的**，另外
+    审核要求把"结论该说什么"与 confidence 的语义写进契约。这里逐条钉住。
+
+    断言前先把换行压平：提示词按行排版，`cross-expert\n   comparison` 这种
+    换行不该让一句契约"看起来不存在"。
+    """
+
+    @staticmethod
+    def _flat(prompt: str) -> str:
+        return " ".join(prompt.split())
+
+    def test_the_presumption_of_innocence_is_gone_except_as_a_ban(self):
+        flat = self._flat(FORENSIC_SYSTEM_PROMPT)
+        assert flat.count("presumption of innocence") == 1
+        index = flat.index("presumption of innocence")
+        assert "Never invoke" in flat[max(0, index - 80):index]
+        assert "instead of analysing the evidence" in flat[index:index + 90]
+
+    def test_the_template_no_longer_asks_the_model_to_note_compression(self):
+        flat = self._flat(FORENSIC_SYSTEM_PROMPT)
+        assert "compression artifacts that may weaken" not in flat
+        assert "do not assert their cause" in flat
+
+    def test_the_conclusion_must_state_the_evidence_scope(self):
+        flat = self._flat(FORENSIC_SYSTEM_PROMPT)
+        assert "cross-expert comparison" in flat
+        assert "independent cross-validation" in flat          # 只作为禁止的说法出现
+        assert "a VALID measurement" in flat
+        assert "how many distinct experts returned" in flat
+
+    def test_visible_artefacts_are_observations_not_measurements(self):
+        flat = self._flat(FORENSIC_SYSTEM_PROMPT)
+        assert "not assert their cause" in flat
+        assert 'never infer "high resolution" from appearance' in flat
+
+    def test_the_confidence_contract_is_written_down(self):
+        flat = self._flat(FORENSIC_SYSTEM_PROMPT)
+        assert "uncalibrated certainty in THIS verdict" in flat
+        assert "never P(Fake)" in flat
+        assert "averaging or multiplying expert scores" in flat
+
+    def test_the_training_baseline_carries_the_same_confidence_note(self):
+        from mllm.message_builder import TRAINING_BASELINE_PROMPT
+
+        assert "uncalibrated certainty in THIS verdict" in TRAINING_BASELINE_PROMPT
+
+    def test_the_frozen_historical_baseline_is_untouched(self):
+        """G2-d/G3-e 的对照臂在这份提示词下测过：改它等于悄悄重开那批结论。"""
+        from mllm.message_builder import BASELINE_SYSTEM_PROMPT
+
+        assert "uncalibrated certainty" not in BASELINE_SYSTEM_PROMPT
+        assert len(BASELINE_SYSTEM_PROMPT) < 900      # 仍是一段短提示词，没被顺手扩写
+
+    def test_probes_token_is_not_called_a_calibrated_probability(self):
+        """
+        这句话必须在**模型真正读到的地方**：`TOOL_READ_NOTES` 里的 probe 条目曾是
+        死代码（登记表标签的说明由 `_registry_tool_text` 生成，本表在拼接时过滤掉
+        这些标签），所以它现在写在登记表的 `prompt_note` 里。
+        """
+        from mllm.message_builder import TOOL_READ_NOTES, build_forensic_prompt
+
+        assert "probe" not in TOOL_READ_NOTES, "probe 的读法不该再放回这张死表"
+        prompt = self._flat(build_forensic_prompt(["probe", "npr", "univfd"]))
+        assert "uncalibrated output" in prompt
+        assert "cite it as a probability" not in prompt
+        assert "not a cross-expert comparison" in prompt
+
+
 class TestToolPolicies:
     """G4-b: the prompt must describe only the tools a session will serve."""
 
@@ -200,8 +270,21 @@ class TestToolPolicies:
         not "Real"), so the contract gained that field, the score's documented
         keys grew `threshold_chosen_on`, and the legacy measures section is now
         omitted when empty instead of leaving a header that describes tools the
-        session cannot call — 8143461c167d31ed → a01272f96bbd66c7.  Anything
-        that moves it again has to say so in a commit.
+        session cannot call — 8143461c167d31ed → a01272f96bbd66c7.
+
+        The first acceptance batch (b1) then came back from human review with 18
+        of 32 sessions marked for revision, and two of the criticised habits were
+        written into this very template: it told the model to "apply presumption
+        of innocence" (which it then invoked even when a single expert meant
+        there was no conflict) and to "note" compression artifacts (which it
+        turned into ruling them out).  Both are gone, the template now asks for
+        what the conclusion must state, and three rules were added: the evidence
+        scope (how many experts actually measured, and that a cross-expert
+        comparison is not "independent cross-validation"), the boundary between
+        describing an artefact and asserting its cause, and the meaning of
+        `confidence` — a self-reported, uncalibrated certainty, never P(Real or
+        Fake) — a01272f96bbd66c7 → db111b1eb1ecb03d.  Anything that moves it
+        again has to say so in a commit.
         """
         import hashlib
 
@@ -210,7 +293,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "a01272f96bbd66c7"
+            "434ac95a6bbb3e59"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

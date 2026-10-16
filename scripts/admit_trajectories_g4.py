@@ -63,6 +63,8 @@ CORROBORATION_ONLY = ("freq",)
 # How much the Brier score must improve before the gain counts.  A hair of
 # improvement is noise, not a lesson.
 RISK_EPSILON = 0.01
+# 阈值的是模型自报、未校准的 confidence：它只用来标记「模型自称很确定却判错了」，
+# 不把它当概率、也不参与标签。别在这里加校准语义（提示词 RULES 9）。
 CONFIDENT = 0.8
 
 

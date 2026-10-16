@@ -331,3 +331,21 @@
 * **涉及/修改的文件清单**：`sft_data/g8/review/b1/dispositions.jsonl (Created — 32 行)`、`sft_data/g8/review/b1/*.html (Rebuilt — 显示台账状态)`、`claude_operation_log.md`
 * **执行结果与验证状态**：写回 32/32；台账字段与唯一性核对通过（g8/b1、审核人一致、无 `trainable` 字段）；页面 `repo_decisions` 32 条、样本页显示台账审核人。**未改提示词/代码；未触发任何训练产物。**
 * **置信度或遗留待办（TODO）**：①修协议的具体方案待与用户讨论后实施（涉及提示词哈希重钉，b1 保持不动作为对照）②"是否要求第二意见"是行为决定，需用户定③b1 的 18 条待修是否要按意见重跑，取决于①的结果
+
+### 2026-10-16 - 阶段四 4.7：按审核意见修协议（提示词 A+B+C）+ confidence 语义统一
+
+* **当前操作动作**：按用户确认的方案（范围＝A+B+第二意见声明，含三处调整与 confidence 契约）改提示词与字段语义，并审计 `confidence` 的下游消费者。**b1 记录、轨迹、台账与审核结论一律未动**（指纹三方一致已复核）。
+* **对应计划锚点**：`plan.md` §4.6（工作台与回写）、§5（分数边界）；用户 2026-10-16 的三处调整与 confidence 要求
+* **核心变更说明**：
+  1. **A1 彻底删除"疑罪从无"**：`Structure B` 模板不再教 "apply presumption of innocence"；新模板要求"方向不一致时点名冲突专家、其读数与适用范围，再据证据决定继续/结案/弃权"，并保留一条**禁令**："Never invoke a \"presumption of innocence\" instead of analysing the evidence."（该短语现在全文只出现这一次，且是否定式；测试钉住计数＝1 与所在语境。）
+  2. **A2 压缩句改成边界规则**：删掉 "If the image has compression artifacts … note it"；新规则（RULES 8）区分**现象与成因**：可以描述可见的块状/模糊，但不得断言成因，也不得声称压缩、重编码或传感器噪声"已被测量/排除/证明无影响"——只有真正测量它的专家能说，且只在其 `scope` 内；分辨率一律取输入元数据，不得由观感推断"高分辨率"。
+  3. **C 第二意见声明（并入同一条规则，不新增字段/模板）**：RULES 7 要求**每条结论**说明证据范围——有几个不同专家返回了**有效测量**、是否做了**跨专家对照**；用词规定为 "cross-expert comparison"，明令不得写成 "independent cross-validation"（两个检测器可能共享训练来源或同时失效）；缺失证据带来的限制**只在相关时**说明。B3 的单专家声明与该条合并，不重复设字段。
+  4. **confidence 契约（RULES 9 + 判决 schema 字段说明 + 训练基线一句）**：`confidence` 是模型对**所选结论**的主观、自报、**未校准**把握；不是 P(Real/Fake)、不是校准概率、不是正确率；不得由专家分数复制/取补/平均/相乘构造；三件事严格分开（专家原始分数、模型自报置信度、项目实测性能）；`Uncertain` 时它指"对弃权的把握"，绝不是 P(Fake)；不要求每条报告重复免责声明——语义由契约、字段定义与工作台标签统一承担。
+  5. **confidence 下游审计（用户点名）**：停止策略（v2/v3/controller）**一处都没把 confidence 当概率**（判断全走 posterior/冲突/收益）；没有地方用 confidence 覆盖标签；准入/门禁里的 0.8 阈值是**标记**（"自称很确定却判错"）而非概率。**真正当概率用的只有三处**：①`utils/final_v2.py` 对 **v2 记录**的一致性等式（v2 策略把 confidence 定义为 P(标签)，属记录校验，已有 `model_led` 守卫隔离 v3，本次把隔离写进注释）；②`scripts/qwen_gain_baseline.py::_pseudo_probability`（→AUROC/ECE，被 `check_acceptance_g5.py`、`analyze_g2_gain.py` 复用于**历史臂**，本次标明"仅 v2"）；③`scripts/generate_trajectories_g4.py` 的 `model_probability`——**原先没有策略守卫**（v3 会把自报把握折成 P(Fake) 并污染 model_nll/brier），本次按策略守卫：非 v2 写 `None`。
+  6. **工作台**：置信度行改为「模型自报置信度（未校准）」并写明"不是 P(Real/Fake)、也不是专家分数"；新增「本次得到的专家原始分数（未校准；非百分比）」表（expert/状态/范围/分数/该值的方向），数据**从投递原文解析**（不重算）；并加测试禁止渲染 "N% 真实/伪造" 这类写法。
+  7. **顺手删掉一段死代码**：`TOOL_READ_NOTES["probe"]` 永远进不了提示词（4.4 起 probe 的说明由登记表生成，而该表在拼接时过滤登记表标签）。它唯一有用的一句（PROBE 分数不是校准概率）已搬进登记表 `prompt_note`——**那里才是模型真正读到的地方**；旧句 "cite it as a probability" 随之消失。
+  8. **哈希**：`a01272f96bbd66c7 → db111b1eb1ecb03d → 434ac95a6bbb3e59`（后一次为死代码搬迁与登记表措辞），测试里写明每次变更的原因；提示词长度 8000 → 约 10.7 KB（每次调用都带，属真实成本，已如实记录）。冻结的 `BASELINE_SYSTEM_PROMPT`（G2-d/G3-e 对照臂）**未动**，并有测试钉住它没被顺手扩写。
+* **涉及/修改的文件清单**：`mllm/message_builder.py (Modified — Structure B 模板、RULES 7/8/9、判决 schema 说明、训练基线一句、删死代码)`、`experts/score_semantics.json (Modified — probe 的 prompt_note 增一句)`、`utils/final_v2.py (Modified — v2 隔离注释)`、`scripts/qwen_gain_baseline.py (Modified — 标明仅 v2)`、`scripts/generate_trajectories_g4.py (Modified — model_probability 按策略守卫)`、`scripts/admit_trajectories_g4.py (Modified — 阈值语义说明)`、`scripts/g8_review_workstation.py (Modified — 两个量分别显示 + 专家分数表)`、`tests/test_message_builder.py`、`tests/test_g8_review_workstation.py`、`tests/test_generate_trajectories_g4.py`、`sft_data/g8/review/b1/*.html (Rebuilt — 仅标签)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`full` **1431 通过 / 3 跳过**（另有 2 条失败，**都是环境依赖**：本机 GPU 已不在——`nvidia-smi` 报 No devices found、torch `cuda.is_available()=False`，于是 CUDA 门禁抢先于权重检查、UnivFD 如实报"不能在 CPU 上跑"。两条已改成与机器无关：前者假装 CUDA 可用以测权重检查、后者显式 `device="cuda"`；改后 1433 通过）；**b1 未受影响**：台账/页面/独立复算三方指纹一致（32/32，`stale` 0，进度 32/32），审核结论未变；工作台页面已重建并抽查（两个量分别显示、专家分数表取值来自投递原文）。**未跑 GPU**——协议变更的验证需要下一批（见 TODO）。
+* **环境**：本次运行期间 GPU 被释放/切换（`nvidia-smi` 无设备、torch 无 CUDA）——**下一批（b2）需要用户重新开启 GPU 才能跑**；协议修订本身已可在 CPU 上测。
+* **置信度或遗留待办（TODO）**：①**这三处修订要下一批（b2）才被验证**：提示词改了但模型行为是否跟着改，只能实跑看②`admit_trajectories_g4.py` 的 0.8 阈值、`audit_sft_correct.py` 的 0.95——按新语义它们是"自称确定"的标记而非概率，**保留**；若要改成别的量（例如只在多专家会话上标记），需用户定③顺带发现的小 bug 未改：`halting_v2.py` 无工具分支用 `confidence or 0.5`，会把合法的 0.0 当成缺失 → 0.5；改它会影响 v2 复算的既有数字，故只记录不动④b1 的 18 条待修是否重跑/是否作为对照保留，等下一批方案定

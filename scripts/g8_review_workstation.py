@@ -589,7 +589,12 @@ def session_page(sample: dict, page_dir: str, index_name: str,
     rows = [
         ("模型自己的报告", record.get("report")),
         ("模型候选 / 采纳", f'{record.get("model_candidate")} / {record.get("final_verdict")}'),
-        ("置信度", record.get("confidence")),
+        # 严格区分两种量：模型自报的、未校准的把握 与 专家的原始分数。
+        # 不写成一个"置信度"了事，也不渲染成百分比——那会读成 P(真实/伪造)。
+        ("模型自报置信度（未校准）",
+         f'{record.get("confidence")}'
+         "　—　这是模型对所选结论的主观把握，不是 P(Real/Fake)，"
+         "也不是专家分数；专家原始分数见下方证据表"),
         ("停止原因（控制端）", f'{record.get("halting_reason")}｜policy_reasons='
                               f'{record.get("policy_reasons")}'),
         ("请求 / 执行 / 重复", f'执行 {counters.get("expert_calls")}｜跳过重复请求 '
@@ -636,6 +641,21 @@ def session_page(sample: dict, page_dir: str, index_name: str,
     chain = record.get("evidence") or []
     delivered = [turn for index, turn in enumerate(trace.get("conversations") or [])
                  if classify_turn(turn, index)[0] == "tool"]
+    # 一眼看清"哪些专家给了什么数"：整张表都从**投递原文**里读，不重算。
+    measured = [_pack_row(turn.get("value") or "") for turn in delivered]
+    measured = [row for row in measured if row]
+    if measured:
+        parts.append('<h3>本次得到的专家原始分数（未校准；非百分比）</h3>'
+                     '<table><tr><th>expert</th><th>状态</th><th>测量范围</th>'
+                     '<th>专家原始分数</th><th>该值的方向</th></tr>')
+        for row in measured:
+            parts.append(
+                f'<tr><td>{html.escape(str(row.get("expert")))}</td>'
+                f'<td>{html.escape(str(row.get("status")))}</td>'
+                f'<td>{html.escape(str(row.get("scope")))}</td>'
+                f'<td>{html.escape(str(row.get("value")))}</td>'
+                f'<td>{html.escape(str(row.get("direction")))}</td></tr>')
+        parts.append("</table>")
     if delivered:
         for index, turn in enumerate(delivered, start=1):
             parts.append(f"<h3>投递 {index}</h3>")
@@ -707,6 +727,27 @@ def _completeness_table(metadata: dict, trace: dict) -> str:
                     '本页如实标"未记录"，<b>不用今天的代码重建冒充原始日志</b>；'
                     '后续批次会带上这些字段。</p>')
     return "".join(rows)
+
+
+def _pack_row(payload: str) -> dict:
+    """
+    从**投递原文**里取一行"专家原始分数"。取不到就返回空——不拿后台 token 顶替，
+    那会把模型没看到的字段当成它当时看到的东西。
+    """
+    stripped = (payload or "").lstrip()
+    if not stripped.startswith("{"):
+        return {}
+    try:
+        parsed = json.loads(payload)
+    except ValueError:
+        return {}
+    if not isinstance(parsed, dict) or "expert" not in parsed:
+        return {}
+    score = parsed.get("score") or {}
+    return {"expert": parsed.get("expert"), "status": parsed.get("status"),
+            "scope": parsed.get("scope"), "value": score.get("value"),
+            "direction": score.get("direction_for_this_value")
+            or score.get("direction")}
 
 
 def _review_controls(trajectory_id: str) -> str:

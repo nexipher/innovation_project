@@ -124,9 +124,14 @@ def _pseudo_probability(record: dict) -> float:
     P(Fake) estimate from the verdict and its confidence.
 
     This assumes `confidence` is P(the label that was reported), which is what
-    `halting_v2._label_confidence` now guarantees: Real carries 1 - P(Fake)
-    and not the posterior itself.  When it did not, this function turned every
-    Real verdict around, and the tool arms' AUROC was read backwards.
+    `halting_v2._label_confidence` guarantees: Real carries 1 - P(Fake) and not
+    the posterior itself.  When it did not, this function turned every Real
+    verdict around, and the tool arms' AUROC was read backwards.
+
+    仅适用于 **v2 记录**（本文件与 `check_acceptance_g5.py`、`analyze_g2_gain.py`
+    分析的都是那批历史臂）。v3 起 `confidence` 是模型自报、未校准的把握
+    （提示词 RULES 9），拿它当 P(标签) 就是把主观把握读成图像概率——v3 数据不要
+    走这里（`generate_trajectories_g4.py` 已按策略写 None 而不是折算）。
     """
     verdict = record.get("verdict")
     confidence = float(record.get("confidence") or 0.0)

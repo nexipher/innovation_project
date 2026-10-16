@@ -111,12 +111,18 @@ class TestTheUnivfdScoringPathRunsWithoutItsWeights:
         monkeypatch.setattr(module, "UnivFDEvaluator", _FakeEvaluator)
         return module
 
+    # 注意：`UnivFDExpert()` 的 device 是**自动解析**的（有 CUDA 就是 cuda）。
+    # 在无 GPU 的机器上 `unavailable_reason()` 会如实说"官方主干不能在 CPU 上跑"，
+    # 于是 analyze 在到达 _score 前就抛错——那样这条测试会变成依赖机器。显式给
+    # device="cuda"：这里测的是打分路径本身，不测设备可用性。
+    _DEVICE = "cuda"
+
     def test_analyze_returns_a_score_through_the_real_code_path(self, tmp_path,
                                                                 monkeypatch):
         import numpy as np
 
         module = self._expert(tmp_path, monkeypatch)
-        expert = module.UnivFDExpert()
+        expert = module.UnivFDExpert(device=self._DEVICE)
         result = expert.analyze(np.zeros((240, 240, 3), dtype=np.uint8))
         assert result.raw_metric == pytest.approx(0.77)
         assert result.source == "univfd_expert"

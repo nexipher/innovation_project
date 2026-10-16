@@ -44,7 +44,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import PROJECT_ROOT
+from config import HALTING_POLICY, PROJECT_ROOT
 from utils.batch import (LEGACY_BATCH, assert_not_frozen_batch, batch_paths,
                          write_batch_versions)
 from mllm.message_builder import (TRAINING_BASELINE_PROMPT,
@@ -312,12 +312,18 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
         "policy_reasons": verdict.get("policy_reasons"),
         # The model's own probability, or None when it never proposed a
         # verdict: the policy's label is not the model's opinion.
+        #
+        # **只在 v2 下成立**：v2 的 `_label_confidence` 把 confidence 定义为
+        # P(报告的那个标签)，所以这里能把 (标签, confidence) 折成 P(Fake)。
+        # v3 的 confidence 是模型自报、未校准的把握（提示词 RULES 9），拿它当
+        # 概率会把「主观把握」写成「图像为假的概率」，并污染 model_nll/model_brier
+        # —— 所以 v3 下写 None，不折算、不猜。
         "model_probability": (
             round(_pseudo_probability({
                 "verdict": verdict["model_candidate"],
                 "confidence": verdict.get("confidence"),
             }), 4)
-            if verdict.get("model_candidate") else None
+            if verdict.get("model_candidate") and HALTING_POLICY == "v2" else None
         ),
         "evidence": result["evidence_chain"],
         # The trace's own counter block, carried through as it is.  The

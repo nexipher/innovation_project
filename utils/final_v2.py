@@ -849,6 +849,11 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
                 f"verdict: abstained although the posterior is {posterior:.2f}")
         # The reported confidence is P(the label we report), not the posterior:
         # a Real verdict carrying P(Fake) is what the review found in 12 samples.
+        #
+        # **这是 v2 记录的校验**：v2 的策略把 confidence 定义成 P(标签)
+        # （`halting_v2._label_confidence`），所以两值必须吻合。v3 起 confidence
+        # 是模型自报、未校准的把握（提示词 RULES 9），不做这条等式——上面的
+        # `model_led` 守卫就是那道隔离，改这里前先看它。
         reported = record.get("confidence")
         if record["final_verdict"] in ("Real", "Fake") and reported is not None:
             expected_confidence = (posterior if record["final_verdict"] == "Fake"

@@ -138,12 +138,18 @@ PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe
     "inside the planning block, and never two tags in one response.\n\n"
     "Structure B — When you have enough evidence to conclude:\n"
     "<reasoning>\n"
-    "[Cross-reference the expert's physical findings with your visual observations.\n"
-    "If different experts conflict, explain why and apply \"presumption of innocence\".\n"
-    "If the image has compression artifacts that may weaken certain signals, note it.]\n"
+    "[Cross-reference the expert findings with your visual observations. When the evidence\n"
+    " points in different directions, name the conflicting experts, their readings and the\n"
+    " limits those readings carry, then decide from the evidence whether to call another\n"
+    " expert, conclude or abstain. Never invoke a \"presumption of innocence\" instead of\n"
+    " analysing the evidence. Describe visible artefacts as what you see (blockiness, blur);\n"
+    " do not assert their cause, and take image dimensions from the input metadata rather\n"
+    " than from appearance. State how many experts returned a valid measurement and whether\n"
+    " you compared them across experts.]\n"
     "</reasoning>\n"
     "<verdict>\n"
     "{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n"
+    "(confidence = your own uncalibrated certainty in THIS verdict, not P(Real/Fake): RULES 9)\n"
     "</verdict>\n\n")
 
 PROMPT_TAIL_BASE = (
@@ -176,14 +182,14 @@ PROMPT_TAIL_BASE = (
 # Reading rules that only make sense when the tool is served.  A session
 # without PROBE must not be told how to read PROBE's token: the prompt's job is
 # to describe this session, and the model is never shown a tool it cannot call.
-TOOL_READ_NOTES = {
-    "probe": "6. `<call_probe>` is the PRIMARY detector. Its token is a probability over the whole\n"
-             "   image: cite it as a probability, never as a located artifact or a physical defect.\n"
-             "   The other experts corroborate and are optional — a decisive PROBE measurement can\n"
-             "   stand on its own.\n",
-}
+#
+# 这里**没有 probe**：登记表标签（`REGISTRY_TAGS`）的说明由 `_registry_tool_text`
+# 生成，而本表在拼接时明确过滤掉这些标签——所以 probe 的条目曾经是一段永远不
+# 生效的死代码（写在那儿，模型永远看不到）。它唯一有用的那句（PROBE 的分数不是
+# 校准概率）已搬进登记表的 `prompt_note`，那里才是模型真正读到的地方。
+TOOL_READ_NOTES: Dict[str, str] = {}
 
-PROMPT_TAIL_RULES = "\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, output \"Uncertain\" rather than\n   guessing: an honest Uncertain is preferred over a confident mistake.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n"
+PROMPT_TAIL_RULES = "\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. After receiving 2+ evidence tokens, you MUST produce a verdict. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, output \"Uncertain\" rather than\n   guessing: an honest Uncertain is preferred over a confident mistake.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n7. Every conclusion states the scope of the evidence: how many distinct experts returned\n   a VALID measurement, and whether you compared them ACROSS EXPERTS. Call it a cross-expert\n   comparison, never \"independent cross-validation\": two detectors can share training\n   sources or fail together. One measurement is not a comparison, and calling a second\n   expert does not by itself make the verification independent. State what the missing\n   evidence limits only when it bears on the conclusion.\n8. Visible artefacts are observations (blockiness, blur, banding): describe them, do not\n   assert their cause. Never claim that compression, re-encoding or sensor noise has been\n   measured, ruled out or shown not to affect a result — only the expert that measures\n   them may say anything about them, and only within its recorded `scope`. Take image\n   dimensions from the input metadata; never infer \"high resolution\" from appearance.\n9. `confidence` is YOUR OWN subjective, self-reported certainty in the verdict you chose.\n   It is NOT a probability that the image is real or AI-generated, not calibrated, and not\n   an accuracy. Never build it by copying, inverting, averaging or multiplying expert\n   scores. Keep three things apart: the expert\'s raw score, your self-reported confidence,\n   and the project\'s measured performance. When the verdict is \"Uncertain\", `confidence`\n   is your certainty about abstaining — never P(Fake). No per-report disclaimers are\n   needed: this contract, the field definitions and the review view carry the semantics.\n"
 
 SUBSET_NOTE = ("(In this session ONLY the tools listed above exist. Requests for any other "
                "tool will not be served, and spending a turn on one wastes the budget.)")
@@ -284,6 +290,7 @@ no guess about how it was made.]
 <verdict>
 {"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": [], "report": "concise report in Chinese"}
 </verdict>
+(confidence = your own uncalibrated certainty in THIS verdict, not P(Real/Fake).)
 """
 
 

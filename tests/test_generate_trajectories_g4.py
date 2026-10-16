@@ -50,6 +50,42 @@ def applicability(tmp_path):
     path.write_text(json.dumps(_report()), encoding="utf-8")
     return load_applicability(str(path))
 
+class TestTheModelProbabilityIsAV2OnlyQuantity:
+    """
+    `model_probability` 由 (标签, confidence) 折成 P(Fake)——只在 v2 下成立，
+    因为 v2 的策略把 confidence 定义为 P(标签)。v3 起 confidence 是模型自报、
+    未校准的把握（提示词 RULES 9）：拿它当概率会把主观把握写成图像概率，并污染
+    model_nll/model_brier。所以 v3 下写 None。
+    """
+
+    def _verdict(self, module, monkeypatch, policy):
+        monkeypatch.setattr(module, "HALTING_POLICY", policy)
+        # 只测那段折算逻辑：直接看源码里守卫 + 用 score_record 验证 None 的后果
+        record = {"model_candidate": "Fake", "confidence": 0.93, "final_verdict": "Fake",
+                  "ground_truth": "Fake", "tools_served": ["probe_expert"]}
+        return record
+
+    def test_a_v3_session_records_no_model_probability(self, monkeypatch):
+        from scripts import generate_trajectories_g4 as module
+        from scripts.qwen_gain_baseline import _pseudo_probability
+
+        # v2（历史臂）下这个折算是有意义的：confidence 就是 P(标签)
+        assert _pseudo_probability({"verdict": "Fake", "confidence": 0.93}) == 0.93
+        # v3 下它没有意义 —— 生成器据此写 None，而不是把 0.93 当"93% 是伪造"
+        source = __import__("inspect").getsource(module.run_trajectory)
+        assert 'and HALTING_POLICY == "v2" else None' in source
+        assert "v3 下写 None" in source
+
+    def test_the_score_record_skips_none_model_probability(self):
+        from scripts.generate_trajectories_g4 import score_record
+
+        scores = score_record({
+            "model_candidate": "Fake", "final_verdict": "Fake", "ground_truth": "Fake",
+            "final_probability": 0.9, "model_probability": None, "posterior": 0.9,
+        })
+        assert "model_brier" not in scores or scores.get("model_brier") is None
+
+
 class TestApplicability:
     def test_inverted_experts_are_corrected(self, applicability):
         # A high jpeg metric means Real, so the separation it offers is 1-auroc.

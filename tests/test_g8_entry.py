@@ -143,6 +143,11 @@ class TestTheHistoricalClientSaysWhatIsMissing:
         # 改配置而不是改 `os.path.exists`：后者是全局模块属性，会波及同一进程里的
         # 其它代码（第一次写成了 lambda 里再调 exists，直接递归爆栈）。
         monkeypatch.setattr("config.QWEN_MODEL_PATH", missing)
+        # 这条测的是"权重缺失"那道检查，不是 CUDA 门禁：把 CUDA 假装成可用，
+        # 否则在无 GPU 的机器上先撞上 CUDA 门禁，测试就变成了**依赖机器**的。
+        import torch
+
+        monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
         with pytest.raises(RuntimeError) as caught:
             main.build_pipeline("qwen25")
         message = str(caught.value)
