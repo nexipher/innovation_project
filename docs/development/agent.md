@@ -69,27 +69,55 @@ Claude Code 在开发时必须拒绝“大包大揽”式的一次性重构，�
 
 ## 四、 本地数据集与基准数据资产管理
 
-### 4.1 已下载并上传的本地数据清单
-数据位于 `/dataset` 中，Claude Code 在编写数据加载器（Data Loader）和测试用例时应直接挂载以下资源：
-1.  **Real** (`dataset/Real/`)：真实照片。
-2.  **GenImage_Test** (`dataset/GenImage_Test`)：内含 Wukong、Midjourney 等八个模型的伪造照片。
+### 4.1 数据资产（2026-10-16 更新）
 
-### 4.2 MLLM 模型资产
+以下路径均相对**项目根目录**，不是系统根目录 `/dataset`。本机项目位于
+`D:\HJ\study\SJTU\Innovation\innovation_project`；AutoDL 按其实际项目目录解析。
+
+| 数据 | 路径 | 用途与状态 |
+|------|------|------------|
+| 原有真实照片 | `dataset/Real/` | 保持原位，按现有源级分区使用 |
+| 原有生成图 | `dataset/GenImage_Test/` | ADM、BigGAN、Glide、Midjourney、SD14、SD15、VQDM、Wukong；保持原位 |
+| 新增外部生成图 | `dataset/mnw_div2k/Fake/<生成器>/` | MNW：Adobe_Firefly_v4、Google_Imagen4、ByteDance_Seedream_v4、Midjourney_v7，各250张，共1000张 |
+| 新增外部真实图 | `dataset/mnw_div2k/Real/DIV2K_valid_HR/` | DIV2K Validation HR，0801–0900，共100张 |
+
+当前仅确认本机有1100张图片（约1.149GB），未确认上传AutoDL。下载时曾完成官方LFS哈希、ZIP CRC和图片完整性核验；但目前 `manifest.json`、`download_inventory.json`、目录README与ZIP包均不在目录内，不应引用为现存资产。测试前需另行固定抽样清单。`scripts/download_mnw_div2k.py`可重新获取并生成清单，但会联网读取指针及下载ZIP，不是只验证现有文件。图片不入Git。
+
+使用边界：
+
+- MNW仅供评测，不用于训练/SFT或商业用途；DIV2K限学术研究，版权归原作者。
+- 不混入现有 `sft_data/split_v2.json` 的 train/val/test；测试抽样尚未执行，后续固定清单后供各专家共用。
+- 这是组合外部数据，不是官方配套真假基准；不保证与主干预训练逐图无重叠。
+- 全量类别不平衡（1000 Fake / 100 Real），格式、分辨率和内容也不同；评测须明确分析这些混杂因素。
+- 原有同源变体保持同分区；g7及更早实验已归档到 `archive/legacy_v1_20261015/`，不作为新版训练来源。
+
+### 4.2 当前 MLLM 资产（g8 主线）
+
 | 项目 | 详情 |
 |------|------|
-| 路径 | `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master` |
-| 配置引用 | `config.py` → `QWEN_MODEL_PATH` |
-| 下载方式 | ModelScope `snapshot_download` |
-| 模型类型 | `qwen2_5_vl` |
-| 参数量 | 7B |
-| 体积 | 16.60 GB（5 × safetensors 分片） |
-| 词表 | 151,643 tokens |
-| 视觉编码器 | 32 层 / 1280 hidden / patch_size=14 / 112 window |
-| Chat Template | ✅ 内置（支持 image/video 多模态输入） |
-| 推理框架 | vLLM（本地部署，端口 6006）/ transformers |
-*   **模型名称**：Qwen2.5-VL-7B-Instruct
-*   **路径**：`/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master`
-*   **显存需求**：FP16 推理 ~16 GB，加载前必须获得用户 GPU 授权（见 §3.2）。
+| 模型 | `Qwen/Qwen3-VL-8B-Instruct`，8B，Apache-2.0 |
+| 固定 revision | `0c351dd01ed87e9c1b53cbc748cba10e6187ff3b` |
+| 正式入口 | `python main.py --image <path> --mllm qwen` → `Qwen3VLClient` |
+| 代码身份 | `mllm/qwen3_client.py` 的 `MODEL_ID` / `MODEL_REVISION`；不读取旧 `QWEN_MODEL_PATH` |
+| 加载方式 | transformers，按模型ID + 固定revision加载；不是旧版vLLM 6006入口 |
+| AutoDL已验证快照 | `/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b` |
+| 权重 | 4个safetensors分片，共17,534,339,512字节（约17.53GB）；快照还含配置与处理器文件 |
+| 精度与模式 | `bfloat16`，`non-thinking`；当前模板不支持thinking开关，不能声称已启用thinking |
+| 验收推理设置 | b1与冒烟用贪心（`do_sample=false`、temperature=0）；客户端默认可采样，不能混称所有入口均贪心 |
+| 显存实测 | b1峰值18.1GB；2026-10-15改名隔离后冒烟峰值19.65GB，六项检查通过；不是所有输入下的显存上限 |
+
+快照路径和GPU运行状态是AutoDL实测记录，不表示本机Windows也已部署权重。
+CPU验证显式使用 `--mllm mock`；真实路径无CUDA直接报错，不静默降级。模型加载、GPU推理及训练仍需授权（§3.2）。
+
+### 4.3 历史 MLLM 资产（不作为 g8 默认模型）
+
+- Qwen2.5-VL-7B-Instruct 原ModelScope快照：
+  `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master`。
+- 据2026-10-15操作日志，权重父目录已改名为
+  `qwen--Qwen2.5-VL-7B-Instruct.PENDING-DELETE-20261015`，**改名未删除、不释放磁盘空间**；此处不是本轮远程文件系统复核。
+- `--mllm qwen25`仅供历史复算，仍读取 `config.QWEN_MODEL_PATH`；权重缺失时明确报错。
+- `scripts/train_lora_g4.py`仍有旧基座依赖，不能直接当作Qwen3新版SFT入口；使用前必须另行对齐和验收。
+- `psychology_video_project`本身仍依赖旧权重。删除必须单独确认对该项目及历史复算的影响；不得删除整个 `models/` 或HF缓存。
 
 ---
 
