@@ -417,3 +417,11 @@ _已完成、不再是待确认项：新代次目录与归档范围、历史路�
 ### 9.2 提交前状态核对（2026-10-16）
 
 1100张图片仍在本机；此前生成的manifest、下载清单、目录README及ZIP包已不在目录内。§9的保存清单为下载时计划/动作，不代表现在仍有该资产。同步README与agent资产表述，保留历史操作记录，不重建清单、不下载、不删除图片；仅提交下载脚本、忽略规则与文档，图片不入库。后续评测前另行固定样本及其哈希清单。
+
+### 9.3 清单入库与只读核对（2026-10-17）
+
+`dataset/mnw_div2k/manifest.json`（`schema: external_dataset/1`，1100 条：path/group/label/bytes/sha256/url）已提交入库；图片仍按 `.gitignore` 不入库。提交前只读核对：清单 ↔ 磁盘**双向一一对应**（无缺图、无清单外文件）；随机 40 张的 sha256 与字节数 **40/40** 一致；清单内**无重复 SHA256**；`images_reencoded: false`。
+
+**用途限制（随清单一起入库，不得被后续便利覆盖）**：`purpose = External evaluation only; do not use for SFT or threshold fitting`；MNW `Evaluation only; no training or commercial use`；DIV2K `Academic research only`。清单自带的 caveats 同样生效：组合集非官方配对测试集、**不保证**与骨干预训练数据逐图不相交、格式/分辨率/内容混杂必须分开分析。
+
+因此：这份清单解锁的是**外部评测**（仍需 GPU 与固定抽样规则），**不解锁训练**——训练线仍走 b2 验收与协议验证。

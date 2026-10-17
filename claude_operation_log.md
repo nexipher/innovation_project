@@ -376,3 +376,15 @@
 * **涉及/修改的文件清单**：`.gitignore`、`README.md`、`docs/development/agent.md`、`plan.md`、`claude_operation_log.md`、`scripts/download_mnw_div2k.py`（连同此前未提交的下载准备与资产同步改动）。
 * **执行结果与验证状态**：提交前检查五组数量、图片完整性、本地SHA256去重及脚本语法；检查diff和暂存范围，禁止图片/权重/ZIP入库。没有运行模型或GPU。
 * **置信度或遗留待办（TODO）**：现有文件哈希可本地重算，但缺少此前manifest，本轮不能重复声称已与官方哈希逐项比对。未上传AutoDL、未评测；仅本地提交，不推送远端。
+
+### 2026-10-17 - 阶段四 4.8：外部数据清单入库（只提交清单，图片不入库）
+
+* **当前操作动作**：按用户指示把 `dataset/mnw_div2k/manifest.json` 纳入 git；提交前做只读核对，并在 plan §9.3 写明**用途限制**。**未提交任何图片、未改代码、未跑模型/GPU。**
+* **对应计划锚点**：`plan.md` §9（外部评测数据准备）、§9.2（"后续评测前另行固定样本及其哈希清单"）、§9.3（本次新增）
+* **核心变更说明**：
+  1. **只暂存清单一个文件**：`git add dataset/mnw_div2k/manifest.json`，暂存区仅此一项；图片目录继续由 `.gitignore`（`Fake/`、`Real/`、`downloads/`）忽略，1.1 GB 不会误入仓库。
+  2. **只读核对结果**：清单 1100 条（Adobe_Firefly_v4 / ByteDance_Seedream_v4 / Google_Imagen4 / Midjourney_v7 各 250＋DIV2K_valid_HR 100）；**清单↔磁盘双向一一对应**；随机 40 张 sha256＋字节数 **40/40** 一致；清单内**无重复 SHA256**；`images_reencoded: false`。
+  3. **用途限制写进 plan**：`purpose = External evaluation only; do not use for SFT or threshold fitting`；MNW 仅评测/非商业，DIV2K 仅学术；caveats（非配对测试集、不保证与骨干训练数据逐图不相交、格式/分辨率/内容混杂需分开分析）一并保留。**明确记录：清单解锁的是外部评测，不解锁训练。**
+* **涉及/修改的文件清单**：`dataset/mnw_div2k/manifest.json (Added — 1100 条清单)`、`plan.md (Modified — §9.3)`、`claude_operation_log.md`
+* **执行结果与验证状态**：暂存与提交范围核对（1 个文件、8818 行）；清单核对通过（见上）；仓库内无图片/权重/ZIP 被加入。**未推送远端**（按项目规矩只本地提交）。
+* **置信度或遗留待办（TODO）**：①外部评测开跑前仍需：GPU、固定抽样清单（从 1100 中按格式/来源分层抽样）、报告口径（格式/分辨率/内容混杂分开）②训练线不受此清单影响，仍待 b2 验收与协议验证③清单只保证"与本机文件一致"，不重述当时与官方 LFS 的逐项比对（那份旧清单已不在；本清单自带 url 与 sha256，可在需要时重新核验）
