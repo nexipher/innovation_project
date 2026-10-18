@@ -374,6 +374,60 @@ def is_frozen(batch_id: str, generation: Optional[str] = None) -> bool:
     return (generation_of(batch_id, generation), batch_id) in frozen_batches()
 
 
+def assert_protocol_accepted(generation: str, batch: str, purpose: str,
+                             records_dir: Optional[str] = None,
+                             frozen_path: Optional[str] = None,
+                             ledger_path: Optional[str] = None) -> None:
+    """
+    外部 Agent 评测的前置条件（用户 2026-10-18）：**b2 验收通过且协议已冻结**。
+
+    这条不是提示，是门：外部 Agent 的 200 会话必须在 b2 人工验收通过、协议显式冻结
+    之后才能跑。两个条件都要成立——
+
+      1. `(generation, batch)` 在 `FROZEN.json` 的 frozen 列表里（冻结是显式动作，
+         不是"跑完了就算"）；
+      2. 该批次的验收台账里，**每条**样本的最新决定都是 `pass`，且没有 `stale`
+         （过期意味着内容变过，旧的"通过"不再代表当前样本）。
+
+    任何一条不满足就拒绝启动，并把缺什么说清楚。路径参数仅为测试而开放：测试用
+    tmp 目录，绝不写仓库。
+    """
+    payload = {}
+    path = frozen_path or FROZEN_PATH
+    try:
+        with open(path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, ValueError):
+        payload = {}
+    frozen = {(entry.get("generation"), entry.get("batch"))
+              for entry in payload.get("frozen", [])}
+    if (generation, batch) not in frozen:
+        raise SystemExit(
+            f"外部 Agent 评测被拒绝：{generation}/{batch} 还没有冻结。\n"
+            "顺序是：b2 跑完 → 人工验收 → 你决定冻结（写进 sft_data/FROZEN.json）"
+            "→ 才允许跑外部 Agent。")
+    from utils.review_store import latest, load_ledger
+
+    records = records_dir or batch_paths(batch, generation)["trajectories"]
+    total = len([name for name in os.listdir(records)
+                 if name.endswith(".json") and name != "metadata.json"])
+    decisions = latest(load_ledger(generation, batch, path=ledger_path))
+    outstanding = sorted(
+        key for key, value in decisions.items()
+        if value.stale or value.decision != "pass")
+    problems = []
+    if len(decisions) < total:
+        problems.append(f"台账只有 {len(decisions)}/{total} 条决定")
+    if outstanding:
+        problems.append("未通过/已过期：" + "、".join(outstanding[:8])
+                        + ("…" if len(outstanding) > 8 else ""))
+    if problems:
+        raise SystemExit(
+            f"外部 Agent 评测被拒绝：{generation}/{batch} 的验收尚未通过（"
+            + "；".join(problems) + "）。\n"
+            "先在审阅工作台把每一条决定为通过并导出、导入台账，再冻结批次。")
+
+
 def assert_not_frozen_batch(batch_id: str, purpose: str, generation: str,
                             allow: bool = False) -> None:
     """

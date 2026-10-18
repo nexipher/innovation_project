@@ -37,7 +37,8 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import HALTING_POLICY, PROJECT_ROOT  # noqa: E402
-from utils.batch import assert_not_frozen_batch, batch_paths  # noqa: E402
+from utils.batch import (assert_not_frozen_batch, assert_protocol_accepted,
+                         batch_paths)  # noqa: E402
 
 # 与验收一致的默认：贪心、非思考、固定 revision（客户端自己保证）
 DEFAULT_MODE = "non-thinking"
@@ -169,11 +170,16 @@ def run_batch(generation: str, batch: str, manifest_path: str,
               allow_frozen: bool, greedy: bool, inference_mode: str,
               local_files_only: bool, out_dir: Optional[str] = None,
               assert_identical_to: Optional[str] = None,
-              purpose: str = "unspecified") -> dict:
+              purpose: str = "unspecified",
+              protocol_batch: Optional[str] = None) -> dict:
     from state_machine.controller import ForensicStateMachine
     from utils.logger import SessionLogger
 
     assert_not_frozen_batch(batch, "生成新轨迹", generation, allow=allow_frozen)
+    if purpose == "external_evaluation_only":
+        # 用户 2026-10-18 的硬暂停点：外部 Agent 必须在 b2 验收通过、协议冻结后
+        # 才能跑。把它做成门而不是口头约定——否则"顺手往下跑"就绕过去了。
+        assert_protocol_accepted(generation, protocol_batch or "b2", purpose)
     paths = batch_paths(batch, generation)
     if out_dir is None:
         if dry_run:
@@ -417,6 +423,9 @@ def main() -> int:
     parser.add_argument("--purpose", default="unspecified",
                         help="批次用途，写进 metadata：例如 protocol_acceptance_only / "
                              "external_evaluation_only（两者都不产生可训练 SFT 数据）")
+    parser.add_argument("--protocol-batch", default=None,
+                        help="external_evaluation_only 的前置批次（默认 b2）："
+                             "它必须已冻结、且验收台账全部通过，否则拒绝启动")
     args = parser.parse_args()
 
     if not args.dry_run and os.environ.get("FORENSIC_ALLOW_GPU") != "1":
@@ -438,7 +447,8 @@ def main() -> int:
                          args.limit, args.dry_run, args.allow_frozen, args.greedy,
                          args.inference_mode, args.local_files_only,
                          assert_identical_to=args.assert_variants_identical_to,
-                         purpose=args.purpose)
+                         purpose=args.purpose,
+                         protocol_batch=args.protocol_batch)
     print(f"model: {json.dumps(metadata['model'], ensure_ascii=False)[:160]}")
     return 0
 

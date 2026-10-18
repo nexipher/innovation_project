@@ -473,3 +473,15 @@
 * **涉及/修改的文件清单**：`scripts/build_external_inputs.py`、`scripts/g8_generate_batch.py`、`dataset/mnw_div2k/inputs_manifest.json (Rebuilt — 仅新增字段)`、`tests/test_external_inputs.py (Modified — 入口兼容测试)`、`claude_operation_log.md`
 * **执行结果与验证状态**：`load_manifest` 读出 200 条、字段齐备、`split=external` 且 `treatment ∈ {original, jpeg_q95}`；`test_external_inputs`/`test_g8_batch_entry` 通过；清单重建未改任何哈希（确定性编码）。
 * **置信度或遗留待办（TODO）**：①GPU 仍无设备②外部 Agent 批次名拟定 `ext_mnw_div2k`（待用户确认）③报告模板已随专家基线实现
+
+### 2026-10-18 - 阶段四 4.12：执行顺序定稿，外部 Agent 的"验收+冻结"前置做成硬门
+
+* **当前操作动作**：按用户指出的风险（"GPU 一开就按①→②→③跑"会绕过第③步的人工验收与冻结前提）把顺序写进 plan §4.12，并把第 5 步的前置条件实现为**机械门禁**：`assert_protocol_accepted()`。**未跑模型/GPU。**
+* **对应计划锚点**：`plan.md` §4.12（新增）、§4.8（b2 预注册）、§4.9（外部评测）
+* **核心变更说明**：
+  1. **顺序定稿**：①检查+真实冒烟 → ②b2 32 会话 + b1/b2 对照 + 审阅页 → ③**暂停等人工验收（不自动继续）** → ④外部专家基线可独立先跑 → ⑤b2 验收通过且协议冻结后才跑外部 Agent 200 会话。
+  2. **硬门禁**：`utils/batch.py::assert_protocol_accepted()` 要求两件事同时成立——(a) `(g8, b2)` 在 `FROZEN.json` 的 `frozen` 列表里（冻结是用户显式动作，代码不自动冻结）；(b) b2 验收台账里每条样本的**最新**决定都是 `pass` 且无 `stale`。缺任一即 `SystemExit` 并说明缺什么；`g8_generate_batch --purpose external_evaluation_only` 在加载任何权重之前调用它。
+  3. **不影响**：冒烟、b2 本身、外部专家基线（用户明确"专家基线可以独立先跑"）都不走这道门。
+* **涉及/修改的文件清单**：`utils/batch.py (Modified — assert_protocol_accepted)`、`scripts/g8_generate_batch.py (Modified — purpose 门禁 + --protocol-batch)`、`tests/test_batch_gate.py (Created — 7 条)`、`plan.md (Modified — §4.12)`、`claude_operation_log.md`
+* **执行结果与验证状态**：未冻结时实跑外部用途**被拒**（退出码 1，提示"g8/b2 还没有冻结"与正确顺序）；门禁 7 条测试通过（未冻结/全通过/有 revise/有 stale/台账不全/入口确实调用/其他用途不触发）；**门禁在创建目录与加载模型之前生效**。
+* **置信度或遗留待办（TODO）**：①b2 冻结仍由用户执行（写 FROZEN.json），本阶段不代冻②外部 Agent 批次名待定（暂拟 `ext_mnw_div2k`）③GPU 仍无设备
