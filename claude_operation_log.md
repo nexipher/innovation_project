@@ -464,3 +464,12 @@
 * **涉及/修改的文件清单**：`scripts/g8_external_eval.py (Created)`、`tests/test_external_eval.py (Created)`、`plan.md (Modified — §4.9 入口与报告口径)`、`claude_operation_log.md`
 * **执行结果与验证状态**：`test_external_eval` **15 通过**；`--dry-run` 在 200 输入上给出每个专家 200 次测量的分组计数；**未跑真实专家（无 GPU）**。
 * **置信度或遗留待办（TODO）**：①真实运行需 GPU（UnivFD 必需）与 `PROBE_WEIGHTS`②报告尚未生成 markdown 摘要（JSON 为主，必要时再加）③外部 Agent 200 会话的入口复用 `g8_generate_batch.py --purpose external_evaluation_only`（清单路径已修）④GPU 仍无设备
+
+### 2026-10-18 - 阶段四 4.11b：外部清单直接接入批次入口（避免 GPU 时才暴露）
+
+* **当前操作动作**：外部 Agent 评测复用同一条批次管线时，`inputs_manifest.json` 的键是 `inputs`（列表）而批次入口只认 `variants`（字典），且条目缺 `source_id/split/generator/treatment/container`——真跑时会在第一张图前报错。已补齐并加测试。**未跑 GPU。**
+* **对应计划锚点**：`plan.md` §4.9（外部评测；Agent 与专家同输入）
+* **核心变更说明**：`build_external_inputs.py` 为每条输入补 `source_id`（`<组>/<stem>`）、`split="external"`、`generator=<组名>`、`treatment=original|jpeg_q95`、`container`（原图按扩展名、JPEG 条件固定 `jpg`）；`g8_generate_batch.load_manifest` 同时接受 `variants`（字典，项目内变体）与 `inputs`（列表，外部输入），两者归一为"路径→条目"。外部 Agent 批次因此**复用同一条管线**（同一套记录、指纹、日志完整性），而不是另写一份等价物。
+* **涉及/修改的文件清单**：`scripts/build_external_inputs.py`、`scripts/g8_generate_batch.py`、`dataset/mnw_div2k/inputs_manifest.json (Rebuilt — 仅新增字段)`、`tests/test_external_inputs.py (Modified — 入口兼容测试)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`load_manifest` 读出 200 条、字段齐备、`split=external` 且 `treatment ∈ {original, jpeg_q95}`；`test_external_inputs`/`test_g8_batch_entry` 通过；清单重建未改任何哈希（确定性编码）。
+* **置信度或遗留待办（TODO）**：①GPU 仍无设备②外部 Agent 批次名拟定 `ext_mnw_div2k`（待用户确认）③报告模板已随专家基线实现

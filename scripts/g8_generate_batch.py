@@ -48,10 +48,18 @@ RECORD_SCHEMA = "g8_r1"
 def load_manifest(path: str) -> Dict[str, dict]:
     with open(path, encoding="utf-8") as handle:
         report = json.load(handle)
-    # 清单键是变体的标识（`build_variants_g4.py` 用相对路径做键）；`path` 才是
-    # 要打开的文件，缺省时退回键。
+    # 两种清单：项目内变体（`variants`，键是相对路径）与外部评测输入
+    # （`inputs`，条目自带 path）。后者也要能直接喂给批次入口，否则外部 Agent
+    # 评测就得再写一份等价物——两条路径分叉，"同一条管线"的说法就不成立了。
+    entries = report.get("variants")
+    if entries is None:
+        entries = report.get("inputs")
+    if entries is None:
+        raise SystemExit(f"无法识别的清单（既没有 variants 也没有 inputs）：{path}")
+    if isinstance(entries, list):
+        return {entry["path"]: {**entry, "path": entry["path"]} for entry in entries}
     return {path_key: {**entry, "path": entry.get("path") or path_key}
-            for path_key, entry in report["variants"].items()}
+            for path_key, entry in entries.items()}
 
 
 def _record(variant: dict, policy_name: str, tools_served: List[str],

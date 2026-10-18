@@ -88,6 +88,11 @@ def build(dry_run: bool = False) -> dict:
                 "bytes": sample["bytes"], "source_sha256": sample["sha256"],
                 "source_path": sample["path"], "group": group,
                 "label": sample["label"], "encoder": None, "params": None,
+                # 批次记录（sft_data/g8/trajectories/<batch>）需要这些字段；
+                # 外部集没有项目内 split，统一记 "external"，生成器名即分组名。
+                "source_id": f"{group}/{stem}", "split": "external",
+                "generator": group, "treatment": "original",
+                "container": os.path.splitext(sample["path"])[1].lstrip(".").lower(),
             })
             seen_ids.add(original_id)
 
@@ -117,6 +122,8 @@ def build(dry_run: bool = False) -> dict:
                     "group": group, "label": sample["label"],
                     "encoder": encoder, "width": width, "height": height,
                     "mode_converted_from": None if mode_before == "RGB" else mode_before,
+                    "source_id": f"{group}/{stem}", "split": "external",
+                    "generator": group, "treatment": "jpeg_q95", "container": "jpg",
                 })
             elif not dry_run:
                 problems.append(f"未生成：{relative}")

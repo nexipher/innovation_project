@@ -93,6 +93,23 @@ class TestTheFixedInputSet:
         assert manifest["rules"]["same_encoder_for_real_and_fake"] is True
         assert "未压缩" in manifest["rules"]["note"]      # 明确禁止 JPEG→PNG 的解释
 
+    def test_the_batch_entry_can_read_the_inputs_manifest_directly(self):
+        """
+        外部 Agent 评测要复用同一条批次管线：清单必须能被 `load_manifest` 读取，
+        且每条都带记录需要的字段（split/generator/treatment/container/source_id）。
+        否则就得再写一份等价物，两条路径一旦分叉，"同一条管线"就不成立了。
+        """
+        from scripts.g8_generate_batch import load_manifest
+
+        entries = load_manifest(MANIFEST)
+        assert len(entries) == 200
+        for entry in entries.values():
+            for key in ("variant_id", "source_id", "split", "generator",
+                        "treatment", "container", "label", "path"):
+                assert key in entry, key
+            assert entry["split"] == "external"
+            assert entry["treatment"] in ("original", "jpeg_q95")
+
     def test_the_agent_plan_covers_all_two_hundred_inputs(self):
         plan = _load(PLAN)
         assert plan["agent_plan"]["sessions"] == 200
