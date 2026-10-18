@@ -76,11 +76,15 @@ def build(dry_run: bool = False) -> dict:
                 continue
             stem = os.path.splitext(os.path.basename(sample["path"]))[0]
 
-            # 条件 1：原图 —— 不复制、不改动，直接引用
+            # 条件 1：原图 —— 不复制、不改动，直接引用。
+            # 注意：eval_plan 里的 path 是**相对 dataset/mnw_div2k** 的，而批次入口按
+            # `PROJECT_ROOT + path` 打开文件；清单必须统一成**相对仓库根**，否则外部
+            # 评测会在 PROJECT_ROOT 下找 `Fake/...` 而失败。
             original_id = f"{group}__{stem}__original"
             entries.append({
                 "variant_id": original_id, "condition": "original",
-                "path": sample["path"], "sha256": sample["sha256"],
+                "path": os.path.relpath(source, PROJECT_ROOT),
+                "sha256": sample["sha256"],
                 "bytes": sample["bytes"], "source_sha256": sample["sha256"],
                 "source_path": sample["path"], "group": group,
                 "label": sample["label"], "encoder": None, "params": None,

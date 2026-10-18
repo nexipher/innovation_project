@@ -442,3 +442,12 @@
 * **涉及/修改的文件清单**：`scripts/g8_generate_batch.py (Modified — code/budget/purpose/weights + 设备文件修复)`、`experts/external_base.py (Modified — provenance 只对普通文件取哈希)`、`scripts/build_external_inputs.py (Created)`、`dataset/mnw_div2k/inputs_manifest.json (Created — 200 条)`、`dataset/mnw_div2k/eval_plan.json (Modified — agent_plan/配对/usage_history)`、`scripts/g8_protocol_audit.py (Modified — 批次汇总)`、`scripts/g8_review_workstation.py (Modified — 协议命中区)`、`.gitignore (Modified — inputs/ 忽略)`、`plan.md (Modified — §4.9 重写)`、`tests/{test_external_inputs.py (Created), test_g8_batch_entry.py, test_g8_review_workstation.py, test_external_experts.py}`、`sft_data/g8/review/b1/*.html (Rebuilt — 仅新增协议命中区)`、`claude_operation_log.md`
 * **执行结果与验证状态**：`core` **611 通过**；外部输入 200 条核对通过（唯一 id、无重复哈希、原图未动、双条件齐全、无缩放、编码器身份一致）；b1 页面重建后台账进度仍 32/32、`stale` 0（指纹未变）；`/dev/null.sha256` 副作用已消除。**未跑 GPU、未产生任何训练数据。**
 * **置信度或遗留待办（TODO）**：①b2 与外部评测都需要 GPU（当前无设备）②b2 开跑命令将带 `--assert-variants-identical-to b1 --purpose protocol_acceptance_only`；外部 Agent 批次将带 `--purpose external_evaluation_only`③外部专家基线尚未有专用入口脚本（三个 evaluator 已有 `--device cuda`，需按 200 输入清单写一个批量入口；下一步实现）④报告模板（按组×条件的配对 ΔAUROC）待实现⑤"Agent 200 会话"的审阅量需按 4.8 的流程走
+
+### 2026-10-18 - 阶段四 4.10b：外部输入清单的路径基准统一（提交后自查发现）
+
+* **当前操作动作**：发现 `inputs_manifest.json` 中 `original` 条目的 `path` 是相对 `dataset/mnw_div2k/`，而 `jpeg_q95` 条目是相对仓库根——批次入口按 `PROJECT_ROOT + path` 打开文件，前者会解析到错误位置。统一为**相对仓库根**，重建清单并加测试。**未跑模型/GPU。**
+* **对应计划锚点**：`plan.md` §4.9（外部评测输入）；同日前一条 4.10
+* **核心变更说明**：`build_external_inputs.py` 里 `original` 的 `path` 改为 `os.path.relpath(source, PROJECT_ROOT)`；`source_path` 仍保留相对 `dataset/mnw_div2k` 的原值（用于与固定清单配对）。重跑构建：**只有 100 条 `original.path` 变化，所有 sha256 不变**（也证明 JPEG 重编码是确定性的）；200 条路径全部可按 `PROJECT_ROOT` 解析；`usage_history` 记为 2 条。
+* **涉及/修改的文件清单**：`scripts/build_external_inputs.py`、`dataset/mnw_div2k/inputs_manifest.json`、`dataset/mnw_div2k/eval_plan.json (usage_history)`、`tests/test_external_inputs.py (Modified — 路径解析回归测试)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`test_external_inputs` 全部通过；清单 diff 仅 100 条 path（+100/−100），无哈希变化。
+* **置信度或遗留待办（TODO）**：①外部专家基线的批量入口脚本仍未写（下一步）②GPU 仍无设备

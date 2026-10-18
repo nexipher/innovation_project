@@ -43,6 +43,17 @@ class TestTheFixedInputSet:
         assert all(found == {"original", "jpeg_q95"} for found in conditions.values())
         assert manifest["counts"] == {"total": 200, "original": 100, "jpeg_q95": 100}
 
+    def test_every_path_resolves_from_the_repository_root(self):
+        """
+        清单里的 path 必须按 `PROJECT_ROOT + path` 能打开——批次入口就是这么读的。
+        第一版把 originals 写成了"相对 dataset/mnw_div2k"，评测会在仓库根下找
+        `Fake/...` 而失败；这里钉住统一约定。
+        """
+        manifest = _load(MANIFEST)
+        missing = [entry["path"] for entry in manifest["inputs"]
+                   if not os.path.exists(os.path.join(PROJECT_ROOT, entry["path"]))]
+        assert missing == [], missing
+
     def test_the_originals_are_the_ones_the_plan_fixed(self):
         plan = _load(PLAN)
         manifest = _load(MANIFEST)
@@ -51,7 +62,8 @@ class TestTheFixedInputSet:
         originals = [e for e in manifest["inputs"] if e["condition"] == "original"]
         assert len(originals) == len(fixed) == 100
         for entry in originals:
-            assert entry["sha256"] == fixed[entry["path"]]
+            # path 是相对仓库根；与固定清单配对用的是 source_path（相对 mnw_div2k）
+            assert entry["sha256"] == fixed[entry["source_path"]]
             assert entry["source_sha256"] == entry["sha256"]
 
     def test_the_jpeg_condition_records_one_encoder_for_real_and_fake(self):
