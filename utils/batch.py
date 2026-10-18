@@ -377,55 +377,60 @@ def is_frozen(batch_id: str, generation: Optional[str] = None) -> bool:
 def assert_protocol_accepted(generation: str, batch: str, purpose: str,
                              records_dir: Optional[str] = None,
                              frozen_path: Optional[str] = None,
-                             ledger_path: Optional[str] = None) -> None:
+                             ledger_path: Optional[str] = None,
+                             accepted_path: Optional[str] = None,
+                             manifest_path: Optional[str] = None,
+                             metadata_path: Optional[str] = None) -> dict:
     """
-    外部 Agent 评测的前置条件（用户 2026-10-18）：**b2 验收通过且协议已冻结**。
+    外部 Agent 评测的第一阶段门禁（plan §4.12b）：**冻结 + 逐样本验收 + 身份登记**。
 
-    这条不是提示，是门：外部 Agent 的 200 会话必须在 b2 人工验收通过、协议显式冻结
-    之后才能跑。两个条件都要成立——
+    三道检查，缺一不可：
 
-      1. `(generation, batch)` 在 `FROZEN.json` 的 frozen 列表里（冻结是显式动作，
-         不是"跑完了就算"）；
-      2. 该批次的验收台账里，**每条**样本的最新决定都是 `pass`，且没有 `stale`
-         （过期意味着内容变过，旧的"通过"不再代表当前样本）。
+      1. **用户明确冻结**：`FROZEN.json` 必须可读、可解析、`frozen` 是列表，且含
+         `(generation, batch)`。文件缺失/损坏是明确的拒绝，不再当成"未冻结"。
+      2. **逐样本覆盖 + 现场指纹**（`utils/acceptance.py`）：以记录目录里真实
+         `trajectory_id` 为准，与台账最新决定逐 ID 匹配；台账数量不参与放行；
+         指纹用工作台同一个 `sample_fingerprint()` 现场重算，不信 `stale=false`。
+      3. **验收协议身份已登记**：`accepted_protocol.json` 必须存在且 schema/小节
+         完整。真正的"即将运行配置 vs 验收配置"比较在管线构建之后由
+         `utils.protocol_identity.assert_compatible()` 完成。
 
-    任何一条不满足就拒绝启动，并把缺什么说清楚。路径参数仅为测试而开放：测试用
-    tmp 目录，绝不写仓库。
+    返回验收身份文件的内容（第二阶段比较用）。任何一项失败都在创建批次目录、
+    加载模型之前拒绝。路径参数仅为测试而开放。
     """
-    payload = {}
-    path = frozen_path or FROZEN_PATH
+    frozen_path = frozen_path or FROZEN_PATH
+    if not os.path.exists(frozen_path):
+        raise SystemExit(
+            f"外部 Agent 评测被拒绝：冻结登记表不存在（{frozen_path}）。"
+            "冻结是用户的显式动作，不能由运行参数代替。")
     try:
-        with open(path, encoding="utf-8") as handle:
+        with open(frozen_path, encoding="utf-8") as handle:
             payload = json.load(handle)
-    except (OSError, ValueError):
-        payload = {}
+    except (OSError, ValueError) as exc:
+        raise SystemExit(
+            f"外部 Agent 评测被拒绝：冻结登记表无法读取（{frozen_path}："
+            f"{type(exc).__name__}: {exc}）。不能把损坏的登记表当成'未冻结'。")
+    frozen_list = payload.get("frozen")
+    if not isinstance(frozen_list, list):
+        raise SystemExit(
+            f"外部 Agent 评测被拒绝：冻结登记表缺少 frozen 列表（{frozen_path}）。")
     frozen = {(entry.get("generation"), entry.get("batch"))
-              for entry in payload.get("frozen", [])}
+              for entry in frozen_list if isinstance(entry, dict)}
     if (generation, batch) not in frozen:
         raise SystemExit(
             f"外部 Agent 评测被拒绝：{generation}/{batch} 还没有冻结。\n"
             "顺序是：b2 跑完 → 人工验收 → 你决定冻结（写进 sft_data/FROZEN.json）"
-            "→ 才允许跑外部 Agent。")
-    from utils.review_store import latest, load_ledger
+            "→ 登记验收协议身份 → 才允许跑外部 Agent。")
 
-    records = records_dir or batch_paths(batch, generation)["trajectories"]
-    total = len([name for name in os.listdir(records)
-                 if name.endswith(".json") and name != "metadata.json"])
-    decisions = latest(load_ledger(generation, batch, path=ledger_path))
-    outstanding = sorted(
-        key for key, value in decisions.items()
-        if value.stale or value.decision != "pass")
-    problems = []
-    if len(decisions) < total:
-        problems.append(f"台账只有 {len(decisions)}/{total} 条决定")
-    if outstanding:
-        problems.append("未通过/已过期：" + "、".join(outstanding[:8])
-                        + ("…" if len(outstanding) > 8 else ""))
-    if problems:
-        raise SystemExit(
-            f"外部 Agent 评测被拒绝：{generation}/{batch} 的验收尚未通过（"
-            + "；".join(problems) + "）。\n"
-            "先在审阅工作台把每一条决定为通过并导出、导入台账，再冻结批次。")
+    from utils.acceptance import assert_review_accepted
+
+    assert_review_accepted(
+        generation, batch, records_dir=records_dir, ledger_path=ledger_path,
+        manifest_path=manifest_path, metadata_path=metadata_path)
+
+    from utils.protocol_identity import accepted_path as default_accepted, load_accepted
+
+    return load_accepted(accepted_path or default_accepted(generation, batch))
 
 
 def assert_not_frozen_batch(batch_id: str, purpose: str, generation: str,

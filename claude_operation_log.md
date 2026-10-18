@@ -516,3 +516,22 @@
 * **涉及/修改的文件清单**：`scripts/g8_external_eval.py (Modified — 配对分析/--report-only/审计字段)`、`tests/test_external_eval.py (Modified — 配对口径与回归，19 条)`、`plan.md (Modified — §4.9b)`、`dataset/mnw_div2k/eval_plan.json (Modified — usage_history)`、**产物**：`sft_data/g8_external_eval/20261018_202449/{scores.jsonl, report.json}`、`claude_operation_log.md`
 * **执行结果与验证状态**：600/600 测量完成；报告按 4 组 × 2 条件 × 3 专家给出 n=40 的 AUROC+95%CI 与配对 Δ；`test_external_eval` **19 通过**；分数文件 sha256 已写进报告；**未跑 Agent，未生成任何 SFT 数据，未调阈值**。
 * **置信度或遗留待办（TODO）**：①报告只从分数重建，**原始 run 的 device/elapsed 字段未保留**（以本日志与 plan 为准）②b2 人工验收仍未发生，外部 Agent 门禁仍关闭③PROBE 上游训练语料未声明，"外部"只指未参与本项目选择/训练，不得写成未见生成器泛化④NPR 的格式受限结论需要在下游证据语义中落实（证据必须带格式条件与 scope）⑤是否把 `--report-only` 写进 plan §4.9 入口说明（现仅在 §4.9b 记录）
+
+### 2026-10-18 - 阶段四 4.15：外部 Agent 门禁升级（逐样本覆盖、现场指纹、验收协议身份）
+
+* **当前操作动作**：按用户指定检查并重做外部 Agent 的验收门禁，落成四件事：①逐样本 ID 覆盖（不再比数量）②用工作台 `sample_fingerprint()` 现场重算审核指纹（不信台账 `stale=false`）③独立的**验收协议身份**（批次冻结 ≠ 协议冻结）④两道门都在创建批次产物之前生效。**未加载模型、未跑 Agent、未改任何审核决定。**
+* **对应计划锚点**：`plan.md` §4.12b（新增）、§4.12（执行顺序）、§4.9（外部评测）
+* **核心变更说明**：
+  1. **`utils/acceptance.py`（新增）**：严格读记录/trace/台账。记录目录不存在、空批次、文件坏、缺 `trajectory_id`、跨文件重复 ID → 拒绝；每条记录必须有可读 trace；台账缺文件/空/坏行/跨代次跨批次 → 拒绝；按真实 `trajectory_id` 与台账**最新决定**逐项匹配；缺审、`revise`、`reject`、非法决定分别列出具体 ID；期望样本集由 b2 变体清单 + metadata 的 `policy` 还原（`{policy}__{variant_id}`），记录被删一条/多一条都拒绝；台账中不属于当前批次的 ID 不计入覆盖、单独列出但不单独阻断。
+  2. **现场指纹**：每条当前记录 + trace 重算 `sample_fingerprint(record, trace)`，与最新决定的 `fingerprint` 比较；不相等即拒绝并给出两个指纹。台账的 `stale` 字段不参与放行（只记录），不修改决定、不改成通过、不重写历史。
+  3. **`utils/protocol_identity.py`（新增，schema `acceptance_protocol_identity/1`）**：身份含主模型（checkpoint/revision/dtype/inference_mode/解码）、提示词 digest + 实际 sha256、专家集合（class、权重 sha256/字节、登记表预处理 sha256）、证据包版本（对 `MODEL_VISIBLE_KEYS` 取哈希，当前 `slim/675d043b7724`）、工具与预算（policy、tools_served、v3、5 次调用/6 轮、text+image）、协议文件内容哈希（controller / evidence_tokenizer / message_builder / qwen3_client / config / score_semantics py+json / external_base / 三个专家适配器）。两侧共用 `canonical_identity()`：登记从 b2 `metadata.json` 取，运行从 `main.build_pipeline()` 构造出的真实对象取；逐字段比较并指出"验收值/当前值"。
+  4. **`scripts/g8_accept_protocol.py`（新增）**：只在逐样本验收全部通过后登记；核对每个协议文件当前字节与 **b2 运行提交**中的字节一致（不一致 = b2 验收的不是当前协议，拒绝）；写 `review/<批次>/accepted_protocol.json`（最新）+ `accepted_protocol_history.jsonl`（历史）；重登记必须 `--reason`；**不写 `FROZEN.json`**。
+  5. **`utils/batch.py::assert_protocol_accepted`**：冻结表缺失/损坏/缺 `frozen` 列表 → 明确拒绝；调用逐样本核对；要求验收身份文件存在、schema/小节/hash 自校验通过；返回身份供第二阶段比较。
+  6. **`scripts/g8_generate_batch.py`**：第一阶段门禁在创建目录/加载模型前；`build_pipeline` 后用真实对象做第二阶段比较；**两道门都通过才 `os.makedirs`**；批次 metadata 记录验收/实际身份哈希；新增 `--protocol-generation`（默认同 `--generation`，协议批次可独立代次）；证据注入方式改为单一常量 `EVIDENCE_INJECTION`，构造与身份共用。
+* **涉及/修改的文件清单**：`utils/acceptance.py (Created)`、`utils/protocol_identity.py (Created)`、`scripts/g8_accept_protocol.py (Created)`、`utils/batch.py (Modified)`、`scripts/g8_generate_batch.py (Modified)`、`tests/test_batch_gate.py (Rewritten — 29 条)`、`tests/test_protocol_identity.py (Created — 27 条)`、`tests/test_accept_protocol.py (Created — 12 条)`、`plan.md (Modified — §4.12b)`、`README.md (Modified — §3.7e)`、`claude_operation_log.md`
+* **执行结果与验证状态**：
+  * `core` **705 通过**；新增门禁/身份/登记测试 68 条。
+  * 真实 b2 演练（临时冻结表/台账/身份文件，全部在 /tmp）：32 条记录与 trace 全部可读，期望集 32、当前 32；用真实 metadata 生成身份 `identity_sha256=e5db1fb90eafb2bc`；三个专家权重与预处理身份齐备；**全部协议文件与 b2 提交 `e5b1707` 字节一致**，非输出 dirty 路径为空。
+  * 用户刚导出的 `sft_data/g8/review/b2/review_g8_b2.json`（只读核对）：32 条决定、**27 revise / 5 pass**，指纹与当前内容 **32/32 一致**。临时台账演练：27 条 revise 被逐 ID 列出并拒绝；全 pass 的对照演练通过。**该文件未导入台账、未修改、未提交。**
+  * 门禁失败不创建批次目录：两条入口测试分别覆盖第一阶段失败与第二阶段身份不一致。
+* **置信度或遗留待办（TODO）**：①b2 当前 **未通过验收**（27 revise），台账尚未写入；外部 Agent 门禁保持关闭②用户需决定是否导入该审核 JSON、是否修改 b2/重新生成③验收协议身份尚未登记（`accepted_protocol.json` 不存在）——只有等验收全部 pass 后才能运行 `g8_accept_protocol.py`④真实运行时的身份比较尚未在 GPU 上演练（避免加载 17.5 GB 模型；单元测试已覆盖同一采集/归一化路径）⑤未把 `review_g8_b2.json` 纳入 Git（用户产物，需明确是否入库）

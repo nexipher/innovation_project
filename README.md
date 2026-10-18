@@ -327,6 +327,31 @@ python scripts/g8_dump_model_inputs.py     # 产物：sft_data/g8_model_inputs/<
 失败包没有分数）、内部标记词表扫描（bootstrap/AUROC/CI[/阶段编号/台账措辞）。**扫描必须 0 命中**，
 命中即退出码 1——判据是词表，不是"我检查过了"。
 
+### 3.7e 外部 Agent 的验收门禁（plan §4.12b）
+
+外部 Agent 的 200 会话**不是**"b2 跑完就能跑"。启动前有四道检查，缺一即拒绝：
+
+1. `g8/b2` 在 `sft_data/FROZEN.json` 里（用户显式冻结；文件缺失/损坏也拒绝）；
+2. 逐样本核对：以 b2 记录目录里的真实 `trajectory_id` 为准，与台账**最新决定**
+   逐 ID 匹配；空批次、重复 ID、坏记录、坏 trace、坏台账、缺审、`revise`/`reject`
+   都会列出具体 ID 并拒绝；
+3. 指纹**现场重算**：用工作台的 `sample_fingerprint(record, trace)` 重新计算，
+   与最新决定的指纹比较；不信任台账里的 `stale` 字段；
+4. 协议身份：比较**实际构建出来的管线**与 b2 验收身份（模型 revision/精度/解码、
+   系统提示词哈希、专家权重与预处理、证据包版本、预算与调用规则、协议文件哈希）。
+
+人工验收通过后，登记验收身份（**不修改审核决定，也不写 FROZEN.json**）：
+
+```bash
+python scripts/g8_accept_protocol.py --generation g8 --batch b2 --reviewer <你> --dry-run
+python scripts/g8_accept_protocol.py --generation g8 --batch b2 --reviewer <你>
+# 重登记必须给 --reason；历史保留在 accepted_protocol_history.jsonl
+```
+
+登记会核对每个协议文件的**当前字节**与 **b2 运行提交**中的字节一致；不一致
+说明 b2 验收的不是当前协议，拒绝登记（须重跑 b2 并重新验收）。所有检查都在创建
+批次目录之前完成；失败不会留下记录/trace/metadata。
+
 ### 3.8 运行测试
 
 三层（详见 [`docs/development/TESTING.md`](docs/development/TESTING.md)）；本机 shell 处于 2 GB cgroup，`full` 层建议用分块运行器：

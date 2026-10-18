@@ -22,6 +22,10 @@ g8 的批次生成入口（阶段 4.5）。
   * 记录（每条会话一个）：`sft_data/<gen>/trajectories/<batch>/<variant_id>.json`
   * 会话 trace：`SessionLogger` 默认目录（`traces/sft_sessions/`），记录里写 `trace_path`
   * 批次身份：`sft_data/<gen>/trajectories/<batch>/metadata.json`
+
+外部 Agent（`--purpose external_evaluation_only`）在加载模型前后各有一道门
+（plan §4.12b）：逐样本验收 + 现场指纹 + 验收协议身份。任何一道失败都不创建
+批次目录、不写记录/trace/metadata。
 """
 
 from __future__ import annotations
@@ -32,7 +36,7 @@ import os
 import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -42,6 +46,8 @@ from utils.batch import (assert_not_frozen_batch, assert_protocol_accepted,
 
 # 与验收一致的默认：贪心、非思考、固定 revision（客户端自己保证）
 DEFAULT_MODE = "non-thinking"
+#: 证据如何进入模型输入。身份记录与实际构造必须读同一个常量，否则身份会撒谎。
+EVIDENCE_INJECTION = "text+image"
 # 记录 schema 标着这一批是 g8 主线口径（转换门禁按它决定要不要证据检查字段）
 RECORD_SCHEMA = "g8_r1"
 
@@ -171,15 +177,23 @@ def run_batch(generation: str, batch: str, manifest_path: str,
               local_files_only: bool, out_dir: Optional[str] = None,
               assert_identical_to: Optional[str] = None,
               purpose: str = "unspecified",
-              protocol_batch: Optional[str] = None) -> dict:
+              protocol_batch: Optional[str] = None,
+              protocol_generation: Optional[str] = None,
+              protocol_paths: Optional[dict] = None) -> dict:
     from state_machine.controller import ForensicStateMachine
     from utils.logger import SessionLogger
 
     assert_not_frozen_batch(batch, "生成新轨迹", generation, allow=allow_frozen)
+    # 协议批次与本次运行的代次是**两件事**：外部评测将来可能在新代次目录下跑，
+    # 而验收身份始终绑定 g8/b2。默认相同，但允许显式指定，不能靠名字猜。
+    protocol_generation = protocol_generation or generation
+    accepted_protocol = None
     if purpose == "external_evaluation_only":
-        # 用户 2026-10-18 的硬暂停点：外部 Agent 必须在 b2 验收通过、协议冻结后
-        # 才能跑。把它做成门而不是口头约定——否则"顺手往下跑"就绕过去了。
-        assert_protocol_accepted(generation, protocol_batch or "b2", purpose)
+        # 第一阶段门禁（plan §4.12b）：冻结 + 逐样本覆盖 + 现场指纹 + 验收身份
+        # 已登记。全部在创建批次目录、加载模型**之前**完成——失败不留产物。
+        accepted_protocol = assert_protocol_accepted(
+            protocol_generation, protocol_batch or "b2", purpose,
+            **(protocol_paths or {}))
     paths = batch_paths(batch, generation)
     if out_dir is None:
         if dry_run:
@@ -196,7 +210,8 @@ def run_batch(generation: str, batch: str, manifest_path: str,
     default_traces = (not dry_run and out_dir == paths["trajectories"])
     trace_dir = (os.path.join(PROJECT_ROOT, "traces", "sft_sessions", generation, batch)
                  if default_traces else os.path.join(out_dir, "sessions"))
-    os.makedirs(out_dir, exist_ok=True)
+    # **不在这里建目录**：第二阶段协议身份比对（需要真实管线对象）通过后才建，
+    # 否则门禁失败会留下一个看起来像正常结果的空批次目录。
 
     if assert_identical_to:
         assert_variants_identical(
@@ -219,6 +234,26 @@ def run_batch(generation: str, batch: str, manifest_path: str,
     client, experts = base._mllm, base._experts
     tools_served = sorted(experts)
 
+    actual_protocol = None
+    if purpose == "external_evaluation_only":
+        # 第二阶段门禁：用**构建出来的真实对象**生成身份，与验收身份逐字段比较。
+        # 不读命令行声明，也不读 b2 的元数据——那两者都可能与实际的管线不一致。
+        from utils.protocol_identity import (accepted_path as default_accepted_path,
+                                             assert_compatible, runtime_identity)
+
+        actual_protocol = runtime_identity(
+            base, tools_policy=tools_policy, greedy=greedy,
+            inference_mode=inference_mode,
+            evidence_injection=EVIDENCE_INJECTION)
+        assert_compatible(
+            accepted_protocol, actual_protocol,
+            generation=protocol_generation, batch=protocol_batch or "b2",
+            accepted_path=(protocol_paths or {}).get("accepted_path")
+            or default_accepted_path(protocol_generation, protocol_batch or "b2"))
+
+    # 两道门都通过后才允许出现批次产物（记录 / trace / metadata）。
+    os.makedirs(out_dir, exist_ok=True)
+
     code_identity = _code_identity()          # 开跑前取，避免把本批次输出算进 dirty
     records, skipped = [], 0
     started = time.time()
@@ -234,7 +269,7 @@ def run_batch(generation: str, batch: str, manifest_path: str,
             client.reset()
         fsm = ForensicStateMachine(
             client, experts, logger=logger,
-            evidence_injection="text+image",
+            evidence_injection=EVIDENCE_INJECTION,
             # 变体自己知道它属于哪个格式格：校准权重因此取该格的测量。
             condition=variant["treatment"])
         t0 = time.perf_counter()
@@ -264,7 +299,7 @@ def run_batch(generation: str, batch: str, manifest_path: str,
         "policy": tools_policy,
         "policy_version": HALTING_POLICY,
         "tools_served": tools_served,
-        "evidence_injection": "text+image",
+        "evidence_injection": EVIDENCE_INJECTION,
         "decoding": {"greedy": greedy, "inference_mode": inference_mode},
         "variants_total": len(load_manifest(manifest_path)),
         "variants_this_run": len(variants),
@@ -280,6 +315,22 @@ def run_batch(generation: str, batch: str, manifest_path: str,
         "entry": "scripts/g8_generate_batch.py → main.build_pipeline",
         "manifest": os.path.relpath(manifest_path, PROJECT_ROOT),
     }
+    if actual_protocol is not None:
+        from utils.protocol_identity import identity_sha256
+
+        accepted_file = ((protocol_paths or {}).get("accepted_path")
+                         or os.path.join(PROJECT_ROOT, "sft_data",
+                                         protocol_generation, "review",
+                                         protocol_batch or "b2",
+                                         "accepted_protocol.json"))
+        metadata["protocol"] = {
+            "accepted_file": os.path.relpath(accepted_file, PROJECT_ROOT),
+            "accepted_identity_sha256": (
+                accepted_protocol.get("identity_sha256")
+                or identity_sha256(accepted_protocol.get("identity") or {})),
+            "actual_identity_sha256": identity_sha256(actual_protocol),
+            "compared": True,
+        }
     with open(os.path.join(out_dir, "metadata.json"), "w", encoding="utf-8") as handle:
         json.dump(metadata, handle, ensure_ascii=False, indent=2)
     print(f"\n记录 {len(records)} 条（跳过已存在 {skipped} 条）→ {out_dir}")
@@ -296,47 +347,29 @@ def _vram_gb() -> float:
 
 
 def _model_identity(fsm) -> dict:
-    client = getattr(fsm, "_mllm", None)
-    if client is None or not callable(getattr(client, "identity", None)):
-        return {"name": getattr(client, "name", None), "mode": "mock"}
-    return client.identity()
+    """主模型身份：与验收登记使用同一个采集函数（utils/protocol_identity）。"""
+    from utils.protocol_identity import model_identity
+
+    return model_identity(getattr(fsm, "_mllm", None))
 
 
 def _expert_identity(fsm) -> Dict[str, dict]:
-    """
-    每个专家：项目已有的身份函数（类/极性/源名）+ 设备与权重出处。
+    """专家身份：同一个采集函数，保证批次元数据与验收身份可逐字段对上。"""
+    from utils.protocol_identity import expert_identity
 
-    "同一权重、不同加载器/不同设备"是会让数字悄悄变掉的那类差别，所以设备写进
-    批次身份，而不是靠"应该是在 GPU 上跑的"。
-    """
-    from utils.config_fingerprint import expert_specs
-
-    specs = expert_specs(fsm._experts or {})
-    for name, expert in (fsm._experts or {}).items():
-        specs.setdefault(name, {})
-        specs[name]["device"] = getattr(expert, "device", None)
-        for attr in ("weight_source", "licence_note", "score_reference"):
-            value = getattr(expert, attr, None)
-            if value:
-                specs[name][attr] = value
-        specs[name].update(_weights_digest(expert))
-    return specs
+    return expert_identity(fsm._experts or {})
 
 
 def _prompt_identity() -> dict:
-    """提示词身份：digest（FORENSIC+baseline 合并）+ 会话实际使用的那份的 sha256。"""
-    import hashlib
+    from utils.protocol_identity import prompt_identity
 
-    from utils.config_fingerprint import prompt_digest
+    return prompt_identity()
 
-    from mllm.message_builder import FORENSIC_SYSTEM_PROMPT
 
-    return {
-        "digest": prompt_digest(),
-        "forensic_sha256": hashlib.sha256(
-            FORENSIC_SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
-        "forensic_chars": len(FORENSIC_SYSTEM_PROMPT),
-    }
+def _budget_identity() -> dict:
+    from utils.protocol_identity import budget_identity
+
+    return budget_identity()
 
 
 def _code_identity() -> dict:
@@ -369,45 +402,6 @@ def _code_identity() -> dict:
             "branch": _git("rev-parse", "--abbrev-ref", "HEAD") or "未记录"}
 
 
-def _budget_identity() -> dict:
-    """安全预算与停机策略：这些是"条件"的一部分，换一批就该看出来。"""
-    import config
-    from config import HALTING_POLICY
-
-    return {
-        "halting_policy": HALTING_POLICY,
-        "max_expert_calls": getattr(config, "MAX_EXPERT_CALLS", None),
-        "max_model_turns": getattr(config, "MAX_MODEL_TURNS", None),
-        "evidence_injection": "text+image",
-    }
-
-
-def _weights_digest(expert) -> dict:
-    """
-    专家权重摘要：优先用专家自己的 `identity()`（评测器的 sha256 来自登记表），
-    否则对 `weights_path` 计算（external_base.sha256_file 带 sidecar 缓存）。
-    """
-    info: Dict[str, Any] = {}
-    if callable(getattr(expert, "identity", None)):
-        try:
-            info["identity"] = expert.identity()
-        except Exception as exc:                     # 身份拿不到不该中断批次
-            info["identity_error"] = f"{type(exc).__name__}: {exc}"
-    path = getattr(expert, "weights_path", None)
-    # 只对**普通文件**取摘要：mock 专家的 weights_path 是 `/dev/null`，
-    # 对它哈希既没有意义，还会在 /dev 下写出一个 sidecar（`sha256_file` 会缓存）。
-    if isinstance(path, str) and os.path.isfile(path):
-        from experts.external_base import sha256_file
-
-        try:
-            info["weights_path"] = path
-            info["weights_sha256"] = sha256_file(path)
-            info["weights_bytes"] = os.path.getsize(path)
-        except Exception as exc:
-            info["weights_error"] = f"{type(exc).__name__}: {exc}"
-    return info
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -427,12 +421,17 @@ def main() -> int:
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--assert-variants-identical-to", default=None,
                         help="开跑前逐文件核对本批输入与对照批（如 b1）的 sha256 完全相同")
+    parser.add_argument("--protocol-generation", default=None,
+                        help="验收协议批次所属代次（默认与 --generation 相同）；"
+                             "外部评测通常绑定 g8/b2")
     parser.add_argument("--purpose", default="unspecified",
                         help="批次用途，写进 metadata：例如 protocol_acceptance_only / "
                              "external_evaluation_only（两者都不产生可训练 SFT 数据）")
     parser.add_argument("--protocol-batch", default=None,
                         help="external_evaluation_only 的前置批次（默认 b2）："
-                             "它必须已冻结、且验收台账全部通过，否则拒绝启动")
+                             "它必须已冻结、逐样本验收全部通过，并在 "
+                             "review/<批次>/accepted_protocol.json 登记了协议身份，"
+                             "否则拒绝启动")
     args = parser.parse_args()
 
     if not args.dry_run and os.environ.get("FORENSIC_ALLOW_GPU") != "1":
@@ -455,7 +454,8 @@ def main() -> int:
                          args.inference_mode, args.local_files_only,
                          assert_identical_to=args.assert_variants_identical_to,
                          purpose=args.purpose,
-                         protocol_batch=args.protocol_batch)
+                         protocol_batch=args.protocol_batch,
+                         protocol_generation=args.protocol_generation)
     print(f"model: {json.dumps(metadata['model'], ensure_ascii=False)[:160]}")
     return 0
 

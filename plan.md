@@ -450,6 +450,73 @@ b1 的人工审核（14 通过 / 18 待修）指向的是**措辞与引用纪律
 
 **冻结是用户的显式动作**（写进 `sft_data/FROZEN.json`），代码不自动冻结。第 5 步的前置条件做成了**门禁**而不是文字：`g8_generate_batch --purpose external_evaluation_only` 在启动前调用 `assert_protocol_accepted()`，要求 (a) `g8/b2` 已在 FROZEN.json 里，(b) b2 验收台账每条的最新决定都是 `pass` 且不过期；缺任一项直接拒绝（`SystemExit`），不会加载模型。冒烟、b2、专家基线都不受这道门影响。
 
+### 4.12b 外部 Agent 门禁：逐样本覆盖、现场指纹与协议身份（2026-10-18 用户指定）
+
+现有门禁 `assert_protocol_accepted()` 只看两件事：`g8/b2` 在 `FROZEN.json` 里，以及
+台账决定数不少于记录数。这留下四个洞：
+
+1. **按数量比对**：台账里其他样本的决定可以凑数；重复 `trajectory_id`、空批次、
+   损坏记录都不会被明确拒绝。
+2. **相信台账的 `stale=false`**：导入时标过一次就不再重算，内容后来变了也放行。
+3. **把"批次冻结"当成"协议冻结"**：b2 冻结只说明那 32 条数据是历史；外部 Agent
+   实际使用的主模型 revision、提示词、专家权重/预处理、证据包、预算与调用规则
+   可能已经变了，却没有东西把它们和验收时绑定。
+4. **产物的出现顺序**：检查若发生在目录创建/模型加载之后，失败会留下看起来像
+   正常结果的批次目录。
+
+**门禁设计（四条全部满足才放行）**：
+
+1. **用户明确冻结**：`FROZEN.json` 必须可读、可解析、`frozen` 是列表，且含
+   `(generation, batch)`。文件缺失/损坏 = 明确拒绝，不再当成"未冻结"。
+2. **逐样本覆盖**（`utils/acceptance.py`）：以记录目录里的真实 `trajectory_id`
+   为准，逐个与台账最新决定匹配。
+   - 记录目录不存在、为空、文件无法解析、缺 `trajectory_id`、跨文件重复 ID → 拒绝
+     并列出文件；
+   - **期望样本集**由 b2 的变体清单（32 个 `variant_id`）+ 批次 metadata 的
+     `policy` 还原为 `{policy}__{variant_id}`，与实际记录逐 ID 比对：记录被删掉
+     一条不能变成"当前样本变少了"，多出一条同样拒绝；
+   - 每条记录必须能读到 `trace_path`、trace 文件存在且可解析；否则拒绝并列出 ID；
+   - 台账不存在、为空、某行无法解析、某行的 `generation/batch` 与当前不符 → 拒绝；
+   - 当前样本缺审 → 列 ID；最新决定是 `revise` / `reject` → 分别列 ID；决定字段
+     不合法（无审核人、无指纹、未知决定）→ 拒绝；
+   - 台账里属于当前批次不存在的 ID **不计入覆盖**，单独列出但不单独构成拒绝
+     （台账是追加式的，历史 ID 可能还在文件里）；当前每条样本仍必须有自己的有效
+     通过决定。
+3. **现场指纹**（复用工作台 `sample_fingerprint(record, trace)`）：对每条当前记录
+   与 trace 重新计算指纹，与最新决定的指纹比较。不相等 → 拒绝并给出两个指纹。
+   **不看台账的 `stale` 字段**：那是导入时的旧判断；当前指纹才是事实。不自动改
+   决定、不自动改成通过、不重写台账。
+4. **协议身份**（`utils/protocol_identity.py`，schema
+   `acceptance_protocol_identity/1`）：
+   - 内容：主模型（checkpoint、revision、dtype、inference_mode、解码参数）、
+     系统提示词（digest + 实际 sha256）、专家集合（每个专家的 class、权重
+     sha256/字节数、登记表预处理）、模型可见证据包（版本 = 对
+     `EvidenceTokenizer.MODEL_VISIBLE_KEYS` 的哈希）、工具与预算（policy、
+     tools_served、HALTING_POLICY、MAX_EXPERT_CALLS、MAX_MODEL_TURNS、
+     evidence_injection）、协议文件内容哈希（controller / evidence_tokenizer /
+     message_builder / qwen3_client / config / score_semantics / external_base +
+     每个专家适配器）；
+   - **登记**（`scripts/g8_accept_protocol.py`）：只在逐样本覆盖与指纹全部通过后
+     运行；从 b2 自己的 `metadata.json` 取身份，并核对每个协议文件的当前字节与
+     **b2 运行提交**中的字节一致——不一致就拒绝登记（b2 验收的不再是当前协议）。
+     写 `sft_data/<gen>/review/<batch>/accepted_protocol.json`（最新）并追加
+     `accepted_protocol_history.jsonl`（历史版本）；不改 `FROZEN.json`，冻结仍是
+     用户的显式动作；
+   - **运行前比对**：外部 Agent 构建完真实管线（`main.build_pipeline`）后，用
+     **实际对象**生成身份（不读 CLI 声明、不读 b2 元数据），逐字段与验收身份
+     比较；任何字段不一致 → 拒绝并指出字段的验收值/当前值。没有验收身份文件
+     同样拒绝。
+5. **顺序与产物**：第一阶段（冻结 + 逐样本 + 指纹 + 验收身份存在）在创建任何
+   批次目录之前执行；第二阶段（实际协议身份比对）在 `main.build_pipeline` 之后、
+   `os.makedirs(out_dir)` 之前执行。任一步失败 → 不创建记录/trace 目录、不写
+   `metadata.json`，不会留下看似正常的批次产物。b2 本身、冒烟、独立专家基线不
+   经过这道门。
+
+**验收条件**：逐样本覆盖/重复/空批/坏台账/坏 trace/指纹不符各有反例测试；协议
+身份在模型 revision、提示词、专家权重、证据包、预算、解码、协议文件哈希不一致
+时都必须拒绝且指出字段；门禁失败后目标批次目录不存在；全部通过时 `run_batch`
+才继续。
+
 ### 4.5 小批 Agent 人工验收（test 之前）
 
 - 小批（先 8–16 源 × 4 格式）跑真实 Qwen3-VL + 新工具箱，产出**最小审阅视图**：原始图像、实际投递的证据包、
