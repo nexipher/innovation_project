@@ -89,6 +89,11 @@ def audit_batch(generation: str, batch: str, records_dir: str | None = None) -> 
     sessions, per_group = 0, Counter()
     sessions_with = Counter()
     final_scope = 0
+    outcomes = Counter()
+    calls = Counter()
+    halting = Counter()
+    elapsed: List[float] = []
+    log_complete = Counter()
     examples: Dict[str, List[dict]] = {name: [] for name, _d, _r in PATTERNS}
     for name in sorted(os.listdir(records_dir)):
         if not name.endswith(".json") or name == "metadata.json":
@@ -101,6 +106,27 @@ def audit_batch(generation: str, batch: str, records_dir: str | None = None) -> 
         with open(os.path.join(PROJECT_ROOT, trace_path), encoding="utf-8") as handle:
             trace = json.load(handle)
         sessions += 1
+        # 结果分类：正确 / 错误 / 弃权 / 不可解析——**弃权不并入错误**
+        verdict = record.get("final_verdict")
+        truth = record.get("ground_truth")
+        if verdict == "Uncertain":
+            outcomes["abstain"] += 1
+        elif record.get("verdict_status") in ("no_parseable_conclusion",
+                                              "budget_exhausted", "format_failure",
+                                              "loop_protection", "evidence_check_failed"):
+            outcomes["no_conclusion"] += 1
+        elif verdict == truth:
+            outcomes["correct"] += 1
+        else:
+            outcomes["wrong"] += 1
+        calls[(record.get("counters") or {}).get("expert_calls")] += 1
+        halting[record.get("halting_reason")] += 1
+        if isinstance(record.get("elapsed_s"), (int, float)):
+            elapsed.append(float(record["elapsed_s"]))
+        metadata = trace.get("metadata") or {}
+        log_complete["system_prompt"] += bool((metadata.get("system_prompt") or {}).get("text"))
+        log_complete["model_calls"] += bool(metadata.get("model_calls"))
+        log_complete["image_size"] += bool(metadata.get("image_size"))
         hits = audit_trace(trace)
         for group, found in hits.items():
             per_group[group] += len(found)
@@ -116,6 +142,12 @@ def audit_batch(generation: str, batch: str, records_dir: str | None = None) -> 
         "generation": generation, "batch": batch, "sessions": sessions,
         "hits": dict(per_group), "sessions_with": dict(sessions_with),
         "verdict_states_scope": final_scope,
+        "outcomes": dict(outcomes),
+        "calls": {str(key): value for key, value in calls.items()},
+        "halting": dict(halting),
+        "elapsed": {"mean": round(sum(elapsed) / len(elapsed), 1) if elapsed else None,
+                     "max": max(elapsed) if elapsed else None},
+        "log_complete": {key: f"{value}/{sessions}" for key, value in log_complete.items()},
         "examples": examples,
     }
 
@@ -136,6 +168,18 @@ def main() -> int:
         print(json.dumps(reports, ensure_ascii=False, indent=2))
         return 0
 
+    for report in reports:
+        outcomes = report["outcomes"]
+        print(f"=== {report['batch']}（{report['sessions']} 会话）===")
+        print(f"  结果：正确 {outcomes.get('correct', 0)}｜错误 {outcomes.get('wrong', 0)}"
+              f"｜弃权 {outcomes.get('abstain', 0)}｜未形成结论 {outcomes.get('no_conclusion', 0)}"
+              "   （弃权单列，不并入错误）")
+        print(f"  工具调用分布：{report['calls']}｜停止原因：{report['halting']}")
+        print(f"  耗时：均 {report['elapsed']['mean']} s｜最长 {report['elapsed']['max']} s")
+        print(f"  日志完整性：系统提示词 {report['log_complete'].get('system_prompt')}"
+              f"｜调用明细 {report['log_complete'].get('model_calls')}"
+              f"｜图像尺寸 {report['log_complete'].get('image_size')}")
+    print()
     header = ["判据"] + [f"{r['batch']}（{r['sessions']} 会话）" for r in reports]
     print(" | ".join(header))
     for name, desc, _rx in PATTERNS:

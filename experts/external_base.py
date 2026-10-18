@@ -235,8 +235,11 @@ class ExternalScoreExpert(BaseExpert):
                 path=path,
                 source=self.weight_source,
                 licence_note=self.licence_note,
-                sha256=sha256_file(path) if path and os.path.exists(path) else "",
-                size_bytes=os.path.getsize(path) if path and os.path.exists(path) else 0,
+                # 只对**普通文件**取摘要：mock 专家的 weights_path 是 `/dev/null`，
+                # 对它哈希没有意义，`sha256_file` 还会在 /dev 下写一个 sidecar。
+                sha256=(sha256_file(path)
+                        if path and os.path.isfile(path) else ""),
+                size_bytes=os.path.getsize(path) if path and os.path.isfile(path) else 0,
             )
         return self._provenance
 

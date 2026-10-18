@@ -615,6 +615,30 @@ def session_page(sample: dict, page_dir: str, index_name: str,
     parts.append("</table>")
     parts.append(_render_call_status(call_status(record, trace)))
 
+    # 协议命中：自动候选，供人工复核（用户 2026-10-18：全部命中都要人看）
+    from scripts.g8_protocol_audit import PATTERNS, audit_trace, final_answer
+
+    hits = audit_trace(trace)
+    hit_count = sum(len(items) for items in hits.values())
+    parts.append("<h2>协议命中（自动候选）</h2>")
+    parts.append('<p class="muted">自动命中只是 <b>候选</b>：判据是词表，未命中不等于没问题；'
+                 "请以原文为准。" +
+                 (f"本会话命中 <b>{hit_count}</b> 处。" if hit_count else "本会话无命中。") + "</p>")
+    if hit_count:
+        parts.append("<table><tr><th>判据</th><th>轮次</th><th>句子（原文）</th></tr>")
+        for name, _desc, _rx in PATTERNS:
+            for item in hits[name]:
+                parts.append(f'<tr><td>{html.escape(name)}</td>'
+                             f'<td>#{item["turn"]}</td>'
+                             f'<td>{html.escape(item["clause"])}</td></tr>')
+        parts.append("</table>")
+    answer = final_answer(trace)
+    states_scope = bool(answer) and any(pattern.search(answer)
+                                        for name, _d, pattern in PATTERNS if name == "scope")
+    parts.append('<p>结案是否声明证据范围（自动判断）：<b>'
+                 + ("是" if states_scope else "否")
+                 + '</b><span class="muted">（自动判断只覆盖已定义句式，需人工确认）</span></p>')
+
     parts.append("<h2>引用检查（具体发现，不只是数量）</h2>")
     findings = evidence_check.get("findings") or []
     candidates = evidence_check.get("candidates") or []

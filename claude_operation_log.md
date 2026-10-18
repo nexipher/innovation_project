@@ -427,3 +427,18 @@
 * **涉及/修改的文件清单**：`scripts/g8_generate_batch.py (Modified — 显式路径 + 残留变量修复)`、`tests/test_g8_batch_entry.py (Modified — 夹具改 tmp_path)`、`tests/conftest.py (Modified — 仅追加兜底 fixture + import)`、`claude_operation_log.md`；**已删除**：`sft_data/g8/variants/{b_new,b_ref}/`（我几分钟前生成的测试夹具）
 * **执行结果与验证状态**：`git status` 只剩上述三个受控修改，无未跟踪产物；`core` **601 通过**（兜底 fixture 生效且未误报）；兜底探针验证退出码 1、文件被点名；`tests/conftest.py` 原始 fixture 完整（`isolated_sft_dir`/`legacy_calibration` 均在）。
 * **置信度或遗留待办（TODO）**：①兜底只拦"未跟踪的新文件"，测试若修改已跟踪文件不会被发现（当前无此类测试；如有需要再加内容比对）②`_untracked_under` 依赖 `git status`，在非 git 环境会得到空集合（不误报、也不保护）③之后新增测试请一律用 `tmp_path`
+
+### 2026-10-18 - 阶段四 4.10：两条任务线定稿；外部 200 输入与批次身份补全
+
+* **当前操作动作**：按用户 2026-10-18 的完整方案整理两条任务线（b2 协议验收 / 外部泛化评测），补齐"固定模型/权重/参数/预算/代码"的身份记录，生成外部 200 个输入文件（100 源 × original/jpeg_q95），把协议命中接进审阅页，审计脚本加批次汇总。**未跑任何模型/GPU；b1 数据与台账未动。**
+* **对应计划锚点**：`plan.md` §4.8（b2 预注册）、§4.9（外部评测，本次重写）；用户 2026-10-18 的完整方案
+* **核心变更说明**：
+  1. **两条线不产生训练数据**：批次元数据新增 `purpose`（`protocol_acceptance_only` / `external_evaluation_only`）；b2 与外部评测都不跑 admission/conversion。
+  2. **批次身份补全**（用户"固定模型 revision/专家权重/预处理/推理参数/安全预算，记录实际代码和提示词身份"）：`metadata` 新增 `code`（git commit、是否 dirty 及 dirty 路径、分支）、`budget`（停机策略、MAX_EXPERT_CALLS、MAX_MODEL_TURNS、投递形状）、`prompts.forensic_sha256`（会话实际使用那份提示词的哈希与字符数）；专家身份并入 `weights_sha256`（优先 `identity()`，否则对 weights_path 取哈希）与设备。**顺带修掉一个真实副作用**：mock 专家的 weights_path 是 `/dev/null`，对设备文件取哈希会在 `/dev` 下写 sidecar——`_weights_digest` 与 `ExternalScoreExpert.provenance()` 都改成只对普通文件取哈希。
+  3. **外部 200 输入**（`scripts/build_external_inputs.py` → `dataset/mnw_div2k/inputs_manifest.json`）：100 源 × 2 条件。`original` 原样引用（不动原文件）；`jpeg_q95` 真假同一编码器同一参数（Pillow 11.0.0 / libjpeg 6.2 / q95 / subsampling 2 / optimize、progressive 关），**不缩放**，编码器身份与参数逐条入清单。核对：200 条、唯一 id、无重复哈希、原图哈希与固定清单一致、每个源两条件齐全、JPEG 尺寸未变；副本目录 `dataset/mnw_div2k/inputs/` 已加入忽略规则（70 MB 不入库），清单入库。`eval_plan.json` 记录 `usage_history`（何时、何用途、多少输入、编码器）。
+  4. **分析口径（按用户更正）**：每组 = 某生成器 20 Fake + 同一组 20 DIV2K Real（n=40）；两种条件**同源配对**（配对 ΔAUROC，bootstrap 按源重采样）；20 张 Real 跨四组复用、组间不独立；不跨组汇总、不给单一总分。**Agent 与专家用完全相同的 200 个输入**：专家 3×200 = 600 次测量；Agent 200 会话（50 张子集已取消），专家基线先跑、Agent 在 b2 验收冻结后跑，离线分数不预注入。
+  5. **审阅工作流**：审阅页新增「协议命中（自动候选）」区——逐条列出判据、轮次与**原句**，并给出"结案是否声明证据范围"的自动判断；页面明写"自动命中只是候选，未命中不等于没问题"，配合"人工复核全部命中/错误/弃权 + 抽查 8 条未命中"。
+  6. **批次汇总**：`g8_protocol_audit.py` 现在同时输出**正确/错误/弃权/未形成结论**（弃权单列）、工具调用分布、停止原因、耗时（均/最长）、日志完整性（系统提示词、调用明细、图像尺寸）以及四组判据的命中率与样例。b1 基线：`system_prompt 0/32、model_calls 0/32`（4.6 之前无此记录），与 4.6 起的批次形成对照。
+* **涉及/修改的文件清单**：`scripts/g8_generate_batch.py (Modified — code/budget/purpose/weights + 设备文件修复)`、`experts/external_base.py (Modified — provenance 只对普通文件取哈希)`、`scripts/build_external_inputs.py (Created)`、`dataset/mnw_div2k/inputs_manifest.json (Created — 200 条)`、`dataset/mnw_div2k/eval_plan.json (Modified — agent_plan/配对/usage_history)`、`scripts/g8_protocol_audit.py (Modified — 批次汇总)`、`scripts/g8_review_workstation.py (Modified — 协议命中区)`、`.gitignore (Modified — inputs/ 忽略)`、`plan.md (Modified — §4.9 重写)`、`tests/{test_external_inputs.py (Created), test_g8_batch_entry.py, test_g8_review_workstation.py, test_external_experts.py}`、`sft_data/g8/review/b1/*.html (Rebuilt — 仅新增协议命中区)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`core` **611 通过**；外部输入 200 条核对通过（唯一 id、无重复哈希、原图未动、双条件齐全、无缩放、编码器身份一致）；b1 页面重建后台账进度仍 32/32、`stale` 0（指纹未变）；`/dev/null.sha256` 副作用已消除。**未跑 GPU、未产生任何训练数据。**
+* **置信度或遗留待办（TODO）**：①b2 与外部评测都需要 GPU（当前无设备）②b2 开跑命令将带 `--assert-variants-identical-to b1 --purpose protocol_acceptance_only`；外部 Agent 批次将带 `--purpose external_evaluation_only`③外部专家基线尚未有专用入口脚本（三个 evaluator 已有 `--device cuda`，需按 200 输入清单写一个批量入口；下一步实现）④报告模板（按组×条件的配对 ΔAUROC）待实现⑤"Agent 200 会话"的审阅量需按 4.8 的流程走

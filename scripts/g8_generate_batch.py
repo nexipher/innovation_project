@@ -160,7 +160,8 @@ def run_batch(generation: str, batch: str, manifest_path: str,
               tools_policy: str, limit: Optional[int], dry_run: bool,
               allow_frozen: bool, greedy: bool, inference_mode: str,
               local_files_only: bool, out_dir: Optional[str] = None,
-              assert_identical_to: Optional[str] = None) -> dict:
+              assert_identical_to: Optional[str] = None,
+              purpose: str = "unspecified") -> dict:
     from state_machine.controller import ForensicStateMachine
     from utils.logger import SessionLogger
 
@@ -258,6 +259,9 @@ def run_batch(generation: str, batch: str, manifest_path: str,
         "model": _model_identity(base),
         "experts": _expert_identity(base),
         "prompts": _prompt_identity(),
+        "code": _code_identity(),
+        "budget": _budget_identity(),
+        "purpose": purpose,
         "entry": "scripts/g8_generate_batch.py → main.build_pipeline",
         "manifest": os.path.relpath(manifest_path, PROJECT_ROOT),
     }
@@ -300,16 +304,87 @@ def _expert_identity(fsm) -> Dict[str, dict]:
             value = getattr(expert, attr, None)
             if value:
                 specs[name][attr] = value
-        weights = getattr(expert, "weights_path", None) or getattr(expert, "weight_source", None)
-        if isinstance(weights, str) and os.path.exists(weights):
-            specs[name]["weights_bytes"] = os.path.getsize(weights)
+        specs[name].update(_weights_digest(expert))
     return specs
 
 
 def _prompt_identity() -> dict:
+    """提示词身份：digest（FORENSIC+baseline 合并）+ 会话实际使用的那份的 sha256。"""
+    import hashlib
+
     from utils.config_fingerprint import prompt_digest
 
-    return {"digest": prompt_digest()}
+    from mllm.message_builder import FORENSIC_SYSTEM_PROMPT
+
+    return {
+        "digest": prompt_digest(),
+        "forensic_sha256": hashlib.sha256(
+            FORENSIC_SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
+        "forensic_chars": len(FORENSIC_SYSTEM_PROMPT),
+    }
+
+
+def _code_identity() -> dict:
+    """
+    实际跑的代码身份：commit + 是否 dirty。
+
+    "固定 revision/权重/参数"若只有模型与专家的身份，代码本身仍可能在某次提交间
+    被改过——批次记录必须能回答"这批数据是哪份代码跑出来的"。
+    """
+    import subprocess
+
+    def _git(*args) -> str:
+        try:
+            return subprocess.run(["git", *args], cwd=PROJECT_ROOT, capture_output=True,
+                                  text=True, timeout=30).stdout.strip()
+        except Exception:
+            return ""
+
+    commit = _git("rev-parse", "HEAD")
+    status = _git("status", "--porcelain")
+    return {"commit": commit or "未记录",
+            "dirty": bool(status),
+            "dirty_paths": [line[3:] for line in status.splitlines()][:20] if status else [],
+            "branch": _git("rev-parse", "--abbrev-ref", "HEAD") or "未记录"}
+
+
+def _budget_identity() -> dict:
+    """安全预算与停机策略：这些是"条件"的一部分，换一批就该看出来。"""
+    import config
+    from config import HALTING_POLICY
+
+    return {
+        "halting_policy": HALTING_POLICY,
+        "max_expert_calls": getattr(config, "MAX_EXPERT_CALLS", None),
+        "max_model_turns": getattr(config, "MAX_MODEL_TURNS", None),
+        "evidence_injection": "text+image",
+    }
+
+
+def _weights_digest(expert) -> dict:
+    """
+    专家权重摘要：优先用专家自己的 `identity()`（评测器的 sha256 来自登记表），
+    否则对 `weights_path` 计算（external_base.sha256_file 带 sidecar 缓存）。
+    """
+    info: Dict[str, Any] = {}
+    if callable(getattr(expert, "identity", None)):
+        try:
+            info["identity"] = expert.identity()
+        except Exception as exc:                     # 身份拿不到不该中断批次
+            info["identity_error"] = f"{type(exc).__name__}: {exc}"
+    path = getattr(expert, "weights_path", None)
+    # 只对**普通文件**取摘要：mock 专家的 weights_path 是 `/dev/null`，
+    # 对它哈希既没有意义，还会在 /dev 下写出一个 sidecar（`sha256_file` 会缓存）。
+    if isinstance(path, str) and os.path.isfile(path):
+        from experts.external_base import sha256_file
+
+        try:
+            info["weights_path"] = path
+            info["weights_sha256"] = sha256_file(path)
+            info["weights_bytes"] = os.path.getsize(path)
+        except Exception as exc:
+            info["weights_error"] = f"{type(exc).__name__}: {exc}"
+    return info
 
 
 def main() -> int:
@@ -331,6 +406,9 @@ def main() -> int:
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--assert-variants-identical-to", default=None,
                         help="开跑前逐文件核对本批输入与对照批（如 b1）的 sha256 完全相同")
+    parser.add_argument("--purpose", default="unspecified",
+                        help="批次用途，写进 metadata：例如 protocol_acceptance_only / "
+                             "external_evaluation_only（两者都不产生可训练 SFT 数据）")
     args = parser.parse_args()
 
     if not args.dry_run and os.environ.get("FORENSIC_ALLOW_GPU") != "1":
@@ -351,7 +429,8 @@ def main() -> int:
     metadata = run_batch(args.generation, args.batch, manifest, args.policy,
                          args.limit, args.dry_run, args.allow_frozen, args.greedy,
                          args.inference_mode, args.local_files_only,
-                         assert_identical_to=args.assert_variants_identical_to)
+                         assert_identical_to=args.assert_variants_identical_to,
+                         purpose=args.purpose)
     print(f"model: {json.dumps(metadata['model'], ensure_ascii=False)[:160]}")
     return 0
 

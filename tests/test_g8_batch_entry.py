@@ -62,7 +62,8 @@ def dry_run(tmp_path_factory):
     manifest = _manifest(work)
     out = work / "records"
     metadata = run_batch("g8", "b_entry_test", manifest, "g8_default", 1, True,
-                         False, True, "non-thinking", False, out_dir=str(out))
+                         False, True, "non-thinking", False, out_dir=str(out),
+                         purpose="dry_run")
     records = [json.load(open(os.path.join(str(out), name), encoding="utf-8"))
                for name in os.listdir(str(out)) if name.endswith("__g8_default.json")]
     return {"metadata": metadata, "records": records, "out": str(out)}
@@ -199,6 +200,19 @@ class TestTheMetadataPinsTheBatchIdentity:
         assert set(experts) == {"probe_dino_expert", "npr_expert", "univfd_expert"}
         for name, entry in experts.items():
             assert entry["device"], name
+
+    def test_the_code_and_budget_identity_is_recorded(self, dry_run):
+        """"固定模型/参数/预算"必须落到记录里：代码 commit、是否 dirty、预算常量。"""
+        meta = dry_run["metadata"]
+        assert meta["code"]["commit"] != "未记录"
+        assert isinstance(meta["code"]["dirty"], bool)
+        assert meta["budget"]["halting_policy"]
+        assert meta["budget"]["max_expert_calls"] and meta["budget"]["max_model_turns"]
+        assert meta["prompts"]["forensic_sha256"]
+
+    def test_the_purpose_is_recorded(self, dry_run):
+        """两条线都不产生可训练数据——用途必须写在批次里。"""
+        assert dry_run["metadata"]["purpose"] == "dry_run"
 
     def test_the_prompt_digest_is_recorded(self, dry_run):
         from utils.config_fingerprint import prompt_digest

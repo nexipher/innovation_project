@@ -670,83 +670,44 @@
       "AUROC（组内，含 95% CI）",
       "按登记表既有阈值判对的数（不调阈值）",
       "Fake 组与 Real 组的分数分布"
-    ]
-  },
-  "agent_subset": {
-    "phase": 2,
-    "runs_after": "expert baseline (phase 1)",
-    "rule": "per group: sort by sha256, random.Random(20261019).sample(10)",
-    "seed": 20261019,
-    "n": 50,
-    "composition": {
-      "Adobe_Firefly_v4": 10,
-      "ByteDance_Seedream_v4": 10,
-      "DIV2K_valid_HR": 10,
-      "Google_Imagen4": 10,
-      "Midjourney_v7": 10
-    },
-    "note": "专家基线跑完之后再做；同一批图上比较 Agent 与专家，并按 §4.8 的口径记录结案声明（证据范围、是否跨专家对照）。仍属评测，不用于 SFT 或阈值拟合。",
-    "samples": {
-      "Adobe_Firefly_v4": [
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_762aa34a2fa7461ab8d186c8f.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_85e39633b4b1453e915bc6c7d.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_5bbe5a6e2498425f8ef763977.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_4c1a95438aa34e13bd3f396b7.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_c222b16d2da34786876e8f7c4.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_1004e580b4e940b687c3ab20a.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_150f401b15294cafb6761233e.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_e56394951521475ba51efc6bc.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_232dcb0b0a0f4c1b97e2b283b.jpg",
-        "Fake/Adobe_Firefly_v4/Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg"
-      ],
-      "ByteDance_Seedream_v4": [
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_28f3f5e87d50431f9b8430e69.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_ad031e144348494d82c565488.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_2c15c8f11bad4dafadde8d2b0.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_37e477ad87d742bc931719270.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_ec957f2f49c3485e926415d9b.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_567eee1b68df4e399a3c52b14.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_62e9dcb3025246c8bf531d19f.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_e0d695469d4047d89ff648465.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_8e3f105466354310b7e47efff.jpg",
-        "Fake/ByteDance_Seedream_v4/ByteDance_Seedream_v4_903f9fdcf5f9426785266f473.jpg"
-      ],
-      "DIV2K_valid_HR": [
-        "Real/DIV2K_valid_HR/0860.png",
-        "Real/DIV2K_valid_HR/0807.png",
-        "Real/DIV2K_valid_HR/0886.png",
-        "Real/DIV2K_valid_HR/0875.png",
-        "Real/DIV2K_valid_HR/0822.png",
-        "Real/DIV2K_valid_HR/0865.png",
-        "Real/DIV2K_valid_HR/0814.png",
-        "Real/DIV2K_valid_HR/0808.png",
-        "Real/DIV2K_valid_HR/0857.png",
-        "Real/DIV2K_valid_HR/0841.png"
-      ],
-      "Google_Imagen4": [
-        "Fake/Google_Imagen4/Google_Imagen4_60f3fcdd88ce4bcdbf314f08d.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_9b159777917449e6b0831f098.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_b299b112763d49d2bcb2ab4b7.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_81a0b271090043f094f275195.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_29bb6507939549239f5fb0d61.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_8cea7b6ed52e46ea83299e1a4.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_99da399e857a4a8989ee407e0.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_3d9e8c0bf8bc443d8b4cd386d.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_b2b63f5ea73847e29b387504e.jpg",
-        "Fake/Google_Imagen4/Google_Imagen4_b7eb9d883c784018955583e0f.jpg"
-      ],
-      "Midjourney_v7": [
-        "Fake/Midjourney_v7/Midjourney_v7_b691b71fdc2e485fbab6d98e0.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_0311aa9f899c46c085717dd8d.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_d1b09645792848a2add8dc816.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_b6bfa586ff214cc9b5eea29d4.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_76690bc8e6894eee8aaeb38b1.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_904ad7f3903c49a8a7a15176d.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_e320fd405ba44892b51bc62fe.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_142ab622dc5947b3ac1d6a90a.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_150f2be811e04c2fad6a29d25.jpg",
-        "Fake/Midjourney_v7/Midjourney_v7_c315e14fd7bb49ce9cb6c3f61.jpg"
-      ]
+    ],
+    "conditions": [
+      "original",
+      "jpeg_q95"
+    ],
+    "pairing": "两种条件作用在同一批源上 → 按源配对比较（配对 ΔAUROC，bootstrap 按源重采样）；不得把两种条件当独立样本比 CI。",
+    "counts": {
+      "inputs": 200,
+      "expert_measurements": 600,
+      "agent_sessions": 200
     }
+  },
+  "usage_history": [
+    {
+      "at": "2026-10-18T19:14:41",
+      "action": "built_inputs",
+      "inputs": 200,
+      "conditions": [
+        "original",
+        "jpeg_q95"
+      ],
+      "encoder": {
+        "library": "Pillow 11.0.0",
+        "jpeg_backend": "6.2",
+        "params": {
+          "quality": 95,
+          "subsampling": 2,
+          "optimize": false,
+          "progressive": false
+        }
+      }
+    }
+  ],
+  "agent_plan": {
+    "phase": 2,
+    "runs_after": "b2 protocol acceptance (the agent is frozen by then)",
+    "inputs": "all 200 (100 sources x original/jpeg_q95)",
+    "sessions": 200,
+    "rule": "Agent 只看到自己实际调用获得的证据；三个专家的离线分数**不预注入**。Agent 内部工具调用另计，不复用离线分数。"
   }
 }

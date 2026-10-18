@@ -354,6 +354,32 @@ class TestCallStatus:
         assert [item["expert"] for item in status["failed"]] == ["npr_expert"]
 
 
+class TestProtocolHitsAreShownAsCandidates:
+    """用户 2026-10-18：自动命中只是候选，人工复核全部命中——所以命中句必须上页面。"""
+
+    def _trace_with_overclaim(self):
+        trace = json.loads(json.dumps(TRACE))
+        trace["conversations"][1]["value"] = (
+            "<planning>Visual Observation: 平滑。</planning>\n"
+            "<call_probe>[0,0,1000,1000]</call_probe>")
+        trace["conversations"][4]["value"] = (
+            '<reasoning>无其他专家测量结果冲突，证据链足够强。</reasoning>\n'
+            '<verdict>{"verdict": "Fake", "confidence": 0.8, "report": "判定为生成。"}</verdict>')
+        return trace
+
+    def test_the_page_lists_each_hit_with_its_sentence(self):
+        page = _page(trace=self._trace_with_overclaim())
+        plain = html.unescape(re.sub(r"<[^>]+>", "", page))
+        assert "协议命中（自动候选）" in plain
+        assert "无其他专家测量结果冲突" in plain          # 原句在上
+        assert "自动命中只是" in plain and "未命中不等于没问题" in plain
+
+    def test_it_says_whether_the_conclusion_states_the_evidence_scope(self):
+        plain = html.unescape(re.sub(r"<[^>]+>", "", _page(
+            trace=self._trace_with_overclaim())))
+        assert "结案是否声明证据范围（自动判断）" in plain
+
+
 class TestTheBatchBuild:
     def _batch(self, tmp_path):
         records_dir = os.path.join(str(tmp_path), "records")

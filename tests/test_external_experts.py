@@ -133,6 +133,17 @@ class TestTheUnivfdScoringPathRunsWithoutItsWeights:
         assert hasattr(module, "np"), "univfd 的打分路径用 np，模块必须导入它"
 
 
+class TestMockProvenanceDoesNotHashADevice:
+    """mock 的 weights_path 是 `/dev/null`：对它哈希没有意义，还会在 /dev 写 sidecar。"""
+
+    def test_the_mock_has_no_weight_digest(self):
+        from experts.external_base import MockExternalScoreExpert
+
+        expert = MockExternalScoreExpert()
+        assert expert.provenance().sha256 == ""
+        assert expert.provenance().size_bytes == 0
+
+
 class TestLicencePosture:
     """G7-5: the adapter may exist before the terms do."""
 
