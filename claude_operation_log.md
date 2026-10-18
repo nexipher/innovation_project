@@ -501,3 +501,18 @@
 * **涉及/修改的文件清单**：`utils/evidence_ledger.py (Modified — 归因两处)`、`scripts/g8_protocol_audit.py (Modified — 判据按意图 + 结论轮 scope 同判定 + 批次汇总)`、`scripts/g8_generate_batch.py (Modified — code identity 口径)`、`scripts/g8_review_workstation.py (Modified — 协议命中区)`、`tests/{test_evidence_ledger.py, test_g8_review_workstation.py, test_g8_batch_entry.py, test_external_experts.py}`、`plan.md (Modified — §4.8b)`、**产物**：`sft_data/g8/trajectories/b2/`（32 记录 + metadata）、`traces/sft_sessions/g8/b2/`（32 trace）、`sft_data/g8/review/b2/`（索引 + 32 页 + `protocol_audit.md`）、`sft_data/g8_smoke/20261018_200327/`、`claude_operation_log.md`
 * **执行结果与验证状态**：b2 四项判据全部达成；0 错误；审阅页已生成（会自动带上协议命中句）；审计对照写入 `sft_data/g8/review/b2/protocol_audit.md`；`core` 见提交时结果；**外部 Agent 未跑**（门禁仍要求 b2 冻结+验收全通过）。
 * **置信度或遗留待办（TODO）**：①**等人工验收**（全部命中/错误/弃权逐条 + 8 条抽查）②用户决定是否冻结 b2；冻结后外部 Agent 门禁才会放行③5 条弃权是否可接受、若不可接受如何修订 RULES 7 的措辞，属下一轮协议变更④外部专家基线可独立先跑（本阶段未跑）
+
+### 2026-10-18 - 阶段四 4.14：外部专家基线实跑（600 次）与报告配对口径修正
+
+* **当前操作动作**：按用户指令（"外部专家基线开始，也可以用 gpu，开着的。agent 先不跑。"）在 CUDA 上跑完 PROBE / NPR-A / UnivFD × 200 输入 = **600 次测量**；随后修正报告分组口径并从既有分数重建报告（**未重测、未跑 Agent**）。
+* **对应计划锚点**：`plan.md` §4.9（外部泛化评测）、§4.9b（本次结果）、§4.12 第④步
+* **核心变更说明**：
+  1. **实跑**：`FORENSIC_ALLOW_GPU=1 PROBE_WEIGHTS=... python scripts/g8_external_eval.py --device cuda`，逐条写 `sft_data/g8_external_eval/20261018_202449/scores.jsonl`（600 行，sha256 `a4937e11…166a58bf`）；`eval_plan.json` 追加一条 `expert_baseline` 使用历史。
+  2. **报告 bug（跑后发现）**：第一版 `build_report` 按"来源组 × 条件"分组，而生成器组只有 Fake、DIV2K 组只有 Real → 每组单标签，**AUROC 全为 None**，且阈值 acc 在单标签组上没有意义。改为两份视图：`groups`（来源组，单标签，只给均值与阈值判假率）+ `analysis`（**每组 = 生成器 20 Fake + 同一条件 20 DIV2K Real**，n=40，AUROC+CI、acc、配对 ΔAUROC）。
+  3. **配对键修正**：同一源的 `variant_id` 在两种条件下不同（`__original` / `__jpeg_q95` 后缀），第一版按 variant_id 求交集得到 **0 对**。改为按 `source_id`（回退 `source_path`）配对；新写分数行附带 `source_id`。
+  4. **审计信息进报告**：`composition` 记录每种条件"标签 × 容器"计数（original：Fake/jpg 80 + Real/png 20；jpeg_q95：Fake/jpg 80 + Real/jpg 20）；`experts` 记录登记表中的权重文件/哈希、预处理、阈值、方向与许可；`run` 记录 `scores_sha256`、mtime、重建说明。
+  5. **`--report-only <scores.jsonl>`**：只重建报告，不重跑任何测量；本轮即用它修复报告，600 行分数未变。
+  6. **异常分数核查（未当结论直接汇报）**：NPR 在 80 张假图上精确 0.0、UnivFD 多数假图 <0.05。核对两处：①NPR 适配器与官方 `test.py/validate.py` 一致（`sigmoid > 0.5`、整图不缩放、ImageNet 归一化），原始 logit 抽查为 −106…+19 的饱和值；②UnivFD 预处理与官方 `validate.py:199` 一致（CenterCrop(224) → ToTensor → CLIP Normalize，无 resize）。结论：**分数是真的，不是预处理/加载 bug**；NPR 的分数跟随容器/压缩史（DIV2K 原图 PNG 均值 0.3634、35% 判假；转 jpeg_q95 后 0.0451、5%），UnivFD 在 3/4 生成器上接近或低于随机。结果与限制写入 plan §4.9b。
+* **涉及/修改的文件清单**：`scripts/g8_external_eval.py (Modified — 配对分析/--report-only/审计字段)`、`tests/test_external_eval.py (Modified — 配对口径与回归，19 条)`、`plan.md (Modified — §4.9b)`、`dataset/mnw_div2k/eval_plan.json (Modified — usage_history)`、**产物**：`sft_data/g8_external_eval/20261018_202449/{scores.jsonl, report.json}`、`claude_operation_log.md`
+* **执行结果与验证状态**：600/600 测量完成；报告按 4 组 × 2 条件 × 3 专家给出 n=40 的 AUROC+95%CI 与配对 Δ；`test_external_eval` **19 通过**；分数文件 sha256 已写进报告；**未跑 Agent，未生成任何 SFT 数据，未调阈值**。
+* **置信度或遗留待办（TODO）**：①报告只从分数重建，**原始 run 的 device/elapsed 字段未保留**（以本日志与 plan 为准）②b2 人工验收仍未发生，外部 Agent 门禁仍关闭③PROBE 上游训练语料未声明，"外部"只指未参与本项目选择/训练，不得写成未见生成器泛化④NPR 的格式受限结论需要在下游证据语义中落实（证据必须带格式条件与 scope）⑤是否把 `--report-only` 写进 plan §4.9 入口说明（现仅在 §4.9b 记录）

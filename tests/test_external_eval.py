@@ -86,42 +86,86 @@ class TestTheRegistryDecidesDirectionAndThreshold:
 
 
 def _row(variant_id, group, condition, label, expert, value, direction="higher_is_fake"):
+    # 配对键是源：同一源在两种条件下 source_path 必须相同（与真实清单一致）
     return {"variant_id": variant_id, "expert": expert, "group": group,
-            "condition": condition, "label": label, "source_path": "x",
+            "condition": condition, "label": label, "source_id": variant_id,
+            "source_path": variant_id,
             "field": "raw_metric", "value": value, "direction": direction,
             "oriented": oriented(value, direction), "elapsed_ms": 1.0}
 
 
 class TestTheReport:
     def _rows(self):
+        """生成器组只有 Fake；Real 来自独立的 DIV2K 组——与真实设计一致。"""
         rows = []
-        for index in range(2):                      # 2 Fake + 2 Real，两种条件
-            fake = f"g__f{index}"
-            real = f"g__r{index}"
+        for index in range(2):
+            fake = f"gen__f{index}"
+            real = f"div2k__r{index}"
             for condition, bump in (("original", 0.0), ("jpeg_q95", 0.1)):
                 rows.append(_row(fake, "gen", condition, "Fake", "probe", 0.7 + bump))
-                rows.append(_row(real, "gen", condition, "Real", "probe", 0.3 + bump))
+                rows.append(_row(real, "div2k", condition, "Real", "probe", 0.3 + bump))
         return rows
 
-    def test_groups_are_reported_per_condition_with_both_labels(self):
+    def test_the_source_group_view_has_no_auroc(self):
+        """来源组是单标签：只给均值与阈值判假率，AUROC 必须留给配对视图。"""
         report = build_report(self._rows(), ["probe"], {"inputs": []}, "m.json")
         original = report["groups"]["gen"]["original"]
-        assert (original["n"], original["n_fake"], original["n_real"]) == (4, 2, 2)
-        assert original["per_expert"]["probe"]["auroc"]["auroc"] == pytest.approx(1.0)
-        assert "jpeg_q95" in report["groups"]["gen"]
+        assert (original["n"], original["n_fake"], original["n_real"]) == (2, 2, 0)
+        data = original["per_expert"]["probe"]
+        assert data["mean_score"] == pytest.approx(0.7)
+        assert data["fake_rate_at_threshold"] == pytest.approx(1.0)
+        assert "auroc" not in data
+
+    def test_the_paired_view_pairs_generator_fakes_with_div2k_reals(self):
+        report = build_report(self._rows(), ["probe"], {"inputs": []}, "m.json")
+        bucket = report["analysis"]["gen vs div2k"]["original"]
+        assert (bucket["n"], bucket["n_fake"], bucket["n_real"]) == (4, 2, 2)
+        assert bucket["per_expert"]["probe"]["auroc"]["auroc"] == pytest.approx(1.0)
 
     def test_the_paired_delta_is_attached_to_the_original_condition(self):
         report = build_report(self._rows(), ["probe"], {"inputs": []}, "m.json")
-        delta = report["groups"]["gen"]["original"]["per_expert"]["probe"][
+        delta = report["analysis"]["gen vs div2k"]["original"]["per_expert"]["probe"][
             "paired_delta_vs_jpeg_q95"]
         assert delta is not None and "delta" in delta
+
+    def test_the_same_real_group_is_reused_for_every_generator(self):
+        rows = self._rows()
+        for index in range(2):
+            rows.append(_row(f"gen2__f{index}", "gen2", "original", "Fake", "probe", 0.8))
+            rows.append(_row(f"gen2__f{index}", "gen2", "jpeg_q95", "Fake", "probe", 0.8))
+        report = build_report(rows, ["probe"], {"inputs": []}, "m.json")
+        assert report["analysis"]["gen vs div2k"]["original"]["n_real"] == 2
+        assert report["analysis"]["gen2 vs div2k"]["original"]["n_real"] == 2
 
     def test_the_report_says_what_it_may_not_be_used_for(self):
         report = build_report(self._rows(), ["probe"], {"inputs": []}, "m.json")
         assert report["rules"]["no_threshold_fitting"] is True
         assert report["rules"]["paired_conditions"] is True
+        assert report["rules"]["real_images_reused_across_generators"] is True
 
-    def test_a_single_label_group_has_no_auroc(self):
+    def test_the_report_records_the_label_container_confound(self):
+        """original 条件里 Fake=JPEG / Real=PNG；报告必须自己写出来。"""
+        manifest = {"inputs": [
+            {"condition": "original", "label": "Fake", "container": "jpg", "path": "a.jpg"},
+            {"condition": "original", "label": "Real", "container": "png", "path": "b.png"},
+            {"condition": "jpeg_q95", "label": "Fake", "container": "jpg", "path": "c.jpg"},
+            {"condition": "jpeg_q95", "label": "Real", "container": "jpg", "path": "d.jpg"},
+        ]}
+        report = build_report(self._rows(), ["probe"], manifest, "m.json")
+        assert report["composition"]["original"]["by_label_container"] == {
+            "Fake/jpg": 1, "Real/png": 1}
+        assert report["composition"]["jpeg_q95"]["by_label_container"] == {
+            "Fake/jpg": 1, "Real/jpg": 1}
+
+    def test_each_expert_is_reported_with_weights_and_preprocessing(self):
+        report = build_report(self._rows(), ["probe"], {"inputs": []}, "m.json")
+        identity = report["experts"]["probe"]
+        assert identity["weights"]["sha256"]
+        assert identity["preprocess"]["measurement_scope"] == "global"
+        assert identity["threshold"]["value"] == pytest.approx(0.5)
+
+    def test_a_single_label_pair_has_no_auroc(self):
         rows = [row for row in self._rows() if row["label"] == "Fake"]
         report = build_report(rows, ["probe"], {"inputs": []}, "m.json")
-        assert report["groups"]["gen"]["original"]["per_expert"]["probe"]["auroc"] is None
+        bucket = report["analysis"]["gen vs None"]["original"]
+        assert bucket["per_expert"]["probe"]["auroc"] is None

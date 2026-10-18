@@ -20,6 +20,7 @@ jpeg_q95）逐一跑三个专家，写逐条分数与分组报告。**只做评�
   python scripts/g8_external_eval.py --device cuda            # 真跑（需 GPU）
   python scripts/g8_external_eval.py --dry-run                # 只列输入与分组
   python scripts/g8_external_eval.py --experts probe --limit 20
+  python scripts/g8_external_eval.py --report-only <scores.jsonl>  # 只重建报告，不重测
 """
 
 from __future__ import annotations
@@ -217,7 +218,7 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
         if reason:
             raise SystemExit(f"{name} 不可用：{reason}")
 
-    import cv2
+    from utils.image_utils import ImageUtils
 
     started = time.time()
     written = 0
@@ -226,8 +227,10 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
             if all((entry["variant_id"], name) in done for name in experts):
                 continue
             image_path = os.path.join(PROJECT_ROOT, entry["path"])
-            image = cv2.imread(image_path)
-            if image is None:
+            # 与控制器喂给专家的是**同一个函数**（BGR + PIL 兜底），否则外部基线
+            # 和 Agent 内部调用的预处理就可能在边缘格式上分叉。
+            image = ImageUtils.load_image(image_path)
+            if image is None or getattr(image, "size", 0) == 0:
                 raise SystemExit(f"读不到图像：{entry['path']}")
             for name, expert in objects.items():
                 if (entry["variant_id"], name) in done:
@@ -240,7 +243,8 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
                 handle.write(json.dumps({
                     "variant_id": entry["variant_id"], "expert": name,
                     "group": entry["group"], "condition": entry["condition"],
-                    "label": entry["label"], "source_path": entry["source_path"],
+                    "label": entry["label"], "source_id": entry.get("source_id", ""),
+                    "source_path": entry["source_path"],
                     "field": field, "value": value, "direction": direction,
                     "oriented": oriented(value, direction),
                     "elapsed_ms": round(elapsed_ms, 1),
@@ -272,82 +276,203 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
 
 
 def build_report(rows: List[dict], experts: List[str], manifest: dict,
-                 inputs_path: str) -> dict:
-    """按 生成器 × 条件 汇总；每组 20 Fake + 20 Real；两条件按源配对。"""
-    from utils.score_semantics import entry
+                 inputs_path: str, pairs: Optional[List[Tuple[str, str]]] = None) -> dict:
+    """
+    两份视图：
 
-    groups: Dict[str, dict] = {}
+    * `groups`  —— 按 **来源组 × 条件** 的原始分数（单标签，只给分布与阈值判假率，
+      **不算 AUROC**：单标签组算不出来）；
+    * `analysis` —— 按 **生成器 × 条件** 的配对分析：每组 = 该生成器 20 Fake +
+      DIV2K 20 Real（n=40），组内可算 AUROC；20 张 Real 在四个生成器组间复用，
+      组间不独立，只作组内解释。两种条件同源 → 再给配对 ΔAUROC。
+    """
     by_key: Dict[Tuple[str, str, str], dict] = {}
     for row in rows:
         by_key.setdefault((row["group"], row["condition"], row["variant_id"]), {})[
             row["expert"]] = row
 
-    report_groups: Dict[str, dict] = {}
-    for (group, condition, variant_id), per_expert in sorted(by_key.items()):
-        report_groups.setdefault(group, {}).setdefault(condition, {
+    labels = {key: (1 if per[experts[0]]["label"] == "Fake" else 0)
+              for key, per in by_key.items() if experts[0] in per}
+
+    # ---- 来源组视图（单标签） ----
+    groups: Dict[str, dict] = {}
+    for (group, condition, _variant), per in sorted(by_key.items()):
+        bucket = groups.setdefault(group, {}).setdefault(condition, {
             "n": 0, "n_fake": 0, "n_real": 0, "per_expert": {
-                name: {"scores": [], "labels": [], "elapsed_ms": []} for name in experts
-            }})
-        bucket = report_groups[group][condition]
+                name: {"values": [], "fake_rate_at_threshold": 0, "elapsed_ms": []}
+                for name in experts}})
         bucket["n"] += 1
-        label = 1 if per_expert[experts[0]]["label"] == "Fake" else 0
+        label = labels[(group, condition, _variant)]
         bucket["n_fake" if label else "n_real"] += 1
         for name in experts:
-            if name not in per_expert:
+            row = per.get(name)
+            if not row:
                 continue
-            row = per_expert[name]
-            bucket["per_expert"][name]["scores"].append(row["oriented"])
-            bucket["per_expert"][name]["labels"].append(label)
-            bucket["per_expert"][name]["elapsed_ms"].append(row["elapsed_ms"])
-
-    for group, conditions in report_groups.items():
+            data = bucket["per_expert"][name]
+            data["values"].append(row["value"])
+            data["elapsed_ms"].append(row["elapsed_ms"])
+            _field, threshold, direction = expert_orientation(name)
+            data["fake_rate_at_threshold"] += int(
+                predicts_fake(row["value"], direction, threshold))
+    for group, conditions in groups.items():
         for condition, bucket in conditions.items():
             for name in experts:
                 data = bucket["per_expert"][name]
-                if not data["scores"]:
+                if not data["values"]:
                     continue
-                stat = bootstrap_auroc(data["scores"], data["labels"])
-                data["auroc"] = stat
-                # 登记表阈值判对率（用未定向的原始值）
-                _field, threshold, direction = expert_orientation(name)
-                correct = 0
-                for variant_id, per_expert in by_key.items():
-                    if variant_id[0] != group or variant_id[1] != condition:
-                        continue
-                    row = per_expert.get(name)
-                    if not row:
-                        continue
-                    predicted = predicts_fake(row["value"], direction, threshold)
-                    truth = row["label"] == "Fake"
-                    correct += predicted == truth
-                data["threshold_accuracy"] = round(correct / len(data["scores"]), 4)
-                del data["scores"], data["labels"]
-        # 条件配对：同一 variant_id 在两个条件下都有分数才配对
-        if {"original", "jpeg_q95"} <= set(conditions):
+                data["fake_rate_at_threshold"] = round(
+                    data["fake_rate_at_threshold"] / len(data["values"]), 4)
+                data["mean_score"] = round(sum(data["values"]) / len(data["values"]), 4)
+                del data["values"]
+
+    # ---- 配对分析视图（生成器 × 条件） ----
+    if pairs is None:
+        real_groups = sorted({key[0] for key, label in labels.items() if label == 0})
+        real_group = real_groups[0] if real_groups else None
+        fake_groups = sorted({key[0] for key, label in labels.items() if label == 1})
+        pairs = [(group, real_group) for group in fake_groups if group != real_group]
+
+    analysis: Dict[str, dict] = {}
+    for fake_group, real_group in pairs:
+        per_condition: Dict[str, dict] = {}
+        item_ids: Dict[str, List[str]] = {}
+        for condition in ("original", "jpeg_q95"):
+            items = []
+            for (group, cond, variant), per in sorted(by_key.items()):
+                if cond != condition:
+                    continue
+                label = labels[(group, cond, variant)]
+                if (group == fake_group and label == 1) or \
+                        (group == real_group and label == 0):
+                    items.append((_source_key(per), per, label))
+            if not items:
+                continue
+            # 配对键是**源**（source_id / source_path），不是 variant_id：
+            # variant_id 带 __original / __jpeg_q95 后缀，跨条件永远交集为空。
+            item_ids[condition] = [source_key for source_key, _per, _label in items]
+            bucket = {"n": len(items),
+                      "n_fake": sum(1 for _v, _p, label in items if label == 1),
+                      "n_real": sum(1 for _v, _p, label in items if label == 0),
+                      "per_expert": {}}
             for name in experts:
-                pairs = [(key, per) for key, per in by_key.items()
-                         if key[0] == group and key[1] == "original" and name in per]
-                a, b, labels = [], [], []
-                for key, per in pairs:
-                    other = by_key.get((key[0], "jpeg_q95", key[2]), {}).get(name)
-                    if not other:
+                scores = [per[name]["oriented"] for _v, per, _l in items if name in per]
+                truths = [label for _v, per, label in items if name in per]
+                if not scores:
+                    continue
+                _field, threshold, direction = expert_orientation(name)
+                correct = sum(
+                    predicts_fake(per[name]["value"], direction, threshold)
+                    == bool(label)
+                    for _v, per, label in items if name in per)
+                bucket["per_expert"][name] = {
+                    "auroc": bootstrap_auroc(scores, truths),
+                    "threshold_accuracy": round(correct / len(scores), 4),
+                }
+            per_condition[condition] = bucket
+        # 两种条件按同一 variant 配对（variant_id 唯一，且带来源组前缀）
+        if {"original", "jpeg_q95"} <= set(per_condition):
+            rows_by_condition: Dict[str, Dict[str, dict]] = {}
+            for (group, cond, _variant), per in by_key.items():
+                if cond in ("original", "jpeg_q95"):
+                    key = _source_key(per)
+                    if key in rows_by_condition.setdefault(cond, {}):
+                        raise SystemExit(f"同一条件下源重复：{key}")
+                    rows_by_condition[cond][key] = per
+            joint = sorted(set(rows_by_condition["original"])
+                           & set(rows_by_condition["jpeg_q95"])
+                           & set(item_ids["original"]) & set(item_ids["jpeg_q95"]))
+            for name in experts:
+                a, b, truths = [], [], []
+                for source_key in joint:
+                    orig = rows_by_condition["original"][source_key]
+                    jpeg = rows_by_condition["jpeg_q95"][source_key]
+                    if name not in orig or name not in jpeg:
                         continue
-                    a.append(per[name]["oriented"])
-                    b.append(other["oriented"])
-                    labels.append(1 if per[name]["label"] == "Fake" else 0)
+                    a.append(orig[name]["oriented"])
+                    b.append(jpeg[name]["oriented"])
+                    truths.append(1 if orig[name]["label"] == "Fake" else 0)
                 if a:
-                    delta = paired_delta(a, b, labels)
-                    conditions["original"]["per_expert"].setdefault(name, {})
-                    conditions["original"]["per_expert"][name]["paired_delta_vs_jpeg_q95"] = delta
+                    per_condition["original"]["per_expert"].setdefault(name, {})[
+                        "paired_delta_vs_jpeg_q95"] = paired_delta(a, b, truths)
+        analysis[f"{fake_group} vs {real_group}"] = per_condition
+
     return {
         "schema": "external_eval_report/1",
         "inputs_manifest": os.path.relpath(inputs_path, PROJECT_ROOT),
         "manifest_sha256": _sha256(inputs_path),
         "rules": {"no_threshold_fitting": True, "per_group_only": True,
                   "real_images_reused_across_generators": True,
-                  "paired_conditions": True},
-        "groups": report_groups,
+                  "paired_conditions": True,
+                  "single_label_groups_have_no_auroc": True},
+        "composition": _composition(manifest),
+        "experts": {name: _expert_identity(name) for name in experts},
+        "groups": groups,
+        "analysis": analysis,
     }
+
+
+def _expert_identity(name: str) -> dict:
+    """报告要能回答"这个分数由哪份权重、哪套预处理产生"——从登记表抄，不手写。"""
+    from utils.score_semantics import entry
+
+    record = entry({"probe": "probe_dino_expert", "npr": "npr_expert",
+                    "univfd": "univfd_expert"}[name])
+    weights = record.get("weights") or {}
+    if "sha256" in weights:                                   # probe
+        weight_identity = {"file": weights.get("file"),
+                           "sha256": weights.get("sha256"),
+                           "bytes": weights.get("bytes")}
+    elif "checkpoints" in weights:                            # npr
+        selected = (weights.get("selected") or {}).get("checkpoint_id")
+        chosen = next((c for c in weights["checkpoints"] if c["id"] == selected), {})
+        weight_identity = {"checkpoint_id": selected,
+                           "file": chosen.get("file"),
+                           "sha256": chosen.get("sha256"),
+                           "bytes": chosen.get("bytes")}
+    else:                                                     # univfd
+        weight_identity = {"head": weights.get("head"),
+                           "backbone": weights.get("backbone")}
+    return {
+        "weights": weight_identity,
+        "raw_score": record["raw_score"],
+        "threshold": record["threshold"],
+        "preprocess": record["preprocess"],
+        "licence": weights.get("licence"),
+    }
+
+
+def _composition(manifest: dict) -> dict:
+    """
+    每种条件下"标签 × 容器"的计数。
+
+    `original` 条件里 MNW Fake 是 JPEG、DIV2K Real 是 PNG——标签与容器混杂；
+    `jpeg_q95` 把两者都重编码为 JPEG q95。把这个计数写进报告，读者不必
+    从路径里猜。
+    """
+    composition: Dict[str, dict] = {}
+    for item in manifest.get("inputs", []):
+        condition = item.get("condition", "unknown")
+        bucket = composition.setdefault(condition, {"n": 0, "by_label_container": {}})
+        bucket["n"] += 1
+        container = item.get("container") or \
+            os.path.splitext(item.get("path", ""))[1].lstrip(".").lower()
+        key = f"{item.get('label')}/{container}"
+        bucket["by_label_container"][key] = bucket["by_label_container"].get(key, 0) + 1
+    return composition
+
+
+def _source_key(per: dict) -> str:
+    """
+    同一源在两种条件下的配对键。
+
+    优先 `source_id`（清单里两种条件共用），回退到 `source_path`（清单里也共用）。
+    `variant_id` **不能**用：它带 `__original` / `__jpeg_q95` 后缀，跨条件不相等。
+    """
+    for row in per.values():
+        key = row.get("source_id") or row.get("source_path")
+        if key:
+            return key
+    raise SystemExit("分数行既无 source_id 也无 source_path，无法按源配对")
 
 
 def _sha256(path: str) -> Optional[str]:
@@ -363,6 +488,28 @@ def _sha256(path: str) -> Optional[str]:
     return digest.hexdigest()
 
 
+def rebuild_report(inputs_path: str, scores_path: str, experts: List[str]) -> dict:
+    """只重建报告：读已有的逐条分数，不重跑任何测量。"""
+    rows = [json.loads(line) for line in open(scores_path, encoding="utf-8")]
+    manifest = json.load(open(inputs_path, encoding="utf-8"))
+    report = build_report(rows, experts, manifest, inputs_path)
+    report["run"] = {
+        "rebuilt_from": os.path.relpath(scores_path, PROJECT_ROOT),
+        "scores_sha256": _sha256(scores_path),
+        "scores_mtime": datetime.fromtimestamp(
+            os.path.getmtime(scores_path)).isoformat(timespec="seconds"),
+        "rebuilt_at": datetime.now().isoformat(timespec="seconds"),
+        "rows": len(rows),
+        "measurement_provenance": "rebuilt_from_scores",
+        "note": ("未重新测量；报告由已有 scores.jsonl 重建。"
+                 "原始 run 的 device/elapsed 字段未保留，以运行日志与 plan 记录为准。"),
+    }
+    out_dir = os.path.dirname(scores_path)
+    json.dump(report, open(os.path.join(out_dir, "report.json"), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=2)
+    return report
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -373,19 +520,27 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--report-only", metavar="SCORES_JSONL", default=None,
+                        help="不测量，只从已有 scores.jsonl 重建报告")
     args = parser.parse_args()
 
     experts = [name.strip() for name in args.experts.split(",") if name.strip()]
-    out_dir = args.out or os.path.join(
-        OUTPUT_ROOT, datetime.now().strftime("%Y%m%d_%H%M%S"))
-    report = run(args.inputs, out_dir, experts, args.device, args.limit,
-                 args.dry_run, args.resume)
-    if args.dry_run:
-        return 0
-    print(f"报告：{os.path.relpath(os.path.join(out_dir, 'report.json'), PROJECT_ROOT)}")
-    for group, conditions in sorted(report["groups"].items()):
+    if args.report_only:
+        report = rebuild_report(args.inputs, args.report_only, experts)
+    else:
+        out_dir = args.out or os.path.join(
+            OUTPUT_ROOT, datetime.now().strftime("%Y%m%d_%H%M%S"))
+        report = run(args.inputs, out_dir, experts, args.device, args.limit,
+                     args.dry_run, args.resume)
+        if args.dry_run:
+            return 0
+        print(f"报告：{os.path.relpath(os.path.join(out_dir, 'report.json'), PROJECT_ROOT)}")
+
+    # 配对分析（生成器 Fake + DIV2K Real）
+    for pair, conditions in sorted(report["analysis"].items()):
         for condition, bucket in sorted(conditions.items()):
-            line = f"{group}/{condition} (n={bucket['n']}, Fake={bucket['n_fake']})"
+            line = (f"{pair}/{condition} (n={bucket['n']}, "
+                    f"Fake={bucket['n_fake']}, Real={bucket['n_real']})")
             for name in experts:
                 data = bucket["per_expert"].get(name) or {}
                 auroc_value = data.get("auroc") or {}
@@ -395,6 +550,15 @@ def main() -> int:
                 delta = data.get("paired_delta_vs_jpeg_q95")
                 if delta:
                     line += f" Δ {delta['delta']} CI{delta['ci95']}"
+            print(line)
+    # 来源组分布（单标签，仅均值与判假率）
+    for group, conditions in sorted(report["groups"].items()):
+        for condition, bucket in sorted(conditions.items()):
+            line = f"{group}/{condition} (n={bucket['n']}, Fake={bucket['n_fake']})"
+            for name in experts:
+                data = bucket["per_expert"].get(name) or {}
+                line += (f"｜{name}: mean {data.get('mean_score')} "
+                         f"fake-rate {data.get('fake_rate_at_threshold')}")
             print(line)
     return 0
 

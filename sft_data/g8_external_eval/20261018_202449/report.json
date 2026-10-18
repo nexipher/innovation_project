@@ -1,0 +1,1423 @@
+{
+  "schema": "external_eval_report/1",
+  "inputs_manifest": "dataset/mnw_div2k/inputs_manifest.json",
+  "manifest_sha256": "ae31b6ffe5162e99f6374474a00dd89d4d3e21850d500c6f33843aba62bf6c9d",
+  "rules": {
+    "no_threshold_fitting": true,
+    "per_group_only": true,
+    "real_images_reused_across_generators": true,
+    "paired_conditions": true,
+    "single_label_groups_have_no_auroc": true
+  },
+  "composition": {
+    "original": {
+      "n": 100,
+      "by_label_container": {
+        "Fake/jpg": 80,
+        "Real/png": 20
+      }
+    },
+    "jpeg_q95": {
+      "n": 100,
+      "by_label_container": {
+        "Fake/jpg": 80,
+        "Real/jpg": 20
+      }
+    }
+  },
+  "experts": {
+    "probe": {
+      "weights": {
+        "file": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+        "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "bytes": 1217679947
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "上游判别器的 sigmoid 输出；本项目只用其排序，概率映射由本地校准层另记"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "外部默认",
+        "note": "本项目不据此下结论，只作对照"
+      },
+      "preprocess": {
+        "name": "pad→336 滑窗均值",
+        "detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+        "measurement_scope": "global"
+      },
+      "licence": "上游未声明（仓库无 LICENSE）；仅本地研究，不再分发"
+    },
+    "npr": {
+      "weights": {
+        "checkpoint_id": "npr-a",
+        "file": "/root/autodl-tmp/third_party/npr/weights/NPR.pth",
+        "sha256": "3939297e9399e0b992f87211610769d87d899de50d56da0204d6cbda2d483a53",
+        "bytes": 17393733
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "官方 validate.py 的 model(x).sigmoid()；官方阈值 0.5；不是本地校准概率"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方默认",
+        "note": "本项目若另选阈值，只能在 val 上选"
+      },
+      "preprocess": {
+        "name": "整图、不缩放（配方与 checkpoint 绑定，不得混用）",
+        "detail": "no_resize=True, no_crop=True → ToTensor → ImageNet 归一化（mean [0.485,0.456,0.406], std [0.229,0.224,0.225]）；官方另有 GenImage 配方（translate-duplicate 平铺补尺寸 + CenterCrop(224)），本项目不用它；**奇数宽/高**按官方 README 的 AIGCDetectBenchmark 说明裁掉最后一行/列（模型内部 x - interpolate(x,0.5) 在奇数边长上差一个像素），每次调用记录 odd_size_cropped",
+        "measurement_scope": "global"
+      },
+      "licence": "**未明确**：仓库根无 LICENSE 文件（已核实 404）。仅本地研究；其他用途须向作者确认"
+    },
+    "univfd": {
+      "weights": {
+        "head": {
+          "file": "/root/autodl-tmp/third_party/univfd/weights/fc_weights.pth",
+          "bytes": 4083,
+          "sha256": "477100745713bcc957beb2b40859536859b6483fd6301b3b9293151b194c7847",
+          "structure": "nn.Linear(768, 1)（实测 768×4+4 字节）",
+          "load_as": "model.fc.load_state_dict(...)"
+        },
+        "backbone": {
+          "file": "/root/autodl-tmp/third_party/univfd/clip_cache/ViT-L-14.pt",
+          "url": "https://openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt",
+          "sha256_from_url": "b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836",
+          "note": "URL 路径段即官方声明的 sha256，下载器据此自校验"
+        }
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "CLIP 特征经线性头得 logit，官方再 sigmoid；标签 Real=0/Fake=1，故高值偏 Fake"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方默认（acc.txt）",
+        "note": "官方另提供 find_best_threshold；**不得在 test 分区搜阈值**"
+      },
+      "preprocess": {
+        "name": "CenterCrop(224)（**无 Resize**）",
+        "detail": "RGB → CenterCrop(224) → ToTensor → CLIP 归一化（mean [0.48145466,0.4578275,0.40821073], std [0.26862954,0.26130258,0.27577711]）；官方流程没有 resize，替换成 CLIP 通用 resize+crop 属改变配方，必须另记",
+        "measurement_scope": "center_crop",
+        "scope_note": "不是整图：会裁掉边缘。登记如此，避免与整图专家混谈；token 若把这套测量写成 global，就是 global_evidence_localised。"
+      },
+      "licence": "仓库 MIT（WAIV 2025）；主干与权重条款归 OpenAI，另行留档"
+    }
+  },
+  "groups": {
+    "Adobe_Firefly_v4": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.95,
+            "elapsed_ms": [
+              671.8,
+              571.5,
+              551.8,
+              565.3,
+              583.1,
+              600.1,
+              558.7,
+              659.1,
+              561.3,
+              574.2,
+              550.0,
+              565.8,
+              657.3,
+              660.0,
+              570.3,
+              570.5,
+              559.2,
+              570.1,
+              559.3,
+              547.5
+            ],
+            "mean_score": 0.795
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              107.2,
+              107.6,
+              108.4,
+              108.4,
+              110.6,
+              112.2,
+              108.6,
+              105.4,
+              99.6,
+              105.8,
+              106.2,
+              112.4,
+              108.8,
+              109.4,
+              103.7,
+              106.4,
+              113.3,
+              111.3,
+              95.7,
+              97.9
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.55,
+            "elapsed_ms": [
+              55.7,
+              3768.1,
+              49.0,
+              52.4,
+              49.0,
+              48.3,
+              57.1,
+              56.6,
+              37.6,
+              53.3,
+              51.2,
+              51.6,
+              56.0,
+              53.0,
+              39.1,
+              53.1,
+              51.4,
+              52.5,
+              39.6,
+              37.5
+            ],
+            "mean_score": 0.4919
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.95,
+            "elapsed_ms": [
+              663.4,
+              26711.6,
+              544.3,
+              539.7,
+              560.6,
+              567.8,
+              540.2,
+              653.5,
+              543.8,
+              579.6,
+              539.2,
+              547.7,
+              656.9,
+              651.4,
+              573.0,
+              551.6,
+              556.3,
+              540.6,
+              554.0,
+              555.4
+            ],
+            "mean_score": 0.801
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              110.9,
+              208.9,
+              110.8,
+              111.3,
+              99.5,
+              109.6,
+              108.8,
+              110.8,
+              100.0,
+              114.4,
+              100.7,
+              105.9,
+              116.3,
+              115.6,
+              101.6,
+              97.0,
+              110.4,
+              105.7,
+              105.6,
+              101.8
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.55,
+            "elapsed_ms": [
+              65.8,
+              1347.2,
+              83.6,
+              38.9,
+              39.7,
+              41.0,
+              42.3,
+              54.0,
+              39.5,
+              39.0,
+              45.1,
+              55.6,
+              80.6,
+              62.5,
+              40.4,
+              39.1,
+              40.2,
+              40.4,
+              37.9,
+              44.1
+            ],
+            "mean_score": 0.482
+          }
+        }
+      }
+    },
+    "ByteDance_Seedream_v4": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 1.0,
+            "elapsed_ms": [
+              209.7,
+              659.8,
+              265.6,
+              663.0,
+              204.9,
+              207.4,
+              210.8,
+              207.3,
+              204.6,
+              205.0,
+              259.3,
+              649.6,
+              205.6,
+              209.4,
+              207.9,
+              660.5,
+              206.6,
+              658.2,
+              208.1,
+              211.5
+            ],
+            "mean_score": 0.9993
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              35.7,
+              107.1,
+              36.2,
+              103.0,
+              35.6,
+              32.8,
+              35.4,
+              36.1,
+              38.1,
+              40.0,
+              37.3,
+              110.2,
+              38.9,
+              33.8,
+              37.8,
+              105.4,
+              33.9,
+              112.4,
+              35.3,
+              35.9
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              20.2,
+              41.9,
+              19.1,
+              64.5,
+              20.1,
+              22.9,
+              19.9,
+              31.7,
+              19.6,
+              26.9,
+              21.9,
+              53.8,
+              22.2,
+              20.0,
+              20.3,
+              40.8,
+              21.0,
+              51.2,
+              18.6,
+              22.9
+            ],
+            "mean_score": 0.0366
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 1.0,
+            "elapsed_ms": [
+              209.8,
+              680.5,
+              261.1,
+              654.3,
+              206.9,
+              216.7,
+              208.4,
+              208.7,
+              206.9,
+              202.9,
+              262.3,
+              660.5,
+              211.7,
+              208.9,
+              204.0,
+              647.9,
+              208.3,
+              657.7,
+              203.9,
+              207.6
+            ],
+            "mean_score": 0.9993
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              36.3,
+              113.7,
+              45.0,
+              109.9,
+              42.5,
+              44.7,
+              49.8,
+              34.0,
+              35.3,
+              48.9,
+              42.0,
+              112.9,
+              37.7,
+              36.1,
+              43.8,
+              116.0,
+              36.6,
+              105.7,
+              44.2,
+              36.8
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              21.0,
+              51.0,
+              22.6,
+              51.4,
+              24.9,
+              21.1,
+              26.5,
+              20.3,
+              19.7,
+              23.2,
+              20.4,
+              52.9,
+              19.4,
+              24.4,
+              22.5,
+              65.4,
+              21.9,
+              51.3,
+              23.3,
+              22.0
+            ],
+            "mean_score": 0.0382
+          }
+        }
+      }
+    },
+    "DIV2K_valid_HR": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 0,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.05,
+            "elapsed_ms": [
+              377.1,
+              374.8,
+              455.9,
+              458.1,
+              474.0,
+              477.5,
+              463.9,
+              463.1,
+              668.3,
+              467.3,
+              467.0,
+              484.5,
+              454.5,
+              475.2,
+              461.6,
+              478.0,
+              459.7,
+              568.4,
+              461.2,
+              460.7
+            ],
+            "mean_score": 0.0446
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.05,
+            "elapsed_ms": [
+              62.1,
+              57.9,
+              63.9,
+              69.4,
+              83.0,
+              85.0,
+              64.3,
+              69.4,
+              108.2,
+              73.3,
+              69.8,
+              80.3,
+              65.1,
+              79.8,
+              69.6,
+              81.4,
+              71.7,
+              94.4,
+              81.9,
+              68.4
+            ],
+            "mean_score": 0.0451
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.05,
+            "elapsed_ms": [
+              29.2,
+              26.7,
+              29.0,
+              31.9,
+              31.5,
+              37.3,
+              29.4,
+              28.9,
+              41.5,
+              30.4,
+              31.8,
+              32.6,
+              33.5,
+              31.8,
+              31.4,
+              30.6,
+              31.1,
+              46.5,
+              37.4,
+              31.1
+            ],
+            "mean_score": 0.1122
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 0,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              374.0,
+              378.1,
+              459.4,
+              461.9,
+              474.8,
+              478.4,
+              459.5,
+              471.4,
+              666.8,
+              473.4,
+              457.2,
+              492.5,
+              457.1,
+              487.6,
+              464.5,
+              499.2,
+              459.9,
+              565.1,
+              459.8,
+              464.8
+            ],
+            "mean_score": 0.0252
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.35,
+            "elapsed_ms": [
+              61.2,
+              71.9,
+              67.8,
+              66.0,
+              90.3,
+              88.2,
+              67.2,
+              73.8,
+              106.3,
+              80.5,
+              68.4,
+              81.5,
+              70.0,
+              82.9,
+              73.7,
+              86.1,
+              65.7,
+              103.6,
+              69.9,
+              70.9
+            ],
+            "mean_score": 0.3634
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.05,
+            "elapsed_ms": [
+              25.6,
+              25.3,
+              27.7,
+              28.0,
+              58.4,
+              41.9,
+              34.7,
+              30.4,
+              39.6,
+              34.9,
+              30.6,
+              53.7,
+              29.4,
+              30.3,
+              35.6,
+              31.1,
+              35.6,
+              42.0,
+              28.8,
+              30.1
+            ],
+            "mean_score": 0.1128
+          }
+        }
+      }
+    },
+    "Google_Imagen4": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.9,
+            "elapsed_ms": [
+              152.5,
+              192.5,
+              193.7,
+              197.8,
+              156.7,
+              158.9,
+              154.0,
+              202.5,
+              154.7,
+              192.6,
+              158.6,
+              153.1,
+              192.3,
+              155.8,
+              220.5,
+              154.5,
+              198.7,
+              191.9,
+              192.4,
+              189.5
+            ],
+            "mean_score": 0.8438
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              19.0,
+              21.3,
+              18.2,
+              19.7,
+              21.3,
+              21.2,
+              35.0,
+              22.5,
+              20.6,
+              25.7,
+              18.9,
+              20.9,
+              18.9,
+              21.0,
+              26.3,
+              22.1,
+              20.3,
+              24.3,
+              20.4,
+              20.1
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.05,
+            "elapsed_ms": [
+              29.8,
+              20.2,
+              17.4,
+              22.8,
+              17.9,
+              18.0,
+              18.1,
+              18.3,
+              23.3,
+              18.2,
+              19.6,
+              24.7,
+              16.9,
+              18.8,
+              30.5,
+              19.4,
+              16.5,
+              17.8,
+              16.6,
+              17.1
+            ],
+            "mean_score": 0.0333
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.9,
+            "elapsed_ms": [
+              157.5,
+              192.7,
+              191.5,
+              190.0,
+              172.4,
+              154.8,
+              154.5,
+              194.5,
+              154.2,
+              194.1,
+              151.7,
+              158.4,
+              194.4,
+              157.0,
+              200.8,
+              155.6,
+              200.3,
+              190.6,
+              193.7,
+              188.9
+            ],
+            "mean_score": 0.8374
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              26.3,
+              17.6,
+              19.1,
+              17.8,
+              33.8,
+              19.7,
+              20.2,
+              17.9,
+              20.6,
+              21.9,
+              19.7,
+              35.3,
+              32.4,
+              19.2,
+              16.8,
+              20.5,
+              29.9,
+              21.2,
+              30.0,
+              18.4
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              16.8,
+              22.6,
+              19.2,
+              18.6,
+              21.5,
+              19.3,
+              19.4,
+              25.7,
+              17.1,
+              17.0,
+              16.9,
+              19.3,
+              20.6,
+              17.4,
+              15.8,
+              16.6,
+              25.8,
+              17.5,
+              18.6,
+              17.4
+            ],
+            "mean_score": 0.028
+          }
+        }
+      }
+    },
+    "Midjourney_v7": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.85,
+            "elapsed_ms": [
+              156.1,
+              156.4,
+              153.2,
+              154.6,
+              153.4,
+              155.7,
+              155.2,
+              154.5,
+              152.7,
+              154.9,
+              153.5,
+              158.2,
+              158.7,
+              154.3,
+              158.3,
+              178.8,
+              155.9,
+              156.2,
+              155.0,
+              156.5
+            ],
+            "mean_score": 0.8783
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              19.7,
+              20.4,
+              19.3,
+              20.8,
+              20.7,
+              21.3,
+              19.2,
+              19.9,
+              23.0,
+              20.1,
+              22.0,
+              20.6,
+              26.0,
+              20.5,
+              18.7,
+              20.8,
+              20.7,
+              25.7,
+              20.9,
+              24.7
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              18.6,
+              19.7,
+              20.5,
+              17.9,
+              18.0,
+              17.5,
+              17.8,
+              17.6,
+              20.0,
+              19.4,
+              17.6,
+              22.7,
+              17.9,
+              17.8,
+              17.5,
+              19.6,
+              24.7,
+              20.4,
+              19.2,
+              17.7
+            ],
+            "mean_score": 0.014
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "per_expert": {
+          "probe": {
+            "fake_rate_at_threshold": 0.85,
+            "elapsed_ms": [
+              154.6,
+              155.3,
+              157.2,
+              156.8,
+              155.5,
+              156.1,
+              155.9,
+              167.8,
+              157.0,
+              156.0,
+              157.3,
+              157.7,
+              162.0,
+              158.7,
+              154.9,
+              157.0,
+              158.6,
+              161.6,
+              159.4,
+              155.8
+            ],
+            "mean_score": 0.8536
+          },
+          "npr": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              19.6,
+              24.8,
+              21.9,
+              20.5,
+              20.3,
+              22.6,
+              19.8,
+              20.6,
+              19.3,
+              19.6,
+              29.8,
+              20.0,
+              24.9,
+              22.4,
+              44.0,
+              33.0,
+              30.4,
+              23.1,
+              21.2,
+              24.6
+            ],
+            "mean_score": 0.0
+          },
+          "univfd": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              19.4,
+              19.1,
+              19.4,
+              19.1,
+              18.1,
+              20.8,
+              20.2,
+              20.8,
+              25.7,
+              18.3,
+              17.2,
+              17.5,
+              18.0,
+              18.3,
+              19.9,
+              22.1,
+              18.3,
+              18.2,
+              21.3,
+              19.0
+            ],
+            "mean_score": 0.0359
+          }
+        }
+      }
+    }
+  },
+  "analysis": {
+    "Adobe_Firefly_v4 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.975,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.005,
+              "ci95": [
+                -0.0227,
+                0.0
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.2025,
+              "ci95": [
+                0.06,
+                0.3675
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.325,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.005,
+              "ci95": [
+                -0.1944,
+                0.1758
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.815,
+              "ci95": [
+                0.6641,
+                0.9419
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.75,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.0225,
+              "ci95": [
+                -0.0234,
+                0.0707
+              ],
+              "bootstrap": 1000
+            }
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 0.995,
+              "ci95": [
+                0.9773,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.95
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.1975,
+              "ci95": [
+                0.0573,
+                0.3484
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.8375,
+              "ci95": [
+                0.6933,
+                0.9449
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.75
+          }
+        }
+      }
+    },
+    "ByteDance_Seedream_v4 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 1.0,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.135,
+              "ci95": [
+                0.0251,
+                0.2749
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.325,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.035,
+              "ci95": [
+                -0.1944,
+                0.1128
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.4925,
+              "ci95": [
+                0.2992,
+                0.6793
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.0625,
+              "ci95": [
+                0.0,
+                0.1353
+              ],
+              "bootstrap": 1000
+            }
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.975
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.1,
+              "ci95": [
+                0.0208,
+                0.202
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.555,
+              "ci95": [
+                0.3609,
+                0.7374
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475
+          }
+        }
+      }
+    },
+    "Google_Imagen4 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 0.995,
+              "ci95": [
+                0.9747,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.95,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.005,
+              "ci95": [
+                -0.0227,
+                0.0
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.14,
+              "ci95": [
+                0.0328,
+                0.2673
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.325,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.005,
+              "ci95": [
+                -0.1493,
+                0.1263
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.3725,
+              "ci95": [
+                0.1875,
+                0.5564
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.075,
+              "ci95": [
+                0.0076,
+                0.1616
+              ],
+              "bootstrap": 1000
+            }
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 0.99,
+              "ci95": [
+                0.96,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.925
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.135,
+              "ci95": [
+                0.03,
+                0.2625
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.4475,
+              "ci95": [
+                0.2481,
+                0.635
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.5
+          }
+        }
+      }
+    },
+    "Midjourney_v7 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 0.995,
+              "ci95": [
+                0.9733,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.925,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.005,
+              "ci95": [
+                -0.0275,
+                0.0053
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.1512,
+              "ci95": [
+                0.0373,
+                0.2839
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.325,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.0988,
+              "ci95": [
+                -0.0613,
+                0.2727
+              ],
+              "bootstrap": 1000
+            }
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.3925,
+              "ci95": [
+                0.2121,
+                0.578
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475,
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.0075,
+              "ci95": [
+                -0.0505,
+                0.0725
+              ],
+              "bootstrap": 1000
+            }
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "per_expert": {
+          "probe": {
+            "auroc": {
+              "auroc": 0.99,
+              "ci95": [
+                0.9596,
+                1.0
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.9
+          },
+          "npr": {
+            "auroc": {
+              "auroc": 0.25,
+              "ci95": [
+                0.099,
+                0.422
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475
+          },
+          "univfd": {
+            "auroc": {
+              "auroc": 0.4,
+              "ci95": [
+                0.2281,
+                0.5911
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.475
+          }
+        }
+      }
+    }
+  },
+  "run": {
+    "rebuilt_from": "sft_data/g8_external_eval/20261018_202449/scores.jsonl",
+    "scores_sha256": "a4937e110e7c139f05779ec362f8115e7af3d621f4178e55a0f2dc9a166a58bf",
+    "scores_mtime": "2026-10-18T20:26:54",
+    "rebuilt_at": "2026-10-18T20:31:45",
+    "rows": 600,
+    "measurement_provenance": "rebuilt_from_scores",
+    "note": "未重新测量；报告由已有 scores.jsonl 重建。原始 run 的 device/elapsed 字段未保留，以运行日志与 plan 记录为准。"
+  }
+}
