@@ -535,3 +535,18 @@
   * 用户刚导出的 `sft_data/g8/review/b2/review_g8_b2.json`（只读核对）：32 条决定、**27 revise / 5 pass**，指纹与当前内容 **32/32 一致**。临时台账演练：27 条 revise 被逐 ID 列出并拒绝；全 pass 的对照演练通过。**该文件未导入台账、未修改、未提交。**
   * 门禁失败不创建批次目录：两条入口测试分别覆盖第一阶段失败与第二阶段身份不一致。
 * **置信度或遗留待办（TODO）**：①b2 当前 **未通过验收**（27 revise），台账尚未写入；外部 Agent 门禁保持关闭②用户需决定是否导入该审核 JSON、是否修改 b2/重新生成③验收协议身份尚未登记（`accepted_protocol.json` 不存在）——只有等验收全部 pass 后才能运行 `g8_accept_protocol.py`④真实运行时的身份比较尚未在 GPU 上演练（避免加载 17.5 GB 模型；单元测试已覆盖同一采集/归一化路径）⑤未把 `review_g8_b2.json` 纳入 Git（用户产物，需明确是否入库）
+
+### 2026-10-18 - 阶段四 4.16：b2 审核问题核实（只确认/记录）与候选专家核实/评测计划
+
+* **当前操作动作**：读取用户提交的 b2 审核 JSON、逐条对照 b2 记录与 trace，核实实际问题并分类；同时查阅 SPAI/AIDE/DRCT/SSP/DIRE 的官方仓库、论文摘要与推理代码，核实权重来源/许可/训练数据/预处理/输出方向/阈值/成本，形成评测计划并写入 plan §4.16/§4.17。**未改任何 b2 记录/审核决定/台账；未冻结；未下载权重；未跑 GPU/Agent；未生成 SFT。**
+* **对应计划锚点**：`plan.md` §4.16（新增，问题确认）、§4.17（新增，专家重选）、§4.12b（门禁）、§4.9b（外部基线）
+* **核心变更说明**：
+  1. **审核核对**：`review_g8_b2.json` 32 条决定（27 revise / 5 pass），**32/32 内容指纹与当前记录+trace 一致**；该文件未导入台账。逐条核实后分类：A1 单专家提前结案/“无冲突”依据 16 条；A2 全局→局部改写 11 条；A2b 替未调用专家断言 3 条；A3 无测量机制推断 7 条；A4 校准/过强措辞 5 条；A5 视觉场景补写 1 条（#12“天空晴朗”，已放大核对原图，确为蓝色远山林坡与浅色斑块，未见天空）；A6 自我矛盾 3 条（可重叠）。5 条 pass 说明“单专家+未交叉验证”本身不是问题，问题在无依据停止/局部越界/替专家断言/过度解释。
+  2. **#26 核实**：trace 的 `available_experts` 明确有 npr/univfd，模型仍写“无其他专家可提供交叉验证”后结案——事实性错误。
+  3. **#32 核实**：b2 记录 `evidence_check` 把“该专家…”误归因为 jpeg_expert；用当前代码重审纠正前后两轮均 **0 findings**（误报已在 b2 后修复），b2 记录保留；模型纠正后重复同一 reasoning；工作台仍展示旧检查结果。归入控制器 + 工作台问题。
+  4. **专家组核实**：记录五个仓库的 commit（SPAI `8ff7b3b6`、AIDE `6725b710`、DRCT `01aa7d0b`、SSP `38e9ab30`、DIRE `1f89fff1`）与论文；核实 DRCT `pretrained.zip` **4,178,790,241 B / sha256 235c0069…`（ModelScope 可及）**、DIRE 扩散权重 **2,211,383,297 B**（OpenAI Azure 可及）；SPAI/AIDE 的 Google Drive 与 SSP 的 Dropbox 在本实例**不可达**，Baidu/RecDrive 需客户端/API，相关大小与 sha256 标为“待下载核实”，未进入正式评测。预处理/方向/阈值均已从代码核对（四者均为 sigmoid/softmax P(fake)，阈值 0.5；SPAI 原分辨率 pad≥224、AIDE 256、DRCT CenterCrop 224、SSP 单 patch→256、DIRE 重建误差→Resize256/CenterCrop224）。
+  5. **评测计划**：D1a 现有 100 源 ×4 条件 = 400 输入；新增 `dataset/mnw_div2k/dev_final_split.json` 预注册分区（每组当前开发 20 / 扩展开发 20 / 最终留出 20，互不共享 sha256）；最终留出 100 源 ×2 条件 = 200 输入，仅在短名单确定后跑一次；互补性用阈值下 2×2（纠正/损害）而非总分；预注册候选合格线（≥2 组 AUROC≥0.70、总体净纠正>0 且≥8 次纠正、纠正分布≥2 组）；不做分数平均/阈值调参/方向翻转。
+  6. **磁盘/资源**：`/root/autodl-tmp` 余 12 GB、overlay 余 3.1 GB；若五个候选全下载约 11–12 GB，必须逐个下载/评测/清理，峰值≤5 GB；GPU 估计约 2 GPU 时（D1b 再加约 2 小时），DIRE 重建成本单列。
+* **涉及/修改的文件清单**：`plan.md (Modified — §4.16/§4.17)`、`dataset/mnw_div2k/dev_final_split.json (Created — 分区预注册)`、`claude_operation_log.md`
+* **执行结果与验证状态**：审核 32/32 指纹一致；分类计数与代表 ID 已核对；#12 图像放大核对；#32 当前代码重审 0 findings；五个仓库代码/README/论文摘要已读；DRCT 权重哈希/大小已核实；`dev_final_split.json` 分区校验“无 sha256 跨分区”；**未下载权重、未跑 GPU、未改 b2、未导出台账、未冻结**。
+* **置信度或遗留待办（TODO）**：①SPAI/AIDE 官方权重在 Google Drive、SSP 在 Dropbox，本实例不可达——需用户上传或提供可达镜像；拿到后先记 sha256/大小再评测②DRCT 需固定主干/训练集/DR 版本（建议 ConvB + DRCT-2M + SDv1；README 更正 BigGAN 仅 59.81%）③SSP 无统一 checkpoint，需先决定用哪一个/是否值得评测④DIRE 分类器 checkpoint 在 RecDrive/Baidu，需解决访问；`demo.py` 直接喂原图与论文路径不一致⑤用户确认 `dev_final_split.json` 的分区与最终集规模⑥下一步：离线适配器 + CPU 测试，仍不改 Agent。
