@@ -108,10 +108,55 @@ def _record(variant: dict, policy_name: str, tools_served: List[str],
     }
 
 
+def _file_sha256(path: str) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def assert_variants_identical(generation: str, batch: str, source_batch: str,
+                              manifest_path: str) -> None:
+    """
+    开跑前逐文件核对：本批的**输入文件**必须与对照批逐字节相同。
+
+    "同一个 seed 重建一遍"只是在假定编码器确定性；名字相同、来源相同、字节不同，
+    仍然会让对照不成立，而记录里看不出来。所以这里直接比真实文件的 sha256。
+    """
+    current = load_manifest(manifest_path)
+    source_path = os.path.join(batch_paths(source_batch, generation)["variants"])
+    if not os.path.exists(source_path):
+        raise SystemExit(f"对照批 {source_batch} 的变体清单不存在：{source_path}")
+    source = {entry["variant_id"]: entry for entry in load_manifest(source_path).values()}
+    problems = []
+    for entry in current.values():
+        variant_id = entry["variant_id"]
+        other = source.get(variant_id)
+        if other is None:
+            problems.append(f"{variant_id}: 对照批里没有这个变体")
+            continue
+        ours = os.path.join(PROJECT_ROOT, entry["path"])
+        theirs = os.path.join(PROJECT_ROOT, other["path"])
+        if not (os.path.exists(ours) and os.path.exists(theirs)):
+            problems.append(f"{variant_id}: 文件缺失")
+            continue
+        if _file_sha256(ours) != _file_sha256(theirs):
+            problems.append(f"{variant_id}: 字节不同")
+    extra = set(source) - {entry["variant_id"] for entry in current.values()}
+    problems.extend(f"{name}: 对照批有、本批没有" for name in sorted(extra))
+    if problems:
+        raise SystemExit("与对照批逐文件核对失败（拒绝启动）：\n  " + "\n  ".join(problems))
+    print(f"逐文件核对通过：{len(current)} 个输入文件与 {source_batch} 的 sha256 全部相同")
+
+
 def run_batch(generation: str, batch: str, manifest_path: str,
               tools_policy: str, limit: Optional[int], dry_run: bool,
               allow_frozen: bool, greedy: bool, inference_mode: str,
-              local_files_only: bool, out_dir: Optional[str] = None) -> dict:
+              local_files_only: bool, out_dir: Optional[str] = None,
+              assert_identical_to: Optional[str] = None) -> dict:
     from state_machine.controller import ForensicStateMachine
     from utils.logger import SessionLogger
 
@@ -133,6 +178,9 @@ def run_batch(generation: str, batch: str, manifest_path: str,
     trace_dir = (os.path.join(PROJECT_ROOT, "traces", "sft_sessions", generation, batch)
                  if default_traces else os.path.join(out_dir, "sessions"))
     os.makedirs(out_dir, exist_ok=True)
+
+    if assert_identical_to:
+        assert_variants_identical(generation, batch, assert_identical_to, manifest_path)
 
     variants = load_manifest(manifest_path)
     if limit:
@@ -275,6 +323,8 @@ def main() -> int:
     parser.add_argument("--inference-mode", default=DEFAULT_MODE,
                         choices=("thinking", "non-thinking"))
     parser.add_argument("--local-files-only", action="store_true")
+    parser.add_argument("--assert-variants-identical-to", default=None,
+                        help="开跑前逐文件核对本批输入与对照批（如 b1）的 sha256 完全相同")
     args = parser.parse_args()
 
     if not args.dry_run and os.environ.get("FORENSIC_ALLOW_GPU") != "1":
@@ -294,7 +344,8 @@ def main() -> int:
 
     metadata = run_batch(args.generation, args.batch, manifest, args.policy,
                          args.limit, args.dry_run, args.allow_frozen, args.greedy,
-                         args.inference_mode, args.local_files_only)
+                         args.inference_mode, args.local_files_only,
+                         assert_identical_to=args.assert_variants_identical_to)
     print(f"model: {json.dumps(metadata['model'], ensure_ascii=False)[:160]}")
     return 0
 

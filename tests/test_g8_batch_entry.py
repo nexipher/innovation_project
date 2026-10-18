@@ -126,6 +126,70 @@ class TestTheDryRunStaysOutOfTheBatch:
             assert "dry_run" not in name
 
 
+class TestTheInputsAreTheSameAsTheReferenceBatch:
+    """
+    b2 与 b1 的对照成立，前提是**输入文件逐字节相同**。"同一个 seed 重建"只是
+    假定编码器确定性——名字、来源都一样而字节不同，记录里看不出来，对照就废了。
+    这里钉住：开跑前必须按真实文件 sha256 比对，任何不同即拒绝启动。
+    """
+
+    def _variant(self, root, name, payload: bytes):
+        import hashlib
+
+        directory = os.path.join(str(root), "vars")
+        os.makedirs(directory, exist_ok=True)
+        path = os.path.join(directory, name)
+        with open(path, "wb") as handle:
+            handle.write(payload)
+        return path, hashlib.sha256(payload).hexdigest()
+
+    def _manifests(self, tmp_path, same: bool):
+        from utils.batch import batch_paths
+
+        source_dir = batch_paths("b_ref", "g8")["variants_dir"]
+        os.makedirs(source_dir, exist_ok=True)
+        # 对照批：相对仓库根的路径（入口按 PROJECT_ROOT 打开）
+        rel = os.path.relpath(os.path.join(source_dir, "v.png"), PROJECT_ROOT)
+        with open(os.path.join(source_dir, "v.png"), "wb") as handle:
+            handle.write(b"AAA")
+        source_manifest = {rel: {"variant_id": "v", "source_id": "s", "label": "Fake",
+                                 "generator": "g", "split": "train",
+                                 "resolution": [8, 8], "treatment": "png",
+                                 "container": "png", "quality": None}}
+        path = os.path.join(source_dir, "manifest.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump({"variants": source_manifest}, handle)
+
+        # 本批：内容相同 / 不同
+        target_dir = batch_paths("b_new", "g8")["variants_dir"]
+        os.makedirs(target_dir, exist_ok=True)
+        rel2 = os.path.relpath(os.path.join(target_dir, "v.png"), PROJECT_ROOT)
+        with open(os.path.join(target_dir, "v.png"), "wb") as handle:
+            handle.write(b"AAA" if same else b"BBB")
+        current_manifest = {rel2: {"variant_id": "v", "source_id": "s", "label": "Fake",
+                                   "generator": "g", "split": "train",
+                                   "resolution": [8, 8], "treatment": "png",
+                                   "container": "png", "quality": None}}
+        path2 = os.path.join(target_dir, "manifest.json")
+        with open(path2, "w", encoding="utf-8") as handle:
+            json.dump({"variants": current_manifest}, handle)
+        return path2
+
+    def test_identical_inputs_pass(self, tmp_path):
+        from scripts.g8_generate_batch import assert_variants_identical
+
+        manifest = self._manifests(tmp_path, same=True)
+        assert_variants_identical("g8", "b_new", "b_ref", manifest)   # 不抛 = 通过
+
+    def test_byte_differences_refuse_to_start(self, tmp_path):
+        from scripts.g8_generate_batch import assert_variants_identical
+
+        manifest = self._manifests(tmp_path, same=False)
+        with pytest.raises(SystemExit) as caught:
+            assert_variants_identical("g8", "b_new", "b_ref", manifest)
+        assert "字节不同" in str(caught.value)
+
+
 class TestTheGates:
     def test_a_real_run_refuses_without_authorization(self, tmp_path):
         manifest = _manifest(tmp_path)

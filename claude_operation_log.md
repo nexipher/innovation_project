@@ -402,3 +402,16 @@
 * **涉及/修改的文件清单**：`mllm/message_builder.py (Modified — RULES 5)`、`tests/test_message_builder.py (Modified — 新契约测试 + 哈希重钉 259069a1ddb66348)`、`plan.md (Modified — §4.8/§4.9)`、`dataset/mnw_div2k/eval_plan.json (Added)`、`scripts/g8_protocol_audit.py (Added)`、`claude_operation_log.md`
 * **执行结果与验证状态**：提示词哈希 `434ac95a6bbb3e59 → 259069a1ddb66348`（`prompt_digest` `8d664a768bb74e9d`）；`test_message_builder`/`test_toolbox`/`test_g8_smoke` **全部通过**；eval_plan 100 张核对通过（0 哈希不符、0 重复）；b1 数据、台账、审阅页均未改动。
 * **置信度或遗留待办（TODO）**：①b2 与外部评测都需要 **GPU**（当前 `nvidia-smi` 无设备）②b2 的判据阈值（≤6 会话）已写进 plan；若实测落在 7–12 之间属"改善但不达标"，届时按数据决定是否再改协议，**不改判据**③外部评测只做专家级；若之后要看 Agent 在外部分布上的表现，另立小批（需用户定）④审计脚本只数"有没有说"；"说得对不对"仍靠人工抽查
+
+### 2026-10-18 - 阶段四 4.9b：b2 输入逐文件相同（运行前断言）；外部评测口径与阶段修正
+
+* **当前操作动作**：按用户三条更正调整：(1) b2 的输入文件改为 b1 的**逐字节副本**并加运行前断言；(2) 外部评测把"单组 AUROC"改为**每组 20 Fake + 20 Real**（单标签组算不了 AUROC）；(3) 外部评测改为**专家基线在前、Agent 评测在后**。**未跑模型/GPU。**
+* **对应计划锚点**：`plan.md` §4.8（b2 预注册）、§4.9（外部评测方案）；用户 2026-10-18 的三条更正
+* **核心变更说明**：
+  1. **b2 输入逐文件相同**：`sft_data/g8/variants/b2/` 不是"用同 seed 重建"，而是 **b1 的 32 个文件逐字节复制**；b2 清单里每条记 `sha256`、`bytes`、`copied_from`，并记 b1 清单的 sha256。核对：文件名集合相同、**32/32 sha256 相同**。
+  2. **运行前断言**：`g8_generate_batch.py` 新增 `--assert-variants-identical-to <对照批>`，开跑前对**真实文件**计算 sha256 并逐条比对，任何一处不同/缺失即 `SystemExit` 拒绝启动（"同 seed 重建"只是假定编码器确定性，名字来源相同而字节不同在记录里看不出来）。加 2 条测试（相同放行 / 字节不同拒绝）。
+  3. **外部评测口径修正**：原先写"每组单独报 AUROC"是错的——每组只有一种标签。现改为：**每组 = 某生成器 20 张 Fake ＋ 同一组 20 张 DIV2K Real（n=40）**，这样组内 AUROC 才可算；**20 张 DIV2K 在四个生成器组间复用**，四组因此不独立，报告须写明；仍不跨组汇总、不合并成单一数字。指标：组内 AUROC+95%CI、按登记表既有阈值判对的数、Fake/Real 两组分数分布。
+  4. **两阶段外部评测**：阶段 1 专家基线（PROBE/NPR/UnivFD，不调阈值）；阶段 2 在专家基线之后跑 Agent（固定子集 10/组 × 5 组 = 50 会话，`Random(20261019)` 抽样、已写入 `eval_plan.json`），按 §4.8 口径记录结案声明，仍属评测、不用于 SFT。
+* **涉及/修改的文件清单**：`sft_data/g8/variants/b2/`（32 个字节副本 + `manifest.json`）、`scripts/g8_generate_batch.py (Modified — 断言)`、`tests/test_g8_batch_entry.py (Modified — 2 条)`、`plan.md (Modified — §4.8/§4.9)`、`dataset/mnw_div2k/eval_plan.json (Modified — 分析配对 + Agent 子集)`、`claude_operation_log.md`
+* **执行结果与验证状态**：b2 输入 32/32 sha256 与 b1 相同；`test_g8_batch_entry` **14 通过**；eval_plan 分析组 4×40、Agent 子集 50（10/组×5）。b1 数据/台账未动。
+* **置信度或遗留待办（TODO）**：①b2 开跑命令将带 `--assert-variants-identical-to b1`，不通过就不跑②外部评测仍需 GPU；Agent 子集的规模（50）如需调整在开跑前改 `eval_plan.json` 并记录③DIV2K 复用导致的组间相关性只能靠"报告写明"处理，不做跨组统计检验

@@ -317,7 +317,7 @@
 
 b1 的人工审核（14 通过 / 18 待修）指向的是**措辞与引用纪律**，4.7 据此改了协议。b2 的唯一目的就是验证这些修订是否改变模型行为，**不是**扩大生成。
 
-**设计**：`g8 / b2`，与 b1 **同一批 8 源 × 4 格式**（同一 seed，配对），32 会话；除提示词外全部条件相同——Qwen3-VL-8B@`0c351dd0`、v3、精简包、probe/npr/univfd、贪心、非 thinking、固定 revision。提示词指纹：b1 = `af7003e17e0d6a42`，b2 = `8d664a768bb74e9d`（`FORENSIC_SYSTEM_PROMPT` 哈希 `a01272f96bbd66c7 → 259069a1ddb66348`）。
+**设计**：`g8 / b2`，与 b1 **同一批 8 源 × 4 格式**（同一 seed，配对），32 会话；**输入文件是 b1 的逐字节副本**（`sft_data/g8/variants/b2/` 由 b1 复制而来，每条记录 sha256/bytes，核对 32/32 一致）——不靠"同 seed 重建"来假定相同；除提示词外全部条件相同——Qwen3-VL-8B@`0c351dd0`、v3、精简包、probe/npr/univfd、贪心、非 thinking、固定 revision。提示词指纹：b1 = `af7003e17e0d6a42`，b2 = `8d664a768bb74e9d`（`FORENSIC_SYSTEM_PROMPT` 哈希 `a01272f96bbd66c7 → 259069a1ddb66348`）。
 
 **判据（先写死，跑完用 `scripts/g8_protocol_audit.py` 同一口径数，不许事后改）**：
 
