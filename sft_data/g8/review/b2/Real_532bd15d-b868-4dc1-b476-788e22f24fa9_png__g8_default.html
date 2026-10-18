@@ -1,0 +1,410 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png</title><style>
+:root { color-scheme: light dark; --line:#8884; --bg:#8881; }
+* { box-sizing: border-box; }
+body { font: 15px/1.6 -apple-system, "Segoe UI", "Noto Sans CJK SC", sans-serif;
+       margin: 0; padding: 16px 26px 60px; max-width: 1280px;
+       background: canvas; color: canvastext; }
+a { color: #2b7; }
+h1 { font-size: 21px; margin: 0 0 6px; } h2 { font-size: 16px; margin: 26px 0 8px; }
+h3 { font-size: 14px; margin: 16px 0 6px; opacity: .85; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left;
+         vertical-align: top; font-size: 14px; }
+th { background: var(--bg); position: sticky; top: 0; }
+img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+/* 链接：未访问/已访问用不同色相区分（蓝 vs 紫），深浅色各一套；
+   已访问只是**浏览器里的浏览记录**，与"是否已审核"无关——审核状态另有标签。 */
+a:link { color: #0b5fb0; text-decoration-color: #0b5fb066; }
+a:visited { color: #8a3fb8; text-decoration-color: #8a3fb866; }
+a:hover { text-decoration: underline; }
+a:focus-visible { outline: 2px solid #0b5fb0; outline-offset: 2px; border-radius: 3px; }
+@media (prefers-color-scheme: dark) {
+  a:link { color: #74b9ff; text-decoration-color: #74b9ff66; }
+  a:visited { color: #cba0ff; text-decoration-color: #cba0ff66; }
+  a:focus-visible { outline-color: #74b9ff; }
+}
+/* 顶部固定审核栏：滚动时始终可见，不透明背景 + 明确的层叠顺序 */
+.topbar { position: sticky; top: 0; z-index: 20; background: canvas;
+          border-bottom: 1px solid var(--line); padding: 6px 0 10px;
+          margin: -10px 0 14px; }
+.topbar .row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.topbar h1 { font-size: 18px; margin: 2px 0; }
+.topbar .crumbs { font-size: 13px; }
+.topbar textarea { min-height: 38px; max-height: 96px; resize: vertical; }
+.topbar .controls { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+@media (max-width: 720px) { .topbar .row { gap: 4px 8px; } .topbar h1 { font-size: 16px; } }
+.turn { border-left: 3px solid var(--line); margin: 10px 0; padding: 4px 12px; }
+.turn.model { border-color: #37b; } .turn.tool { border-color: #2b7; }
+.turn.control { border-color: #c93; }
+.role { font-weight: 600; font-size: 13px; }
+.role .kind { font-weight: 400; opacity: .75; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0; background: var(--bg);
+      padding: 10px; border-radius: 6px; font-size: 13px; max-height: 340px; overflow: auto; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; background: #8883;
+        font-size: 12.5px; margin: 0 6px 4px 0; }
+.ok { background: #2b73; } .bad { background: #b223; } .warn { background: #b903; }
+.muted { opacity: .72; font-size: 13px; }
+.bar { height: 10px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: #2b7; }
+button { font: inherit; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line);
+         background: var(--bg); cursor: pointer; }
+button.primary { background: #2b7; color: #fff; border-color: #2b7; }
+button.danger { background: #b22; color: #fff; border-color: #b22; }
+button.warn { background: #c93; color: #fff; border-color: #c93; }
+input[type=text], textarea, select { font: inherit; background: transparent; color: inherit;
+        border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+textarea { width: 100%; min-height: 54px; }
+.stale { background: #b903; }
+details > summary { cursor: pointer; font-size: 13.5px; opacity: .85; }
+.banner { border: 1px solid var(--line); border-left: 4px solid #c93; padding: 10px 12px;
+          border-radius: 6px; background: var(--bg); }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+tr.hidden { display: none; }
+</style></head><body><header class="topbar"><div class="row crumbs"><a href="index.html">← 批次目录</a>　<a href="Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95__g8_default.html">← 上一条</a> · <a href="Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70__g8_default.html">下一条 →</a><span class="muted">内容指纹 16bffd38cd67b609</span></div><h1>g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png</h1><div class="row"><span class="pill ok">判定 Real</span><span class="pill">真值 Real</span><span class="pill">结案来源 model_concluded</span><span class="pill">停止原因 model_concluded</span><span class="pill">png</span></div>
+<div id="decide" data-id="g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png">
+  <div class="controls">
+    <span id="decide-state"></span>
+    <label class="muted">审核人 <input type="text" id="reviewer" placeholder="你的名字" size="10"></label>
+    <label class="muted">分类 <select id="category"><option value="">（不需要）</option><option value="visual_grounding">visual_grounding</option><option value="evidence_citation">evidence_citation</option><option value="tool_use">tool_use</option><option value="protocol">protocol</option><option value="stopping">stopping</option><option value="logging">logging</option><option value="other">other</option></select></label>
+    <button id="btn-pass" class="primary">通过（本次审核）</button>
+    <button id="btn-revise" class="warn">待修</button>
+    <button id="btn-reject" class="danger">拒绝</button>
+    <button id="btn-export">导出决定</button>
+    <label class="muted">导入 <input type="file" id="import-file" accept="application/json"></label>
+    <span id="flash" class="muted" hidden></span>
+  </div>
+  <textarea id="note" placeholder="备注／原因（待修、拒绝必填）"></textarea>
+  <p class="muted" style="margin:4px 0">这是<b>行为验收</b>：<b>通过</b>只表示本次审核通过，
+  <b>不会把它变成可训练样本</b>，也不走训练准入。决定先存浏览器草稿，
+  <b>导出后用 <code>python scripts/g8_review_import.py &lt;文件&gt;</code> 才写回仓库</b>；
+  内容一变旧决定自动标"已过期"。链接颜色只表示你打开过（浏览记录），与审核状态无关。</p>
+</div>
+</header><h2>图像与版本</h2><div class="grid"><div class="card"><h3>实际输入变体（模型看到的）</h3><img src="../../variants/b2/Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png.png" alt="variant"><p class="muted">路径 sft_data/g8/variants/b2/Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png.png<br>实际尺寸 [530, 500]（来源：trace metadata.image_size）</p></div><div class="card"><h3>源图（变体由它编码而来）</h3><img src="../../../../dataset/Real/532bd15d-b868-4dc1-b476-788e22f24fa9.jpg" alt="source"><p class="muted">dataset/Real/532bd15d-b868-4dc1-b476-788e22f24fa9.jpg</p></div><div class="card"><h3>模型与专家版本</h3><ul><li>模型 Qwen/Qwen3-VL-8B-Instruct@0c351dd0（bfloat16，non-thinking）</li><li>npr_expert：NPRExpert，设备 cuda</li><li>probe_dino_expert：ProbeDinoExpert，设备 cuda</li><li>univfd_expert：UnivFDExpert，设备 cuda</li><li>提示词 digest 8d664a768bb74e9d</li></ul></div></div><h2>控制与计数</h2><table><tr><th>项</th><th>值</th></tr><tr><td>模型自己的报告</td><td>外部判别器（probe）返回低分（0.0776），指向真实图像，且图像视觉上无明显合成痕迹，纹理与光影自然，符合真实拍摄特征。</td></tr><tr><td>模型候选 / 采纳</td><td>Real / Real</td></tr><tr><td>模型自报置信度（未校准）</td><td>0.95　—　这是模型对所选结论的主观把握，不是 P(Real/Fake)，也不是专家分数；专家原始分数见下方证据表</td></tr><tr><td>停止原因（控制端）</td><td>model_concluded｜policy_reasons=[&#x27;model_concluded&#x27;]</td></tr><tr><td>请求 / 执行 / 重复</td><td>执行 1｜跳过重复请求 0｜重复动作轮 0｜抑制重复 0</td></tr><tr><td>模型轮 / 工具 / 权重成本</td><td>2｜1｜2.0</td></tr><tr><td>格式/动作违规轮</td><td>格式失败 0｜非法动作 0｜协议违规 0</td></tr><tr><td>耗时</td><td>25.3 s</td></tr><tr><td>记录 schema</td><td>g8_r1</td></tr></table><h2>调用状态</h2><p>调用异常：<b>无</b><span class="muted">（未请求不可用工具，也没有工具执行失败）</span></p><p>重复请求被跳过：<b>无</b></p><p>未调用专家（本次可用、模型没有调用）：<code>npr_expert</code>、<code>univfd_expert</code><span class="muted">（可用列表取自 trace 的 `available_experts`）</span></p><h2>协议命中（自动候选）</h2><p class="muted">自动命中只是 <b>候选</b>：判据是词表，未命中不等于没问题；请以原文为准。本会话命中 <b>2</b> 处。</p><table><tr><th>判据</th><th>轮次</th><th>句子（原文）</th></tr><tr><td>overclaim</td><td>#4</td><td>当前无其他专家测量结果，且未发现冲突证据</td></tr><tr><td>excluded</td><td>#1</td><td>整体画面色彩饱和度高，光影过渡自然，无明显噪点或压缩痕迹</td></tr></table><p>结案是否声明证据范围（自动判断）：<b>否</b><span class="muted">（自动判断只覆盖已定义句式，需人工确认）</span></p><h2>引用检查（具体发现，不只是数量）</h2><p>状态 <b>pass</b>｜缺陷 0｜候选 0</p><p class="muted">本条没有缺陷、也没有候选。（检查只覆盖已定义的模式——未命中不等于已证明忠实。）</p><h2>证据：当时投递了什么，后台又记了什么</h2><p class="muted">主区是 <b>trace 里保存的投递原文</b>（当时真正发出去的那段 JSON），不是今天用代码重新生成的。后台完整 token 在其下方的折叠区。</p><h3>本次得到的专家原始分数（未校准；非百分比）</h3><table><tr><th>expert</th><th>状态</th><th>测量范围</th><th>专家原始分数</th><th>该值的方向</th></tr><tr><td>probe_dino_expert</td><td>measured</td><td>global</td><td>0.077626</td><td>Real</td></tr></table><h3>投递 1</h3><pre class="">{
+  &quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;,
+  &quot;expert&quot;: &quot;probe_dino_expert&quot;,
+  &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;,
+  &quot;status&quot;: &quot;measured&quot;,
+  &quot;scope&quot;: &quot;global&quot;,
+  &quot;score&quot;: {
+    &quot;name&quot;: &quot;aigi_discriminator_score&quot;,
+    &quot;value&quot;: 0.077626,
+    &quot;range&quot;: [
+      0.0,
+      1.0
+    ],
+    &quot;direction&quot;: &quot;higher_is_fake&quot;,
+    &quot;is_calibrated_probability&quot;: false,
+    &quot;threshold&quot;: 0.5,
+    &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;,
+    &quot;direction_for_this_value&quot;: &quot;Real&quot;
+  },
+  &quot;reading&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A low score points to Real; this expert holds across formats. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector&#x27;s own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.&quot;
+}</pre><details><summary>完整内容（美化 JSON）</summary><pre class="">{
+  &quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;,
+  &quot;expert&quot;: &quot;probe_dino_expert&quot;,
+  &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;,
+  &quot;status&quot;: &quot;measured&quot;,
+  &quot;scope&quot;: &quot;global&quot;,
+  &quot;score&quot;: {
+    &quot;name&quot;: &quot;aigi_discriminator_score&quot;,
+    &quot;value&quot;: 0.077626,
+    &quot;range&quot;: [
+      0.0,
+      1.0
+    ],
+    &quot;direction&quot;: &quot;higher_is_fake&quot;,
+    &quot;is_calibrated_probability&quot;: false,
+    &quot;threshold&quot;: 0.5,
+    &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;,
+    &quot;direction_for_this_value&quot;: &quot;Real&quot;
+  },
+  &quot;reading&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A low score points to Real; this expert holds across formats. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector&#x27;s own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.&quot;
+}</pre></details><details><summary>原始文本（未做任何美化/改写）</summary><pre class="">{&quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;, &quot;expert&quot;: &quot;probe_dino_expert&quot;, &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;, &quot;status&quot;: &quot;measured&quot;, &quot;scope&quot;: &quot;global&quot;, &quot;score&quot;: {&quot;name&quot;: &quot;aigi_discriminator_score&quot;, &quot;value&quot;: 0.077626, &quot;range&quot;: [0.0, 1.0], &quot;direction&quot;: &quot;higher_is_fake&quot;, &quot;is_calibrated_probability&quot;: false, &quot;threshold&quot;: 0.5, &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;, &quot;direction_for_this_value&quot;: &quot;Real&quot;}, &quot;reading&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A low score points to Real; this expert holds across formats. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector&#x27;s own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.&quot;}</pre></details><details><summary>后台完整证据链（token 全字段，模型看不到这里）</summary><pre class="">{
+  &quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;,
+  &quot;evidence_name&quot;: &quot;aigi_discriminator_score&quot;,
+  &quot;region&quot;: &quot;patch_coordinates_[0, 0, 530, 500]&quot;,
+  &quot;region_pixels&quot;: [
+    0,
+    0,
+    530,
+    500
+  ],
+  &quot;region_normalized_1000&quot;: null,
+  &quot;coordinate_space&quot;: &quot;pixels&quot;,
+  &quot;region_semantics&quot;: &quot;diagnostic_evidence_region&quot;,
+  &quot;measurement_scope&quot;: &quot;global&quot;,
+  &quot;phenomenon&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。&quot;,
+  &quot;reasoning&quot;: &quot;该分数是外部判别器对整幅图像的预测输出（PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）），用于与本地校准集比较，衡量的是与训练分布的接近程度；它不是任何物理量的测量，也不能用来解释模型为何这样判断。&quot;,
+  &quot;strength&quot;: 0.0776,
+  &quot;raw_metric&quot;: 0.077626,
+  &quot;source&quot;: &quot;probe_dino_expert&quot;,
+  &quot;support&quot;: &quot;Real&quot;,
+  &quot;interpretation_text&quot;: &quot;Score semantics: this expert&#x27;s score (0.07763) sits on the camera side of its recorded threshold (0.5); the benign reading applies.&quot;,
+  &quot;counter_explanation&quot;: &quot;外部判别器的分数随分辨率、重编码与训练分布漂移而变化；同分布之外的图像（未见生成器、强后处理）可能得到误导性分数，因此只有在本地校准集上按格式/内容分层验证过的条件下才可作为证据。&quot;,
+  &quot;condition_metadata&quot;: {
+    &quot;region_area_ratio&quot;: 1.0
+  },
+  &quot;support_raw&quot;: &quot;Uncertain&quot;,
+  &quot;direction&quot;: &quot;Real&quot;,
+  &quot;direction_source&quot;: &quot;score_semantics&quot;,
+  &quot;interpretation_text_raw&quot;: &quot;该分数的概率映射已在本项目的拟合组上建立：方向与概率以 token 的 `calibrated_likelihood` 字段为准（并见 `calibration` 的拟合来源）。若该字段缺失，则本分数不携带方向。&quot;,
+  &quot;diagnostic_region_image&quot;: &quot;traces/evidence/session_20261018_201055_Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png/region_E-07f3e9da97.png&quot;,
+  &quot;model_delivered&quot;: &quot;slim&quot;
+}</pre></details><h2>日志完整性</h2><table><tr><th>记录项</th><th>状态</th><th>说明</th></tr><tr><td>初始 system prompt 原文</td><td>已记录</td><td class="muted">只有 digest 时不能证明当时用的是哪一版</td></tr><tr><td>每次模型调用的提示原文</td><td>已记录</td><td class="muted">把每轮真正发出去的提示文本存进 trace</td></tr><tr><td>每次调用的多模态统计</td><td>已记录</td><td class="muted">输入 token / 图像 token / 随附图数</td></tr><tr><td>客户端内部重试</td><td>已记录</td><td class="muted">被格式校验拒掉的输出与随后注入的纠正</td></tr><tr><td>纠正前/后的原始输出</td><td>已记录</td><td class="muted">控制器纠正会留 original_closing；客户端内部重试的留痕见上一行</td></tr><tr><td>逐轮对话原文</td><td>已记录</td><td class="muted">本页展示的就是它</td></tr><tr><td>证据链（后台 token）</td><td>已记录</td><td class="muted"></td></tr><tr><td>图像实际尺寸</td><td>已记录</td><td class="muted"></td></tr></table><h2>已记录的会话原文</h2><p class="muted">下方每一轮都按 trace 原样展示，助手文本不总结、不补写；每轮附原始文本与来源标注。<a href="../../../../traces/sft_sessions/g8/b2/forensic_sft_session_20261018_201055_Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png.json" download>下载整份 trace（JSON）</a></p><div class="turn task"><div class="role">#0 任务下发（控制器构造）</div><pre class="">&lt;image&gt;
+请分析这张图像的真实性，并使用法证工具箱开展多轮质证。</pre></div><div class="turn model"><div class="role">#1 模型输出</div><pre class="">&lt;planning&gt;
+Suspected Region: none
+Visual Observation: 图像展示了一艘长尾船漂浮在平静的海面上，背景是日落时分的天空和远处的岛屿。水面反射着柔和的色彩，船体细节清晰，包括船桨、船舵和船身纹理。整体画面色彩饱和度高，光影过渡自然，无明显噪点或压缩痕迹。
+Suspected Anomalies: 无明显异常，画面整体呈现高分辨率、高动态范围的视觉效果，但无法仅凭肉眼判断是否为真实拍摄或AI生成。
+Expert Target &amp; Hypothesis: probe — 用于检测图像整体是否存在AI生成的全局异常，因其为全局测量且对合成图像敏感。
+&lt;/planning&gt;
+&lt;call_probe&gt;&lt;/call_probe&gt;</pre></div><div class="turn tool"><div class="role">#2 工具返回（投递包）</div><p class="muted">随附图像：traces/evidence/session_20261018_201055_Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png/region_E-07f3e9da97.png</p><pre class="">{
+  &quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;,
+  &quot;expert&quot;: &quot;probe_dino_expert&quot;,
+  &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;,
+  &quot;status&quot;: &quot;measured&quot;,
+  &quot;scope&quot;: &quot;global&quot;,
+  &quot;score&quot;: {
+    &quot;name&quot;: &quot;aigi_discriminator_score&quot;,
+    &quot;value&quot;: 0.077626,
+    &quot;range&quot;: [
+      0.0,
+      1.0
+    ],
+    &quot;direction&quot;: &quot;higher_is_fake&quot;,
+    &quot;is_calibrated_probability&quot;: false,
+    &quot;threshold&quot;: 0.5,
+    &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;,
+    &quot;direction_for_this_value&quot;: &quot;Real&quot;
+  },
+  &quot;reading&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A low score points to Real; this expert holds across formats. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector&#x27;s own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.&quot;
+}</pre><details><summary>完整内容（美化 JSON）</summary><pre class="">{
+  &quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;,
+  &quot;expert&quot;: &quot;probe_dino_expert&quot;,
+  &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;,
+  &quot;status&quot;: &quot;measured&quot;,
+  &quot;scope&quot;: &quot;global&quot;,
+  &quot;score&quot;: {
+    &quot;name&quot;: &quot;aigi_discriminator_score&quot;,
+    &quot;value&quot;: 0.077626,
+    &quot;range&quot;: [
+      0.0,
+      1.0
+    ],
+    &quot;direction&quot;: &quot;higher_is_fake&quot;,
+    &quot;is_calibrated_probability&quot;: false,
+    &quot;threshold&quot;: 0.5,
+    &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;,
+    &quot;direction_for_this_value&quot;: &quot;Real&quot;
+  },
+  &quot;reading&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A low score points to Real; this expert holds across formats. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector&#x27;s own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.&quot;
+}</pre></details><details><summary>原始文本（未做任何美化/改写）</summary><pre class="">{&quot;evidence_id&quot;: &quot;E-07f3e9da97&quot;, &quot;expert&quot;: &quot;probe_dino_expert&quot;, &quot;measurement&quot;: &quot;aigi_discriminator_score&quot;, &quot;status&quot;: &quot;measured&quot;, &quot;scope&quot;: &quot;global&quot;, &quot;score&quot;: {&quot;name&quot;: &quot;aigi_discriminator_score&quot;, &quot;value&quot;: 0.077626, &quot;range&quot;: [0.0, 1.0], &quot;direction&quot;: &quot;higher_is_fake&quot;, &quot;is_calibrated_probability&quot;: false, &quot;threshold&quot;: 0.5, &quot;threshold_chosen_on&quot;: &quot;外部默认&quot;, &quot;direction_for_this_value&quot;: &quot;Real&quot;}, &quot;reading&quot;: &quot;整图判别分数 0.0776（外部判别器的原始输出，未经本地校准）。输入预处理：500×530 → pad to ≥336 → 4 个 336² 滑窗 → 逐窗 logit 均值 → sigmoid。 A low score points to Real; this expert holds across formats. Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector&#x27;s own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.&quot;}</pre></details></div><div class="turn control"><div class="role">#3 控制器提示（状态小结）</div><pre class="">[System: 本会话状态 —— 已执行的专家：
+  - probe_dino_expert（E-07f3e9da97）：aigi_discriminator_score=0.077626（该值的方向：Real）
+尚可调用：npr_expert, univfd_expert。每个专家每会话只对整图测量一次：重复请求的返回值与上面已有的 token 相同，系统会跳过执行并白费一轮。请基于上面已给出的结论继续，或直接给出结案。]</pre></div><div class="turn model"><div class="role">#4 模型输出</div><pre class="">&lt;reasoning&gt;
+probe_dino_expert 返回 aigi_discriminator_score=0.077626，方向为 Real（低分代表真实），且其测量范围为全局，未见任何区域异常。该结果未显示任何AI生成迹象，与视觉观察一致（无明显合成痕迹、纹理自然、光影真实）。当前无其他专家测量结果，且未发现冲突证据。因此，可基于现有证据结案。
+&lt;/reasoning&gt;
+&lt;verdict&gt;
+{&quot;verdict&quot;: &quot;Real&quot;, &quot;confidence&quot;: 0.95, &quot;primary_evidence&quot;: [&quot;probe&quot;], &quot;report&quot;: &quot;外部判别器（probe）返回低分（0.0776），指向真实图像，且图像视觉上无明显合成痕迹，纹理与光影自然，符合真实拍摄特征。&quot;}
+&lt;/verdict&gt;</pre></div><script>
+const META = {"schema": "g8_review_decisions/1", "generation": "g8", "batch": "b2", "samples": {"g8_default__BigGAN_188_biggan_00127_jpeg_q70": {"fingerprint": "0624b2df3f5c8f92", "page": "BigGAN_188_biggan_00127_jpeg_q70__g8_default.html"}, "g8_default__BigGAN_188_biggan_00127_jpeg_q85": {"fingerprint": "6da0f81910355f9b", "page": "BigGAN_188_biggan_00127_jpeg_q85__g8_default.html"}, "g8_default__BigGAN_188_biggan_00127_jpeg_q95": {"fingerprint": "cd814f5c7c3c8043", "page": "BigGAN_188_biggan_00127_jpeg_q95__g8_default.html"}, "g8_default__BigGAN_188_biggan_00127_png": {"fingerprint": "58a0e33f997ee019", "page": "BigGAN_188_biggan_00127_png__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70": {"fingerprint": "1642adebeece320b", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q70__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85": {"fingerprint": "ea5206a29446dfb8", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q85__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95": {"fingerprint": "1d9fbf8327a14260", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_jpeg_q95__g8_default.html"}, "g8_default__Glide_GLIDE_1000_200_00_049_glide_00020_png": {"fingerprint": "9b4aeeaad0959888", "page": "Glide_GLIDE_1000_200_00_049_glide_00020_png__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70": {"fingerprint": "53202c786ee3a6fe", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q70__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85": {"fingerprint": "68018a1ae1ef96f8", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q85__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95": {"fingerprint": "4456bc9f0cfd9939", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_jpeg_q95__g8_default.html"}, "g8_default__Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png": {"fingerprint": "6947f55e6e5ca323", "page": "Real_0bb47150-a4d7-4e0c-bdeb-661c5610382e_png__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70": {"fingerprint": "6686cc4fe24f680d", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q70__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85": {"fingerprint": "033a5688d6a93ef4", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q85__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95": {"fingerprint": "94d499aa028999ea", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_jpeg_q95__g8_default.html"}, "g8_default__Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png": {"fingerprint": "16bffd38cd67b609", "page": "Real_532bd15d-b868-4dc1-b476-788e22f24fa9_png__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70": {"fingerprint": "1efff03ac46759ec", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q70__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85": {"fingerprint": "6dc87c4c74079717", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q85__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95": {"fingerprint": "50bebaa8a5ff3d8d", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_jpeg_q95__g8_default.html"}, "g8_default__Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png": {"fingerprint": "f3c7ee856d8f0278", "page": "Real_61a31c5a-850a-4ad1-a26b-a92ba72b2f5c_png__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70": {"fingerprint": "2be51100fb950d17", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q70__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85": {"fingerprint": "c76cac9551390030", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q85__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95": {"fingerprint": "d113f999b1cae4a4", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_jpeg_q95__g8_default.html"}, "g8_default__Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png": {"fingerprint": "11fb0c316530f400", "page": "Real_f4141f9b-7ef9-46c8-ba02-f92d1425b863_png__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70": {"fingerprint": "40ba9ed36350d600", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q70__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85": {"fingerprint": "2908517e5ed48351", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q85__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95": {"fingerprint": "913cfd7682cab001", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_jpeg_q95__g8_default.html"}, "g8_default__VQDM_VQDM_1000_200_09_905_vqdm_00020_png": {"fingerprint": "8d90db03e7e5dcea", "page": "VQDM_VQDM_1000_200_09_905_vqdm_00020_png__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_jpeg_q70": {"fingerprint": "314e3fa97c001a61", "page": "Wukong_965_wukong_image128_jpeg_q70__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_jpeg_q85": {"fingerprint": "ffa595a8567ec90c", "page": "Wukong_965_wukong_image128_jpeg_q85__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_jpeg_q95": {"fingerprint": "5210af1dc6b766fe", "page": "Wukong_965_wukong_image128_jpeg_q95__g8_default.html"}, "g8_default__Wukong_965_wukong_image128_png": {"fingerprint": "701036c884dc852c", "page": "Wukong_965_wukong_image128_png__g8_default.html"}}, "repo_decisions": {}};
+const KEY = "g8review:" + META.generation + ":" + META.batch;
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; }
+}
+function saveDraft(draft) {
+  localStorage.setItem(KEY, JSON.stringify(draft));
+  flash("已存到浏览器（草稿）。**这还没有写回仓库**——请用「导出」把文件交给导入命令。");
+}
+function flash(message) {
+  const box = $("#flash");
+  if (!box) return;
+  box.textContent = message; box.hidden = false;
+  clearTimeout(flash._t); flash._t = setTimeout(() => { box.hidden = true; }, 6000);
+}
+
+/** 仓库台账 + 浏览器草稿 → 每条现在的状态与是否过期。 */
+function stateOf(id) {
+  const sample = META.samples[id] || {};
+  const repo = META.repo_decisions[id] || null;
+  const draft = loadDraft()[id] || null;
+  const pick = draft || repo;
+  if (!pick) return { decision: null, stale: false, draft: false, repo: repo, record: null };
+  const stale = pick.fingerprint !== sample.fingerprint;
+  return { decision: pick.decision, stale: stale, draft: !!draft, repo: repo, record: pick };
+}
+
+function renderProgress() {
+  const ids = Object.keys(META.samples);
+  let decided = 0, stale = 0, draftOnly = 0;
+  const by = { pass: 0, revise: 0, reject: 0 };
+  for (const id of ids) {
+    const state = stateOf(id);
+    if (state.record && !state.stale) { decided++; if (state.decision in by) by[state.decision]++; }
+    if (state.record && state.stale) stale++;
+    if (state.record && state.draft) draftOnly++;
+  }
+  const pct = ids.length ? Math.round(100 * decided / ids.length) : 0;
+  const bar = $("#progress"); if (bar) bar.innerHTML = `<span style="width:${pct}%"></span>`;
+  const text = $("#progress-text");
+  if (text) text.textContent =
+    `已决定 ${decided}/${ids.length}（${pct}%）｜通过 ${by.pass}｜待修 ${by.revise}｜拒绝 ${by.reject}` +
+    `｜已过期 ${stale}｜浏览器草稿未导出 ${draftOnly}`;
+}
+
+function persist(id, decision, category, note) {
+  const sample = META.samples[id];
+  const reviewer = ($("#reviewer") && $("#reviewer").value || "").trim();
+  if (!reviewer) { flash("请先填审核人。"); return false; }
+  if ((decision === "revise" || decision === "reject") && !note.trim()) {
+    flash("待修/拒绝必须填写原因。"); return false;
+  }
+  const draft = loadDraft();
+  draft[id] = { fingerprint: sample.fingerprint, decision: decision, reviewer: reviewer,
+                category: category || null, note: note,
+                decided_at: new Date().toISOString().slice(0, 19) };
+  saveDraft(draft);
+  return true;
+}
+
+function applyFilters() {
+  const wantDecision = ($("#f-decision") || {}).value || "";
+  const wantTreatment = ($("#f-treatment") || {}).value || "";
+  const wantOutcome = ($("#f-outcome") || {}).value || "";
+  for (const row of $$("tr[data-id]")) {
+    const state = stateOf(row.dataset.id);
+    const key = !state.record ? "undecided" : (state.stale ? "stale" : state.decision);
+    let show = true;
+    if (wantDecision && key !== wantDecision) show = false;
+    if (wantTreatment && row.dataset.treatment !== wantTreatment) show = false;
+    if (wantOutcome && row.dataset.outcome !== wantOutcome) show = false;
+    row.classList.toggle("hidden", !show);
+  }
+}
+
+function buildExport() {
+  const reviewer = (($("#reviewer") || {}).value || "").trim();
+  const draft = loadDraft();
+  const decisions = {}; const ids = Object.keys(draft);
+  ids.forEach(id => {
+    const entry = draft[id];
+    const fp = META.samples[id] && META.samples[id].fingerprint;
+    if (fp && entry.fingerprint === fp) decisions[id] = entry;
+    else decisions[id] = Object.assign({}, entry, { stale: true, stale_reason: "内容已变" });
+  });
+  return { schema: META.schema, generation: META.generation, batch: META.batch,
+           reviewer: reviewer, exported_at: new Date().toISOString().slice(0, 19),
+           scope: "acceptance_only", decisions: decisions };
+}
+
+function doExport() {
+  const payload = buildExport();
+  const count = Object.keys(payload.decisions).length;
+  if (!count) { flash("还没有任何决定可导出。"); return; }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `review_${META.generation}_${META.batch}.json`;
+  link.click();
+  flash(`已导出 ${count} 条。把文件交给：python scripts/g8_review_import.py <文件> --reviewer ${payload.reviewer || "…"}`);
+}
+
+function doImport(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let payload;
+    try { payload = JSON.parse(reader.result); }
+    catch (e) { flash("导入失败：不是合法 JSON。"); return; }
+    if (payload.schema !== META.schema) { flash("导入被拒：schema 不匹配。"); return; }
+    if (payload.generation !== META.generation || payload.batch !== META.batch) {
+      flash(`导入被拒：文件属于 ${payload.generation}/${payload.batch}，本页是 ` +
+            `${META.generation}/${META.batch}（跨代次/跨批次一律拒绝）。`);
+      return;
+    }
+    const draft = loadDraft(); let taken = 0, stale = 0, refused = 0;
+    for (const [id, entry] of Object.entries(payload.decisions || {})) {
+      const sample = META.samples[id];
+      if (!sample) { refused++; continue; }
+      if ((entry.decision === "revise" || entry.decision === "reject") && !(entry.note || "").trim()) {
+        refused++; continue;
+      }
+      if (entry.fingerprint !== sample.fingerprint) stale++;
+      draft[id] = entry; taken++;
+    }
+    saveDraft(draft);
+    flash(`导入 ${taken} 条（其中 ${stale} 条与当前内容不符，已标过期）；拒绝 ${refused} 条。`);
+    renderProgress(); applyFilters();
+    $$("tr[data-id]").forEach(row => paintRow(row));
+  };
+  reader.readAsText(file);
+}
+
+/** 一条样本页上的决定区。 */
+function initDecide() {
+  const box = $("#decide"); if (!box) return;
+  const id = box.dataset.id;
+  const sample = META.samples[id];
+  const state = stateOf(id);
+  const set = (decision) => {
+    const category = ($("#category") || {}).value || "";
+    const note = ($("#note") || {}).value || "";
+    if (!persist(id, decision, category, note)) return;
+    paint();
+  };
+  const paint = () => {
+    const now = stateOf(id);
+    const badge = $("#decide-state");
+    if (badge) {
+      if (!now.record) badge.innerHTML = '<span class="pill">未决定</span>';
+      else {
+        const label = { pass: "通过（本次审核）", revise: "待修", reject: "拒绝" }[now.decision] || now.decision;
+        badge.innerHTML = `<span class="pill ${now.decision === "pass" ? "ok" : (now.decision === "reject" ? "bad" : "warn")}">${label}</span>` +
+          `<span class="pill">审核人 ${now.record.reviewer || ""}</span>` +
+          (now.category ? `<span class="pill">分类 ${now.category}</span>` : "") +
+          (now.stale ? '<span class="pill stale">已过期：内容已变，需重审</span>' : "") +
+          (now.draft ? '<span class="pill warn">浏览器草稿（未写回仓库）</span>' : '<span class="pill">仓库台账</span>');
+      }
+    }
+    if (now.record) {
+      if ($("#note")) $("#note").value = now.record.note || "";
+      if ($("#category")) $("#category").value = now.record.category || "";
+    }
+  };
+  $("#btn-pass") && ($("#btn-pass").onclick = () => set("pass"));
+  $("#btn-revise") && ($("#btn-revise").onclick = () => set("revise"));
+  $("#btn-reject") && ($("#btn-reject").onclick = () => set("reject"));
+  paint();
+}
+
+function paintRow(row) {
+  const cell = row.querySelector("[data-state]");
+  if (!cell) return;
+  const state = stateOf(row.dataset.id);
+  if (!state.record) { cell.innerHTML = '<span class="pill">未决定</span>'; return; }
+  const label = { pass: "通过", revise: "待修", reject: "拒绝" }[state.decision] || state.decision;
+  const cls = state.decision === "pass" ? "ok" : (state.decision === "reject" ? "bad" : "warn");
+  cell.innerHTML = `<span class="pill ${cls}">${label}</span>` +
+    (state.stale ? '<span class="pill stale">过期</span>' : "") +
+    (state.draft ? '<span class="pill warn">草稿</span>' : "");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const reviewer = localStorage.getItem(KEY + ":reviewer");
+  if (reviewer && $("#reviewer")) $("#reviewer").value = reviewer;
+  if ($("#reviewer")) $("#reviewer").addEventListener("change", () =>
+    localStorage.setItem(KEY + ":reviewer", $("#reviewer").value));
+  renderProgress();
+  $$("tr[data-id]").forEach(paintRow);
+  ["#f-decision", "#f-treatment", "#f-outcome"].forEach(sel => {
+    const node = $(sel); if (node) node.addEventListener("change", applyFilters);
+  });
+  $("#btn-export") && ($("#btn-export").onclick = doExport);
+  $("#import-file") && ($("#import-file").onchange = (event) => {
+    if (event.target.files[0]) doImport(event.target.files[0]);
+  });
+  initDecide();
+});
+</script></body></html>

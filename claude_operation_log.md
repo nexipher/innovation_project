@@ -485,3 +485,19 @@
 * **涉及/修改的文件清单**：`utils/batch.py (Modified — assert_protocol_accepted)`、`scripts/g8_generate_batch.py (Modified — purpose 门禁 + --protocol-batch)`、`tests/test_batch_gate.py (Created — 7 条)`、`plan.md (Modified — §4.12)`、`claude_operation_log.md`
 * **执行结果与验证状态**：未冻结时实跑外部用途**被拒**（退出码 1，提示"g8/b2 还没有冻结"与正确顺序）；门禁 7 条测试通过（未冻结/全通过/有 revise/有 stale/台账不全/入口确实调用/其他用途不触发）；**门禁在创建目录与加载模型之前生效**。
 * **置信度或遗留待办（TODO）**：①b2 冻结仍由用户执行（写 FROZEN.json），本阶段不代冻②外部 Agent 批次名待定（暂拟 `ext_mnw_div2k`）③GPU 仍无设备
+
+### 2026-10-18 - 阶段四 4.13：b2 实跑完成（27 正确 / 5 弃权 / 0 错误），判据口径更正
+
+* **当前操作动作**：GPU 开启后按定稿顺序执行第①步（检查+真实冒烟）与第②步（b2 32 会话 + 审阅页 + b1/b2 对照），随后**停下等人工验收**，未跑外部 Agent。过程中修正了账本归因与审计判据的两处口径错误。
+* **对应计划锚点**：`plan.md` §4.12（执行顺序）、§4.8（b2 预注册）、§4.8b（本次结果与口径更正）
+* **核心变更说明**：
+  1. **第①步**：GPU/权重/输入检查通过（RTX 4090；PROBE/NPR/UnivFD 权重齐全且 `unavailable_reason` 为空；b2 的 32 个输入与 b1 **32/32 sha256 相同**）；真实冒烟六项全绿（58.9 s，峰值 19.84 GB）。
+  2. **第②步（b2）**：32 会话全部 `model_concluded`、每会话 1 次工具调用；**正确 27 / 错误 0 / 弃权 5 / 未形成结论 0**；均 26.2 s；批次元数据记录 prompt `259069a1ddb66348`、digest `8d664a768bb74e9d`、code commit `e5b1707`、purpose `protocol_acceptance_only`；日志完整性 32/32（系统提示词、调用明细）。
+  3. **判据结果**：presumption **4→0**；overclaim **19→0 会话**；excluded **2→0**；结论轮声明证据范围 **0/32→32/32**。四项预注册目标全部达成。
+  4. **未达标项（如实）**：预注册的"判定一致率不降"未达成（32→27）。5 条弃权全部是 Fake 且 probe ≥0.98（0.980–0.9998），理由均为"仅一个专家、未做跨专家对照"。按用户口径弃权单列不计错误；是否接受为合理弃权由人工验收决定。
+  5. **账本归因修正（b2 记录里 1 条 `failed` 的根因）**：模型按 RULES 8 写"视觉观察中未发现压缩块、噪点或边缘异常"，账本把"压缩"当成 jpeg 专家名、又把非断言子句的主语带进下一个断言子句，判成"声称 jpeg 专家的结果"并触发一轮纠正。修法：①非断言子句不更新主语；②物证词（压缩/噪声/频域）单独出现不算点名专家（工具原名与"××专家"仍算）。重审该会话：0 缺陷 0 候选；"真的声称未执行专家"仍会被抓（有测试）。**b2 记录保留原样，不回溯改写**。
+  6. **审计判据口径更正**：初版把"无其他专家提供交叉验证"（诚实声明）与"未发现压缩伪影"（允许的观察）算成问题，导致 b1 的 excluded 被高估。现已按意图判定并加正反例测试；预注册目标不变，b1 基线在 plan §4.8b 中更新并说明。
+  7. **代码身份口径修正**：`dirty` 改为只看**已跟踪文件**，且代码身份在**开跑前**采集——b2 首次记录把自己的输出目录算进了 dirty_paths。
+* **涉及/修改的文件清单**：`utils/evidence_ledger.py (Modified — 归因两处)`、`scripts/g8_protocol_audit.py (Modified — 判据按意图 + 结论轮 scope 同判定 + 批次汇总)`、`scripts/g8_generate_batch.py (Modified — code identity 口径)`、`scripts/g8_review_workstation.py (Modified — 协议命中区)`、`tests/{test_evidence_ledger.py, test_g8_review_workstation.py, test_g8_batch_entry.py, test_external_experts.py}`、`plan.md (Modified — §4.8b)`、**产物**：`sft_data/g8/trajectories/b2/`（32 记录 + metadata）、`traces/sft_sessions/g8/b2/`（32 trace）、`sft_data/g8/review/b2/`（索引 + 32 页 + `protocol_audit.md`）、`sft_data/g8_smoke/20261018_200327/`、`claude_operation_log.md`
+* **执行结果与验证状态**：b2 四项判据全部达成；0 错误；审阅页已生成（会自动带上协议命中句）；审计对照写入 `sft_data/g8/review/b2/protocol_audit.md`；`core` 见提交时结果；**外部 Agent 未跑**（门禁仍要求 b2 冻结+验收全通过）。
+* **置信度或遗留待办（TODO）**：①**等人工验收**（全部命中/错误/弃权逐条 + 8 条抽查）②用户决定是否冻结 b2；冻结后外部 Agent 门禁才会放行③5 条弃权是否可接受、若不可接受如何修订 RULES 7 的措辞，属下一轮协议变更④外部专家基线可独立先跑（本阶段未跑）

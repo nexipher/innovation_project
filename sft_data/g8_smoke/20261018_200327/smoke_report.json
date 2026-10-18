@@ -1,0 +1,161 @@
+{
+  "generated_at": "2026-10-18T20:04:26",
+  "client": "qwen3",
+  "model": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "licence": "apache-2.0",
+    "dtype": "bfloat16",
+    "inference_mode": "non-thinking",
+    "thinking_supported_by_template": false,
+    "generation": {
+      "temperature": 0.0,
+      "do_sample": false,
+      "max_new_tokens": 1024
+    },
+    "snapshot": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "shards": [
+      "model-00001-of-00004.safetensors",
+      "model-00002-of-00004.safetensors",
+      "model-00003-of-00004.safetensors",
+      "model-00004-of-00004.safetensors"
+    ],
+    "shard_bytes": 17534339512,
+    "index_sha256": "520b2e05079402e9",
+    "local_files_only": true
+  },
+  "experts": [
+    "npr_expert",
+    "probe_dino_expert",
+    "univfd_expert"
+  ],
+  "image": "dataset/GenImage_Test/Midjourney/0_midjourney_169.png",
+  "elapsed_s": 58.92,
+  "vram_peak_gb": 19.84,
+  "checks": {
+    "1_image_enters_the_multimodal_message": {
+      "ok": true,
+      "builder_image_parts": 1,
+      "builder_payload_types": [
+        "Image"
+      ],
+      "model_input_stats": {
+        "input_tokens": 3931,
+        "image_tokens": 1024,
+        "pil_images_attached": 1
+      },
+      "model_received_image_tokens": true,
+      "detail": "消息里带 PIL 图像；模型输入含图像 token"
+    },
+    "2_one_legal_call_executed": {
+      "ok": true,
+      "executed_sources": [
+        "probe_dino_expert"
+      ],
+      "counters": {
+        "expert_call_count": 1,
+        "unique_evidence_count": 1,
+        "skipped_duplicate_calls": 0,
+        "suppressed_duplicate_count": 0,
+        "weighted_cost": 2.0
+      },
+      "detail": "执行 1 次工具调用（记账 1）"
+    },
+    "3_result_referenced_later": {
+      "ok": true,
+      "needles": [
+        "E-20d673f3be",
+        "aigi_discriminator_score",
+        "probe_dino_expert",
+        0.999933,
+        0.9999,
+        0.4242
+      ],
+      "matched": "probe_dino_expert",
+      "kind": "evidence_id_or_name",
+      "tried": [
+        "E-20d673f3be",
+        "aigi_discriminator_score",
+        "probe_dino_expert"
+      ],
+      "detail": "后续轮引用了证据 probe_dino_expert"
+    },
+    "4_conclusion_parses_with_image_context": {
+      "ok": true,
+      "verdict": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.98,
+        "report": "图像经PROBE-DINOv2检测得高分（0.9999），指向AI生成；视觉上鱼体纹理过于平滑、边缘锐利与水下环境不协调，符合AI合成特征。",
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "pass",
+          "findings": [],
+          "candidates": [],
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "candidate",
+          "calls": [],
+          "calls_executed": true,
+          "verdict_parse": "ok"
+        }
+      },
+      "halting_reason": "model_concluded",
+      "builder_image_parts_on_final_turn": 1,
+      "closing_call_input_stats": {
+        "input_tokens": 3931,
+        "image_tokens": 1024,
+        "pil_images_attached": 1
+      },
+      "detail": "结案可解析；收尾轮的构造消息仍带图像，模型输入含图像 token"
+    },
+    "5_three_records_kept_separately": {
+      "ok": true,
+      "raw_reply": "<reasoning>\nprobe_dino_expert 返回的分数为 0.9999，方向为 AI-generated，表明该图像极可能为AI生成。该专家测量的是整图，未聚焦任何区域，其高分直接指向生成痕迹。视觉观察中，鱼体纹理过于均匀、边缘锐利与水下环境不协调，也与AI生成图像常见的“过度平滑”特征一致。当前证据已足够支持结论，无需再调用其他专家（npr_expert 和 univfd_expert 的测量虽可补充，但非必需，且会浪费预算）。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"confidence\": 0.98, \"primary_evidence\": [\"probe\"], \"report\": \"图像经PROBE-DINOv2检测得高分（0.9999），指向AI生成；视觉上鱼体纹理过于平滑、边缘锐利与水下环境不协调，符合AI合成特征。\"}\n</verdict>",
+      "adopted": {
+        "verdict": "Fake",
+        "verdict_status": "model_concluded",
+        "confidence": 0.98,
+        "report": "图像经PROBE-DINOv2检测得高分（0.9999），指向AI生成；视觉上鱼体纹理过于平滑、边缘锐利与水下环境不协调，符合AI合成特征。",
+        "policy_reason": "model_concluded",
+        "policy_reasons": [
+          "model_concluded"
+        ],
+        "model_candidate": "Fake",
+        "evidence_check": {
+          "status": "pass",
+          "findings": [],
+          "candidates": [],
+          "entry": "candidate",
+          "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+        },
+        "conclusion": {
+          "source": "candidate",
+          "calls": [],
+          "calls_executed": true,
+          "verdict_parse": "ok"
+        }
+      },
+      "control_reason": "model_concluded",
+      "detail": "三类记录分别留存"
+    },
+    "6_first_turn_has_a_specific_visual_account": {
+      "ok": true,
+      "applicable": true,
+      "observation": "图像展示水下场景，三尾鱼在岩石间游动，背景为水体上方的植被与天空。鱼体表面有均匀的黄色调，鳞片纹理细腻，边缘过渡平滑。水体呈现浑浊的绿色，光线从上方透入，形成自然的明暗分布。背景植被与岩石的细节较为清晰，但整体画面存在轻微的不自然感，如鱼体与水体交界处缺乏真实水下散射的复杂光影。",
+      "anomalies": "鱼体表面纹理过于均匀，缺乏真实水下生物应有的细微瑕疵或水泡；鱼眼与鱼鳍的边缘过于锐利，与水下模糊环境不协调；背景植被与岩石的细节在远处出现轻微“涂抹”感，不符合真实水下成像的渐进模糊。",
+      "chars": 140,
+      "detail": "首轮视觉观察 140 字，另列疑似异常"
+    }
+  },
+  "passed": true,
+  "not_applicable": [],
+  "session_record": "/root/autodl-tmp/innovation_project/sft_data/g8_smoke/20261018_200327/forensic_sft_session_20261018_200327_0_midjourney_169.json"
+}

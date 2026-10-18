@@ -1,0 +1,109 @@
+{
+  "generated_at": "2026-10-18T20:18:34",
+  "generation": "g8",
+  "batch": "b2",
+  "mode": "gpu",
+  "policy": "g8_default",
+  "policy_version": "v3",
+  "tools_served": [
+    "npr_expert",
+    "probe_dino_expert",
+    "univfd_expert"
+  ],
+  "evidence_injection": "text+image",
+  "decoding": {
+    "greedy": true,
+    "inference_mode": "non-thinking"
+  },
+  "variants_total": 32,
+  "variants_this_run": 32,
+  "sessions_written": 32,
+  "sessions_skipped_existing": 0,
+  "elapsed_s": 837.4,
+  "model": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "licence": "apache-2.0",
+    "dtype": "bfloat16",
+    "inference_mode": "non-thinking",
+    "thinking_supported_by_template": false,
+    "generation": {
+      "temperature": 0.0,
+      "do_sample": false,
+      "max_new_tokens": 1024
+    },
+    "snapshot": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct/snapshots/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "shards": [
+      "model-00001-of-00004.safetensors",
+      "model-00002-of-00004.safetensors",
+      "model-00003-of-00004.safetensors",
+      "model-00004-of-00004.safetensors"
+    ],
+    "shard_bytes": 17534339512,
+    "index_sha256": "520b2e05079402e9",
+    "local_files_only": true
+  },
+  "experts": {
+    "npr_expert": {
+      "class": "NPRExpert",
+      "polarity": 1,
+      "source_name": "npr_expert",
+      "device": "cuda",
+      "weight_source": "GitHub chuangchuangtan/NPR-DeepfakeDetection（经 ghfast.top）",
+      "licence_note": "许可未明确：仓库根无 LICENSE（仅本地研究，不再分发）",
+      "score_reference": "NPR（CVPR 2024，官方权重，整图不缩放）",
+      "weights_path": "/root/autodl-tmp/third_party/npr/weights/NPR.pth",
+      "weights_sha256": "3939297e9399e0b992f87211610769d87d899de50d56da0204d6cbda2d483a53",
+      "weights_bytes": 17393733
+    },
+    "probe_dino_expert": {
+      "class": "ProbeDinoExpert",
+      "polarity": 1,
+      "source_name": "probe_dino_expert",
+      "device": "cuda",
+      "weight_source": "ModelScope shuinishaojiu/PROBE-AIGI-Detection · DINOv2_best_model_step_34999.pth（ICML 2026, arXiv 2605.24906）",
+      "licence_note": "许可待确认：上游仓库无 LICENSE 文件；本项目不附带、不再分发其代码与权重，论文引用仅为学术归属，不构成使用授权",
+      "score_reference": "PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）",
+      "weights_path": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+      "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+      "weights_bytes": 1217679947
+    },
+    "univfd_expert": {
+      "class": "UnivFDExpert",
+      "polarity": 1,
+      "source_name": "univfd_expert",
+      "device": "cuda",
+      "weight_source": "GitHub WisconsinAIVision/UniversalFakeDetect + OpenAI CLIP",
+      "licence_note": "仓库 MIT（WAIV 2025）；主干条款归 OpenAI，另行留档",
+      "score_reference": "UnivFD（CVPR 2023，CLIP ViT-L/14 + 官方线性头）",
+      "weights_path": "/root/autodl-tmp/third_party/univfd/weights/fc_weights.pth",
+      "weights_sha256": "477100745713bcc957beb2b40859536859b6483fd6301b3b9293151b194c7847",
+      "weights_bytes": 4083
+    }
+  },
+  "prompts": {
+    "digest": "8d664a768bb74e9d",
+    "forensic_sha256": "259069a1ddb66348b6c23652744b8670fdac0691fdcf752c19100a1ccbaffa59",
+    "forensic_chars": 10383
+  },
+  "code": {
+    "commit": "e5b17077529cc31c93723cfe8acb5e9a8d98e3f2",
+    "dirty": true,
+    "dirty_paths": [
+      "sft_data/g8/trajectories/b2/",
+      "sft_data/g8_smoke/20261018_200327/",
+      "traces/sft_sessions/g8/b2/"
+    ],
+    "branch": "main"
+  },
+  "budget": {
+    "halting_policy": "v3",
+    "max_expert_calls": 5,
+    "max_model_turns": 6,
+    "evidence_injection": "text+image"
+  },
+  "purpose": "protocol_acceptance_only",
+  "entry": "scripts/g8_generate_batch.py → main.build_pipeline",
+  "manifest": "sft_data/g8/variants/b2/manifest.json"
+}

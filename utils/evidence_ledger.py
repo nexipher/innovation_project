@@ -96,9 +96,12 @@ SOURCE_WORDS: Dict[str, tuple] = {
     # 不查编造。名字按提示词给模型的写法收（display_name 里的那些词）。
     "npr_expert": ("npr", "邻域", "上采样", "upsampling", "neighboring pixel"),
     "univfd_expert": ("univfd", "univ-fd", "clip", "线性头"),
-    "noise_expert": ("噪声", "noise"),
-    "jpeg_expert": ("jpeg", "压缩"),
-    "frequency_expert_v2": ("频域", "频率", "频谱", "freq"),
+    # 退役专家的**物证词**（压缩/噪声/频域）不算"点名专家"：RULES 6/8 明确
+    # 让模型描述可见的块状、模糊与噪点，把"未发现压缩块"读成"引用 jpeg 专家"
+    # 就会惩罚遵守提示词的行为（b2 实测发生）。工具原名与"××专家"仍算点名。
+    "noise_expert": ("noise", "噪声专家", "噪声残留", "噪声检测"),
+    "jpeg_expert": ("jpeg", "jpeg 专家", "jpeg专家", "压缩专家", "压缩检测", "压缩痕迹专家"),
+    "frequency_expert_v2": ("freq", "frequency", "频域专家", "频谱专家", "频率专家"),
 }
 
 # What kind of quantity a clause claims the number to be.
@@ -467,12 +470,16 @@ class Ledger:
         cited: List[str] = []
         skipped_here: set = set()
         for clause in clauses:
+            # 顺序有意义：**先判断这是不是一句"断言"**。一句视觉描述
+            # （"未发现压缩块、噪点或边缘异常"）不该把它提到的词当成主语，
+            # 更不该把下一个断言（"该专家的高分表明…"）归到那个主语头上——
+            # b2 里就因此把模型的一句观察判成了"声称 jpeg 专家的结果"。
+            if not _is_claim(clause):
+                continue
             named = _named_sources(clause)
             if named:
                 subjects = named
             if not subjects:
-                continue
-            if not _is_claim(clause):
                 continue
             for source in subjects:
                 if self.ran(source):

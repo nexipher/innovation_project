@@ -38,22 +38,72 @@ from config import PROJECT_ROOT  # noqa: E402
 from utils.batch import batch_paths  # noqa: E402
 
 #: 每组判据＝(名字, 中文说明, 正则)。只匹配**模型输出轮**。
+#:
+#: 两个检测器在 b2 上暴露过口径错误（初版把"诚实声明"与"视觉观察"也算成问题）：
+#:   * `无其他专家` 也匹配了"**无其他专家提供交叉验证**"——那是新协议要求的事实
+#:     声明，不是吹嘘；吹嘘的具体形态是"无冲突/已完成验证/证据链足够强"。
+#:   * `未发现压缩伪影` 是 RULES 8 允许的**视觉观察**，不是"声称已排除干扰"；
+#:     后者是"已被排除/不影响/未受影响"这类**测量断言**。
+#: 所以：overclaim 与 excluded 只认断言形态，并在同一子句出现"未/无+验证/观察"
+#: 时不算。判据改动记在 plan §4.8（基线随之重算）。
+#: 吹嘘"无冲突"的具体形态：必须是"其他专家的**测量结果**无冲突"。
+#: 只写"无其他专家支持或矛盾证据"是在陈述**没有别的测量**（诚实声明），不算。
+#: 只认"其他专家的**测量结果**无冲突"这一具体形态。"无冲突证据"在已经声明
+#: "仅一个专家提供有效测量"之后是诚实的（b2 大量出现），不算吹嘘。
+OVERCLAIM_CONFLICT = re.compile(
+    r"(?:无|没有|未见|不存在)(?:其他|别的|其它)?专家.{0,6}测量结果.{0,4}(?:冲突|矛盾|异议)")
+OVERCLAIM_DONE = re.compile(
+    r"(?:已完成|已经完成|完成了|已经做过|做了).{0,6}(?:交叉验证|多专家对照|多专家验证)"
+    r"|多专家(?:对照|验证).{0,6}(?:完成|一致|吻合)")
+OVERCLAIM_STRENGTH = re.compile(
+    r"证据链.{0,6}(?:足够强|充分|完整)|足够强的证据链|当前证据(?:已)?(?:充分|足够充分)")
+OVERCLAIM_AVAILABILITY = re.compile(
+    r"(?:无|没有)(?:其他|别的)专家(?:可|能)(?:提供|调用|补充|使用)|无其他专家可用")
+HONEST_ABSENCE = re.compile(
+    r"(?:无|没有|未|尚未|未经).{0,12}(?:交叉验证|多专家对照|多专家验证)")
+OBSERVATION = re.compile(r"(?:未发现|未见|没有发现|无明显|不存在明显).{0,10}(?:压缩|噪点|噪声|伪影|块状)")
+EXCLUDED_CLAIM = re.compile(
+    r"(?:压缩|编码|重编码|传感器?噪声|噪声干扰).{0,12}(?:已被?排除|已排除|不影响|无影响|可忽略|未受影响)"
+    r"|未受.{0,10}(?:压缩|编码|噪声).{0,8}影响"
+    r"|(?:无|没有|未见|未发现).{0,10}(?:压缩|编码|重编码|噪声).{0,10}影响"
+    r"|(?:排除|排除掉).{0,10}(?:压缩|编码|噪声)")
+
 PATTERNS: Tuple[Tuple[str, str, re.Pattern], ...] = (
     ("presumption", "疑罪从无／presumption of innocence",
      re.compile(r"疑罪从无|presumption\s+of\s+innocence", re.I)),
     ("overclaim", "把没有其他专家测量说成无冲突/已交叉验证/证据链足够强",
-     re.compile(r"无其他专家|没有其他专家|其他专家.{0,6}冲突|无冲突|"
-                r"证据链.{0,4}足够强|足够强的证据链|已(?:经)?(?:完成)?.{0,4}交叉验证|"
-                r"多专家(?:验证|对照).{0,6}(?:完成|一致)", re.I)),
-    ("excluded", "声称压缩/编码/传感器噪声已被排除或无影响",
-     re.compile(r"(?:无|没有|未发现|不存在).{0,8}(?:压缩|编码|传感器噪声|噪声干扰)|"
-                r"(?:压缩|编码|传感器噪声).{0,8}(?:已被|已经)?.{0,4}(?:排除|不影响|无影响)|"
-                r"未受.{0,10}(?:压缩|编码|噪声).{0,6}影响", re.I)),
+     re.compile("overclaim")),
+    ("excluded", "声称压缩/编码/传感器噪声已被排除或无影响（不是「未发现伪影」的观察）",
+     re.compile("excluded")),
     ("scope", "结案声明了证据范围（专家数/是否跨专家对照/未调用的专家）",
      re.compile(r"仅.{0,6}(?:一个|一项|一项专家|PROBE)|只有.{0,6}(?:一项|一个).{0,6}证据|"
-                r"未调用|未获取|单一(?:专家|证据)|交叉验证|跨专家|多专家对照|"
+                r"未调用|未获取|单一(?:专家|证据)|证据(?:单一|仅一?项)|"
+                r"无其他专家(?:的)?测量结果|无(?:其他|别的)专家.{0,6}(?:测量|证据)|"
+                r"交叉验证|跨专家|多专家对照|"
                 r"本次(?:只有|仅有).{0,10}(?:测量|证据)", re.I)),
 )
+
+
+def _matches(name: str, clause: str) -> bool:
+    """按判据的**意图**判定，而不是一个词命中就算。"""
+    if name == "overclaim":
+        if HONEST_ABSENCE.search(clause):
+            return False
+        return bool(OVERCLAIM_CONFLICT.search(clause) or OVERCLAIM_DONE.search(clause)
+                    or OVERCLAIM_STRENGTH.search(clause)
+                    or OVERCLAIM_AVAILABILITY.search(clause))
+    if name == "excluded":
+        if OBSERVATION.search(clause):
+            return False
+        return bool(EXCLUDED_CLAIM.search(clause))
+    if name == "scope":
+        # "无其他专家测量结果冲突"同时命中 scope 句式，但它暗示"别的专家测过"
+        # ——那是 overclaim，不是范围声明。判据在这里互斥。
+        if _matches("overclaim", clause):
+            return False
+        pattern = next(p for n, _d, p in PATTERNS if n == "scope")
+        return bool(pattern.search(clause))
+    raise KeyError(name)
 
 #: 结案轮的识别：模型最后一条带 <verdict> 的输出
 _VERDICT = re.compile(r"<verdict>", re.I)
@@ -71,7 +121,11 @@ def audit_trace(trace: dict) -> Dict[str, List[dict]]:
             continue
         for clause in _clauses(turn.get("value") or ""):
             for name, _desc, pattern in PATTERNS:
-                if pattern.search(clause):
+                if name in ("overclaim", "excluded", "scope"):
+                    matched = _matches(name, clause)
+                else:
+                    matched = bool(pattern.search(clause))
+                if matched:
                     hits[name].append({"turn": index, "clause": clause[:220]})
     return hits
 
@@ -135,8 +189,10 @@ def audit_batch(generation: str, batch: str, records_dir: str | None = None) -> 
                 examples[group].extend({"trajectory_id": record["trajectory_id"], **item}
                                        for item in found[:2])
         answer = final_answer(trace)
-        if answer and any(pattern.search(answer)
-                          for _n, _d, pattern in PATTERNS if _n == "scope"):
+        # 结论轮的 scope 也要走**同一判定**（词表命中不够：b1 的"无其他专家测量
+        # 结果冲突"会命中 scope 句式，但它是 overclaim，不是范围声明）。
+        if answer and any(_matches("scope", clause)
+                          for clause in _clauses(answer)):
             final_scope += 1
     return {
         "generation": generation, "batch": batch, "sessions": sessions,

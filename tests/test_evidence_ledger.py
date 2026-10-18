@@ -343,6 +343,54 @@ class TestProseNumbersHaveARole:
         assert all(f["severity"] == "candidate" for f in findings)
 
 
+class TestAVisualObservationIsNotAnExpertClaim:
+    """
+    b2 实测（第 1 条会话）：模型按 RULES 8 描述"未发现压缩块、噪点或边缘异常"，
+    账本把"压缩"当成 jpeg 专家名、又把主语带进下一个断言子句，于是判成
+    "声称 jpeg 专家的结果"——**惩罚了遵守提示词的行为**，还触发了一轮纠正。
+
+    两处机制都修了：非断言子句不更新主语；物证词（压缩/噪声/频域）单独出现
+    不算点名专家（工具原名与"××专家"仍算）。
+    """
+
+    SENTENCE = ("视觉观察中未发现压缩块、噪点或边缘异常，"
+                "但该专家的高分表明图像整体结构或语义存在AI生成特征。")
+
+    def test_the_b2_sentence_raises_nothing(self):
+        from utils.evidence_ledger import Ledger
+
+        token = {"evidence_id": "E-1", "source": "probe_dino_expert",
+                 "evidence_name": "aigi_discriminator_score", "strength": 0.99997,
+                 "raw_metric": 0.99997, "support": "AI-generated",
+                 "phenomenon": "整图判别分数 0.99997。", "reasoning": "x",
+                 "interpretation_text": "y", "measurement_scope": "global",
+                 "model_delivered": "slim", "status": "measured"}
+        ledger = Ledger.from_session([token], served=["probe_dino_expert"])
+        assert ledger.findings(self.SENTENCE) == []
+
+    def test_an_artefact_word_alone_does_not_name_the_jpeg_expert(self):
+        from utils.evidence_ledger import _named_sources
+
+        assert _named_sources("视觉观察中未发现压缩块、噪点或边缘异常") == []
+        assert _named_sources("噪点明显，压缩痕迹很重") == []
+
+    def test_the_expert_marker_still_names_it(self):
+        from utils.evidence_ledger import _named_sources
+
+        assert "jpeg_expert" in _named_sources("压缩专家给出 0.9")
+        assert "jpeg_expert" in _named_sources("jpeg 专家给出 0.9")
+        assert "noise_expert" in _named_sources("噪声残留专家给出 3.1")
+        assert "frequency_expert_v2" in _named_sources("频域专家给出 0.2")
+
+    def test_a_real_claim_about_an_unserved_expert_is_still_a_defect(self):
+        """修的是误报，不是把这道检查关掉。"""
+        from utils.evidence_ledger import Ledger
+
+        ledger = Ledger.from_session([], served=["probe_dino_expert"])
+        kinds = [finding["kind"] for finding in ledger.findings("频域专家给出的结果是 0.9。")]
+        assert kinds == ["fabricated_expert_result"]
+
+
 class TestTheTwoFalsePositivesTheBatchFound:
     """
     b1 小批（32 会话）里有两条候选，逐句核过——**都是账本的假阳性**，不是模型的

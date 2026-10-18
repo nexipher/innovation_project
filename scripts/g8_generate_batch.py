@@ -219,6 +219,7 @@ def run_batch(generation: str, batch: str, manifest_path: str,
     client, experts = base._mllm, base._experts
     tools_served = sorted(experts)
 
+    code_identity = _code_identity()          # 开跑前取，避免把本批次输出算进 dirty
     records, skipped = [], 0
     started = time.time()
     for key, variant in variants.items():
@@ -273,7 +274,7 @@ def run_batch(generation: str, batch: str, manifest_path: str,
         "model": _model_identity(base),
         "experts": _expert_identity(base),
         "prompts": _prompt_identity(),
-        "code": _code_identity(),
+        "code": code_identity,
         "budget": _budget_identity(),
         "purpose": purpose,
         "entry": "scripts/g8_generate_batch.py → main.build_pipeline",
@@ -355,10 +356,16 @@ def _code_identity() -> dict:
             return ""
 
     commit = _git("rev-parse", "HEAD")
-    status = _git("status", "--porcelain")
+    # `dirty` 只回答"**代码**与提交是否不同"：只看已跟踪文件的修改。
+    # 批次自己的输出（records/traces）是未跟踪产物，不该让"代码身份"变脏——
+    # b2 的第一次记录就把自己的输出算进了 dirty_paths，属工具口径错误。
+    tracked = _git("status", "--porcelain", "--untracked-files=no")
+    untracked = _git("status", "--porcelain", "--untracked-files=normal")
     return {"commit": commit or "未记录",
-            "dirty": bool(status),
-            "dirty_paths": [line[3:] for line in status.splitlines()][:20] if status else [],
+            "dirty": bool(tracked),
+            "dirty_paths": [line[3:] for line in tracked.splitlines()][:20] if tracked else [],
+            "untracked_files": sum(1 for line in untracked.splitlines()
+                                   if line.startswith("??")),
             "branch": _git("rev-parse", "--abbrev-ref", "HEAD") or "未记录"}
 
 
