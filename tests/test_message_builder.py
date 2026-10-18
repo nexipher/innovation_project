@@ -235,6 +235,22 @@ class TestThePromptContractAfterB1:
         assert "not a cross-expert comparison" in prompt
 
 
+    def test_no_token_count_forces_a_conclusion(self):
+        """
+        旧规则 5："收到 2+ 证据后必须输出结论"（fac5c36，G1/v2 时代）。v3 的前提是
+        模型决定何时结案，而这条在第 2 条证据后剥夺判断权——恰是两份测量冲突、再来
+        一个专家可能有用的时刻；它还与 RULES 7（据证据决定继续/结案/弃权）打架，
+        并且制造反向激励（想继续查就别打第二个电话）。改为：充分性由模型判断，
+        兜底交给系统预算。
+        """
+        flat = self._flat(FORENSIC_SYSTEM_PROMPT)
+        assert "2+ evidence tokens" not in flat
+        assert "You decide when the evidence is sufficient to conclude" in flat
+        assert "not a count of tokens" in flat
+        # 弃权原则保留，且不再绑定在"证据条数"上
+        assert "an honest Uncertain is preferred over a confident mistake" in flat
+
+
 class TestToolPolicies:
     """G4-b: the prompt must describe only the tools a session will serve."""
 
@@ -283,7 +299,11 @@ class TestToolPolicies:
         comparison is not "independent cross-validation"), the boundary between
         describing an artefact and asserting its cause, and the meaning of
         `confidence` — a self-reported, uncalibrated certainty, never P(Real or
-        Fake) — a01272f96bbd66c7 → db111b1eb1ecb03d.  Anything that moves it
+        Fake) — a01272f96bbd66c7 → db111b1eb1ecb03d.  Then rule 5 stopped
+        forcing a verdict after two evidence tokens: "after 2+ tokens you MUST
+        conclude" was G1/v2-era text that takes the decision away exactly when two
+        measurements disagree, contradicts the new evidence-scope rule, and rewards
+        not making a second call — db111b1eb1ecb03d → 259069a1ddb66348.  Anything that moves it
         again has to say so in a commit.
         """
         import hashlib
@@ -293,7 +313,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "434ac95a6bbb3e59"
+            "259069a1ddb66348"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

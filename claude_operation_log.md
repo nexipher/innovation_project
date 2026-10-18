@@ -388,3 +388,17 @@
 * **涉及/修改的文件清单**：`dataset/mnw_div2k/manifest.json (Added — 1100 条清单)`、`plan.md (Modified — §9.3)`、`claude_operation_log.md`
 * **执行结果与验证状态**：暂存与提交范围核对（1 个文件、8818 行）；清单核对通过（见上）；仓库内无图片/权重/ZIP 被加入。**未推送远端**（按项目规矩只本地提交）。
 * **置信度或遗留待办（TODO）**：①外部评测开跑前仍需：GPU、固定抽样清单（从 1100 中按格式/来源分层抽样）、报告口径（格式/分辨率/内容混杂分开）②训练线不受此清单影响，仍待 b2 验收与协议验证③清单只保证"与本机文件一致"，不重述当时与官方 LFS 的逐项比对（那份旧清单已不在；本清单自带 url 与 sha256，可在需要时重新核验）
+
+### 2026-10-18 - 阶段四 4.9：RULES 5 不再按证据条数强制结案；b2 与外部评测预注册
+
+* **当前操作动作**：按用户指出的设计冲突改写提示词 RULES 5（"收到 2+ 证据后必须输出结论"）；把 **b2 预注册**与**外部评测方案**写进 plan 并生成固定抽样清单；提交只读审计脚本。**未跑任何模型/GPU，未动 b1 数据与台账。**
+* **对应计划锚点**：`plan.md` §4.8（b2 预注册）、§4.9（外部评测方案）；用户 2026-10-18 的两次确认（同 8 源配对；4 生成器各 20 + Real 20）
+* **核心变更说明**：
+  1. **RULES 5 改写**：旧文 "After receiving 2+ evidence tokens, you MUST produce a verdict"（引入于 `fac5c36`，G1/v2 时代；**代码里从未强制执行**，只是提示词）。它与 v3"模型决定何时结案"的前提冲突——在第 2 条证据后剥夺判断权，恰是两份测量冲突、再来一个专家可能有用的时刻；与 4.7 的 RULES 7（据证据决定继续/结案/弃权）语义打架；还制造反向激励（想继续查就别打第二个电话）。新文：**充分性由模型判断**（"Conclude once the measurements you called for have arrived and another call would not change your reading"），**兜底交给系统预算**（"the system's budget — not a count of tokens — is what ends a session"），弃权原则原样保留。
+  2. **b2 预注册（§4.8）**：`g8 / b2`，与 b1 同 8 源 × 4 格式（同 seed，配对），32 会话；除提示词外条件全同（Qwen3-VL@`0c351dd0`、v3、精简包、probe/npr/univfd、贪心、非 thinking）。判据先写死并带 **b1 实测基线**：presumption 4 处/4 会话→**0**；overclaim 19 处/18 会话→**≤6 会话**；excluded 23 处/16 会话→**≤6 会话**；结案声明证据范围 **0/32→32/32**；判定一致率不降；引用检查 0 缺陷、全 slim。另定人工抽查 8 条防"机械加一句"。提示词指纹：b1 `af7003e17e0d6a42` → b2 `8d664a768bb74e9d`。
+  3. **外部评测（§4.9）**：MNW 四生成器各 20 + DIV2K 20 = **100 张**；从已入库 manifest 按组内 sha256 排序后 `random.Random(20261018).sample` 抽取（可复现、与下载顺序无关），**不重编码**；只评三个专家的分数、不跑 Agent、**不调阈值**；报告按组单独给（n=20，判 Fake 比例、分数分布、按登记表既有阈值判对数、组内 AUROC+95%CI），格式/分辨率分别列、不跨组汇总。
+  4. **固定抽样清单**：`dataset/mnw_div2k/eval_plan.json`（`external_eval_plan/1`，含源清单 sha256、抽样规则与种子、100 条 path/sha256/bytes/label）。只读核对：抽样文件全部存在、sha256 与字节数 **0 不符**、组内 **0 重复**。
+  5. **审计工具**：`scripts/g8_protocol_audit.py`（只读）数四组判据并给样例；b1 基线即由它数出（presumption 4/4、overclaim 19/18、excluded 23/16、scope 0/32）。
+* **涉及/修改的文件清单**：`mllm/message_builder.py (Modified — RULES 5)`、`tests/test_message_builder.py (Modified — 新契约测试 + 哈希重钉 259069a1ddb66348)`、`plan.md (Modified — §4.8/§4.9)`、`dataset/mnw_div2k/eval_plan.json (Added)`、`scripts/g8_protocol_audit.py (Added)`、`claude_operation_log.md`
+* **执行结果与验证状态**：提示词哈希 `434ac95a6bbb3e59 → 259069a1ddb66348`（`prompt_digest` `8d664a768bb74e9d`）；`test_message_builder`/`test_toolbox`/`test_g8_smoke` **全部通过**；eval_plan 100 张核对通过（0 哈希不符、0 重复）；b1 数据、台账、审阅页均未改动。
+* **置信度或遗留待办（TODO）**：①b2 与外部评测都需要 **GPU**（当前 `nvidia-smi` 无设备）②b2 的判据阈值（≤6 会话）已写进 plan；若实测落在 7–12 之间属"改善但不达标"，届时按数据决定是否再改协议，**不改判据**③外部评测只做专家级；若之后要看 Agent 在外部分布上的表现，另立小批（需用户定）④审计脚本只数"有没有说"；"说得对不对"仍靠人工抽查
