@@ -451,3 +451,16 @@
 * **涉及/修改的文件清单**：`scripts/build_external_inputs.py`、`dataset/mnw_div2k/inputs_manifest.json`、`dataset/mnw_div2k/eval_plan.json (usage_history)`、`tests/test_external_inputs.py (Modified — 路径解析回归测试)`、`claude_operation_log.md`
 * **执行结果与验证状态**：`test_external_inputs` 全部通过；清单 diff 仅 100 条 path（+100/−100），无哈希变化。
 * **置信度或遗留待办（TODO）**：①外部专家基线的批量入口脚本仍未写（下一步）②GPU 仍无设备
+
+### 2026-10-18 - 阶段四 4.11：外部专家基线的评测入口与统计（CPU 可测）
+
+* **当前操作动作**：新增 `scripts/g8_external_eval.py`——按 `inputs_manifest.json` 的 200 个输入逐条跑三个专家（与 Agent 同一套专家类/预处理），写 `scores.jsonl`（可 `--resume`）与 `report.json`；统计全部为纯函数并有测试。**未跑 GPU/模型。**
+* **对应计划锚点**：`plan.md` §4.9（外部泛化评测）
+* **核心变更说明**：
+  1. **统计口径按用户更正**：`auroc()` 为 Mann-Whitney 形式（并列取平均秩），**单标签组返回 None**（组内单标签就是算不了，不许猜）；`bootstrap_auroc()` 按条目重采样、定种子；`paired_delta()` 对同一批源在两种条件下的 ΔAUROC 做**成对** bootstrap。阈值判对率用**登记表既有阈值**，`higher_is_real` 的专家在定向与判假两处都翻转，不拟合、不调参。
+  2. **报告**：按 `group × condition` 输出 n / n_fake / n_real、每个专家的 AUROC+95%CI、阈值判对率，并把 `paired_delta_vs_jpeg_q95` 挂在 `original` 条件上；报告头写 `no_threshold_fitting / per_group_only / real_images_reused_across_generators / paired_conditions` 与清单 sha256。
+  3. **入口行为**：`--dry-run` 只列分组计数（已核对：每个专家 200 次，40 组 = 4 生成器 × 2 条件 × 20 Fake + 20 Real/组口径一致）；`--resume` 按 (variant_id, expert) 跳过已完成；逐条写盘并 flush，中断不丢；跑完把使用历史追加到 `eval_plan.json`。
+  4. **测试**（`tests/test_external_eval.py`，15 条，core）：AUROC 完美/反转/并列/单类别；bootstrap 定种子可复现且 CI 包住点估计；配对 delta 为正且"打乱配对比率会变"；登记表方向与阈值（含 higher_is_real 的翻转）；报告的 per-condition 计数、配对 delta 挂载、用途声明、单标签组无 AUROC。
+* **涉及/修改的文件清单**：`scripts/g8_external_eval.py (Created)`、`tests/test_external_eval.py (Created)`、`plan.md (Modified — §4.9 入口与报告口径)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`test_external_eval` **15 通过**；`--dry-run` 在 200 输入上给出每个专家 200 次测量的分组计数；**未跑真实专家（无 GPU）**。
+* **置信度或遗留待办（TODO）**：①真实运行需 GPU（UnivFD 必需）与 `PROBE_WEIGHTS`②报告尚未生成 markdown 摘要（JSON 为主，必要时再加）③外部 Agent 200 会话的入口复用 `g8_generate_batch.py --purpose external_evaluation_only`（清单路径已修）④GPU 仍无设备
