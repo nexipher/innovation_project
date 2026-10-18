@@ -118,18 +118,21 @@ def _file_sha256(path: str) -> str:
     return digest.hexdigest()
 
 
-def assert_variants_identical(generation: str, batch: str, source_batch: str,
-                              manifest_path: str) -> None:
+def assert_variants_identical(manifest_path: str, source_manifest_path: str) -> None:
     """
     开跑前逐文件核对：本批的**输入文件**必须与对照批逐字节相同。
 
     "同一个 seed 重建一遍"只是在假定编码器确定性；名字相同、来源相同、字节不同，
     仍然会让对照不成立，而记录里看不出来。所以这里直接比真实文件的 sha256。
+
+    路径由调用方给出（而不是在这里拼 `batch_paths`）：测试因此只需要临时目录，
+    **任何测试都不写进仓库的批次目录**——之前那版就是在这里拼仓库路径，跑测试时
+    在 `sft_data/g8/variants/` 下留了两个夹具目录。
     """
     current = load_manifest(manifest_path)
-    source_path = os.path.join(batch_paths(source_batch, generation)["variants"])
+    source_path = source_manifest_path
     if not os.path.exists(source_path):
-        raise SystemExit(f"对照批 {source_batch} 的变体清单不存在：{source_path}")
+        raise SystemExit(f"对照批的变体清单不存在：{source_path}")
     source = {entry["variant_id"]: entry for entry in load_manifest(source_path).values()}
     problems = []
     for entry in current.values():
@@ -149,7 +152,8 @@ def assert_variants_identical(generation: str, batch: str, source_batch: str,
     problems.extend(f"{name}: 对照批有、本批没有" for name in sorted(extra))
     if problems:
         raise SystemExit("与对照批逐文件核对失败（拒绝启动）：\n  " + "\n  ".join(problems))
-    print(f"逐文件核对通过：{len(current)} 个输入文件与 {source_batch} 的 sha256 全部相同")
+    print(f"逐文件核对通过：{len(current)} 个输入文件与对照批的 sha256 全部相同"
+          f"（{os.path.dirname(source_manifest_path)}）")
 
 
 def run_batch(generation: str, batch: str, manifest_path: str,
@@ -180,7 +184,9 @@ def run_batch(generation: str, batch: str, manifest_path: str,
     os.makedirs(out_dir, exist_ok=True)
 
     if assert_identical_to:
-        assert_variants_identical(generation, batch, assert_identical_to, manifest_path)
+        assert_variants_identical(
+            manifest_path,
+            batch_paths(assert_identical_to, generation)["variants"])
 
     variants = load_manifest(manifest_path)
     if limit:

@@ -2,8 +2,12 @@
 Shared pytest fixtures for the forensic agent test suite.
 """
 
+import subprocess
+
 import numpy as np
 import pytest
+
+from config import PROJECT_ROOT
 
 
 # ---------------------------------------------------------------------------
@@ -167,3 +171,51 @@ def noise_expert():
 def jpeg_expert():
     from experts.jpeg import JPEGExpert
     return JPEGExpert()
+
+
+# ---------------------------------------------------------------------------
+# Repository pollution guard
+# ---------------------------------------------------------------------------
+
+#: 本会话开始/结束时比较"未跟踪文件"的仓库内目录。
+_POLLUTION_WATCHED = ("sft_data/", "traces/", "dataset/")
+
+
+def _untracked_under(root: str, prefixes) -> set:
+    result = subprocess.run(["git", "status", "--porcelain", "-uall"],
+                            cwd=root, capture_output=True, text=True)
+    paths = set()
+    for line in result.stdout.splitlines():
+        if not line.startswith("?? "):
+            continue
+        path = line[3:].strip()
+        if path.startswith(tuple(prefixes)):
+            paths.add(path)
+    return paths
+
+
+@pytest.fixture(scope="session", autouse=True)
+def tests_leave_no_untracked_files():
+    """
+    **测试不得在仓库里留下未跟踪产物。**
+
+    这条规则已经被违反过三次：批入口的 dry-run 记录、审阅视图的夹具、b2 输入比对的
+    夹具，各在 `sft_data/` 下留过目录——用户看到的就是"工作区不干净"。逐个修不够，
+    下一次写新测试的人未必记得，所以在会话级别兜底：
+
+      * 只比较**未跟踪**集合（用户自己改动、已跟踪文件的修改不受影响）；
+      * 结束时出现新的未跟踪路径 → 本次 pytest 以错误收场并列出路径；
+      * 不检查内容、不删任何东西。
+
+    `isolated_sft_dir` 已经在拦"会话 trace 写进 traces/"这一类；这一条覆盖的是
+    `sft_data/`、`dataset/` 等测试自己拼路径写出来的产物。
+    """
+    root = str(PROJECT_ROOT)
+    before = _untracked_under(root, _POLLUTION_WATCHED)
+    yield
+    new = sorted(_untracked_under(root, _POLLUTION_WATCHED) - before)
+    if new:
+        raise pytest.UsageError(
+            "测试在仓库里留下了未跟踪文件（已拒绝通过）：\n  "
+            + "\n  ".join(new)
+            + "\n请把测试产物写到 tmp_path，或显式清理。")

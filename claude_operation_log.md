@@ -415,3 +415,15 @@
 * **涉及/修改的文件清单**：`sft_data/g8/variants/b2/`（32 个字节副本 + `manifest.json`）、`scripts/g8_generate_batch.py (Modified — 断言)`、`tests/test_g8_batch_entry.py (Modified — 2 条)`、`plan.md (Modified — §4.8/§4.9)`、`dataset/mnw_div2k/eval_plan.json (Modified — 分析配对 + Agent 子集)`、`claude_operation_log.md`
 * **执行结果与验证状态**：b2 输入 32/32 sha256 与 b1 相同；`test_g8_batch_entry` **14 通过**；eval_plan 分析组 4×40、Agent 子集 50（10/组×5）。b1 数据/台账未动。
 * **置信度或遗留待办（TODO）**：①b2 开跑命令将带 `--assert-variants-identical-to b1`，不通过就不跑②外部评测仍需 GPU；Agent 子集的规模（50）如需调整在开跑前改 `eval_plan.json` 并记录③DIV2K 复用导致的组间相关性只能靠"报告写明"处理，不做跨组统计检验
+
+### 2026-10-18 - 阶段四 4.9c：工作区不干净的根因与兜底（测试夹具写进了仓库）
+
+* **当前操作动作**：用户指出"git 工作区不干净"。查明是我新加的 b2 输入比对测试用 `batch_paths()` 拼夹具路径，把 `b_new`/`b_ref` 两个目录写进了 `sft_data/g8/variants/`。已删除该残留、把被测函数改为接收显式路径、测试改为纯 `tmp_path`；并在 `tests/conftest.py` 增加会话级兜底。**未动任何批次数据与台账。**
+* **对应计划锚点**：`plan.md` §4.8/§4.9（前一条 4.9b）；用户 2026-10-18 的指出
+* **核心变更说明**：
+  1. **根因**：`assert_variants_identical` 内部用 `batch_paths(source_batch, generation)` 拼路径，测试因此只能建仓库内目录。改为**函数接收两个显式清单路径**（调用方算路径），测试夹具全部落在 `tmp_path`，并在夹具里断言"路径确实在临时目录下"防止回归。
+  2. **兜底**：`tests/conftest.py` 新增 `tests_leave_no_untracked_files`（session 级 autouse）——会话开始/结束对 `sft_data/`、`traces/`、`dataset/` 的**未跟踪**文件做快照，结束时若多出任何路径即以 `pytest.UsageError` 让整场失败并列出文件。只比较未跟踪集合，不影响用户自己的改动。用一个一次性探针验证过：写入 `sft_data/` 的测试会让 pytest 退出码为 1。
+  3. **过程中我犯的错（如实记录）**：加兜底时我用 heredoc **覆盖了已存在的 `tests/conftest.py`**（原有 169 行，含 `isolated_sft_dir`、`legacy_calibration` 等共享 fixture）。发现后立即 `git checkout -- tests/conftest.py` 恢复，再**追加**兜底 fixture；当前 diff 是 `+52/-0`（另加一行 `import subprocess`），两个关键 fixture 完好。
+* **涉及/修改的文件清单**：`scripts/g8_generate_batch.py (Modified — 显式路径 + 残留变量修复)`、`tests/test_g8_batch_entry.py (Modified — 夹具改 tmp_path)`、`tests/conftest.py (Modified — 仅追加兜底 fixture + import)`、`claude_operation_log.md`；**已删除**：`sft_data/g8/variants/{b_new,b_ref}/`（我几分钟前生成的测试夹具）
+* **执行结果与验证状态**：`git status` 只剩上述三个受控修改，无未跟踪产物；`core` **601 通过**（兜底 fixture 生效且未误报）；兜底探针验证退出码 1、文件被点名；`tests/conftest.py` 原始 fixture 完整（`isolated_sft_dir`/`legacy_calibration` 均在）。
+* **置信度或遗留待办（TODO）**：①兜底只拦"未跟踪的新文件"，测试若修改已跟踪文件不会被发现（当前无此类测试；如有需要再加内容比对）②`_untracked_under` 依赖 `git status`，在非 git 环境会得到空集合（不误报、也不保护）③之后新增测试请一律用 `tmp_path`
