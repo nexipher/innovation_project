@@ -935,8 +935,9 @@ predicted / true label）、`report.json`、`run.log`。
 **DRCT（ConvB + DRCT-2M + SDv1.4）→ AIDE `sd14_train` → AIDE
 `GenImage_train`**；每候选 200 输入（100 源 × original/q95），共 **600 次新增
 测量**。三候选分进程顺序运行，不加载 Qwen，不补跑 q85/q70。已有 PROBE 基线
-`dev1_probe_20261026_2149` 的 manifest sha256、权重 sha256 与 200 行输入一致时直接
-复用，**不重复推理**；AIDE `progan_train` 的首轮结果原样保留，与两个新变体一起
+`dev1_probe_20261026_2149` 已核对：manifest sha256 `ae31b6ff…` 与当前清单一致、
+PROBE 权重 sha256 `c8caa9ba…` 与登记一致、200 行输入完整，**直接复用，不重复
+推理**；AIDE `progan_train` 的首轮结果原样保留，与两个新变体一起
 展示，不只展示最好版本。
 
 **固定身份**
