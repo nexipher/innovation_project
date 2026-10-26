@@ -612,8 +612,8 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **PROBE**（基线） | 已在本机；权重 sha256 `c8caa9ba…a450156` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection`，`DINOv2_best_model_step_34999.pth` 1.22 GB | 上游未声明（不再分发） | 上游未声明 | pad→336，非重叠滑窗均值，**global** | sigmoid，高=假，阈值 0.5 | 中位 210 ms/图；外部集 AUROC 0.99–1.0 | 上游语料未知；外部错误仅 13/200 |
 | **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025；代码已固定到 `third_party/spai/repo` | **已上传**：`third_party/spai/weights/spai.pth`，**934,865,338 B，sha256 `24159f27…9648a55`**（云侧计算；官方无公开哈希可比） | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | 实测 reserved **8.303 GB**、alloc 6.6 GB；稳定 **0.423 s/图**、首次 0.763 s、加载 2.835 s；139.9M 参数 | 适配器已实现；CPU 覆盖 324/324；官方 yaml 与 list 前向路径已核验；加载需 config 补默认项 + `weights_only=False`（yacs CfgNode） |
-| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；实测 reserved **3.709 GB**、alloc 3.545 GB；稳定 **1.256 s/图**、首次 1.596 s、加载 4.730 s | **内部分支算一个专家**；`progan_train` 首轮已评测；`sd14_train`/`GenImage_train` 已分别 CPU 覆盖 1025/1025（含 378 主干）并做加载/重复调用检查，**未评测**；三份不混用；`GenImage_train` 训练组成未确认 |
-| **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | **压缩包已到位**：`third_party/drct/weights/pretrained.zip`，**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`**（2026-10-26 现场复算一致）；含 DRCT-2M/GenImage 的 ConvB 与 CLIP 共 6 个 `.pth` | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | CPU 冒烟：加载 3.607 s、首次 0.473 s、稳定 0.089 s；GPU 约 0.02–0.05 s/图、显存约 2–4 GB（保守估计，待冒烟确认） | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`）；**已解压选中 checkpoint、代码 pin、适配器已实现、CPU 覆盖 346/346；未评测** |
+| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；reserved **3.709 GB**、alloc 3.545 GB；稳定中位：progan **1.256 s/图**、sd14 **0.549 s/图**、GenImage **0.579 s/图** | **内部分支算一个专家**；三份均已完成 GPU 官方对照与 200 输入评测：`progan_train`/`sd14_train`/`GenImage_train` 阈值错误 161/158/135，净纠正 −148/−145/−122；三份不混用；`GenImage_train` 训练组成未确认；**均未接入** |
+| **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | **压缩包已到位**：`third_party/drct/weights/pretrained.zip`，**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`**（2026-10-26 现场复算一致）；含 DRCT-2M/GenImage 的 ConvB 与 CLIP 共 6 个 `.pth` | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | GPU 实测：加载 3.585 s、首次 0.679 s、稳定 **0.026 s/图**、0.357/0.381 GB；阈值错误 90/200 | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（脚本不传 `--is_dire`）；**已评测（§4.17h），未接入** |
 | **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | **压缩包已到位**：`third_party/ssp.zip`，**754,886,830 B，sha256 `71d280a8d0bb3db78d584745d01816a154643fe337be7632d1a6b1a3871a7ca2`**（云侧/现场；无公开官方哈希）；8 个按生成器训练的 checkpoint，每个 94,360,575 B；`unzip -t` 通过 | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误；**尚未解压/适配/评测** |
 | **DIRE**（研究对照） | repo `1f89fff1`（2024-09-26），ICCV 2023 | 分类器 checkpoint 在 RecDrive/Baidu/OneDrive（RecDrive 可达但需密码/API；sha256 待下载）；扩散模型 `256x256_diffusion_uncond.pt` **2,211,383,297 B**（OpenAI Azure，可及） | 仓库根无 LICENSE；guided-diffusion 为 MIT；权重许可未声明 | DiffusionForensics（LSUN/ImageNet/CelebA-HQ，ADM） | DDIM 反演+重建（20 步，256），`abs(img-recon)` → Resize 256/CenterCrop 224/ImageNet | sigmoid，高=假，阈值 0.5 | 每图数秒（重建）+ 分类器；显存 8–12 GB | **重建误差图 ≠ 篡改定位图**；`demo.py` 直接喂原图，与论文/`compute_dire.py` 路径不一致；扩散专用，对 GAN 假图可能弱 |
 
@@ -929,7 +929,7 @@ jpeg_q95) = 200 输入/专家；PROBE、SPAI、AIDE 三个独立进程顺序执�
 `dev1_summary_20261026.json`。每个目录含 `scores.jsonl`（200 行逐图 raw score /
 predicted / true label）、`report.json`、`run.log`。
 
-#### 4.17g 第二轮候选筛选：DRCT + AIDE 两个变体（CPU 准备完成，待 GPU 授权）
+#### 4.17g 第二轮候选筛选：DRCT + AIDE 两个变体（CPU 准备；GPU 结果见 §4.17h）
 
 **目标与顺序**：继续筛选专家，**不改 Agent 管线**。顺序固定为
 **DRCT（ConvB + DRCT-2M + SDv1.4）→ AIDE `sd14_train` → AIDE
@@ -1046,6 +1046,74 @@ python scripts/g8_candidate_compare.py \
 Agent/SFT/训练；最终留出集继续封存；q85/q70 不补跑；AIDE 的 `GenImage_train` 训练
 组成未确认这一点在报告中如实标注；AIDE `progan_train` 首轮成绩与两个新变体并列
 展示，不只展示最好版本。
+
+#### 4.17h 第二轮结果与全版本并排（2026-10-26，已授权执行）
+
+**官方对照与冒烟**：DRCT、AIDE `sd14_train`、AIDE `GenImage_train` 三个
+`verify_candidate_official.py` 均 **`ok=true`**：同图预处理张量 `torch.equal`、
+logit/分数差 **0**、重复 `analyze` 全等且有限；覆盖 DRCT 346/346、AIDE 各
+1025/1025。三次 GPU 小批冒烟也均 `ok=true`。DRCT 官方核对 GPU
+0.357/0.381 GB，AIDE 每份 3.545/3.709 GB；所有进程结束后显存回到 1 MiB。
+
+**正式运行（每候选 200 输入，独立进程）**
+
+| 候选 | 加载 s | 首次 s | 稳定中位 s | 总耗时 s | GPU alloc/reserved GB | host maxRSS GB | cgroup current 前→后 GB | 测量/失败 | 阈值错误 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| DRCT ConvB | 3.585 | 0.679 | 0.026 | 17.3 | 0.357 / 0.381 | 1.211 | 2.605 → 3.146 | 200 / 0 | 90/200 |
+| AIDE `sd14_train` | 4.805 | 1.799 | 0.549 | 169.1 | 3.545 / 3.709 | 4.318 | 2.627 → 3.176 | 200 / 0 | 158/200 |
+| AIDE `GenImage_train` | 5.119 | 1.836 | 0.579 | 178.0 | 3.545 / 3.709 | 4.319 | 2.512 → 3.172 | 200 / 0 | 135/200 |
+
+**全版本并排（同一 200 输入；AIDE `progan_train` 原文保留）**
+
+| 版本 | AUROC 8 格范围 | Fake 召回范围 | Real 召回范围 | balanced 范围 | 阈值错误 | 净纠正 [源聚类 95% CI] |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| PROBE | **0.990–1.000** | 0.85–1.00 | 0.95–1.00 | 0.900–1.000 | **13/200** | 基线 |
+| SPAI | 0.735–1.000 | 0.65–1.00 | 0.60–0.80 | 0.625–0.900 | 37/200 | **−24** [−41, −8] |
+| AIDE `progan_train` | 0.158–0.797 | 0.00–0.20 | 0.75–1.00 | 0.375–0.500 | 161/200 | **−148** [−165, −130] |
+| DRCT ConvB | 0.750–0.960 | 0.25–0.60 | 1.00–1.00 | 0.625–0.800 | 90/200 | **−77** [−98, −58] |
+| AIDE `sd14_train` | 0.077–0.920 | 0.00–0.20 | 0.65–0.95 | 0.325–0.550 | 158/200 | **−145** [−159, −128] |
+| AIDE `GenImage_train` | 0.233–0.897 | 0.00–0.35 | 0.65–1.00 | 0.375–0.675 | 135/200 | **−122** [−141, −103] |
+
+逐格 AUROC/CI 与阈值三指标见
+`sft_data/g8_external_eval/expert_group_summary_20261026.md`（JSON 同名）；完整
+per-sample 分数在各自 `dev1_*`/`dev2_*` 目录。
+
+**描述性 2×2（总体，单元数/源数）**
+
+| 候选 | 纠正 | 损害 | 都对 | 都错 | 净纠正 [95% CI] |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| SPAI | 10 / 6 | 34 / 22 | 153 / 82 | 3 / 2 | −24 [−41, −8] |
+| AIDE `progan_train` | 2 / 2 | 150 / 80 | 37 / 22 | 11 / 7 | −148 [−165, −130] |
+| DRCT ConvB | 7 / 5 | 84 / 45 | 103 / 54 | 6 / 4 | −77 [−98, −58] |
+| AIDE `sd14_train` | 1 / 1 | 146 / 79 | 41 / 25 | 12 / 7 | −145 [−159, −128] |
+| AIDE `GenImage_train` | 3 / 2 | 125 / 70 | 62 / 38 | 10 / 6 | −122 [−141, −103] |
+
+**观察与专家组建议（描述性证据，不是自动门槛）**
+
+1. **PROBE 仍是唯一稳定专家**：8 格 AUROC 0.990–1.000，阈值错误 13/200，且
+   没有失败。它是当前唯一可以继续作为 Agent 主检测器的版本。
+2. **SPAI**：AUROC 0.735–1.000，但官方阈值下 q95 Real 召回降到 0.60；2×2
+   10 纠正/34 损害（6 vs 22 源），净 −24。只在少数 PROBE 错误上有局部纠正
+   （Midjourney 6 单元/4 源，但同组 7 单元损害），**保留为离线候选，不接入
+   Agent**；不能把 10 个纠正单独写成增益。
+3. **DRCT ConvB**：AUROC 0.750–0.960，排序看似不错；但官方阈值 0.5 下 Fake
+   召回仅 0.25–0.60（90/200 错误），2×2 只有 7 纠正/84 损害（5 vs 45 源），
+   净 −77。**不接入 Agent**。若以后研究排序/校准，应另立课题，不能在本轮
+   调阈值或把 AUROC 当成可用检测率。
+4. **AIDE 三个 checkpoint 均不接入**：`progan_train`、`sd14_train`、
+   `GenImage_train` 的阈值错误分别为 161/158/135，净纠正 −148/−145/−122；
+   多个格 AUROC <0.5、Fake 召回 0–0.35。三份成绩全部保留展示，没有只挑
+   最好版本。`GenImage_train` 具体训练组成未确认。
+5. **专家组建议**：**PROBE 单独作为当前专家组；SPAI 保留为离线候选；
+   DRCT 与 AIDE 三份均不接入。** 找不到有净收益的第二专家，不为凑数保留。
+   本轮不修改 Agent 提示词、停止策略、证据解释规则或 b2 数据；最终留出集
+   继续封存；q85/q70 不补跑，不扩大测试范围。
+
+**产物**：`dev2_drct/`、`dev2_aide_sd14/`、`dev2_aide_genimage/`（各含
+`scores.jsonl`、`report.json`、`run.log`）；`compare_probe_{drct,aide_sd14,
+aide_genimage}_dev2.json`；`expert_group_summary_20261026.{json,md}`；
+`official_check_{drct,aide_sd14_train,aide_GenImage_train}_*.json`；
+`smoke_{drct,aide_sd14_train,aide_GenImage_train}_gpu_*.json`。
 
 ### 4.18 旧第三方模型清理（2026-10-26，用户确认）
 

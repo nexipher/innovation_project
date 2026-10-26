@@ -605,7 +605,7 @@ G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最�
 | **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | **系统性反向**（两组 × 五格式 = 10/10 格点估计 < 0.5；q85 的 CI 两次都整段低于 0.5） | A 组 **0.426** / D 组（独立复测，64 源全新图）**0.384**，两组整体 CI 均跨 0.5 | **不准入全局链**（一个分数越高越像 Real 的检测器接进去只会把 AI 图推向 Real）；留作 L1 局部篡改研究对照 |
 
 - PROBE 与现有专家的 Spearman 相关 |ρ| ≤ 0.23（不冗余，但融合后增益在 C 组仍落进噪声：见 §7.3）。
-- **候选专家 SPAI / AIDE / DRCT 目前只在离线适配器中做独立评测，未注册进 Agent 工具箱，也未进入证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g。DRCT ConvB 已解压、代码 pin、CPU 覆盖 346/346；AIDE 三份 checkpoint 均 CPU 覆盖 1025/1025，`sd14_train`/`GenImage_train` 已做 CPU 加载与重复调用检查；正式 GPU 评测待授权。SSP 压缩包已到位但未解压，DIRE 未下载。在短名单确定前，README 不把任何候选写成“已准入”。
+- **候选专家 SPAI / AIDE / DRCT 只在离线适配器中做过独立评测，均未注册进 Agent 工具箱或证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g/§4.17h。两轮结果为：PROBE 阈值错误 13/200，SPAI −24（10 纠正/34 损害），DRCT −77（7/84），AIDE `progan_train`/`sd14_train`/`GenImage_train` 为 −148/−145/−122（三份全部展示）。**当前证据只支持 PROBE 单独作为专家组；SPAI 保留离线候选；DRCT/AIDE 不接入。** SSP 压缩包已到位但未解压，DIRE 未下载。
 
 > 专家的 `support`、`interpretation_text`、`reasoning` 与 `phenomenon` 已按实测方向改写（`BaseExpert.metric_polarity` + `inverted_text_map`）；进入证据链前由 `EvidenceRectifier` 统一方向权威（校准概率 > 专家声明 > 自由文本）。
 
@@ -728,7 +728,7 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 |------|----------|-----|
 | 1（进行中） | 代次目录布局、冻结身份升级、v1 归档与逐文件核对、README 收敛 | 否 |
 | 2 | `scripts/g8_smoke.py`：新工具箱 + Qwen3-VL 协议冒烟（三类回复分别留存） | 先用 Mock（CPU），后需授权 |
-| 3 | **候选专家组独立检测（首轮已完成 2026-10-26）**：PROBE + SPAI + AIDE，100 源 × original/jpeg_q95 = 200 输入/专家，0 失败；PROBE AUROC 0.990–1.000；SPAI 0.735–1.000 但净纠正 −24（10 纠正/34 损害）；AIDE `progan_train` 0.158–0.798、阈值下几乎全判 Real，净纠正 −148。**均未接入 Agent**；第二轮 DRCT + AIDE `sd14_train`/`GenImage_train` 的 CPU 准备已完成（DRCT 346/346，AIDE 三份各 1025/1025，CPU 加载/重复调用通过），待 GPU 授权；SSP 压缩包已到位未解压，DIRE 未下载 | 首轮已用 GPU；第二轮待授权 |
+| 3 | **候选专家组独立检测（两轮已完成 2026-10-26）**：同一 200 输入/版本，0 失败。PROBE AUROC 0.990–1.000、阈值错误 13/200；SPAI 0.735–1.000、净纠正 −24；DRCT ConvB 0.750–0.960、净 −77；AIDE `progan_train`/`sd14_train`/`GenImage_train` 分别为 0.158–0.797/0.077–0.920/0.233–0.897，净 −148/−145/−122。**建议 PROBE 单独作为当前专家组，SPAI 保留离线候选，DRCT 与 AIDE 三份不接入**；最终留出集封存 | 已用 GPU |
 | 4 | 移除参考后验与预计收益；退役 jpeg 与 frequency_v2（**noise 由阶段 3 结果决定**） | 否 |
 | SFT | 新代次样本的审核 → 出集 → LoRA → 统一评测 | 是（需授权） |
 
