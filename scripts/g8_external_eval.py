@@ -275,6 +275,11 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
             print(f"{name}: {plan[name]['n']} 次测量｜分组 {counts}")
         return {"dry_run": True}
 
+    if device.startswith("cuda") and os.environ.get("FORENSIC_ALLOW_GPU") != "1":
+        raise SystemExit(
+            "GPU 评测未授权：确认后加 FORENSIC_ALLOW_GPU=1 再跑；"
+            "dry-run 不需要授权。")
+
     os.makedirs(out_dir, exist_ok=True)
     scores_path = os.path.join(out_dir, "scores.jsonl")
     done = set()

@@ -11,7 +11,7 @@ import pytest
 
 from scripts.g8_external_eval import (auroc, bootstrap_auroc, build_report,
                                       expert_orientation, oriented, paired_delta,
-                                      predicts_fake)
+                                      predicts_fake, run)
 
 pytestmark = pytest.mark.core
 
@@ -215,3 +215,18 @@ class TestTheReport:
         report = build_report(rows, ["probe"], {"inputs": []}, "m.json")
         bucket = report["analysis"]["gen vs None"]["original"]
         assert bucket["per_expert"]["probe"]["auroc"] is None
+
+
+class TestGpuAuthorization:
+    def test_a_cuda_run_without_authorization_is_refused(self, tmp_path,
+                                                         monkeypatch):
+        manifest = {"inputs": [{
+            "variant_id": "v", "condition": "original", "path": "x",
+            "sha256": "", "source_path": "x", "group": "g", "label": "Fake",
+        }]}
+        path = tmp_path / "m.json"
+        path.write_text(json.dumps(manifest), encoding="utf-8")
+        monkeypatch.delenv("FORENSIC_ALLOW_GPU", raising=False)
+        with pytest.raises(SystemExit, match="未授权"):
+            run(str(path), str(tmp_path / "out"), ["probe"], "cuda",
+                None, False, False)
