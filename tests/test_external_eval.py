@@ -206,6 +206,9 @@ class TestTheReport:
         assert data["tpr"] == pytest.approx(0.5)
         assert data["tnr"] == pytest.approx(0.5)
         assert data["balanced_accuracy"] == pytest.approx(0.5)
+        assert data["elapsed_ms"]["n"] == 4
+        assert data["elapsed_ms"]["median"] == pytest.approx(1.0)
+        assert report["analysis"]["gen vs div2k"]["original"]["n_sources"] == 4
 
     def test_a_single_label_pair_has_no_auroc(self):
         rows = [row for row in self._rows() if row["label"] == "Fake"]

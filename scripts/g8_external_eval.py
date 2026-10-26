@@ -489,6 +489,7 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
             bucket = {"n": len(items),
                       "n_fake": sum(1 for _v, _p, label in items if label == 1),
                       "n_real": sum(1 for _v, _p, label in items if label == 0),
+                      "n_sources": len({_source_key(per) for _v, per, _l in items}),
                       "n_measured": sum(1 for _v, per, _l in items
                                         if any(_measured(per[n]) for n in experts
                                                if n in per)),
@@ -526,6 +527,8 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
                        / n_real) if n_real else None
                 balanced = ((tpr + tnr) / 2.0
                             if tpr is not None and tnr is not None else None)
+                elapsed = [float(per[name]["elapsed_ms"]) for per, _l in measured
+                           if per[name].get("elapsed_ms") is not None]
                 bucket["per_expert"][name] = {
                     "auroc": bootstrap_auroc(scores, truths),
                     "threshold_accuracy": round(correct / len(scores), 4),
@@ -537,6 +540,13 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
                     "n_fake_measured": n_fake,
                     "n_real_measured": n_real,
                     "failures": failures,
+                    "elapsed_ms": ({
+                        "n": len(elapsed),
+                        "mean": round(sum(elapsed) / len(elapsed), 1),
+                        "median": round(statistics_median(elapsed), 1),
+                        "min": round(min(elapsed), 1),
+                        "max": round(max(elapsed), 1),
+                    } if elapsed else None),
                 }
             per_condition[condition] = bucket
         # 两种条件按同一 variant 配对（variant_id 唯一，且带来源组前缀）

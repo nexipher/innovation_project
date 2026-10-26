@@ -55,6 +55,27 @@ class TestErrorOverlap:
         assert report["overall"]["failures"]["probe"] == 1
         assert "S5__a__original" in report["overall"]["failure_ids"]["probe"]
         assert sum(report["overall"]["cells"].values()) == 5
+        assert report["overall"]["n_independent_sources"] == 5
+        assert report["overall"]["n_independent_sources_measured"] == 4
+        assert report["overall"]["n_measured_source_condition_cells"] == 5
+
+    def test_a_metadata_mismatch_is_rejected(self):
+        probe, candidate = _data()
+        candidate["S1__a__original"] = {
+            **candidate["S1__a__original"], "group": "other-generator"}
+        with pytest.raises(SystemExit, match="元数据不一致"):
+            compare(probe, candidate)
+
+    def test_rows_missing_from_one_file_are_reported(self):
+        probe, candidate = _data()
+        missing = candidate.pop("S1__a__jpeg_q95")
+        report = compare(probe, candidate)
+        assert report["overall"]["missing"]["candidate_only"] == 0
+        assert report["overall"]["missing"]["probe_only"] == 1
+        assert report["overall"]["missing"]["probe_only_ids"] == [
+            "S1__a__jpeg_q95"]
+        assert report["common_variants"] == 5
+        assert missing["variant_id"] == "S1__a__jpeg_q95"
 
     def test_the_source_cluster_bootstrap_is_deterministic(self):
         probe, candidate = _data()
