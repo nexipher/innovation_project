@@ -612,8 +612,8 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **PROBE**（基线） | 已在本机；权重 sha256 `c8caa9ba…a450156` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection`，`DINOv2_best_model_step_34999.pth` 1.22 GB | 上游未声明（不再分发） | 上游未声明 | pad→336，非重叠滑窗均值，**global** | sigmoid，高=假，阈值 0.5 | 中位 210 ms/图；外部集 AUROC 0.99–1.0 | 上游语料未知；外部错误仅 13/200 |
 | **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025；代码已固定到 `third_party/spai/repo` | **已上传**：`third_party/spai/weights/spai.pth`，**934,865,338 B，sha256 `24159f27…9648a55`**（云侧计算；官方无公开哈希可比） | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | 实测 reserved **8.303 GB**、alloc 6.6 GB；稳定 **0.423 s/图**、首次 0.763 s、加载 2.835 s；139.9M 参数 | 适配器已实现；CPU 覆盖 324/324；官方 yaml 与 list 前向路径已核验；加载需 config 补默认项 + `weights_only=False`（yacs CfgNode） |
-| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；实测 reserved **3.709 GB**、alloc 3.545 GB；稳定 **1.256 s/图**、首次 1.596 s、加载 4.730 s | **内部分支算一个专家**；主候选固定 `progan_train`，另外两份保留、不混用；适配器已实现，CPU 覆盖 1025/1025 |
-| **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | **压缩包已到位**：`third_party/drct/weights/pretrained.zip`，**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`**（2026-10-26 现场复算一致）；含 DRCT-2M/GenImage 的 ConvB 与 CLIP 共 6 个 `.pth` | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | ConvB ~0.05 s/图，显存 4–6 GB；CLIP ViT-L 略高 | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`）；**尚未解压/适配/评测** |
+| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；实测 reserved **3.709 GB**、alloc 3.545 GB；稳定 **1.256 s/图**、首次 1.596 s、加载 4.730 s | **内部分支算一个专家**；`progan_train` 首轮已评测；`sd14_train`/`GenImage_train` 已分别 CPU 覆盖 1025/1025（含 378 主干）并做加载/重复调用检查，**未评测**；三份不混用；`GenImage_train` 训练组成未确认 |
+| **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | **压缩包已到位**：`third_party/drct/weights/pretrained.zip`，**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`**（2026-10-26 现场复算一致）；含 DRCT-2M/GenImage 的 ConvB 与 CLIP 共 6 个 `.pth` | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | CPU 冒烟：加载 3.607 s、首次 0.473 s、稳定 0.089 s；GPU 约 0.02–0.05 s/图、显存约 2–4 GB（保守估计，待冒烟确认） | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`）；**已解压选中 checkpoint、代码 pin、适配器已实现、CPU 覆盖 346/346；未评测** |
 | **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | **压缩包已到位**：`third_party/ssp.zip`，**754,886,830 B，sha256 `71d280a8d0bb3db78d584745d01816a154643fe337be7632d1a6b1a3871a7ca2`**（云侧/现场；无公开官方哈希）；8 个按生成器训练的 checkpoint，每个 94,360,575 B；`unzip -t` 通过 | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误；**尚未解压/适配/评测** |
 | **DIRE**（研究对照） | repo `1f89fff1`（2024-09-26），ICCV 2023 | 分类器 checkpoint 在 RecDrive/Baidu/OneDrive（RecDrive 可达但需密码/API；sha256 待下载）；扩散模型 `256x256_diffusion_uncond.pt` **2,211,383,297 B**（OpenAI Azure，可及） | 仓库根无 LICENSE；guided-diffusion 为 MIT；权重许可未声明 | DiffusionForensics（LSUN/ImageNet/CelebA-HQ，ADM） | DDIM 反演+重建（20 步，256），`abs(img-recon)` → Resize 256/CenterCrop 224/ImageNet | sigmoid，高=假，阈值 0.5 | 每图数秒（重建）+ 分类器；显存 8–12 GB | **重建误差图 ≠ 篡改定位图**；`demo.py` 直接喂原图，与论文/`compute_dire.py` 路径不一致；扩散专用，对 GAN 假图可能弱 |
 
@@ -622,20 +622,21 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 `experts/candidate_weights.json`（注意：官方只提供 Google Drive，无公开哈希，
 不能写成"官方哈希已验证"）。代码已按 commit 固定：SPAI `8ff7b3b6`（70 个源文件）、
 AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；项目内
-`experts/candidate_code.json` 记录 commit 与清单哈希。**DRCT/SSP 压缩包已在盘上并复核
-（见下表），但尚未解压、未接适配器、未评测；只有 SPAI/AIDE 进入本轮。**
+`experts/candidate_code.json` 记录 commit 与清单哈希。**DRCT 已解压选中 checkpoint、
+按 commit 固定代码并接上离线适配器（CPU 覆盖 346/346）；SSP 压缩包已到位但未解压；
+DRCT/SSP/AIDE 新变体均未评测。**
 
 | 对象 | 链接 | 放置位置 | 现场状态（2026-10-26） |
 | --- | --- | --- | --- |
-| DRCT `pretrained.zip` | [ModelScope `BokingChen/DRCT-2M`](https://modelscope.cn/datasets/BokingChen/DRCT-2M) | `/root/autodl-tmp/third_party/drct/weights/pretrained.zip` | **已到位**：4,178,790,241 B，sha256 `235c0069…08dd046` **复算一致**；zip 含 6 个 `.pth`（DRCT-2M sdv14/sdv2 + GenImage sdv14，ConvB/CLIP）；**未解压/未评测** |
+| DRCT `pretrained.zip` | [ModelScope `BokingChen/DRCT-2M`](https://modelscope.cn/datasets/BokingChen/DRCT-2M) | `/root/autodl-tmp/third_party/drct/weights/pretrained.zip` | **已到位并解压选中 checkpoint**：archive 4,178,790,241 B / sha256 `235c0069…08dd046`；`DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth` 354,605,453 B / sha256 `d3de0fe4…d13861`；代码 pin、适配器已实现、CPU 覆盖 346/346；**未评测** |
 | SSP 8 个 checkpoint | [Baidu（密码 bcmi）](https://pan.baidu.com/s/1BTkl1gc7gHq4Ev457G__QQ?pwd=bcmi) / [Dropbox](https://www.dropbox.com/scl/fo/2xdvtew4rjrrsl6cseq30/AElVHGO84W1DSmlImMg1ruM?rlkey=e1a2hnzh62wuuxrnbkfv6f90v&st=getws7lp&dl=0) | `/root/autodl-tmp/third_party/ssp.zip` | **已到位**：754,886,830 B，sha256 `71d280a8…7ca2`（无公开官方哈希）；8 个 checkpoint 各 94,360,575 B；`unzip -t` 通过；**未解压/未评测** |
 | DIRE 分类器 checkpoint | [RecDrive（密码 dire）](https://rec.ustc.edu.cn/share/ec980150-4615-11ee-be0a-eb822f25e070) / [Baidu（密码 dire）](https://pan.baidu.com/s/1Rdzc7l8P0RrJft0cW0a4Gg) | `/root/autodl-tmp/third_party/dire/weights/` | **未下载**；研究对照；扩散权重 `256x256_diffusion_uncond.pt`（2,211,383,297 B）可从 OpenAI Azure 下载，无需你上传 |
 | （不需要）AIDE ConvNeXt 主干 | — | — | checkpoint 已含 378 个主干张量 |
 | （不需要）SPAI MFM ViT-B/16 预训练 | — | — | 仅训练需要；推理 checkpoint 已含训练后权重 |
 
-下载/上传后先核对大小与 sha256，再进正式评测；未核对的权重不进入报告。DRCT/SSP
-虽已到位，但**本轮不跑**：未解压、未做适配器/官方路径核验，不能把“有压缩包”写成
-“已评测”。
+下载/上传后先核对大小与 sha256，再进正式评测；未核对的权重不进入报告。DRCT 已
+解压并完成 CPU 检查但**尚未 GPU 评测**；SSP 尚未解压；不能把“有压缩包/有适配器”
+写成“已评测”。
 
 #### 4.17b 开发评测集（首轮 200 输入；最终留出封存）
 
@@ -703,7 +704,7 @@ AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；
 
 | 步骤 | 内容 | 产物/门槛 | 资源 |
 | --- | --- | --- | --- |
-| 0 | 权重/代码/参数覆盖与官方预处理核对 | **已完成 SPAI/AIDE**（sha256/覆盖/预处理/代码 pin）；**DRCT/SSP 压缩包已到位并复算，未解压/未评测；DIRE 未下载** | 无 GPU |
+| 0 | 权重/代码/参数覆盖与官方预处理核对 | **已完成 SPAI/AIDE**；**DRCT 已解压选中 checkpoint、代码 pin、CPU 覆盖 346/346**；SSP 压缩包已到位未解压；DIRE 未下载；详见 §4.17g | 无 GPU |
 | 1 | 离线适配器 + CPU 测试，不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py`；`core` 721 通过 | CPU |
 | 2 | **官方路径对照**：SPAI 官方 CLI / AIDE 官方 `TestDataset`，同图张量、logit、分数、重复调用 | **已完成，均 `ok=true`**（见 §4.17e） | 已用 GPU（核验） |
 | 3 | **首轮开发集 D1a：每专家 200 输入**（100 源 × original/q95）；PROBE、SPAI、AIDE **各自独立进程、顺序执行** | **已完成（2026-10-26）**；逐图分数 + 分组报告 + 失败/耗时/内存，见 §4.17f | 已用 GPU；三进程合计 330.2 s |
@@ -744,8 +745,8 @@ python scripts/g8_candidate_compare.py \
 | AIDE（progan_train） | **4.730 s** | **1.596 s** | **1.256 s** | **~4.2–8.4 min** | **3.545 / 3.709 GB** | **4.407 GB**（含 mmap） | **2.848 GB** |
 
 * 200 输入 × 稳定中位是下限；真实数据分辨率不一，按 1.5–2× 余量估。三专家合计
-  **<20 min**（不含排错/重跑）；DRCT/SSP 压缩包已到位但未解压，DIRE 未下载，均不在
-  本轮预算内。
+  **<20 min**（不含排错/重跑）；DRCT 已解压并适配、SSP 压缩包已到位未解压，DIRE
+  未下载，均不在首轮预算内。
 * 测量边界：稳定耗时含该专家 `score()` 的预处理与同步；首次含 CUDA 初始化/首次
   kernel；加载单独计时。host maxRSS 是进程峰值（mmap 页计入），cgroup current 是
   进程结束前后读数，`memory.peak` 未暴露。
@@ -927,6 +928,123 @@ jpeg_q95) = 200 输入/专家；PROBE、SPAI、AIDE 三个独立进程顺序执�
 `compare_probe_spai_dev1.json`、`compare_probe_aide_dev1.json`、
 `dev1_summary_20261026.json`。每个目录含 `scores.jsonl`（200 行逐图 raw score /
 predicted / true label）、`report.json`、`run.log`。
+
+#### 4.17g 第二轮候选筛选：DRCT + AIDE 两个变体（CPU 准备完成，待 GPU 授权）
+
+**目标与顺序**：继续筛选专家，**不改 Agent 管线**。顺序固定为
+**DRCT（ConvB + DRCT-2M + SDv1.4）→ AIDE `sd14_train` → AIDE
+`GenImage_train`**；每候选 200 输入（100 源 × original/q95），共 **600 次新增
+测量**。三候选分进程顺序运行，不加载 Qwen，不补跑 q85/q70。已有 PROBE 基线
+`dev1_probe_20261026_2149` 的 manifest sha256、权重 sha256 与 200 行输入一致时直接
+复用，**不重复推理**；AIDE `progan_train` 的首轮结果原样保留，与两个新变体一起
+展示，不只展示最好版本。
+
+**固定身份**
+
+| 候选 | 代码 | 权重 / checkpoint | 训练来源（可确认部分） | 输出 / 阈值 |
+| --- | --- | --- | --- | --- |
+| **DRCT ConvB** | `beibuwandeluori/DRCT` commit `01aa7d0b6de903cf3208801f8f6b469edffbc762`；`third_party/drct/repo`（18 个源文件，SOURCE.json） | archive `pretrained.zip` **4,178,790,241 B / sha256 `235c0069…08dd046`**；选中 `DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth` **354,605,453 B / sha256 `d3de0fe4…d13861`** | DRCT-2M ConvB，DR=SDv1.4（`sdv14`）：MSCOCO train2017 实图；SDv1.4 生成图；SD-inpainting 重建实图；SDv1.4 full_inpainting 重建假图（README 训练命令） | `1 - softmax[:,0]` = softmax class-1 = Fake；阈值 0.5 |
+| **AIDE `sd14_train`** | `shilinyan99/AIDE` commit `6725b710…`；`third_party/aide/repo` | `sd14_train.pth` **3,592,077,976 B / sha256 `382a50d1…2f91989`** | 仓库只说明训练集来自 CNNSpot + GenImage，**没有公布 checkpoint→数据划分映射**；`sd14_train` 依名称推定为 SDv1.4，**未能从仓库独立确认** | `softmax(logits, dim=1)[:,1]`；阈值 0.5 |
+| **AIDE `GenImage_train`** | 同上 | `GenImage_train.pth` **3,592,100,460 B / sha256 `f084346d…9a9ff16`** | 名称指向 GenImage；**具体生成器组成/划分未在仓库说明，明确标注为未确认** | 同上 |
+| AIDE `progan_train`（已有） | 同上 | 首轮 `ce3a9d66…`；首轮结果保留 | README 示例确认 ProGAN/CNNSpot 训练 | 同上 |
+
+**CPU 准备结果（已完成，无 GPU 前向）**
+
+| 检查 | 结果 |
+| --- | --- |
+| 权重文件 | SPAI、AIDE 三份、DRCT archive 与选中 checkpoint 的**大小和 sha256 全部与登记值一致**；DRCT archive 复算 `235c0069…`，checkpoint `d3de0fe4…` |
+| 代码 | DRCT 代码按 commit `01aa7d0b…` 固定；18 个源文件逐文件 sha256 写入 `third_party/drct/repo/SOURCE.json`；`experts/candidate_code.json` 记录 pin |
+| DRCT 参数覆盖 | **346/346**，missing/unexpected/shape mismatch **全 0**；88,618,114 参数（88.6M） |
+| AIDE 参数覆盖 | `progan_train` / `sd14_train` / `GenImage_train` 各 **1025/1025**，主干 378 张量，897.9M 参数；三份都单独做了 meta 覆盖检查，**没有因结构相同跳过** |
+| DRCT 官方预处理 | 332×500 合成图 → `[3,224,224]` float32；`PadIfNeeded` → `CenterCrop(224)` → `PadIfNeeded` → ImageNet Normalize → ToTensor；不缩放 |
+| AIDE 官方预处理 | 三份均 → `[5,3,256,256]` float32；4 个 DCT 变体 + 原图，Resize 256 + ImageNet 归一化（同一路径） |
+| DRCT CPU 加载/重复调用 | 加载 **3.607 s**、首次 0.473 s、稳定 0.089 s；两次 `DRCTExpert.analyze` 有限且全等（0.0029586）；官方 transform 张量 `torch.equal`、分数差 **0** |
+| AIDE `sd14_train` CPU 加载/重复调用 | 加载 **4.872 s**、首次 1.802 s、稳定 1.825 s；两次 analyze 有限且全等（0.0936873）；官方预处理张量相等、分数差 **0** |
+| AIDE `GenImage_train` CPU 加载/重复调用 | 加载 **4.022 s**、首次 1.527 s、稳定 1.658 s；两次 analyze 有限且全等（0.2284372）；官方预处理张量相等、分数差 **0** |
+| dry-run | `drct`、`aide_sd14`、`aide_genimage` 各 **200 次测量**，10 个组/条件桶各 20 条；使用同一 manifest |
+
+* CPU 前向只用于**加载、有限数值、重复调用和接口一致性**；上面的两个 raw score 不构成
+  性能结论，也不据此翻转方向或调阈值。
+* AIDE 两个变体的实际官方 `TestDataset` 对照与 GPU 显存/耗时留到 GPU 冒烟；CPU
+  检查走的是同一官方预处理函数/卷积路径，不能替代 GPU 冒烟。
+* `check_candidate_weights.py --only all` 会把 AIDE 与 DRCT 放进同一进程，二者都使用
+  顶层 `data` 包，会冲突（`No module named data.transform`）。CPU 检查因此按
+  `--only spai|aide|drct` **分进程**执行；正式评测同样是一个候选一个进程。
+
+**正式评测口径**（与 §4.17c/§4.17f 相同，预注册）
+
+* 每组（生成器 × 条件）20 Fake + 20 DIV2K Real：AUROC + 95% bootstrap CI；官方阈值
+  0.5 下 Fake 召回、Real 召回、balanced accuracy；失败数；加载/首次/稳定耗时；
+  host maxRSS、cgroup current、GPU alloc/reserved；逐图 raw score、predicted label、
+  true label、输入 sha256 与模型身份。
+* 2×2（PROBE 对/错 × 候选对/错）只作描述；净纠正 CI 用按源聚类 bootstrap
+  （1000 次，seed 20261026）；**不设**净纠正>0、≥8 纠正、AUROC≥0.70 或“必须胜过
+  PROBE”的硬门槛。
+* 独立单位 **100 个源 / 200 个源×条件单元**；每格 20 Fake + 20 Real；20 张 DIV2K
+  Real 四组复用、组间不独立；不跨组池化，不把 200 当独立样本。
+* 方向/阈值只用官方默认值；失败记 `failed`/`not_evaluated`，不当 0/中性分。
+
+**最终命令（GPU 前先做官方对照与小批冒烟；全部独立进程）**
+
+```bash
+# 1) 官方路径对照（DRCT 官方 transform/model factory；AIDE 官方 TestDataset）
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/verify_candidate_official.py --expert drct
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/verify_candidate_official.py --expert aide --checkpoint sd14_train
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/verify_candidate_official.py --expert aide --checkpoint GenImage_train
+
+# 2) 小批冒烟（2 图，官方预处理 vs 适配器；加载/首次/稳定分开）
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/smoke_candidate.py --expert drct
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/smoke_candidate.py --expert aide --checkpoint sd14_train
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/smoke_candidate.py --expert aide --checkpoint GenImage_train
+
+# 3) 正式开发集：每候选 200 输入；PROBE 复用，不重跑
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/g8_external_eval.py --experts drct \
+    --inputs dataset/mnw_div2k/inputs_manifest.json \
+    --out sft_data/g8_external_eval/dev2_drct
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/g8_external_eval.py --experts aide_sd14 \
+    --inputs dataset/mnw_div2k/inputs_manifest.json \
+    --out sft_data/g8_external_eval/dev2_aide_sd14
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/g8_external_eval.py --experts aide_genimage \
+    --inputs dataset/mnw_div2k/inputs_manifest.json \
+    --out sft_data/g8_external_eval/dev2_aide_genimage
+
+# 4) 描述性 2×2（PROBE canonical dev1 2149）
+python scripts/g8_candidate_compare.py \
+    --probe sft_data/g8_external_eval/dev1_probe_20261026_2149/scores.jsonl \
+    --candidate sft_data/g8_external_eval/dev2_drct/scores.jsonl \
+    --out sft_data/g8_external_eval/compare_probe_drct_dev2.json
+python scripts/g8_candidate_compare.py \
+    --probe sft_data/g8_external_eval/dev1_probe_20261026_2149/scores.jsonl \
+    --candidate sft_data/g8_external_eval/dev2_aide_sd14/scores.jsonl \
+    --out sft_data/g8_external_eval/compare_probe_aide_sd14_dev2.json
+python scripts/g8_candidate_compare.py \
+    --probe sft_data/g8_external_eval/dev1_probe_20261026_2149/scores.jsonl \
+    --candidate sft_data/g8_external_eval/dev2_aide_genimage/scores.jsonl \
+    --out sft_data/g8_external_eval/compare_probe_aide_genimage_dev2.json
+```
+
+**GPU 预算（估计；以冒烟实测更新）**
+
+| 阶段 | 估计 |
+| --- | --- |
+| 官方路径对照 | DRCT ~1–2 min；AIDE 每变体 ~2–3 min（加载 3.6 GB + 2 图） |
+| 小批冒烟 | DRCT <1 min；AIDE 每变体 ~1–2 min；显存 DRCT 约 2–4 GB（保守）、AIDE 约 3.5–4 GB |
+| 正式 200 输入 ×3 | DRCT 稳定预计 ~0.02–0.05 s/图 → **10–20 s**；AIDE 沿用首轮 ~0.55 s/图 → 每变体 **~2 min**；加加载/重试 **<10 min** |
+| 总计 | **<20 min GPU**；不并发 Qwen，三候选顺序执行；显存最高仍在 12 GB 以内（SPAI 首轮 reserved 12.676 GB，但本轮不重跑 SPAI） |
+
+**边界**：不修改 Agent 提示词、停止策略、证据解释规则或 b2 原始记录；不启动外部
+Agent/SFT/训练；最终留出集继续封存；q85/q70 不补跑；AIDE 的 `GenImage_train` 训练
+组成未确认这一点在报告中如实标注；AIDE `progan_train` 首轮成绩与两个新变体并列
+展示，不只展示最好版本。
 
 ### 4.18 旧第三方模型清理（2026-10-26，用户确认）
 
