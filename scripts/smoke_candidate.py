@@ -63,17 +63,15 @@ def _cgroup(name: str):
 
 def _official_tensor_spai(evaluator, pil):
     """Official SPAI test transform, invoked outside the adapter's method."""
-    from experts.spai import _fill_defaults, _install_import_shims
-
-    _install_import_shims()
-    from spai.config import _C as DEFAULT
+    from experts.spai import _install_import_shims
+    from spai.config import get_config
     from spai.data.data_finetune import build_transform
 
-    checkpoint = torch.load(evaluator.weights_path, map_location="cpu",
-                            mmap=True, weights_only=False)
-    config = checkpoint["config"].clone()
-    config.defrost()
-    _fill_defaults(config, DEFAULT)
+    _install_import_shims()
+    config = get_config({
+        "cfg": "/root/autodl-tmp/third_party/spai/repo/configs/spai.yaml",
+        "opts": (),
+    })
     transform = build_transform(False, config)
     return transform(image=np.asarray(pil.convert("RGB")))["image"]
 
@@ -95,11 +93,15 @@ def _official_tensor_aide(pil):
     return torch.stack([post(part) for part in parts] + [post(tensor)], dim=0)
 
 
-def _official_score(expert: str, model, tensor) -> float:
+def _official_score(expert: str, model, tensor, config=None) -> float:
+    device = next(model.parameters()).device
     with torch.no_grad():
-        logits = model(tensor.unsqueeze(0).to(next(model.parameters()).device))
-    if expert == "spai":
-        return float(torch.sigmoid(logits).reshape(-1)[0].item())
+        if expert == "spai":
+            # Match validate(): arbitrary-resolution models receive a list.
+            logits = model([tensor.unsqueeze(0).to(device)],
+                           config.MODEL.FEATURE_EXTRACTION_BATCH)
+            return float(torch.sigmoid(logits).reshape(-1)[0].item())
+        logits = model(tensor.unsqueeze(0).to(device))
     return float(torch.softmax(logits, dim=1)[:, 1].item())
 
 
@@ -169,7 +171,8 @@ def main() -> int:
             adapter_tensor = evaluator.preprocess(pil)
             tensor_equal = bool(torch.equal(tensor, adapter_tensor))
             tensor_max_diff = float((tensor - adapter_tensor).abs().max().item())
-            official = _official_score(args.expert, evaluator._model, tensor)
+            official = _official_score(args.expert, evaluator._model, tensor,
+                                       getattr(evaluator, "_cfg", None))
             report["checks"].append({
                 "image": entry["path"], "label": entry["label"],
                 "tensor_equal": tensor_equal,

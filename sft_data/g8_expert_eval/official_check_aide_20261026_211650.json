@@ -1,0 +1,129 @@
+{
+  "schema": "candidate_official_check/1",
+  "expert": "aide",
+  "checked_at": "2026-10-26T21:16:33",
+  "code": {
+    "repo": "shilinyan99/AIDE",
+    "commit": "6725b710d5c437ab2f59792908ce0377dfc907de",
+    "path": "/root/autodl-tmp/third_party/aide/repo",
+    "file_count": 19,
+    "source_manifest_sha256": "4a725913dda69fe7"
+  },
+  "weights": {
+    "role": "primary is progan_train; sd14_train and GenImage_train retained for a version comparison, not silently mixed",
+    "path_dir": "/root/autodl-tmp/third_party/aide/weights",
+    "license": "code MIT; checkpoint license not separately stated in the repo",
+    "official_hash": null,
+    "source": "shilinyan99/AIDE Model Zoo -> Google Drive (user upload, 2026-10-19)",
+    "backbone_included": true,
+    "backbone_note": "The 3.59 GB checkpoint contains the full frozen OpenCLIP ConvNeXt-XXLarge trunk (openclip_convnext_xxl.*, 378 tensors); no separate ConvNeXt checkpoint download is needed.",
+    "model_state_keys": 1025,
+    "params_millions": 897.939078,
+    "checkpoints": {
+      "progan_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+        "bytes": 3592077976,
+        "sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e",
+        "primary": true
+      },
+      "sd14_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
+        "bytes": 3592077976,
+        "sha256": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989",
+        "primary": false
+      },
+      "GenImage_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
+        "bytes": 3592100460,
+        "sha256": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16",
+        "primary": false
+      }
+    }
+  },
+  "checks": [
+    {
+      "image": "Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "label": 1,
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "adapter_logits": [
+        1.4218192100524902,
+        -1.4248559474945068
+      ],
+      "official_logits": [
+        1.4218192100524902,
+        -1.4248559474945068
+      ],
+      "logit_abs_diff_max": 0.0,
+      "adapter_score": 0.05485343933105469,
+      "official_score": 0.05485343933105469,
+      "score_abs_diff": 0.0,
+      "expert_analyze_first": 0.05485343933105469,
+      "expert_analyze_second": 0.05485343933105469,
+      "analyze_equal": true,
+      "finite": true
+    },
+    {
+      "image": "0841.png",
+      "label": 0,
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "adapter_logits": [
+        -0.5993655920028687,
+        0.5093327760696411
+      ],
+      "official_logits": [
+        -0.5993655920028687,
+        0.5093327760696411
+      ],
+      "logit_abs_diff_max": 0.0,
+      "adapter_score": 0.7518863677978516,
+      "official_score": 0.7518863677978516,
+      "score_abs_diff": 0.0,
+      "expert_analyze_first": 0.7518863677978516,
+      "expert_analyze_second": 0.7518863677978516,
+      "analyze_equal": true,
+      "finite": true
+    }
+  ],
+  "coverage": {
+    "ok": true,
+    "checkpoint": "progan_train",
+    "model_state_keys": 1025,
+    "checkpoint_state_keys": 1025,
+    "backbone_keys": 378,
+    "params_millions": 897.939078,
+    "missing": [],
+    "unexpected": [],
+    "shape_mismatch": []
+  },
+  "identity": {
+    "source_name": "aide_expert",
+    "checkpoint": "progan_train",
+    "weights_path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+    "weights_sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e",
+    "weights_bytes": 3592077976,
+    "backbone_included": true,
+    "repo": "/root/autodl-tmp/third_party/aide/repo",
+    "preprocess": "官方 AIDE 测试预处理：PIL RGB → ToTensor → DCT 极值 patch（4 个变体）→ Resize 256×256 → ImageNet 归一化；原图同样 Resize 256 并归一化；输入为 5×3×256×256。测量为整图分类（patch 用于特征，不定位）",
+    "scope": "global",
+    "threshold": 0.5,
+    "direction": "higher_is_fake"
+  },
+  "gpu_peak_gb": 3.545,
+  "gpu_reserved_peak_gb": 3.709,
+  "host_maxrss_kb": 4406548,
+  "cgroup_current": 2847686656,
+  "cgroup_peak": null,
+  "reused": [
+    "official AIDE_Model construction and streaming checkpoint load (adapter; checkpoint contains the ConvNeXt-XXL trunk)",
+    "adapter preprocessing call for the tensor comparison"
+  ],
+  "independent": [
+    "official data.datasets.TestDataset (PIL RGB -> ToTensor -> DCT -> Resize/Normalize)",
+    "official output formula softmax(logits, dim=1)[:, 1] on the official tensor",
+    "repeated Expert.analyze() calls in the same process"
+  ],
+  "limitation": "engine_finetune.evaluate's distributed all_gather loop was not called; the official TestDataset and output formula were used directly.",
+  "ok": true
+}

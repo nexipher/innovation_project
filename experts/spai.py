@@ -5,9 +5,9 @@ Not registered in the Agent toolbox.  The official code is pinned at
 `8ff7b3b6…` under `third_party/spai/repo`; the checkpoint is the user-uploaded
 `weights/spai.pth` (Apache-2.0).  Loading compatibility is explicit:
 
-* the saved `config` predates `MODEL_WEIGHTS` and
-  `MODEL.FRE.DISABLE_RECONSTRUCTION_SIMILARITY`; missing keys are filled from
-  the pinned code's defaults (both are `mfm` / `False`, the code defaults);
+* the release inference config is `configs/spai.yaml`, exactly as the official
+  `infer` CLI uses it.  The checkpoint's embedded training config is ignored:
+  it has `MINIMUM_PATCHES=1`, while the release yaml has 4;
 * `torch.load(weights_only=True)` rejects the `yacs.config.CfgNode` embedded
   in the checkpoint; the trusted official upload is loaded with
   `weights_only=False` and `mmap=True`;
@@ -39,6 +39,7 @@ from experts.external_base import ExternalScoreExpert
 
 DEFAULT_REPO = "/root/autodl-tmp/third_party/spai/repo"
 DEFAULT_WEIGHTS = "/root/autodl-tmp/third_party/spai/weights/spai.pth"
+DEFAULT_CONFIG = "/root/autodl-tmp/third_party/spai/repo/configs/spai.yaml"
 SOURCE_NAME = "spai_expert"
 REQUIRED_MODULES = ("einops", "albumentations", "filetype", "lmdb",
                     "seaborn", "pandas", "timm")
@@ -78,16 +79,6 @@ def _install_import_shims() -> None:
         timm_transforms._pil_interp = _pil_interp
 
 
-def _fill_defaults(destination, source) -> None:
-    """Fill missing config keys from the pinned code's defaults, recursively."""
-    for key in source:
-        if key not in destination:
-            value = source[key]
-            destination[key] = value.clone() if hasattr(value, "clone") else value
-        elif hasattr(source[key], "keys"):
-            _fill_defaults(destination[key], source[key])
-
-
 class SPAIEvaluator:
     """Loads the official SPAI checkpoint and scores one PIL image."""
 
@@ -111,18 +102,22 @@ class SPAIEvaluator:
         if self.repo not in sys.path:
             sys.path.insert(0, self.repo)
 
+    @staticmethod
+    def _official_config():
+        """The release inference config, exactly as the official `infer` CLI uses it."""
+        from spai.config import get_config
+
+        return get_config({"cfg": DEFAULT_CONFIG, "opts": ()})
+
     def load(self) -> "SPAIEvaluator":
         if self._model is not None:
             return self
         self._prepare_imports()
-        from spai.config import _C as DEFAULT
         from spai.models.build import build_cls_model
         from spai.data.data_finetune import build_transform
 
+        config = self._official_config()
         checkpoint = load_mmap_checkpoint(self.weights_path, weights_only=False)
-        config = checkpoint["config"].clone()
-        config.defrost()
-        _fill_defaults(config, DEFAULT)
         state = checkpoint["model"]
         with meta_build():
             model = build_cls_model(config)
@@ -148,13 +143,9 @@ class SPAIEvaluator:
     def check_preprocess(self, image) -> dict:
         """Official transform only (no model load); for CPU reports."""
         self._prepare_imports()
-        from spai.config import _C as DEFAULT
         from spai.data.data_finetune import build_transform
 
-        checkpoint = load_mmap_checkpoint(self.weights_path, weights_only=False)
-        config = checkpoint["config"].clone()
-        config.defrost()
-        _fill_defaults(config, DEFAULT)
+        config = self._official_config()
         transform = build_transform(False, config)
         tensor = transform(image=np.asarray(image.convert("RGB")))["image"]
         return {"shape": list(tensor.shape), "dtype": str(tensor.dtype),
@@ -163,9 +154,15 @@ class SPAIEvaluator:
                 "config_img_size": int(config.DATA.IMG_SIZE)}
 
     @torch.no_grad()
-    def score(self, image) -> float:
+    def raw_logits(self, image) -> torch.Tensor:
+        # Official `validate` feeds arbitrary-resolution models a LIST of
+        # 1xCxHxW tensors, not a stacked batch; the model has two different
+        # forwards (`forward_batch` vs `forward_arbitrary_resolution_batch`).
         tensor = self.preprocess(image).unsqueeze(0).to(self.device)
-        logits = self._model(tensor)
+        return self._model([tensor], self._cfg.MODEL.FEATURE_EXTRACTION_BATCH)
+
+    def score(self, image) -> float:
+        logits = self.raw_logits(image)
         return float(torch.sigmoid(logits).reshape(-1)[0].item())
 
     # ------------------------------------------------------------------
@@ -173,21 +170,18 @@ class SPAIEvaluator:
     def check_coverage(self) -> dict:
         """Build on meta and compare checkpoint keys/shapes; no tensor data read."""
         self._prepare_imports()
-        from spai.config import _C as DEFAULT
         from spai.models.build import build_cls_model
 
+        config = self._official_config()
         checkpoint = load_mmap_checkpoint(self.weights_path, weights_only=False)
-        config = checkpoint["config"].clone()
-        config.defrost()
-        _fill_defaults(config, DEFAULT)
         state = checkpoint["model"]
         with meta_build():
             model = build_cls_model(config)
         result = check_state_dict(model, state, label="SPAI")
         return {"ok": True, "model_state_keys": len(model.state_dict()),
                 "checkpoint_state_keys": len(state), **result,
-                "config_filled": ["MODEL_WEIGHTS",
-                                  "MODEL.FRE.DISABLE_RECONSTRUCTION_SIMILARITY"]}
+                "config_source": DEFAULT_CONFIG,
+                "checkpoint_config_ignored": True}
 
     def identity(self) -> dict:
         manifest = load_candidate_weights()["candidates"]["spai"]

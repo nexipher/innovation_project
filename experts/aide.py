@@ -12,8 +12,8 @@ trunk (`openclip_convnext_xxl.*`, 378 tensors, 897.9M parameters total), so no
 separate ConvNeXt checkpoint is downloaded.  The official `AIDE_Model` asks
 open_clip to load that trunk with `pretrained=convnext_path`; the adapter
 passes `pretrained=None` and loads the checkpoint instead.  Loading is
-streamed onto the device from an mmap checkpoint so the 2 GB host cgroup never
-holds the full state dict.
+streamed onto the device from an mmap checkpoint so the host never holds the
+full state dict (the earlier observed 2 GB cgroup could not have held it).
 
 Official preprocessing (TestDataset): PIL RGB -> ToTensor -> DCT patch
 selection (4 variants) -> Resize 256x256 -> ImageNet Normalize; the original
@@ -164,9 +164,12 @@ class AIDEEvaluator:
                 "original_shape": list(tensor.shape)}
 
     @torch.no_grad()
-    def score(self, image) -> float:
+    def raw_logits(self, image) -> torch.Tensor:
         batch = self.preprocess(image).unsqueeze(0).to(self.device)
-        logits = self._model(batch)
+        return self._model(batch)
+
+    def score(self, image) -> float:
+        logits = self.raw_logits(image)
         return float(torch.softmax(logits, dim=1)[:, 1].item())
 
     # ------------------------------------------------------------------

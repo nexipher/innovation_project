@@ -1,0 +1,116 @@
+{
+  "schema": "candidate_official_check/1",
+  "expert": "spai",
+  "checked_at": "2026-10-26T21:16:01",
+  "code": {
+    "repo": "mever-team/spai",
+    "commit": "8ff7b3b6779b4fcb43cf313471d9cb1c62d129a4",
+    "path": "/root/autodl-tmp/third_party/spai/repo",
+    "file_count": 70,
+    "source_manifest_sha256": "9a88f24abd491847"
+  },
+  "weights": {
+    "role": "primary",
+    "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+    "bytes": 934865338,
+    "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+    "official_hash": null,
+    "source": "mever-team/spai README -> Google Drive (user upload, 2026-10-19)",
+    "license": "Apache-2.0 (code and weights per README)",
+    "checkpoint_contains": [
+      "model",
+      "optimizer",
+      "lr_scheduler",
+      "config",
+      "amp"
+    ],
+    "model_state_keys": 324,
+    "params_millions": 139.945243,
+    "torch_load_note": "contains yacs.config.CfgNode; torch.load(weights_only=True) fails. Trusted official upload, load with weights_only=False and mmap=True."
+  },
+  "official_cli": {
+    "returncode": 0,
+    "elapsed_s": 15.246,
+    "scores": {
+      "Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg": 0.5416133999824524,
+      "0841.png": 6.368987282012739e-11
+    },
+    "stderr_tail": "ession_type=1),\n  GaussianBlur(p=0.0, blur_limit=(3, 3), sigma_limit=(0, 0)),\n  GaussNoise(p=0.0, var_limit=(1.0, 1.0), per_channel=True, mean=0.0, noise_scale_factor=1.0),\n  RandomScale(p=0.0, interpolation=1, scale_limit=(0.0, 0.0)),\n  PadIfNeeded(p=1.0, min_height=224, min_width=224, pad_height_divisor=None, pad_width_divisor=None, position=PositionType.CENTER, border_mode=4, value=None, mask_value=None),\n  Normalize(p=1.0, mean=0.0, std=1.0, max_pixel_value=255.0, normalization='standard'),\n  ToTensorV2(p=1.0, transpose_mask=False),\n], p=1.0, bbox_params=None, keypoint_params=None, additional_targets={}, is_check_shapes=True)\nINFO:spai.__main__:Dataset 'two' | Split: test | Total images: 2 | Source: /tmp/official_spai_v47l0dje/data\nINFO:spai.__main__:Creating model:vit/finetune\nINFO:spai.__main__:>>>>>>>>>> Remapping pre-trained keys for VIT ..........\n/root/autodl-tmp/venvs/candidates/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: No negative samples in targets, false positive value should be meaningless. Returning zero tensor in false positive score\n  warnings.warn(*args, **kwargs)  # noqa: B028\nINFO:spai.__main__:Test: [0/2] | Time 1.519 (1.519) | Loss 0.6132 (0.6132) | Mem 6759MB\n/root/autodl-tmp/venvs/candidates/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: No positive samples in targets, true positive value should be meaningless. Returning zero tensor in true positive score\n  warnings.warn(*args, **kwargs)  # noqa: B028\n/root/autodl-tmp/venvs/candidates/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: No positive samples found in target, recall is undefined. Setting recall to one for all thresholds.\n  warnings.warn(*args, **kwargs)  # noqa: B028\nINFO:spai.__main__:Test | two | Images: 2 | loss: 0.3066\nINFO:spai.__main__:Test | two | Images: 2 | ACC: 1.000\nINFO:spai.__main__:Test | two | Images: 2 | AP: 1.000\nINFO:spai.__main__:Test | two | Images: 2 | AUC: 1.000\n"
+  },
+  "checks": [
+    {
+      "image": "Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "label": 1,
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "adapter_logit": 0.16683943569660187,
+      "official_logit": 0.16683943569660187,
+      "logit_abs_diff": 0.0,
+      "adapter_score": 0.5416133999824524,
+      "official_cli_score": 0.5416133999824524,
+      "cli_score_abs_diff": 0.0,
+      "expert_analyze_first": 0.5416133999824524,
+      "expert_analyze_second": 0.5416133999824524,
+      "analyze_equal": true,
+      "finite": true,
+      "first_analyze_s": 3.0363,
+      "second_analyze_s": 0.4989
+    },
+    {
+      "image": "0841.png",
+      "label": 0,
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "adapter_logit": -23.47699546813965,
+      "official_logit": -23.47699546813965,
+      "logit_abs_diff": 0.0,
+      "adapter_score": 6.368987282012739e-11,
+      "official_cli_score": 6.368987282012739e-11,
+      "cli_score_abs_diff": 0.0,
+      "expert_analyze_first": 6.368987282012739e-11,
+      "expert_analyze_second": 6.368987282012739e-11,
+      "analyze_equal": true,
+      "finite": true,
+      "first_analyze_s": 0.3252,
+      "second_analyze_s": 0.3146
+    }
+  ],
+  "coverage": {
+    "ok": true,
+    "model_state_keys": 324,
+    "checkpoint_state_keys": 324,
+    "missing": [],
+    "unexpected": [],
+    "shape_mismatch": [],
+    "config_filled": [
+      "MODEL_WEIGHTS",
+      "MODEL.FRE.DISABLE_RECONSTRUCTION_SIMILARITY"
+    ]
+  },
+  "identity": {
+    "source_name": "spai_expert",
+    "weights_path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+    "weights_sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+    "weights_bytes": 934865338,
+    "repo": "/root/autodl-tmp/third_party/spai/repo",
+    "preprocess": "官方 SPAI 测试变换：原分辨率（不缩放/不裁剪），PadIfNeeded 到 ≥224×224，[0,1] 归一化，ToTensor；测量范围为整图（any-resolution）",
+    "scope": "global",
+    "threshold": 0.5,
+    "direction": "higher_is_fake"
+  },
+  "gpu_peak_gb": 6.6,
+  "gpu_reserved_peak_gb": 8.303,
+  "host_maxrss_kb": 1488808,
+  "cgroup_current": 2744557568,
+  "cgroup_peak": null,
+  "reused": [
+    "model construction and streaming checkpoint load (adapter; checkpoint/config are the pinned official ones)",
+    "adapter preprocessing call for the tensor comparison"
+  ],
+  "independent": [
+    "official python -m spai infer CLI (separate process, official CSVDataset + model + output CSV)",
+    "official CSVDataset preprocessed tensors",
+    "official model logits on the official tensor"
+  ],
+  "ok": true
+}

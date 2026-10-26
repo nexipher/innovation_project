@@ -9,10 +9,12 @@ evidence semantics.
 
 Two loading facts drive this module:
 
-* the checkpoints are large (AIDE 3.59 GB each).  The host cgroup is 2 GB, so
-  loading the whole state dict into CPU RAM is not possible.  The model is
-  built on the `meta` device and materialised directly on CUDA; each tensor is
-  streamed from the mmap checkpoint to the GPU and released.
+* the checkpoints are large (AIDE 3.59 GB each).  A whole-state-dict CPU copy
+  is wasteful at best and does not fit the 2 GB cap observed earlier; the
+  current cgroup reads 120 GiB, but the streaming path is kept so the loader
+  stays within the smaller historical limit.  The model is built on the `meta`
+  device and materialised directly on CUDA; each tensor is streamed from the
+  mmap checkpoint to the GPU and released.
 * the official code is pinned under `third_party/` and is imported read-only.
   Compatibility shims are explicit and limited to what inference needs; they
   never rewrite the official files.
