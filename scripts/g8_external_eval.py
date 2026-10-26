@@ -302,6 +302,16 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
         torch.cuda.reset_peak_memory_stats()
     cgroup_start = _cgroup("current")
     started = time.time()
+    load_s = {}
+    load_errors = {}
+    for name, expert in objects.items():
+        load_started = time.perf_counter()
+        try:
+            expert.preload()
+        except Exception as exc:
+            # A failed load is a measurement failure, not a zero/neutral score.
+            load_errors[name] = f"{type(exc).__name__}: {exc}"
+        load_s[name] = round(time.perf_counter() - load_started, 3)
     written = 0
     with open(scores_path, "a", encoding="utf-8") as handle:
         for entry in entries:
@@ -336,6 +346,20 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
                 if (entry["variant_id"], name) in done:
                     continue
                 field, threshold, direction = expert_orientation(name)
+                if name in load_errors:
+                    handle.write(json.dumps({
+                        "variant_id": entry["variant_id"], "expert": name,
+                        "group": entry["group"], "condition": entry["condition"],
+                        "label": entry["label"], "source_id": entry.get("source_id", ""),
+                        "source_path": entry["source_path"],
+                        "field": field, "value": None, "direction": direction,
+                        "oriented": None, "status": "failed",
+                        "error": f"preload_failed: {load_errors[name]}",
+                        "threshold": threshold, "predicted_label": None,
+                        "elapsed_ms": None,
+                    }, ensure_ascii=False) + "\n")
+                    written += 1
+                    continue
                 try:
                     t0 = time.perf_counter()
                     result = expert.analyze(image)
@@ -380,6 +404,8 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
         "written_this_run": written,
         "rows_measured": sum(1 for row in rows if _measured(row)),
         "rows_failed": sum(1 for row in rows if row.get("status") == "failed"),
+        "load_s": load_s,
+        "load_errors": load_errors,
         "timing": _timing(rows, experts),
         "gpu_peak_allocated_gb": gpu_peak,
         "gpu_peak_reserved_gb": gpu_reserved,

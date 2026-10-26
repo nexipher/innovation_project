@@ -255,6 +255,14 @@ class AIDEExpert(ExternalScoreExpert):
             return f"{self.source_name}：官方代码未固定到 {DEFAULT_REPO}"
         return ""
 
+    def preload(self) -> None:
+        if self._evaluator is None:
+            self._evaluator = AIDEEvaluator(checkpoint=self.checkpoint,
+                                            device=self.device,
+                                            weights_dir=os.path.dirname(
+                                                self.weights_path))
+        self._evaluator.load()
+
     def _score(self, img_patch: np.ndarray):
         if self._evaluator is None:
             self._evaluator = AIDEEvaluator(checkpoint=self.checkpoint,

@@ -247,6 +247,10 @@ class ExternalScoreExpert(BaseExpert):
     # The contract
     # ------------------------------------------------------------------
 
+    def preload(self) -> None:
+        """Load the model now, so callers can time load separately from inference."""
+        return None
+
     def analyze(self, img_patch: np.ndarray) -> ExpertResult:
         reason = self.unavailable_reason()
         if reason:

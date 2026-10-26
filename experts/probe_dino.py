@@ -145,6 +145,10 @@ class ProbeDinoExpert(ExternalScoreExpert):
         """Keys the checkpoint did not provide / that did not fit (diagnostics)."""
         return getattr(self, "_load_report", {"missing": [], "unexpected": []})
 
+    def preload(self) -> None:
+        if self._model is None:
+            self._load()
+
     # ------------------------------------------------------------------
     # Scoring
     # ------------------------------------------------------------------
