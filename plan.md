@@ -703,7 +703,7 @@ AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；
 | 步骤 | 内容 | 产物/门槛 | 资源 |
 | --- | --- | --- | --- |
 | 0 | 权重/代码/参数覆盖与官方预处理核对 | **已完成 SPAI/AIDE**（sha256/覆盖/预处理/代码 pin）；DRCT/SSP/DIRE 仍未下载 | 无 GPU |
-| 1 | 离线适配器 + CPU 测试，不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py`；`core` 720 通过 | CPU |
+| 1 | 离线适配器 + CPU 测试，不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py`；`core` 721 通过 | CPU |
 | 2 | **官方路径对照**：SPAI 官方 CLI / AIDE 官方 `TestDataset`，同图张量、logit、分数、重复调用 | **已完成，均 `ok=true`**（见 §4.17e） | 已用 GPU（核验） |
 | 3 | **首轮开发集 D1a：每专家 200 输入**（100 源 × original/q95）；PROBE、SPAI、AIDE **各自独立进程、顺序执行** | 逐图分数 + 分组报告 + 失败/耗时/内存 | **待授权**；实测估计 **<20 min** |
 | 4 | 描述性 2×2 错误重合（按源聚类）；**不设合格线**；人工确定 2–3 个专家 | 候选短名单 + 结论 + 反例 | CPU/分析 |
@@ -835,7 +835,7 @@ python scripts/g8_candidate_compare.py \
   显存 SPAI reserved 8.303 GB、AIDE 3.709 GB，均远低于 24 GB 卡；两进程结束后
   `nvidia-smi` 回到 1 MiB，无残留进程。
 
-**准备状态**：`core` 全绿 **720 passed**（含 `test_candidate_adapters.py`、扩展后的
+**准备状态**：`core` 全绿 **721 passed**（含 `test_candidate_adapters.py`、扩展后的
 `test_external_eval.py`、`test_candidate_compare.py`）；权重/代码/覆盖/官方路径/重复调用/
 内存均已核实。**未运行开发集，未启动外部 Agent，未生成 SFT 数据；未改 Agent 提示词、
 停止策略、证据解释规则或 b2 原始记录。** 等用户明确授权后，按 §4.17d 的命令顺序执行
