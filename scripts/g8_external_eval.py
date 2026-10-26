@@ -27,8 +27,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import random
+import resource
 import sys
 import time
 from datetime import datetime
@@ -169,7 +171,7 @@ def build_expert(name: str, device: str):
     if name == "univfd":
         from experts.univfd import UnivFDExpert
         return UnivFDExpert(device=device)
-    raise SystemExit(f"未知专家：{name}（probe / npr / univfd）")
+    raise SystemExit(f"未知专家：{name}（probe / npr / univfd / spai / aide）")
 
 
 def expert_orientation(name: str) -> Tuple[str, float, str]:
@@ -205,6 +207,52 @@ def predicts_fake(value: float, direction: str, threshold: float) -> bool:
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
+
+def _measured(row: dict) -> bool:
+    """A row counts only if it was measured and the value is finite."""
+    if row.get("status", "measured") != "measured":
+        return False
+    value = row.get("value")
+    try:
+        return value is not None and math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _cgroup(name: str):
+    try:
+        with open(f"/sys/fs/cgroup/memory.{name}", encoding="utf-8") as handle:
+            return int(handle.read().strip())
+    except OSError:
+        return None
+
+
+def _timing(rows: List[dict], experts: List[str]) -> Dict[str, dict]:
+    """First measured call vs steady-state; elapsed_ms is analyze-only."""
+    out = {}
+    for name in experts:
+        values = [float(row["elapsed_ms"]) for row in rows
+                  if row.get("expert") == name and _measured(row)
+                  and row.get("elapsed_ms") is not None]
+        if values:
+            steady = values[1:] or values
+            out[name] = {"first_ms": values[0],
+                         "steady_median_ms": round(statistics_median(steady), 1),
+                         "steady_min_ms": min(steady),
+                         "steady_max_ms": max(steady),
+                         "n": len(values),
+                         "scope": "expert.analyze() including preprocessing, "
+                                  "forward and .item() sync; image loading excluded"}
+    return out
+
+
+def statistics_median(values: List[float]) -> float:
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return float(ordered[middle])
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
 
 def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
         limit: Optional[int], dry_run: bool, resume: bool) -> dict:
@@ -243,6 +291,11 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
 
     from utils.image_utils import ImageUtils
 
+    import torch
+
+    if device.startswith("cuda") and torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+    cgroup_start = _cgroup("current")
     started = time.time()
     written = 0
     with open(scores_path, "a", encoding="utf-8") as handle:
@@ -250,43 +303,91 @@ def run(inputs_path: str, out_dir: str, experts: List[str], device: str,
             if all((entry["variant_id"], name) in done for name in experts):
                 continue
             image_path = os.path.join(PROJECT_ROOT, entry["path"])
-            # 与控制器喂给专家的是**同一个函数**（BGR + PIL 兜底），否则外部基线
-            # 和 Agent 内部调用的预处理就可能在边缘格式上分叉。
-            image = ImageUtils.load_image(image_path)
-            if image is None or getattr(image, "size", 0) == 0:
-                raise SystemExit(f"读不到图像：{entry['path']}")
+            try:
+                image = ImageUtils.load_image(image_path)
+                if image is None or getattr(image, "size", 0) == 0:
+                    raise ValueError("empty image")
+            except Exception as exc:
+                # The image itself failed: every expert gets an explicit
+                # failure row, never a zero or a neutral score.
+                for name in experts:
+                    if (entry["variant_id"], name) in done:
+                        continue
+                    field, threshold, direction = expert_orientation(name)
+                    handle.write(json.dumps({
+                        "variant_id": entry["variant_id"], "expert": name,
+                        "group": entry["group"], "condition": entry["condition"],
+                        "label": entry["label"], "source_id": entry.get("source_id", ""),
+                        "source_path": entry["source_path"],
+                        "field": field, "value": None, "direction": direction,
+                        "oriented": None, "status": "failed",
+                        "error": f"image_load_failed: {type(exc).__name__}: {exc}",
+                        "elapsed_ms": None,
+                    }, ensure_ascii=False) + "\n")
+                    written += 1
+                handle.flush()
+                continue
             for name, expert in objects.items():
                 if (entry["variant_id"], name) in done:
                     continue
-                field, _threshold, direction = expert_orientation(name)
-                t0 = time.perf_counter()
-                result = expert.analyze(image)
-                elapsed_ms = (time.perf_counter() - t0) * 1000
-                value = float(getattr(result, field, getattr(result, "raw_metric", 0.0)))
-                handle.write(json.dumps({
+                field, threshold, direction = expert_orientation(name)
+                try:
+                    t0 = time.perf_counter()
+                    result = expert.analyze(image)
+                    elapsed_ms = (time.perf_counter() - t0) * 1000
+                    value = float(getattr(result, field,
+                                          getattr(result, "raw_metric", 0.0)))
+                    if not math.isfinite(value):
+                        raise ValueError(f"non-finite score: {value!r}")
+                    status, error = "measured", ""
+                except Exception as exc:
+                    elapsed_ms = (time.perf_counter() - t0) * 1000
+                    value, status, error = None, "failed", (
+                        f"{type(exc).__name__}: {exc}")
+                row = {
                     "variant_id": entry["variant_id"], "expert": name,
                     "group": entry["group"], "condition": entry["condition"],
                     "label": entry["label"], "source_id": entry.get("source_id", ""),
                     "source_path": entry["source_path"],
                     "field": field, "value": value, "direction": direction,
-                    "oriented": oriented(value, direction),
+                    "oriented": (oriented(value, direction)
+                                 if value is not None else None),
+                    "status": status, "error": error,
+                    "threshold": threshold,
+                    "predicted_label": (("Fake" if predicts_fake(value, direction, threshold)
+                                        else "Real") if value is not None else None),
                     "elapsed_ms": round(elapsed_ms, 1),
-                }, ensure_ascii=False) + "\n")
+                }
+                handle.write(json.dumps(row, ensure_ascii=False) + "\n")
                 written += 1
             handle.flush()
 
     rows = [json.loads(line) for line in open(scores_path, encoding="utf-8")]
     report = build_report(rows, experts, manifest, inputs_path)
+    gpu_peak = gpu_reserved = None
+    if device.startswith("cuda") and torch.cuda.is_available():
+        gpu_peak = round(torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
+        gpu_reserved = round(torch.cuda.max_memory_reserved() / 1024 ** 3, 3)
     report["run"] = {
         "started_at": datetime.fromtimestamp(started).isoformat(timespec="seconds"),
         "elapsed_s": round(time.time() - started, 1),
         "device": device, "experts": experts, "rows": len(rows),
         "written_this_run": written,
+        "rows_measured": sum(1 for row in rows if _measured(row)),
+        "rows_failed": sum(1 for row in rows if row.get("status") == "failed"),
+        "timing": _timing(rows, experts),
+        "gpu_peak_allocated_gb": gpu_peak,
+        "gpu_peak_reserved_gb": gpu_reserved,
+        "host_maxrss_kb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "cgroup_current_start": cgroup_start,
+        "cgroup_current_end": _cgroup("current"),
+        "cgroup_peak": _cgroup("peak"),
+        "cgroup_note": ("memory.current is anon+file+slab; file-backed mmap pages "
+                        "are reclaimable. memory.peak is not exposed in this cgroup."),
     }
     json.dump(report, open(os.path.join(out_dir, "report.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)
 
-    # 使用历史：哪一批、哪个阶段、多少输入
     plan_doc = json.load(open(PLAN, encoding="utf-8"))
     plan_doc.setdefault("usage_history", []).append({
         "at": datetime.now().isoformat(timespec="seconds"),
@@ -321,8 +422,10 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
     groups: Dict[str, dict] = {}
     for (group, condition, _variant), per in sorted(by_key.items()):
         bucket = groups.setdefault(group, {}).setdefault(condition, {
-            "n": 0, "n_fake": 0, "n_real": 0, "per_expert": {
-                name: {"values": [], "fake_rate_at_threshold": 0, "elapsed_ms": []}
+            "n": 0, "n_fake": 0, "n_real": 0, "n_measured": 0, "n_failed": 0,
+            "per_expert": {
+                name: {"values": [], "fake_rate_at_threshold": 0,
+                       "elapsed_ms": [], "failures": 0}
                 for name in experts}})
         bucket["n"] += 1
         label = labels[(group, condition, _variant)]
@@ -332,20 +435,30 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
             if not row:
                 continue
             data = bucket["per_expert"][name]
-            data["values"].append(row["value"])
+            if not _measured(row):
+                data["failures"] += 1
+                continue
+            data["values"].append(float(row["value"]))
             data["elapsed_ms"].append(row["elapsed_ms"])
             _field, threshold, direction = expert_orientation(name)
             data["fake_rate_at_threshold"] += int(
                 predicts_fake(row["value"], direction, threshold))
+        measured_any = any(_measured(per[name]) for name in experts if name in per)
+        bucket["n_measured"] += int(measured_any)
+        bucket["n_failed"] += int(not measured_any)
     for group, conditions in groups.items():
         for condition, bucket in conditions.items():
             for name in experts:
                 data = bucket["per_expert"][name]
-                if not data["values"]:
-                    continue
-                data["fake_rate_at_threshold"] = round(
-                    data["fake_rate_at_threshold"] / len(data["values"]), 4)
-                data["mean_score"] = round(sum(data["values"]) / len(data["values"]), 4)
+                if data["values"]:
+                    data["fake_rate_at_threshold"] = round(
+                        data["fake_rate_at_threshold"] / len(data["values"]), 4)
+                    data["mean_score"] = round(
+                        sum(data["values"]) / len(data["values"]), 4)
+                else:
+                    data["fake_rate_at_threshold"] = None
+                    data["mean_score"] = None
+                data["n_measured"] = len(data["values"])
                 del data["values"]
 
     # ---- 配对分析视图（生成器 × 条件） ----
@@ -376,20 +489,54 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
             bucket = {"n": len(items),
                       "n_fake": sum(1 for _v, _p, label in items if label == 1),
                       "n_real": sum(1 for _v, _p, label in items if label == 0),
+                      "n_measured": sum(1 for _v, per, _l in items
+                                        if any(_measured(per[n]) for n in experts
+                                               if n in per)),
+                      "n_failed": 0,
                       "per_expert": {}}
             for name in experts:
-                scores = [per[name]["oriented"] for _v, per, _l in items if name in per]
-                truths = [label for _v, per, label in items if name in per]
-                if not scores:
+                measured = [(per, label) for _v, per, label in items
+                            if name in per and _measured(per[name])]
+                failures = sum(1 for _v, per, _l in items
+                               if name in per and not _measured(per[name]))
+                bucket["n_failed"] += int(failures == len(items))
+                if not measured:
+                    bucket["per_expert"][name] = {
+                        "auroc": None, "threshold_accuracy": None,
+                        "tpr": None, "tnr": None, "balanced_accuracy": None,
+                        "n_measured": 0, "n_fake_measured": 0,
+                        "n_real_measured": 0, "failures": failures,
+                    }
                     continue
+                scores = [float(per[name]["oriented"]) for per, _l in measured]
+                truths = [label for _per, label in measured]
                 _field, threshold, direction = expert_orientation(name)
                 correct = sum(
                     predicts_fake(per[name]["value"], direction, threshold)
-                    == bool(label)
-                    for _v, per, label in items if name in per)
+                    == bool(label) for per, label in measured)
+                n_fake = sum(1 for _per, label in measured if label == 1)
+                n_real = sum(1 for _per, label in measured if label == 0)
+                tpr = (sum(1 for per, label in measured
+                           if label == 1 and predicts_fake(
+                               per[name]["value"], direction, threshold))
+                       / n_fake) if n_fake else None
+                tnr = (sum(1 for per, label in measured
+                           if label == 0 and not predicts_fake(
+                               per[name]["value"], direction, threshold))
+                       / n_real) if n_real else None
+                balanced = ((tpr + tnr) / 2.0
+                            if tpr is not None and tnr is not None else None)
                 bucket["per_expert"][name] = {
                     "auroc": bootstrap_auroc(scores, truths),
                     "threshold_accuracy": round(correct / len(scores), 4),
+                    "tpr": round(tpr, 4) if tpr is not None else None,
+                    "tnr": round(tnr, 4) if tnr is not None else None,
+                    "balanced_accuracy": (round(balanced, 4)
+                                          if balanced is not None else None),
+                    "n_measured": len(scores),
+                    "n_fake_measured": n_fake,
+                    "n_real_measured": n_real,
+                    "failures": failures,
                 }
             per_condition[condition] = bucket
         # 两种条件按同一 variant 配对（variant_id 唯一，且带来源组前缀）
@@ -411,12 +558,16 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
                     jpeg = rows_by_condition["jpeg_q95"][source_key]
                     if name not in orig or name not in jpeg:
                         continue
-                    a.append(orig[name]["oriented"])
-                    b.append(jpeg[name]["oriented"])
+                    if not (_measured(orig[name]) and _measured(jpeg[name])):
+                        continue
+                    a.append(float(orig[name]["oriented"]))
+                    b.append(float(jpeg[name]["oriented"]))
                     truths.append(1 if orig[name]["label"] == "Fake" else 0)
                 if a:
                     per_condition["original"]["per_expert"].setdefault(name, {})[
                         "paired_delta_vs_jpeg_q95"] = paired_delta(a, b, truths)
+                    per_condition["original"]["per_expert"][name][
+                        "paired_delta_n_pairs"] = len(a)
         analysis[f"{fake_group} vs {real_group}"] = per_condition
 
     return {
@@ -438,12 +589,22 @@ def _expert_identity(name: str) -> dict:
     """报告要能回答"这个分数由哪份权重、哪套预处理产生"——从登记表/候选表抄。"""
     if name in CANDIDATE_NAMES:
         record = _candidate_semantics(name)
+        code = json.load(open(os.path.join(
+            PROJECT_ROOT, "experts", "candidate_code.json"),
+            encoding="utf-8"))["pinned"][name]
         return {
             "weights": record["weights"],
             "raw_score": record["raw_score"],
             "threshold": record["threshold"],
             "preprocess": record["preprocess"],
             "licence": record.get("licence"),
+            "code": {"repo": code["repo"], "commit": code["commit"]},
+            "output": {
+                "transform": ("sigmoid" if name == "spai"
+                              else "softmax(logits, dim=1)[:, 1]"),
+                "threshold": record["threshold"]["value"],
+                "meaning": record["raw_score"]["meaning"],
+            },
         }
     from utils.score_semantics import entry
 

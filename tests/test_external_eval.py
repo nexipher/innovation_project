@@ -85,13 +85,16 @@ class TestTheRegistryDecidesDirectionAndThreshold:
         assert predicts_fake(0.9, "higher_is_real", 0.5) is False
 
 
-def _row(variant_id, group, condition, label, expert, value, direction="higher_is_fake"):
+def _row(variant_id, group, condition, label, expert, value,
+         direction="higher_is_fake", status="measured", error=""):
     # 配对键是源：同一源在两种条件下 source_path 必须相同（与真实清单一致）
     return {"variant_id": variant_id, "expert": expert, "group": group,
             "condition": condition, "label": label, "source_id": variant_id,
             "source_path": variant_id,
             "field": "raw_metric", "value": value, "direction": direction,
-            "oriented": oriented(value, direction), "elapsed_ms": 1.0}
+            "oriented": (oriented(value, direction) if value is not None else None),
+            "status": status, "error": error, "threshold": 0.5,
+            "elapsed_ms": 1.0}
 
 
 class TestTheReport:
@@ -163,6 +166,46 @@ class TestTheReport:
         assert identity["weights"]["sha256"]
         assert identity["preprocess"]["measurement_scope"] == "global"
         assert identity["threshold"]["value"] == pytest.approx(0.5)
+
+    def test_a_failed_measurement_is_counted_not_scored_as_zero(self):
+        rows = self._rows()
+        failed = rows[0]
+        rows[0] = {**failed, "value": None, "oriented": None,
+                   "status": "failed", "error": "cuda OOM"}
+        report = build_report(rows, ["probe"], {"inputs": []}, "m.json")
+        bucket = report["analysis"]["gen vs div2k"]["original"]
+        data = bucket["per_expert"]["probe"]
+        assert data["failures"] == 1
+        assert data["n_measured"] == 3
+        assert data["n_fake_measured"] == 1
+        assert data["auroc"] is not None
+        # The failed value never enters the mean or the fake-rate denominator.
+        assert data["n_measured"] + data["failures"] == bucket["n"]
+
+    def test_all_failures_produce_no_auroc_and_no_zero_score(self):
+        rows = [{**row, "value": None, "oriented": None,
+                 "status": "failed", "error": "missing weights"}
+                for row in self._rows()]
+        report = build_report(rows, ["probe"], {"inputs": []}, "m.json")
+        data = report["analysis"]["gen vs div2k"]["original"]["per_expert"]["probe"]
+        assert data["auroc"] is None
+        assert data["threshold_accuracy"] is None
+        assert data["balanced_accuracy"] is None
+        assert data["n_measured"] == 0
+        assert data["failures"] == 4
+
+    def test_tpr_tnr_and_balanced_accuracy(self):
+        rows = [
+            _row("f0", "gen", "original", "Fake", "probe", 0.9),
+            _row("f1", "gen", "original", "Fake", "probe", 0.4),
+            _row("r0", "div2k", "original", "Real", "probe", 0.6),
+            _row("r1", "div2k", "original", "Real", "probe", 0.2),
+        ]
+        report = build_report(rows, ["probe"], {"inputs": []}, "m.json")
+        data = report["analysis"]["gen vs div2k"]["original"]["per_expert"]["probe"]
+        assert data["tpr"] == pytest.approx(0.5)
+        assert data["tnr"] == pytest.approx(0.5)
+        assert data["balanced_accuracy"] == pytest.approx(0.5)
 
     def test_a_single_label_pair_has_no_auroc(self):
         rows = [row for row in self._rows() if row["label"] == "Fake"]
