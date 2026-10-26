@@ -1,0 +1,812 @@
+{
+  "schema": "external_eval_report/1",
+  "inputs_manifest": "dataset/mnw_div2k/inputs_manifest.json",
+  "manifest_sha256": "ae31b6ffe5162e99f6374474a00dd89d4d3e21850d500c6f33843aba62bf6c9d",
+  "rules": {
+    "no_threshold_fitting": true,
+    "per_group_only": true,
+    "real_images_reused_across_generators": true,
+    "paired_conditions": true,
+    "single_label_groups_have_no_auroc": true
+  },
+  "composition": {
+    "original": {
+      "n": 100,
+      "by_label_container": {
+        "Fake/jpg": 80,
+        "Real/png": 20
+      }
+    },
+    "jpeg_q95": {
+      "n": 100,
+      "by_label_container": {
+        "Fake/jpg": 80,
+        "Real/jpg": 20
+      }
+    }
+  },
+  "experts": {
+    "drct": {
+      "weights": {
+        "path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+        "archive_path": "/root/autodl-tmp/third_party/drct/weights/pretrained.zip",
+        "archive_sha256": "235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046",
+        "archive_bytes": 4178790241,
+        "checkpoint": "DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+        "sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861",
+        "bytes": 354605453
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 softmax 的 class-1 概率（1 - softmax[:,0]）；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方 scripts/train.py 的 eval_model 默认 threshold=0.5",
+        "note": "不在外部集上调整"
+      },
+      "preprocess": {
+        "name": "官方 DRCT 测试变换",
+        "detail": "RGB → PadIfNeeded(≥224) → CenterCrop(224) → PadIfNeeded(224) → ImageNet Normalize → ToTensor；不缩放",
+        "measurement_scope": "global",
+        "source": "data/transform.py::create_val_transforms(size=224, is_crop=True) at DRCT commit 01aa7d0b"
+      },
+      "licence": "仓库无 LICENSE；权重许可未单独声明",
+      "code": {
+        "repo": "beibuwandeluori/DRCT",
+        "commit": "01aa7d0b6de903cf3208801f8f6b469edffbc762"
+      },
+      "output": {
+        "transform": "softmax(logits, dim=1)[:, 1]",
+        "threshold": 0.5,
+        "meaning": "官方 softmax 的 class-1 概率（1 - softmax[:,0]）；越高越像 AI 生成"
+      }
+    }
+  },
+  "groups": {
+    "Adobe_Firefly_v4": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.25,
+            "elapsed_ms": [
+              78.6,
+              81.2,
+              70.0,
+              76.8,
+              76.6,
+              69.4,
+              69.2,
+              81.9,
+              69.7,
+              76.4,
+              71.0,
+              73.8,
+              76.7,
+              79.1,
+              68.1,
+              76.8,
+              76.0,
+              73.9,
+              67.9,
+              72.5
+            ],
+            "failures": 0,
+            "mean_score": 0.2169,
+            "n_measured": 20
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.25,
+            "elapsed_ms": [
+              69.1,
+              678.7,
+              71.0,
+              77.5,
+              81.5,
+              72.5,
+              74.1,
+              66.8,
+              83.8,
+              74.5,
+              72.8,
+              78.3,
+              68.5,
+              65.1,
+              71.5,
+              74.8,
+              77.5,
+              79.3,
+              71.4,
+              74.9
+            ],
+            "failures": 0,
+            "mean_score": 0.2126,
+            "n_measured": 20
+          }
+        }
+      }
+    },
+    "ByteDance_Seedream_v4": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.6,
+            "elapsed_ms": [
+              26.2,
+              72.5,
+              26.1,
+              63.1,
+              26.4,
+              26.0,
+              25.4,
+              26.1,
+              26.2,
+              26.2,
+              26.6,
+              78.6,
+              26.6,
+              26.2,
+              25.6,
+              68.8,
+              25.5,
+              62.5,
+              26.3,
+              26.3
+            ],
+            "failures": 0,
+            "mean_score": 0.6246,
+            "n_measured": 20
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.6,
+            "elapsed_ms": [
+              26.2,
+              67.9,
+              26.5,
+              70.2,
+              31.4,
+              26.3,
+              26.5,
+              29.2,
+              26.4,
+              32.0,
+              26.3,
+              67.2,
+              25.7,
+              30.8,
+              25.5,
+              77.5,
+              25.5,
+              65.4,
+              26.3,
+              26.3
+            ],
+            "failures": 0,
+            "mean_score": 0.6138,
+            "n_measured": 20
+          }
+        }
+      }
+    },
+    "DIV2K_valid_HR": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 0,
+        "n_real": 20,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              44.2,
+              36.8,
+              41.2,
+              41.8,
+              60.7,
+              65.7,
+              58.0,
+              40.3,
+              65.7,
+              58.4,
+              42.7,
+              64.1,
+              42.8,
+              75.5,
+              40.4,
+              49.6,
+              41.5,
+              62.7,
+              42.0,
+              41.4
+            ],
+            "failures": 0,
+            "mean_score": 0.0123,
+            "n_measured": 20
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 0,
+        "n_real": 20,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.0,
+            "elapsed_ms": [
+              50.3,
+              41.1,
+              50.2,
+              42.9,
+              56.4,
+              53.0,
+              48.1,
+              49.2,
+              87.9,
+              43.7,
+              49.4,
+              50.5,
+              53.4,
+              54.6,
+              39.9,
+              48.9,
+              39.9,
+              81.2,
+              42.6,
+              43.7
+            ],
+            "failures": 0,
+            "mean_score": 0.0269,
+            "n_measured": 20
+          }
+        }
+      }
+    },
+    "Google_Imagen4": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.5,
+            "elapsed_ms": [
+              22.4,
+              21.5,
+              20.8,
+              21.1,
+              21.5,
+              22.2,
+              22.0,
+              21.4,
+              22.1,
+              21.3,
+              22.8,
+              22.3,
+              21.5,
+              21.8,
+              21.0,
+              21.8,
+              20.2,
+              20.9,
+              21.5,
+              22.1
+            ],
+            "failures": 0,
+            "mean_score": 0.425,
+            "n_measured": 20
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.5,
+            "elapsed_ms": [
+              22.1,
+              21.3,
+              21.2,
+              20.9,
+              22.0,
+              21.4,
+              22.2,
+              20.6,
+              21.5,
+              20.9,
+              22.2,
+              22.7,
+              21.9,
+              22.1,
+              20.3,
+              21.6,
+              20.5,
+              20.3,
+              21.4,
+              24.3
+            ],
+            "failures": 0,
+            "mean_score": 0.426,
+            "n_measured": 20
+          }
+        }
+      }
+    },
+    "Midjourney_v7": {
+      "jpeg_q95": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.3,
+            "elapsed_ms": [
+              22.1,
+              21.6,
+              21.6,
+              23.2,
+              22.3,
+              24.6,
+              25.9,
+              23.3,
+              21.5,
+              21.1,
+              21.5,
+              22.3,
+              22.9,
+              21.9,
+              25.4,
+              23.1,
+              23.1,
+              21.0,
+              25.4,
+              22.9
+            ],
+            "failures": 0,
+            "mean_score": 0.2793,
+            "n_measured": 20
+          }
+        }
+      },
+      "original": {
+        "n": 20,
+        "n_fake": 20,
+        "n_real": 0,
+        "n_measured": 20,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "fake_rate_at_threshold": 0.5,
+            "elapsed_ms": [
+              21.9,
+              22.1,
+              21.9,
+              23.3,
+              21.9,
+              22.7,
+              21.6,
+              21.9,
+              21.2,
+              21.6,
+              21.8,
+              22.0,
+              23.4,
+              22.6,
+              22.0,
+              24.5,
+              22.7,
+              21.5,
+              22.0,
+              23.4
+            ],
+            "failures": 0,
+            "mean_score": 0.5343,
+            "n_measured": 20
+          }
+        }
+      }
+    }
+  },
+  "analysis": {
+    "Adobe_Firefly_v4 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.75,
+              "ci95": [
+                0.5783,
+                0.8871
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.625,
+            "tpr": 0.25,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.625,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 77.8,
+              "median": 67.7,
+              "min": 39.9,
+              "max": 678.7
+            },
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.02,
+              "ci95": [
+                -0.0825,
+                0.1151
+              ],
+              "bootstrap": 1000
+            },
+            "paired_delta_n_pairs": 40
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.77,
+              "ci95": [
+                0.6094,
+                0.8934
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.625,
+            "tpr": 0.25,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.625,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 62.5,
+              "median": 68.0,
+              "min": 36.8,
+              "max": 81.9
+            }
+          }
+        }
+      }
+    },
+    "ByteDance_Seedream_v4 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.91,
+              "ci95": [
+                0.8045,
+                0.9874
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.8,
+            "tpr": 0.6,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.8,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 44.6,
+              "median": 43.3,
+              "min": 25.5,
+              "max": 87.9
+            },
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.0275,
+              "ci95": [
+                -0.005,
+                0.0777
+              ],
+              "bootstrap": 1000
+            },
+            "paired_delta_n_pairs": 40
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.9375,
+              "ci95": [
+                0.856,
+                0.9969
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.8,
+            "tpr": 0.6,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.8,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 43.8,
+              "median": 41.5,
+              "min": 25.4,
+              "max": 78.6
+            }
+          }
+        }
+      }
+    },
+    "Google_Imagen4 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.945,
+              "ci95": [
+                0.8622,
+                0.9949
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.75,
+            "tpr": 0.5,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.75,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 36.5,
+              "median": 32.1,
+              "min": 20.3,
+              "max": 87.9
+            },
+            "paired_delta_vs_jpeg_q95": {
+              "delta": 0.015,
+              "ci95": [
+                -0.0177,
+                0.0563
+              ],
+              "bootstrap": 1000
+            },
+            "paired_delta_n_pairs": 40
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.96,
+              "ci95": [
+                0.89,
+                0.9973
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.75,
+            "tpr": 0.5,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.75,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 36.2,
+              "median": 29.8,
+              "min": 20.2,
+              "max": 75.5
+            }
+          }
+        }
+      }
+    },
+    "Midjourney_v7 vs DIV2K_valid_HR": {
+      "original": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.915,
+              "ci95": [
+                0.8157,
+                0.9823
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.75,
+            "tpr": 0.5,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.75,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 36.8,
+              "median": 32.2,
+              "min": 21.2,
+              "max": 87.9
+            },
+            "paired_delta_vs_jpeg_q95": {
+              "delta": -0.0325,
+              "ci95": [
+                -0.1093,
+                0.0179
+              ],
+              "bootstrap": 1000
+            },
+            "paired_delta_n_pairs": 40
+          }
+        }
+      },
+      "jpeg_q95": {
+        "n": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "n_sources": 40,
+        "n_measured": 40,
+        "n_failed": 0,
+        "per_expert": {
+          "drct": {
+            "auroc": {
+              "auroc": 0.8825,
+              "ci95": [
+                0.7544,
+                0.9719
+              ],
+              "bootstrap": 1000
+            },
+            "threshold_accuracy": 0.65,
+            "tpr": 0.3,
+            "tnr": 1.0,
+            "balanced_accuracy": 0.65,
+            "n_measured": 40,
+            "n_fake_measured": 20,
+            "n_real_measured": 20,
+            "failures": 0,
+            "elapsed_ms": {
+              "n": 40,
+              "mean": 36.8,
+              "median": 31.3,
+              "min": 21.0,
+              "max": 75.5
+            }
+          }
+        }
+      }
+    }
+  },
+  "run": {
+    "started_at": "2026-10-26T22:29:40",
+    "elapsed_s": 17.3,
+    "device": "cuda",
+    "experts": [
+      "drct"
+    ],
+    "rows": 200,
+    "written_this_run": 200,
+    "rows_measured": 200,
+    "rows_failed": 0,
+    "load_s": {
+      "drct": 3.585
+    },
+    "load_errors": {},
+    "timing": {
+      "drct": {
+        "first_ms": 678.7,
+        "steady_median_ms": 26.3,
+        "steady_min_ms": 20.2,
+        "steady_max_ms": 87.9,
+        "n": 200,
+        "scope": "expert.analyze() including preprocessing, forward and .item() sync; image loading excluded"
+      }
+    },
+    "gpu_peak_allocated_gb": 0.357,
+    "gpu_peak_reserved_gb": 0.381,
+    "host_maxrss_kb": 1210764,
+    "cgroup_current_start": 2604994560,
+    "cgroup_current_end": 3146194944,
+    "cgroup_peak": null,
+    "cgroup_note": "memory.current is anon+file+slab; file-backed mmap pages are reclaimable. memory.peak is not exposed in this cgroup."
+  }
+}

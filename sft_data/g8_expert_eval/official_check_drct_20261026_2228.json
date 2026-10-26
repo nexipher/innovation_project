@@ -1,0 +1,117 @@
+{
+  "schema": "candidate_official_check/1",
+  "expert": "drct",
+  "checked_at": "2026-10-26T22:27:40",
+  "code": {
+    "repo": "beibuwandeluori/DRCT",
+    "commit": "01aa7d0b6de903cf3208801f8f6b469edffbc762",
+    "path": "/root/autodl-tmp/third_party/drct/repo",
+    "file_count": 18,
+    "source_manifest_sha256": "58773d3ec7e4df7e"
+  },
+  "weights": {
+    "role": "primary",
+    "archive_path": "/root/autodl-tmp/third_party/drct/weights/pretrained.zip",
+    "archive_bytes": 4178790241,
+    "archive_sha256": "235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046",
+    "checkpoint": "DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+    "path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+    "bytes": 354605453,
+    "sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861",
+    "official_hash": null,
+    "source": "ModelScope BokingChen/DRCT-2M pretrained.zip (user upload, 2026-10-26); checkpoint extracted from the archive",
+    "license": "repo has no LICENSE; weights license not stated",
+    "training_source": "DRCT-2M ConvB, DR=SDv1.4 (sdv14): MSCOCO train2017 real; SDv1.4 generated; SD-inpainting reconstructed real; SDv1.4 full_inpainting reconstructed fake",
+    "model_name": "convnext_base_in22k",
+    "embedding_size": 1024,
+    "model_state_keys": 346,
+    "params_millions": 88.618114,
+    "torch_load_note": "plain state dict; build with pretrained=False and load with strict=True",
+    "archive_note": "official zip SHA256 recomputed on the cloud host; the checkpoint itself has no separately published hash"
+  },
+  "checks": [
+    {
+      "image": "Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "label": 1,
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "adapter_logits": [
+        3.221255302429199,
+        -2.5995821952819824
+      ],
+      "official_logits": [
+        3.221255302429199,
+        -2.5995821952819824
+      ],
+      "logit_abs_diff_max": 0.0,
+      "adapter_score": 0.0029563307762145996,
+      "official_score": 0.0029563307762145996,
+      "score_abs_diff": 0.0,
+      "expert_analyze_first": 0.0029563307762145996,
+      "expert_analyze_second": 0.0029563307762145996,
+      "analyze_equal": true,
+      "finite": true
+    },
+    {
+      "image": "0841.png",
+      "label": 0,
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "adapter_logits": [
+        4.594113826751709,
+        -4.468572616577148
+      ],
+      "official_logits": [
+        4.594113826751709,
+        -4.468572616577148
+      ],
+      "logit_abs_diff_max": 0.0,
+      "adapter_score": 0.00011587142944335938,
+      "official_score": 0.00011587142944335938,
+      "score_abs_diff": 0.0,
+      "expert_analyze_first": 0.00011587142944335938,
+      "expert_analyze_second": 0.00011587142944335938,
+      "analyze_equal": true,
+      "finite": true
+    }
+  ],
+  "coverage": {
+    "ok": true,
+    "model_state_keys": 346,
+    "checkpoint_state_keys": 346,
+    "params_millions": 88.618114,
+    "missing": [],
+    "unexpected": [],
+    "shape_mismatch": []
+  },
+  "identity": {
+    "source_name": "drct_expert",
+    "weights_path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+    "weights_sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861",
+    "weights_bytes": 354605453,
+    "archive_path": "/root/autodl-tmp/third_party/drct/weights/pretrained.zip",
+    "archive_sha256": "235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046",
+    "checkpoint": "DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+    "repo": "/root/autodl-tmp/third_party/drct/repo",
+    "preprocess": "官方 DRCT 测试变换（is_crop=True）：RGB 图 PadIfNeeded 到 ≥224×224 → CenterCrop 224×224 → 再 PadIfNeeded → ImageNet 归一化 → ToTensor；不缩放。测量范围为整图（中心裁剪 224）。",
+    "scope": "global",
+    "threshold": 0.5,
+    "direction": "higher_is_fake"
+  },
+  "gpu_peak_gb": 0.357,
+  "gpu_reserved_peak_gb": 0.381,
+  "host_maxrss_kb": 1203084,
+  "cgroup_current": 3115397120,
+  "cgroup_peak": null,
+  "reused": [
+    "official network.models.get_models + streaming checkpoint load (adapter; checkpoint is the pinned official one)",
+    "adapter preprocessing call for the tensor comparison"
+  ],
+  "independent": [
+    "official data.transform.create_val_transforms(size=224, is_crop=True) tensors",
+    "official output formula 1 - softmax(logits, dim=1)[:, 0]",
+    "repeated DRCTExpert.analyze() calls in one process"
+  ],
+  "limitation": "official scripts/train.py --is_test DataLoader loop was not invoked; the official transform, official model factory and official output formula were used directly.",
+  "ok": true
+}
