@@ -337,9 +337,12 @@ def _run_aide(tmp: str, checkpoint: str = "progan_train") -> dict:
 
 def _run_drct(tmp: str) -> dict:
     from experts.drct import DRCTExpert, _install_import_shims
-    from data.transform import create_val_transforms
 
     _install_import_shims()
+    if DRCT_REPO not in sys.path:
+        sys.path.insert(0, DRCT_REPO)
+    from data.transform import create_val_transforms
+
     official_transform = create_val_transforms(size=224, is_crop=True)
     torch.cuda.reset_peak_memory_stats()
     expert = DRCTExpert(device="cuda")
