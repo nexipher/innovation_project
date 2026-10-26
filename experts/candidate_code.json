@@ -1,0 +1,35 @@
+{
+  "schema": "candidate_code/1",
+  "recorded_at": "2026-10-26T19:39:30",
+  "note": "Third-party code is kept outside git. These are the exact commits downloaded and pinned under third_party; each repo's SOURCE.json has per-file sha256. The adapter imports this code read-only and applies only documented loading shims.",
+  "pinned": {
+    "spai": {
+      "repo": "mever-team/spai",
+      "commit": "8ff7b3b6779b4fcb43cf313471d9cb1c62d129a4",
+      "path": "/root/autodl-tmp/third_party/spai/repo",
+      "file_count": 70,
+      "source_manifest_sha256": "9a88f24abd491847"
+    },
+    "aide": {
+      "repo": "shilinyan99/AIDE",
+      "commit": "6725b710d5c437ab2f59792908ce0377dfc907de",
+      "path": "/root/autodl-tmp/third_party/aide/repo",
+      "file_count": 19,
+      "source_manifest_sha256": "4a725913dda69fe7"
+    }
+  },
+  "loading_shims": {
+    "spai": [
+      "saved config lacks MODEL_WEIGHTS; set to 'mfm' (code default)",
+      "saved config lacks MODEL.FRE.DISABLE_RECONSTRUCTION_SIMILARITY; set to False (code default)",
+      "torch.load(weights_only=True) rejects yacs CfgNode; use weights_only=False on the trusted official upload",
+      "official spai.utils imports seaborn/pandas; both installed in the isolated venv",
+      "official backbones imports OpenAI clip; a stub module is enough because the selected model is ViT/MFM, not CLIP"
+    ],
+    "aide": [
+      "official AIDE_Model asks open_clip for pretrained ConvNeXt-XXL; the checkpoint already contains the trunk, so pass pretrained=None and load the full state dict",
+      "official models/AIDE.py imports OpenAI clip; unused in the forward path, stub module is enough",
+      "DCT preprocessing is pure torch; kornia is only needed by the training dataset and is not used by the offline adapter"
+    ]
+  }
+}

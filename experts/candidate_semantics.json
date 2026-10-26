@@ -1,0 +1,71 @@
+{
+  "schema": "candidate_score_semantics/1",
+  "recorded_at": "2026-10-26T19:39:30",
+  "note": "Evaluation-only semantics for candidate experts. This file does NOT register them in the Agent toolbox and is not read by the state machine; it is used by scripts/g8_external_eval.py so the offline report has a direction and an official threshold. No threshold is fitted or tuned here.",
+  "experts": {
+    "spai": {
+      "source_name": "spai_expert",
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 sigmoid 输出；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方代码 validate() 的默认决策边界（accuracy/AP/AUC 默认 threshold=0.5）",
+        "note": "不在外部集上调整"
+      },
+      "preprocess": {
+        "name": "官方 SPAI 测试变换",
+        "detail": "原分辨率（不缩放/不裁剪）→ PadIfNeeded 到 ≥224×224 → [0,1] 归一化 → ToTensor",
+        "measurement_scope": "global",
+        "source": "spai/data/data_finetune.py::build_transform(is_train=False) with the checkpoint config"
+      },
+      "weights": {
+        "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+        "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+        "bytes": 934865338
+      },
+      "licence": "Apache-2.0（代码与权重，README 声明）"
+    },
+    "aide": {
+      "source_name": "aide_expert",
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 softmax 的 fake 类概率（[:,1]）；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方 engine_finetune.py 的 accuracy(..., y_pred > 0.5) 默认边界",
+        "note": "不在外部集上调整"
+      },
+      "preprocess": {
+        "name": "官方 AIDE 测试预处理",
+        "detail": "PIL RGB → ToTensor → DCT 极值 patch（4 个变体）→ Resize 256×256 → ImageNet 归一化；原图同样 Resize 256 并归一化；输入 5×3×256×256",
+        "measurement_scope": "global",
+        "source": "AIDE data/datasets.py::TestDataset + data/dct.py::DCT_base_Rec_Module"
+      },
+      "weights": {
+        "primary_checkpoint": "progan_train",
+        "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+        "sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e",
+        "bytes": 3592077976,
+        "others_retained": {
+          "sd14_train": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989",
+          "GenImage_train": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16"
+        },
+        "backbone_included": true
+      },
+      "licence": "代码 MIT；checkpoint 许可未单独声明"
+    }
+  }
+}

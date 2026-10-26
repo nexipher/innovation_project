@@ -1,0 +1,95 @@
+{
+  "schema": "candidate_cpu_checks/1",
+  "checked_at": "2026-10-26T19:29:21",
+  "interpreter": "/root/autodl-tmp/venvs/candidates/bin/python",
+  "environment": {
+    "torch": "2.5.1+cu124",
+    "timm": "1.0.30",
+    "einops": "0.8.0",
+    "open_clip": "installed"
+  },
+  "hash_verified": false,
+  "weights": {
+    "checked": {
+      "spai": {
+        "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+        "exists": true,
+        "bytes": 934865338,
+        "bytes_ok": true
+      },
+      "aide/progan_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+        "exists": true,
+        "bytes": 3592077976,
+        "bytes_ok": true
+      },
+      "aide/sd14_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
+        "exists": true,
+        "bytes": 3592077976,
+        "bytes_ok": true
+      },
+      "aide/GenImage_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
+        "exists": true,
+        "bytes": 3592100460,
+        "bytes_ok": true
+      }
+    },
+    "problems": []
+  },
+  "aide": {
+    "progan_train": {
+      "ok": true,
+      "coverage": {
+        "ok": true,
+        "checkpoint": "progan_train",
+        "model_state_keys": 1025,
+        "checkpoint_state_keys": 1025,
+        "backbone_keys": 378,
+        "params_millions": 897.939078,
+        "missing": [],
+        "unexpected": [],
+        "shape_mismatch": []
+      },
+      "preprocess": {
+        "shape": [
+          5,
+          3,
+          256,
+          256
+        ],
+        "dtype": "torch.float32",
+        "min": -2.1179039478302,
+        "max": 2.6281299591064453,
+        "patch_shapes": [
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ]
+        ],
+        "original_shape": [
+          3,
+          332,
+          500
+        ]
+      }
+    }
+  }
+}

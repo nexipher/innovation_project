@@ -138,8 +138,28 @@ def paired_delta(scores_a: Sequence[float], scores_b: Sequence[float],
 # 专家
 # ---------------------------------------------------------------------------
 
+CANDIDATE_NAMES = ("spai", "aide")
+
+
+def _candidate_semantics(name: str) -> dict:
+    """Evaluation-only direction/threshold for candidates (not the Agent registry)."""
+    path = os.path.join(PROJECT_ROOT, "experts", "candidate_semantics.json")
+    with open(path, encoding="utf-8") as handle:
+        payload = json.load(handle)
+    try:
+        return payload["experts"][name]
+    except KeyError:
+        raise SystemExit(f"candidate_semantics.json 里没有 {name!r}")
+
+
 def build_expert(name: str, device: str):
-    """与 Agent 工具箱**同一实现**（同一类、同一预处理），否则不可比。"""
+    """与 Agent 工具箱**同一实现**；候选专家仅用于离线评测，不接入 Agent。"""
+    if name == "spai":
+        from experts.spai import SPAIExpert
+        return SPAIExpert(device=device)
+    if name == "aide":
+        from experts.aide import AIDEExpert
+        return AIDEExpert(device=device)
     if name == "probe":
         from experts.probe_dino import ProbeDinoExpert
         return ProbeDinoExpert(device=device)
@@ -153,11 +173,14 @@ def build_expert(name: str, device: str):
 
 
 def expert_orientation(name: str) -> Tuple[str, float, str]:
-    """登记表给的 (分数字段, 阈值, 方向)——定向与判对率都以此为准，不拟合。"""
-    from utils.score_semantics import entry
+    """登记表/候选表给的 (分数字段, 阈值, 方向)——不拟合、不现场翻转。"""
+    if name in CANDIDATE_NAMES:
+        record = _candidate_semantics(name)
+    else:
+        from utils.score_semantics import entry
 
-    record = entry({"probe": "probe_dino_expert", "npr": "npr_expert",
-                    "univfd": "univfd_expert"}[name])
+        record = entry({"probe": "probe_dino_expert", "npr": "npr_expert",
+                        "univfd": "univfd_expert"}[name])
     semantics = record["raw_score"]
     field = semantics["field"]
     direction = semantics["direction"]
@@ -412,7 +435,16 @@ def build_report(rows: List[dict], experts: List[str], manifest: dict,
 
 
 def _expert_identity(name: str) -> dict:
-    """报告要能回答"这个分数由哪份权重、哪套预处理产生"——从登记表抄，不手写。"""
+    """报告要能回答"这个分数由哪份权重、哪套预处理产生"——从登记表/候选表抄。"""
+    if name in CANDIDATE_NAMES:
+        record = _candidate_semantics(name)
+        return {
+            "weights": record["weights"],
+            "raw_score": record["raw_score"],
+            "threshold": record["threshold"],
+            "preprocess": record["preprocess"],
+            "licence": record.get("licence"),
+        }
     from utils.score_semantics import entry
 
     record = entry({"probe": "probe_dino_expert", "npr": "npr_expert",

@@ -1,0 +1,57 @@
+{
+  "schema": "candidate_weights/1",
+  "recorded_at": "2026-10-26T19:39:30",
+  "note": "SHA256 computed on the cloud host over the four uploaded files. SPAI/AIDE distribute weights via Google Drive, which this instance cannot reach, so there is no published official hash to compare against. These are the registered cloud-side identities; if the uploader's local hashes differ, the uploaded file is not the same one. Do not report these as 'official hash verified'.",
+  "candidates": {
+    "spai": {
+      "role": "primary",
+      "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+      "bytes": 934865338,
+      "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+      "official_hash": null,
+      "source": "mever-team/spai README -> Google Drive (user upload, 2026-10-19)",
+      "license": "Apache-2.0 (code and weights per README)",
+      "checkpoint_contains": [
+        "model",
+        "optimizer",
+        "lr_scheduler",
+        "config",
+        "amp"
+      ],
+      "model_state_keys": 324,
+      "params_millions": 139.945243,
+      "torch_load_note": "contains yacs.config.CfgNode; torch.load(weights_only=True) fails. Trusted official upload, load with weights_only=False and mmap=True."
+    },
+    "aide": {
+      "role": "primary is progan_train; sd14_train and GenImage_train retained for a version comparison, not silently mixed",
+      "path_dir": "/root/autodl-tmp/third_party/aide/weights",
+      "license": "code MIT; checkpoint license not separately stated in the repo",
+      "official_hash": null,
+      "source": "shilinyan99/AIDE Model Zoo -> Google Drive (user upload, 2026-10-19)",
+      "backbone_included": true,
+      "backbone_note": "The 3.59 GB checkpoint contains the full frozen OpenCLIP ConvNeXt-XXLarge trunk (openclip_convnext_xxl.*, 378 tensors); no separate ConvNeXt checkpoint download is needed.",
+      "model_state_keys": 1025,
+      "params_millions": 897.939078,
+      "checkpoints": {
+        "progan_train": {
+          "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+          "bytes": 3592077976,
+          "sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e",
+          "primary": true
+        },
+        "sd14_train": {
+          "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
+          "bytes": 3592077976,
+          "sha256": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989",
+          "primary": false
+        },
+        "GenImage_train": {
+          "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
+          "bytes": 3592100460,
+          "sha256": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16",
+          "primary": false
+        }
+      }
+    }
+  }
+}

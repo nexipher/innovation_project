@@ -563,3 +563,19 @@
 * **涉及/修改的文件清单**：`README.md`、`docs/development/agent.md`、`sft_data/GENERATIONS.json`、`plan.md`、`claude_operation_log.md`；**文件系统**：删除上述 16 GB 目录
 * **执行结果与验证状态**：目录已不存在；`/root/autodl-tmp` 可用从 312 MB 增至 **16 GB**（overlay 余 2.1 GB）；TruFor/SPAI/AIDE 大小未变；`core` **705 通过**；g8 主链（Qwen3-VL）不受影响；`--mllm qwen25` 现在会在缺权重时显式报错。
 * **置信度或遗留待办（TODO）**：①g7 历史复算需重新下载约 16.6 GB②`psychology_video_project` 若恢复 A3 复核，需重新下载权重并改回硬编码路径③TruFor 按用户选择保留；其“L1 研究对照”定位与当前“不做局部篡改定位”仍不一致，是否彻底退出待后续决定④SPAI/AIDE 权重已在本机（spai 892 MB、aide 11 GB），DRCT 4.18 GB/DIRE 2.2 GB 可在 16 GB 空间内按计划逐个下载评测。
+
+### 2026-10-26 - 阶段四 4.19：SPAI/AIDE 权重核对、代码固定与离线适配器（CPU）
+
+* **当前操作动作**：核对用户上传的四份权重（路径/大小/SHA256）；按官方 commit 固定 SPAI/AIDE 代码；实现两个独立离线适配器与候选语义/权重/代码清单；完成无 GPU 的 CPU 覆盖与预处理检查；修订互补性指标。**未改 Agent 提示词/停止策略/证据规则；未改 b2 数据；未跑 GPU/外部 Agent/SFT。**
+* **对应计划锚点**：`plan.md` §4.17a/§4.17c/§4.17e、§4.16
+* **核心变更说明**：
+  1. **权重登记**：SPAI `spai.pth` 934,865,338 B / sha256 `24159f27…9648a55`；AIDE `progan_train` 3,592,077,976 B / `ce3a9d66…a4a756e`、`sd14_train` 同大小 / `382a50d1…2f91989`、`GenImage_train` 3,592,100,460 B / `f084346d…9a9ff16`。大小与哈希经云侧计算并核验；官方只提供 Google Drive、无公开哈希，因此登记为“云侧身份”，不写成“官方哈希已验证”。AIDE 主候选固定 `progan_train`，另外两份保留不混用。
+  2. **代码固定**：SPAI `8ff7b3b6`（70 个源文件）、AIDE `6725b710`（19 个源文件），逐文件哈希在 `third_party/*/repo/SOURCE.json`；项目内 `experts/candidate_code.json` 记录 commit 与清单哈希。
+  3. **AIDE 主干核查**：checkpoint 已含 OpenCLIP ConvNeXt-XXLarge 主干（`openclip_convnext_xxl.*` 378 个张量，总 897.9M 参数），**不需要另下 3.5 GB 主干**；官方 `AIDE_Model` 的 `pretrained=convnext_path` 改为 `pretrained=None` 后由 checkpoint 覆盖。
+  4. **SPAI 加载兼容**：checkpoint 含 `yacs.config.CfgNode`（`weights_only=True` 失败，需 `weights_only=False` + mmap）；保存的 config 缺 `MODEL_WEIGHTS` 与 `MODEL.FRE.DISABLE_RECONSTRUCTION_SIMILARITY`，从 pinned 代码默认值补齐；`spai.data` 依赖 timm 旧 API `_pil_interp`、`spai.utils` 导入 seaborn/pandas，均在适配器内以导入 shim/stub 解决，不修改官方文件。
+  5. **CPU 检查**（独立 venv `/root/autodl-tmp/venvs/candidates`）：SPAI 模型/ checkpoint 324/324 键，missing/unexpected/shape 全 0；AIDE 1025/1025 键、主干 378 键、897.9M 参数，全 0；SPAI 官方变换 332×500 → `[3,332,500]`、`[0,1]`；AIDE 官方预处理 → `[5,3,256,256]`（4×`[3,32,32]` patch + 原图）。**未做整模型 CPU 前向**：主机 cgroup 2 GB，合并检查会 OOM（exit 137），已拆成两个进程；AIDE 3.6 GB 权重无法在 host 常驻。
+  6. **互补性指标修订**：独立单位改为**源**（同一源的 4 个格式是重复测量，净纠正 CI 用按源聚类 bootstrap；DIV2K 20 张 Real 在四组间复用，不汇总单一数字）；明确**不把“候选整体胜过 PROBE”作为必要条件**，只看独立判别力、净纠正与纠正分布。
+  7. **待下载清单**：DRCT `pretrained.zip`（ModelScope，4,178,790,241 B / sha256 `235c0069…`）、SSP 8 个 checkpoint（Baidu/Dropbox）、DIRE 分类器（RecDrive/Baidu）；AIDE 主干与 SPAI MFM 预训练不需要。
+* **涉及/修改的文件清单**：`experts/candidate_common.py (Created)`、`experts/spai.py (Created)`、`experts/aide.py (Created)`、`experts/candidate_weights.json (Created)`、`experts/candidate_code.json (Created)`、`experts/candidate_semantics.json (Created)`、`scripts/check_candidate_weights.py (Created)`、`scripts/g8_external_eval.py (Modified — 候选专家入口/身份)`、`tests/test_candidate_adapters.py (Created — 11 条)`、`plan.md (Modified — §4.17a/c/e)`、`sft_data/g8_expert_eval/cpu_checks_*.json`、`claude_operation_log.md`
+* **执行结果与验证状态**：四份权重大小/哈希核验通过（`--hash` 报告 `size/sha OK`）；SPAI/AIDE 覆盖 324/324、1025/1025；官方预处理形状/范围符合；`core` **716 通过**；主环境未被修改；**未加载完整模型、未跑 GPU、未改 Agent/b2**。
+* **置信度或遗留待办（TODO）**：①GPU 冒烟需授权（预算：SPAI 8 张 2–4 GB/0.3–1 s，AIDE 8 张 8–12 GB/0.5–1.5 s，合计 <10 min）②DRCT/SSP/DIRE 权重按链接上传到指定目录后再核对哈希③GPU 上需用官方 `infer`/`validate` 对同一图比较输出一致性④AIDE `sd14_train`/`GenImage_train` 尚未做覆盖检查（架构同、保留，待需要时再验）⑤venv 路径与依赖版本已记录，不纳入 git。

@@ -611,18 +611,30 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 | 候选 | 版本（代码/论文） | 权重来源与身份 | 许可 | 训练数据 | 输入/测量范围 | 输出/默认阈值 | 成本（估计） | 关键限制 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **PROBE**（基线） | 已在本机；权重 sha256 `c8caa9ba…a450156` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection`，`DINOv2_best_model_step_34999.pth` 1.22 GB | 上游未声明（不再分发） | 上游未声明 | pad→336，非重叠滑窗均值，**global** | sigmoid，高=假，阈值 0.5 | 中位 210 ms/图；外部集 AUROC 0.99–1.0 | 上游语料未知；外部错误仅 13/200 |
-| **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025 | `weights/spai.pth`，Google Drive（id `1vvXmZ…`）；**当前不可达，大小/sha256 待下载** | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | <8 GB 显存；ViT-B；时间待实测 | 权重在 Google Drive；`infer` 输出 CSV，需要适配器 |
-| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025 | Google Drive 文件夹（id `1qx76UF…`），README 示例 `progan_train`；**当前不可达，大小/sha256 待下载**；另需 OpenCLIP ConvNeXt-XXLarge 主干（HF 镜像可及） | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | ConvNeXt-XXL ~3.5 GB；显存估计 10–16 GB；时间待实测 | **内部分支算一个专家**；checkpoint 选择需固定（`progan_train`） |
+| **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025；代码已固定到 `third_party/spai/repo` | **已上传**：`third_party/spai/weights/spai.pth`，**934,865,338 B，sha256 `24159f27…9648a55`**（云侧计算；官方无公开哈希可比） | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | <8 GB 显存；139.9M 参数；时间待 GPU 冒烟 | 适配器已实现；CPU 覆盖 324/324；加载需 config 补默认项 + `weights_only=False`（yacs CfgNode） |
+| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；显存估计 8–12 GB（fp32, batch 1）；时间待 GPU 冒烟 | **内部分支算一个专家**；主候选固定 `progan_train`，另外两份保留、不混用；适配器已实现，CPU 覆盖 1025/1025 |
 | **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | ModelScope `BokingChen/DRCT-2M` `pretrained.zip`：**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`** | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | ConvB ~0.05 s/图，显存 4–6 GB；CLIP ViT-L 略高 | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`） |
 | **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | 8 个按 GenImage 生成器训练的 checkpoint，Baidu/Dropbox；**Dropbox 不可达、Baidu 需客户端；大小/sha256 待下载** | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误 |
 | **DIRE**（研究对照） | repo `1f89fff1`（2024-09-26），ICCV 2023 | 分类器 checkpoint 在 RecDrive/Baidu/OneDrive（RecDrive 可达但需密码/API；sha256 待下载）；扩散模型 `256x256_diffusion_uncond.pt` **2,211,383,297 B**（OpenAI Azure，可及） | 仓库根无 LICENSE；guided-diffusion 为 MIT；权重许可未声明 | DiffusionForensics（LSUN/ImageNet/CelebA-HQ，ADM） | DDIM 反演+重建（20 步，256），`abs(img-recon)` → Resize 256/CenterCrop 224/ImageNet | sigmoid，高=假，阈值 0.5 | 每图数秒（重建）+ 分类器；显存 8–12 GB | **重建误差图 ≠ 篡改定位图**；`demo.py` 直接喂原图，与论文/`compute_dire.py` 路径不一致；扩散专用，对 GAN 假图可能弱 |
 
-**权重可获取性（下载前核实）**：`/root/autodl-tmp` 余 **16 GB**（2026-10-26 删除 Qwen2.5 旧权重后），overlay 余 2.1 GB。
-DRCT 4.18 GB 可经 ModelScope 直接下载并已核对 sha256；DIRE 的扩散权重可及；SPAI/
-AIDE 的 Google Drive 与 SSP 的 Dropbox **在本实例不可达**，Baidu/RecDrive 需要客户端
-或 API。**未拿到官方权重并核对哈希之前，不进入正式评测**；可请用户上传或提供可达
-镜像。若全部下载，总量约 11–12 GB，接近磁盘上限，必须**逐个下载/评测/清理归档**，
-峰值控制在 5 GB 以内；不碰现有 `third_party/` 资产。
+**权重与代码状态（2026-10-26 更新）**：`/root/autodl-tmp` 余 **16 GB**，overlay
+余 2.1 GB。SPAI/AIDE 四份权重已由用户上传并完成**云侧 sha256**：
+`experts/candidate_weights.json`（注意：官方只提供 Google Drive，无公开哈希，
+不能写成"官方哈希已验证"）。代码已按 commit 固定：SPAI `8ff7b3b6`（70 个源文件）、
+AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；项目内
+`experts/candidate_code.json` 记录 commit 与清单哈希。
+
+**仍待下载**：
+
+| 对象 | 链接 | 放置位置 | 备注 |
+| --- | --- | --- | --- |
+| DRCT `pretrained.zip` | [ModelScope `BokingChen/DRCT-2M`](https://modelscope.cn/datasets/BokingChen/DRCT-2M) | `/root/autodl-tmp/third_party/drct/weights/pretrained.zip` | **4,178,790,241 B，sha256 `235c0069…08dd046`**；ModelScope 本机可达，可由我下载；主配置取 ConvB + DRCT-2M + SDv1（`14_acc0.9996.pth`），解压后只保留所需 checkpoint |
+| SSP 8 个 checkpoint | [Baidu（密码 bcmi）](https://pan.baidu.com/s/1BTkl1gc7gHq4Ev457G__QQ?pwd=bcmi) / [Dropbox](https://www.dropbox.com/scl/fo/2xdvtew4rjrrsl6cseq30/AElVHGO84W1DSmlImMg1ruM?rlkey=e1a2hnzh62wuuxrnbkfv6f90v&st=getws7lp&dl=0) | `/root/autodl-tmp/third_party/ssp/weights/` | 第二梯队；本机 Dropbox 不可达、Baidu 需客户端；8 个按生成器训练的 checkpoint，无统一权重，无公开哈希 |
+| DIRE 分类器 checkpoint | [RecDrive（密码 dire）](https://rec.ustc.edu.cn/share/ec980150-4615-11ee-be0a-eb822f25e070) / [Baidu（密码 dire）](https://pan.baidu.com/s/1Rdzc7l8P0RrJft0cW0a4Gg) | `/root/autodl-tmp/third_party/dire/weights/` | 研究对照；扩散权重 `256x256_diffusion_uncond.pt`（2,211,383,297 B）可从 OpenAI Azure 下载，无需你上传 |
+| （不需要）AIDE ConvNeXt 主干 | — | — | checkpoint 已含 378 个主干张量 |
+| （不需要）SPAI MFM ViT-B/16 预训练 | — | — | 仅训练需要；推理 checkpoint 已含训练后权重 |
+
+下载/上传后先核对大小与 sha256，再进正式评测；未核对的权重不进入报告。
 
 #### 4.17b 开发评测集（适度扩展）
 
@@ -649,15 +661,23 @@ AIDE 的 Google Drive 与 SSP 的 Dropbox **在本实例不可达**，Baidu/RecD
 
 1. **独立表现**：每组（生成器 × 条件，n=40）AUROC + 95% bootstrap CI；官方阈值下
    的 TPR/TNR（真假分开）、失败数、耗时（均值/中位）、峰值显存。
-2. **互补性（阈值下 2×2）**：`PROBE 错 & 候选对`（纠正）、`PROBE 对 & 候选错`
-   （损害）、`都对`、`都错`；按组与总体报告，给 Wilson 区间。**不平均分数、不做
-   晚期融合、不把候选分数当校准概率**。
+2. **互补性（阈值下 2×2，按源聚类）**：`PROBE 错 & 候选对`（纠正）、
+   `PROBE 对 & 候选错`（损害）、`都对`、`都错`。
+   * **独立单位是源，不是图像/格式**：同一源的 original/q95/q85/q70 是重复测量，
+     不能当 4 个独立样本；2×2 按条件分别报告，净纠正的 CI 用**按源聚类 bootstrap**
+     （重采样源，携带该源全部格式）。DIV2K 的 20 张 Real 在四个生成器组间复用，
+     组间不独立；只做组内解释，不把四组汇总成单一数字。
+   * **不要求候选整体胜过 PROBE**：PROBE 在开发集接近天花板，"整体 AUROC 必须
+     更高"既不可达，也不是互补性的定义。候选总体弱于 PROBE 也可以在特定生成器/
+     格式上提供净纠正；反之，总体不弱但只重复 PROBE 的错误则没有价值。
+   * **不平均分数、不做晚期融合、不把候选分数当校准概率**。
 3. **候选合格线（评测前写死，不因结果改）**：
    * 至少在 **2 个生成器组**上 AUROC 点估计 ≥0.70，且没有一组 CI 上界 <0.5（反向
      相关视为危险）；
-   * 总体 **净纠正 > 0**（纠正数 − 损害数），且至少有 **8 次纠正事件**；若 PROBE
+   * **净纠正 > 0**（纠正数 − 损害数），且至少有 **8 次纠正事件**；若 PROBE
      错误不足 8 次，明确写"互补性不可判定"，不硬下结论；
-   * 纠正事件分布在 **≥2 个生成器组**，避免只对一个组有效。
+   * 纠正事件分布在 **≥2 个生成器组**，避免只对一个组有效；
+   * **"候选必须整体胜过 PROBE"不是条件**；只有上述三条不满足才不保留。
    * 不满足就不进专家组；找不到合格第二专家时只保留 PROBE，并如实说明。
 4. **方向/阈值**：全部使用各官方仓库的默认方向与阈值（均为 0.5）；**不因外部结果
    翻转方向、不调阈值**。
@@ -667,9 +687,9 @@ AIDE 的 Google Drive 与 SSP 的 Dropbox **在本实例不可达**，Baidu/RecD
 
 | 步骤 | 内容 | 产物/门槛 | 资源 |
 | --- | --- | --- | --- |
-| 0 | 本表核实；解决 SPAI/AIDE/SSP 权重可达性；记录每个权重的 sha256 | 核实表 + 哈希清单 | 无 GPU |
-| 1 | 离线适配器 + CPU 测试（预处理/方向/阈值/失败包），不改 Agent | 每个候选一个适配器 + 单测 | CPU |
-| 2 | GPU 冒烟：每候选 8 张（2 真/2 假 ×2 格式） | 加载成功、方向/阈值正确、显存/耗时记录 | ~0.5 GPU 时 |
+| 0 | 本表核实；SPAI/AIDE 权重与代码已核对；DRCT/SSP/DIRE 待下载 | **已完成 SPAI/AIDE**（哈希/覆盖/预处理）；DRCT/SSP/DIRE 待办 | 无 GPU |
+| 1 | 离线适配器 + CPU 测试（预处理/方向/阈值/失败包），不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py` + CPU 检查 | CPU |
+| 2 | GPU 冒烟：每候选 8 张（2 真/2 假 ×2 格式） | 加载成功、方向/阈值正确、显存/耗时记录 | **待授权**；~0.5 GPU 时 |
 | 3 | D1a 400 输入 × 候选；顺序 **SPAI → DRCT-ConvB → AIDE → SSP（若可达）→ DIRE** | 逐条分数 + 分组报告 | 估计 2 GPU 时 |
 | 4 | 互补性 2×2 + 合格线；确定 2–3 个专家 | 候选短名单 + 结论 | CPU/分析 |
 | 5 | 最终留出集（新源）复评入选专家 | 最终报告；未拿到新源则推迟 | 估计 1 GPU 时 |
@@ -679,6 +699,33 @@ AIDE 的 Google Drive 与 SSP 的 Dropbox **在本实例不可达**，Baidu/RecD
 估算：SPAI ~3–6 min、DRCT-ConvB <1 min、AIDE ~10–20 min、SSP <1 min、DIRE
 ~20–40 min；加模型加载与重试，约 2 GPU 时。若触发 D1b（+400 输入），再加约 2 GPU 时。
 **本阶段不启动外部 Agent 200 会话，不生成 SFT 数据。**
+
+#### 4.17e CPU 检查结果与 GPU 冒烟预算（2026-10-26）
+
+**CPU 已完成（无 GPU、无前向）：**
+
+| 项目 | 结果 |
+| --- | --- |
+| 权重文件 | SPAI `934,865,338 B` / `24159f27…`；AIDE `progan_train` `3,592,077,976 B` / `ce3a9d66…`；`sd14_train` 同大小 / `382a50d1…`；`GenImage_train` `3,592,100,460 B` / `f084346d…`。**大小与 SHA256 均与 `experts/candidate_weights.json` 一致**（云侧计算；官方无公开哈希） |
+| 代码版本 | SPAI `8ff7b3b6`（70 个源文件）、AIDE `6725b710`（19 个源文件）；每文件哈希在 `third_party/*/repo/SOURCE.json` |
+| SPAI 参数覆盖 | 模型 324 键 / checkpoint 324 键，**missing 0 / unexpected 0 / shape mismatch 0** |
+| AIDE 参数覆盖 | 模型 1025 键 / checkpoint 1025 键，**missing 0 / unexpected 0 / shape mismatch 0**；`openclip_convnext_xxl.*` **378 个张量**，总 **897.9M** 参数（主干已含，无需另下） |
+| SPAI 官方预处理 | 332×500 合成图 → `[3,332,500]`、float32、范围 `[0,1]`；`ORIGINAL_RESOLUTION=True`，不缩放/不裁剪 |
+| AIDE 官方预处理 | 332×500 合成图 → `[5,3,256,256]`、float32、ImageNet 归一化；4 个 patch `[3,32,32]` + 原图 `[3,332,500]` |
+| 适配器 | `experts/candidate_common.py`（meta 构建 / 流式加载 / 覆盖检查）、`experts/spai.py`、`experts/aide.py`；`scripts/g8_external_eval.py` 增加 `--experts spai,aide`；不注册进 Agent 工具箱 |
+| 环境 | 独立 venv `/root/autodl-tmp/venvs/candidates`（einops 0.8.0、open-clip-torch 2.24.0、albumentations 1.4.14、albucore 0.0.16、filetype、lmdb；复用系统 torch 2.5.1 / timm 1.0.30）。**主环境未被修改** |
+| 限制 | 主机 cgroup 2 GB；两项覆盖检查必须**分进程**执行（合并会 OOM）；未做整模型 CPU 前向（AIDE 3.6 GB 无法在 host 常驻）。GPU 前向需授权 |
+
+**GPU 冒烟预算（尚未运行，需项目授权）：**
+
+| 候选 | 图像数 | 预估显存 | 预估耗时 | 加载策略 |
+| --- | --- | --- | --- | --- |
+| SPAI | 8（2 真/2 假 ×2 格式） | 2–4 GB | 0.3–1 s/图 | meta 构建 → `to_empty(cuda)` → mmap 逐张量流式拷入 |
+| AIDE（progan_train） | 8（同上） | 8–12 GB | 0.5–1.5 s/图 | 同上；checkpoint 已含 3.6 GB 主干，不从 HF 另下 |
+
+合计约 **16 次前向 + 两次模型加载，<10 分钟**；峰值显存以 AIDE 为准。冒烟检查：
+权重可加载、输出在 `[0,1]`、方向正确（同一图 fake 分数高于 real）、官方阈值 0.5、
+失败包/异常路径、峰值显存与耗时。若显存/加载超出预算，停止并报告，不进入开发集。
 
 ### 4.18 旧第三方模型清理（2026-10-26，用户确认）
 
