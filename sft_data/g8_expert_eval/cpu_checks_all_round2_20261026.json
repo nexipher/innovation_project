@@ -1,0 +1,264 @@
+{
+  "schema": "candidate_cpu_checks/1",
+  "checked_at": "2026-10-26T22:22:13",
+  "interpreter": "/root/autodl-tmp/venvs/candidates/bin/python",
+  "environment": {
+    "torch": "2.5.1+cu124",
+    "timm": "1.0.30",
+    "einops": "0.8.0",
+    "open_clip": "installed"
+  },
+  "hash_verified": false,
+  "weights": {
+    "checked": {
+      "spai": {
+        "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+        "exists": true,
+        "bytes": 934865338,
+        "bytes_ok": true
+      },
+      "aide/progan_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+        "exists": true,
+        "bytes": 3592077976,
+        "bytes_ok": true
+      },
+      "aide/sd14_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
+        "exists": true,
+        "bytes": 3592077976,
+        "bytes_ok": true
+      },
+      "aide/GenImage_train": {
+        "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
+        "exists": true,
+        "bytes": 3592100460,
+        "bytes_ok": true
+      },
+      "drct/archive": {
+        "path": "/root/autodl-tmp/third_party/drct/weights/pretrained.zip",
+        "exists": true,
+        "bytes": 4178790241,
+        "bytes_ok": true
+      },
+      "drct/checkpoint": {
+        "path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+        "exists": true,
+        "bytes": 354605453,
+        "bytes_ok": true
+      }
+    },
+    "problems": []
+  },
+  "spai": {
+    "ok": true,
+    "coverage": {
+      "ok": true,
+      "model_state_keys": 324,
+      "checkpoint_state_keys": 324,
+      "missing": [],
+      "unexpected": [],
+      "shape_mismatch": [],
+      "config_source": "/root/autodl-tmp/third_party/spai/repo/configs/spai.yaml",
+      "checkpoint_config_ignored": true
+    },
+    "preprocess": {
+      "shape": [
+        3,
+        332,
+        500
+      ],
+      "dtype": "torch.float32",
+      "min": 0.0,
+      "max": 1.0,
+      "config_original_resolution": true,
+      "config_img_size": 224
+    }
+  },
+  "aide": {
+    "progan_train": {
+      "ok": true,
+      "coverage": {
+        "ok": true,
+        "checkpoint": "progan_train",
+        "model_state_keys": 1025,
+        "checkpoint_state_keys": 1025,
+        "backbone_keys": 378,
+        "params_millions": 897.939078,
+        "missing": [],
+        "unexpected": [],
+        "shape_mismatch": []
+      },
+      "preprocess": {
+        "shape": [
+          5,
+          3,
+          256,
+          256
+        ],
+        "dtype": "torch.float32",
+        "min": -2.1179039478302,
+        "max": 2.6281299591064453,
+        "patch_shapes": [
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ]
+        ],
+        "original_shape": [
+          3,
+          332,
+          500
+        ]
+      }
+    },
+    "sd14_train": {
+      "ok": true,
+      "coverage": {
+        "ok": true,
+        "checkpoint": "sd14_train",
+        "model_state_keys": 1025,
+        "checkpoint_state_keys": 1025,
+        "backbone_keys": 378,
+        "params_millions": 897.939078,
+        "missing": [],
+        "unexpected": [],
+        "shape_mismatch": []
+      },
+      "preprocess": {
+        "shape": [
+          5,
+          3,
+          256,
+          256
+        ],
+        "dtype": "torch.float32",
+        "min": -2.1179039478302,
+        "max": 2.6281299591064453,
+        "patch_shapes": [
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ]
+        ],
+        "original_shape": [
+          3,
+          332,
+          500
+        ]
+      }
+    },
+    "GenImage_train": {
+      "ok": true,
+      "coverage": {
+        "ok": true,
+        "checkpoint": "GenImage_train",
+        "model_state_keys": 1025,
+        "checkpoint_state_keys": 1025,
+        "backbone_keys": 378,
+        "params_millions": 897.939078,
+        "missing": [],
+        "unexpected": [],
+        "shape_mismatch": []
+      },
+      "preprocess": {
+        "shape": [
+          5,
+          3,
+          256,
+          256
+        ],
+        "dtype": "torch.float32",
+        "min": -2.1179039478302,
+        "max": 2.6281299591064453,
+        "patch_shapes": [
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ],
+          [
+            3,
+            32,
+            32
+          ]
+        ],
+        "original_shape": [
+          3,
+          332,
+          500
+        ]
+      }
+    }
+  },
+  "drct": {
+    "ok": true,
+    "coverage": {
+      "ok": true,
+      "model_state_keys": 346,
+      "checkpoint_state_keys": 346,
+      "params_millions": 88.618114,
+      "missing": [],
+      "unexpected": [],
+      "shape_mismatch": []
+    },
+    "preprocess": {
+      "shape": [
+        3,
+        224,
+        224
+      ],
+      "dtype": "torch.float32",
+      "min": -1.3179271221160889,
+      "max": 1.6932772397994995,
+      "input_size": 224,
+      "is_crop": true
+    },
+    "_subprocess": {
+      "returncode": 0,
+      "stderr_tail": "/root/miniconda3/lib/python3.12/site-packages/timm/models/_factory.py:175: UserWarning: Mapping deprecated model name convnext_base_in22k to current convnext_base.fb_in22k.\n  model = create_fn(\n/root/miniconda3/lib/python3.12/site-packages/timm/models/layers/__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers\n  warnings.warn(f\"Importing from {__name__} is deprecated, please import via timm.layers\", FutureWarning)\n"
+    }
+  }
+}

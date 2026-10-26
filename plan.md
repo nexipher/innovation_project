@@ -967,9 +967,9 @@ predicted / true label）、`report.json`、`run.log`。
   性能结论，也不据此翻转方向或调阈值。
 * AIDE 两个变体的实际官方 `TestDataset` 对照与 GPU 显存/耗时留到 GPU 冒烟；CPU
   检查走的是同一官方预处理函数/卷积路径，不能替代 GPU 冒烟。
-* `check_candidate_weights.py --only all` 会把 AIDE 与 DRCT 放进同一进程，二者都使用
-  顶层 `data` 包，会冲突（`No module named data.transform`）。CPU 检查因此按
-  `--only spai|aide|drct` **分进程**执行；正式评测同样是一个候选一个进程。
+* AIDE 与 DRCT 都使用顶层 `data` 包，同一进程会冲突（`No module named
+  data.transform`）。`check_candidate_weights.py --only all` 已将 DRCT 放到**独立子进程**
+  （干净的 all-report 已生成）；正式评测仍是一个候选一个进程，不能把三者合进一个进程。
 
 **正式评测口径**（与 §4.17c/§4.17f 相同，预注册）
 

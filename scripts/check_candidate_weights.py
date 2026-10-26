@@ -143,6 +143,31 @@ def _check_drct() -> dict:
                 "traceback": traceback.format_exc()[-2000:]}
 
 
+def _check_drct_subprocess() -> dict:
+    """Run the DRCT section in a fresh process: AIDE and DRCT both use `data`."""
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix="drct_cpu_check_") as tmp:
+        out = os.path.join(tmp, "report.json")
+        completed = subprocess.run(
+            [sys.executable, os.path.abspath(__file__),
+             "--only", "drct", "--out", out],
+            capture_output=True, text=True)
+        if os.path.exists(out):
+            payload = json.load(open(out, encoding="utf-8"))
+            result = payload.get("drct", {})
+            result["_subprocess"] = {
+                "returncode": completed.returncode,
+                "stderr_tail": completed.stderr[-1000:],
+            }
+            return result
+        return {"ok": False,
+                "error": f"DRCT subprocess failed (rc={completed.returncode})",
+                "_subprocess": {"returncode": completed.returncode,
+                                "stderr_tail": completed.stderr[-1000:]}}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -175,8 +200,10 @@ def main() -> int:
         report["spai"] = _check_spai()
     if args.only in ("all", "aide"):
         report["aide"] = _check_aide(args.all_aide)
-    if args.only in ("all", "drct"):
+    if args.only == "drct":
         report["drct"] = _check_drct()
+    elif args.only == "all":
+        report["drct"] = _check_drct_subprocess()
     try:
         import einops
         import open_clip
