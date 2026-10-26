@@ -25,7 +25,8 @@ python main.py --image <path/to/image> --mllm qwen        # 单张（GPU：Qwen3
 FORENSIC_HALTING_POLICY=v2 python main.py --image <path>  # 仅用于历史复算（v2 已冻结）
 ```
 
-**真实入口不会静默降级**：`--mllm qwen`（或 `qwen25`）在没有可用 CUDA 时**直接报错**，不会换成 Mock
+**真实入口不会静默降级**：`--mllm qwen`（或 `qwen25`）在没有可用 CUDA 时**直接报错**，不会换成 Mock。
+`qwen25` 的 Qwen2.5-VL 权重已于 2026-10-26 删除；历史复算需先重新下载（缺权重时显式报错）。
 （假会话产出的 trace 与真实会话无异，验收会把它当成真结果）。要跑 CPU 就显式写 `--mllm mock`。
 
 **当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**；
@@ -207,11 +208,11 @@ dataset/
 
 | 项目 | 路径 / 说明 |
 |------|-------------|
-| 当前（g7） | Qwen2.5-VL-7B-Instruct（16.6 GB，5 × safetensors） |
-| 路径 | `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master` |
-| 配置 | `config.py` → `QWEN_MODEL_PATH` |
-| 显存 | FP16 ~16 GB（RTX 4090 可承载） |
-| 下一代（g8） | **Qwen3-VL-8B-Instruct**，`Qwen/Qwen3-VL-8B-Instruct` @ `0c351dd0…`（固定 revision，apache-2.0，17.55 GB，HF 缓存）；推理模式待定（`sft_data/GENERATIONS.json`） |
+| 当前（g8） | **Qwen3-VL-8B-Instruct**，`Qwen/Qwen3-VL-8B-Instruct` @ `0c351dd0…`（固定 revision，apache-2.0，17.55 GB，HF 缓存） |
+| g7（已冻结） | Qwen2.5-VL-7B-Instruct（16.6 GB，5 × safetensors） |
+| g7 权重 | **已于 2026-10-26 删除**（用户确认退出；原 `...PENDING-DELETE-20261015`，释放 16 GB）。`--mllm qwen25` 仅供历史复算，缺权重时明确报错；要复算须重新下载 |
+| 配置 | `config.py` → `QWEN_MODEL_PATH`（指向旧路径；文件不存在时显式拒绝） |
+| 显存 | g7 FP16 ~16 GB；g8 Qwen3 权重 ~17.55 GB |
 
 > ⚠️ 加载模型权重前必须获得用户 GPU 授权（见 `docs/development/agent.md` §3.2）。
 

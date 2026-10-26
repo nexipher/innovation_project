@@ -617,7 +617,7 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 | **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | 8 个按 GenImage 生成器训练的 checkpoint，Baidu/Dropbox；**Dropbox 不可达、Baidu 需客户端；大小/sha256 待下载** | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误 |
 | **DIRE**（研究对照） | repo `1f89fff1`（2024-09-26），ICCV 2023 | 分类器 checkpoint 在 RecDrive/Baidu/OneDrive（RecDrive 可达但需密码/API；sha256 待下载）；扩散模型 `256x256_diffusion_uncond.pt` **2,211,383,297 B**（OpenAI Azure，可及） | 仓库根无 LICENSE；guided-diffusion 为 MIT；权重许可未声明 | DiffusionForensics（LSUN/ImageNet/CelebA-HQ，ADM） | DDIM 反演+重建（20 步，256），`abs(img-recon)` → Resize 256/CenterCrop 224/ImageNet | sigmoid，高=假，阈值 0.5 | 每图数秒（重建）+ 分类器；显存 8–12 GB | **重建误差图 ≠ 篡改定位图**；`demo.py` 直接喂原图，与论文/`compute_dire.py` 路径不一致；扩散专用，对 GAN 假图可能弱 |
 
-**权重可获取性（下载前核实）**：`/root/autodl-tmp` 余 **12 GB**，overlay 余 3.1 GB。
+**权重可获取性（下载前核实）**：`/root/autodl-tmp` 余 **16 GB**（2026-10-26 删除 Qwen2.5 旧权重后），overlay 余 2.1 GB。
 DRCT 4.18 GB 可经 ModelScope 直接下载并已核对 sha256；DIRE 的扩散权重可及；SPAI/
 AIDE 的 Google Drive 与 SSP 的 Dropbox **在本实例不可达**，Baidu/RecDrive 需要客户端
 或 API。**未拿到官方权重并核对哈希之前，不进入正式评测**；可请用户上传或提供可达
@@ -679,6 +679,31 @@ AIDE 的 Google Drive 与 SSP 的 Dropbox **在本实例不可达**，Baidu/RecD
 估算：SPAI ~3–6 min、DRCT-ConvB <1 min、AIDE ~10–20 min、SSP <1 min、DIRE
 ~20–40 min；加模型加载与重试，约 2 GPU 时。若触发 D1b（+400 输入），再加约 2 GPU 时。
 **本阶段不启动外部 Agent 200 会话，不生成 SFT 数据。**
+
+### 4.18 旧第三方模型清理（2026-10-26，用户确认）
+
+**决定**：用户确认 Qwen2.5-VL-7B-Instruct 已退出、后续不再使用，只删除这一份旧权重；
+TruFor 等其余第三方资产按用户选择**保留**。
+
+**删除对象**（唯一）：
+
+* `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct.PENDING-DELETE-20261015`
+  —— 17 个文件、5 个 safetensors、约 16 GB。该目录自 2026-10-15 起已改名为
+  `PENDING-DELETE`，本次是删除确认，不是新发生的隔离。
+
+**删除前核实**：无进程占用、项目内无符号链接指向它；`config.QWEN_MODEL_PATH` 指向的
+旧名字在改名后已不存在；另一项目 `psychology_video_project` 的硬编码路径自 2026-10-15
+起已悬空（其最后提交 2026-08-17）。删除只影响历史复算/旧项目 A3，不影响 g8 的
+Qwen3-VL 主链。
+
+**未删除（明确保留）**：`third_party/TruFor`（593 MB）、`TruFor_weights.zip`
+（249 MB）、`trufor_test.py`；`third_party/{probe,npr,univfd,spai,aide}`；项目内
+`experts/trufor.py` 及其适配器/测试；`noise`/`jpeg`/`frequency_v2` 等内部实现。
+
+**后果**：`--mllm qwen25` 在缺权重时显式报错，历史复算需重新下载约 16.6 GB；
+`scripts/train_lora_g4.py` 仍依赖旧基座，不能直接作为 Qwen3 SFT 入口；
+`psychology_video_project` 若恢复 A3 复核，需重新下载权重并改回路径。
+**磁盘**：`/root/autodl-tmp` 可用从 312 MB 增至 **16 GB**（overlay 余 2.1 GB）。
 
 ### 4.5 小批 Agent 人工验收（test 之前）
 

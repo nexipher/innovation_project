@@ -550,3 +550,16 @@
 * **涉及/修改的文件清单**：`plan.md (Modified — §4.16/§4.17)`、`dataset/mnw_div2k/dev_final_split.json (Created — 分区预注册)`、`claude_operation_log.md`
 * **执行结果与验证状态**：审核 32/32 指纹一致；分类计数与代表 ID 已核对；#12 图像放大核对；#32 当前代码重审 0 findings；五个仓库代码/README/论文摘要已读；DRCT 权重哈希/大小已核实；`dev_final_split.json` 分区校验“无 sha256 跨分区”；**未下载权重、未跑 GPU、未改 b2、未导出台账、未冻结**。
 * **置信度或遗留待办（TODO）**：①SPAI/AIDE 官方权重在 Google Drive、SSP 在 Dropbox，本实例不可达——需用户上传或提供可达镜像；拿到后先记 sha256/大小再评测②DRCT 需固定主干/训练集/DR 版本（建议 ConvB + DRCT-2M + SDv1；README 更正 BigGAN 仅 59.81%）③SSP 无统一 checkpoint，需先决定用哪一个/是否值得评测④DIRE 分类器 checkpoint 在 RecDrive/Baidu，需解决访问；`demo.py` 直接喂原图与论文路径不一致⑤用户确认 `dev_final_split.json` 的分区与最终集规模⑥下一步：离线适配器 + CPU 测试，仍不改 Agent。
+
+### 2026-10-26 - 阶段四 4.18：删除已退出的 Qwen2.5-VL 旧权重（用户确认，16 GB）
+
+* **当前操作动作**：按用户确认，只删除已退出的 Qwen2.5-VL-7B-Instruct 旧权重目录；TruFor 及其余第三方资产保留。删除前后核对路径、占用、引用与磁盘。
+* **对应计划锚点**：`plan.md` §4.18（新增）、§4.17a（磁盘预算更新）
+* **核心变更说明**：
+  1. **删除对象**：`/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct.PENDING-DELETE-20261015`（17 个文件、5 个 safetensors，约 16 GB）。该目录自 2026-10-15 起已改名 `PENDING-DELETE`，本次是用户确认后的删除。
+  2. **删除前核实**：无进程占用；项目内无符号链接指向；`config.QWEN_MODEL_PATH` 指向的旧名字在改名后已不存在；`psychology_video_project` 的硬编码路径自 2026-10-15 起已悬空（该项目最后提交 2026-08-17）。
+  3. **明确保留**：`third_party/TruFor`（593 MB）、`TruFor_weights.zip`（249 MB）、`trufor_test.py`；`third_party/{probe,npr,univfd,spai,aide}`；项目内 `experts/trufor.py` 与测试；内部 `noise/jpeg/frequency_v2` 实现。**未改任何协议文件**（`config.py` 等保持 b2 运行提交的字节，避免破坏验收协议身份的可比性）。
+  4. **文档同步**：README §0/§3.4 标明 g7 权重已删除、`qwen25` 需重新下载；`docs/development/agent.md` §4.3 记录删除与另一项目影响；`sft_data/GENERATIONS.json` g7 条目加 `weights_deleted_at`/`weights_note`；plan §4.18。
+* **涉及/修改的文件清单**：`README.md`、`docs/development/agent.md`、`sft_data/GENERATIONS.json`、`plan.md`、`claude_operation_log.md`；**文件系统**：删除上述 16 GB 目录
+* **执行结果与验证状态**：目录已不存在；`/root/autodl-tmp` 可用从 312 MB 增至 **16 GB**（overlay 余 2.1 GB）；TruFor/SPAI/AIDE 大小未变；`core` **705 通过**；g8 主链（Qwen3-VL）不受影响；`--mllm qwen25` 现在会在缺权重时显式报错。
+* **置信度或遗留待办（TODO）**：①g7 历史复算需重新下载约 16.6 GB②`psychology_video_project` 若恢复 A3 复核，需重新下载权重并改回硬编码路径③TruFor 按用户选择保留；其“L1 研究对照”定位与当前“不做局部篡改定位”仍不一致，是否彻底退出待后续决定④SPAI/AIDE 权重已在本机（spai 892 MB、aide 11 GB），DRCT 4.18 GB/DIRE 2.2 GB 可在 16 GB 空间内按计划逐个下载评测。

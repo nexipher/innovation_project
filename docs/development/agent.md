@@ -113,11 +113,15 @@ CPU验证显式使用 `--mllm mock`；真实路径无CUDA直接报错，不静�
 
 - Qwen2.5-VL-7B-Instruct 原ModelScope快照：
   `/root/autodl-tmp/psychology_video_project/models/models/qwen--Qwen2.5-VL-7B-Instruct/snapshots/master`。
-- 据2026-10-15操作日志，权重父目录已改名为
-  `qwen--Qwen2.5-VL-7B-Instruct.PENDING-DELETE-20261015`，**改名未删除、不释放磁盘空间**；此处不是本轮远程文件系统复核。
-- `--mllm qwen25`仅供历史复算，仍读取 `config.QWEN_MODEL_PATH`；权重缺失时明确报错。
+- 2026-10-15 先改名为 `qwen--Qwen2.5-VL-7B-Instruct.PENDING-DELETE-20261015`
+  （改名不释放空间）；**2026-10-26 用户确认退出后已删除该目录**（5 个 safetensors +
+  tokenizer，约 16 GB，释放至可用 16 GB）。删除的是权重，不是代码：`config.QWEN_MODEL_PATH`
+  仍指向旧路径，`--mllm qwen25` 在缺权重时显式报错。
+- `--mllm qwen25`仅供历史复算，仍读取 `config.QWEN_MODEL_PATH`；要复算须重新下载约 16.6 GB。
 - `scripts/train_lora_g4.py`仍有旧基座依赖，不能直接当作Qwen3新版SFT入口；使用前必须另行对齐和验收。
-- `psychology_video_project`本身仍依赖旧权重。删除必须单独确认对该项目及历史复算的影响；不得删除整个 `models/` 或HF缓存。
+- **`psychology_video_project` 的硬编码路径在 2026-10-15 改名后已悬空**；该项目的
+  `run_streaming_*.py` / `run_a1_a3_pipeline.py` 若仍需 A3 事件复核，必须重新下载权重并改回
+  路径。本次删除是用户对该旧模型的退出确认；不得删除整个 `models/` 或 HF 缓存。
 
 ---
 

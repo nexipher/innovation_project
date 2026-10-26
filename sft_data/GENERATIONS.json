@@ -1,6 +1,6 @@
 {
   "recorded_at": "2026-10-15T08:48:13",
-  "note": "代次索引：只回答“这一代大体是什么”。**批次身份仍以每份 VERSIONS.json 为准**（模型版本/权重摘要/预处理可能在同一代次内变化）。g8 的模型已固定到 revision（见 model.revision），批次仍须各自记录实际加载的权重摘要。",
+  "note": "代次索引：只回答“这一代大体是什么”。**批次身份仍以每份 VERSIONS.json 为准**（模型版本/权重摘要/预处理可能在同一代次内变化）。g8 的模型已固定到 revision（见 model.revision），批次仍须各自记录实际加载的权重摘要。 2026-10-26：g7 的 Qwen2.5-VL 本地权重已删除（只删权重，代码保留）。",
   "generations": [
     {
       "generation": "g7",
@@ -9,7 +9,9 @@
       "model": {
         "name": "Qwen2.5-VL-7B-Instruct",
         "checkpoint": "Qwen/Qwen2.5-VL-7B-Instruct",
-        "inference_mode": "chat"
+        "inference_mode": "chat",
+        "weights_deleted_at": "2026-10-26",
+        "weights_note": "Qwen2.5-VL-7B 本地快照已删除（用户确认退出；5 safetensors，约 16 GB）。g7 已冻结；历史复算需重新下载约 16.6 GB。"
       },
       "experts": [
         "probe",
