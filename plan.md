@@ -105,7 +105,7 @@
 |---|------|----------|-----|
 | 1 | **归档与新代次目录** ✅ 已完成（§1/§1b） | 清单可追溯、摘要一致、新旧路径互不覆盖、新版批次命名不被旧登记误拦截 | 否 |
 | 2 | **Qwen3-VL 迁移冒烟**（未开始） | ①单张图正确进入多模态输入且模型能描述具体场景；②输出一个合法工具请求且控制器真的执行了一次；③工具结果进入正确的后续消息且被准确引用；④调用之后仍有必要的图像上下文，结案可解析；⑤**模型原始回复、最终采用回复、外部控制原因三者分别留存** | 先 Mock（CPU），真模型需授权 |
-| 3 | **候选专家独立评测**（未开始） | 固定权重/预处理/输出尺度与方向；同源图 × PNG/q70/q85/q95 分别评测；报告跨生成器表现、准确率、AUROC、**错误重合**与成本；判定是否提供**互补信息**；noise 同标准参评 | 是（需授权与权重） |
+| 3 | **候选专家独立评测**（准备完成，待授权） | 固定权重/预处理/输出尺度与方向；首轮开发集 **100 源 × (original + jpeg_q95) = 200 输入/专家**，q85/q70 暂缓；报告跨生成器 AUROC+CI、官方阈值下召回/平衡准确率、失败数、耗时与内存；**错误重合只作描述性分析**，不设硬性准入线；noise 同标准参评 | 是（需授权；SPAI/AIDE 已就绪） |
 | 4 | **精简证据包 + v3 解耦**（未开始） | 运行时不再计算或使用参考后验与预计收益；不因旧后验/权重/校准表限制合法调用；重复请求不重复执行；边界截断原因可追溯；结论、报告与原始回复的差异有明确记录；方向检查改按**经核实的原始 score 语义**，不因校准字段消失而静默跳过 | 否 |
 | 5 | **小批端到端验收**（未开始） | 视觉分析、证据忠实性、重复调用、安全停止、完整记录逐项过；**此阶段必须能人工查看原始图像、实际投递的证据包与完整原始对话**；通过后才允许扩大生成（可用最小审阅视图，不必等完整工作台） | 是（需授权） |
 | 6 | **新版数据生成**（未开始） | 在新代次目录下生成；旧批次不混入；批次记录含模型/提示词/专家权重/预处理/schema/代码身份 | 是（需授权） |
@@ -611,8 +611,8 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 | 候选 | 版本（代码/论文） | 权重来源与身份 | 许可 | 训练数据 | 输入/测量范围 | 输出/默认阈值 | 成本（估计） | 关键限制 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **PROBE**（基线） | 已在本机；权重 sha256 `c8caa9ba…a450156` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection`，`DINOv2_best_model_step_34999.pth` 1.22 GB | 上游未声明（不再分发） | 上游未声明 | pad→336，非重叠滑窗均值，**global** | sigmoid，高=假，阈值 0.5 | 中位 210 ms/图；外部集 AUROC 0.99–1.0 | 上游语料未知；外部错误仅 13/200 |
-| **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025；代码已固定到 `third_party/spai/repo` | **已上传**：`third_party/spai/weights/spai.pth`，**934,865,338 B，sha256 `24159f27…9648a55`**（云侧计算；官方无公开哈希可比） | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | <8 GB 显存；139.9M 参数；时间待 GPU 冒烟 | 适配器已实现；CPU 覆盖 324/324；加载需 config 补默认项 + `weights_only=False`（yacs CfgNode） |
-| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；显存估计 8–12 GB（fp32, batch 1）；时间待 GPU 冒烟 | **内部分支算一个专家**；主候选固定 `progan_train`，另外两份保留、不混用；适配器已实现，CPU 覆盖 1025/1025 |
+| **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025；代码已固定到 `third_party/spai/repo` | **已上传**：`third_party/spai/weights/spai.pth`，**934,865,338 B，sha256 `24159f27…9648a55`**（云侧计算；官方无公开哈希可比） | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | 实测 reserved **8.303 GB**、alloc 6.6 GB；稳定 **0.423 s/图**、首次 0.763 s、加载 2.835 s；139.9M 参数 | 适配器已实现；CPU 覆盖 324/324；官方 yaml 与 list 前向路径已核验；加载需 config 补默认项 + `weights_only=False`（yacs CfgNode） |
+| **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；实测 reserved **3.709 GB**、alloc 3.545 GB；稳定 **1.256 s/图**、首次 1.596 s、加载 4.730 s | **内部分支算一个专家**；主候选固定 `progan_train`，另外两份保留、不混用；适配器已实现，CPU 覆盖 1025/1025 |
 | **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | ModelScope `BokingChen/DRCT-2M` `pretrained.zip`：**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`** | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | ConvB ~0.05 s/图，显存 4–6 GB；CLIP ViT-L 略高 | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`） |
 | **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | 8 个按 GenImage 生成器训练的 checkpoint，Baidu/Dropbox；**Dropbox 不可达、Baidu 需客户端；大小/sha256 待下载** | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误 |
 | **DIRE**（研究对照） | repo `1f89fff1`（2024-09-26），ICCV 2023 | 分类器 checkpoint 在 RecDrive/Baidu/OneDrive（RecDrive 可达但需密码/API；sha256 待下载）；扩散模型 `256x256_diffusion_uncond.pt` **2,211,383,297 B**（OpenAI Azure，可及） | 仓库根无 LICENSE；guided-diffusion 为 MIT；权重许可未声明 | DiffusionForensics（LSUN/ImageNet/CelebA-HQ，ADM） | DDIM 反演+重建（20 步，256），`abs(img-recon)` → Resize 256/CenterCrop 224/ImageNet | sigmoid，高=假，阈值 0.5 | 每图数秒（重建）+ 分类器；显存 8–12 GB | **重建误差图 ≠ 篡改定位图**；`demo.py` 直接喂原图，与论文/`compute_dire.py` 路径不一致；扩散专用，对 GAN 假图可能弱 |
@@ -636,7 +636,7 @@ AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；
 
 下载/上传后先核对大小与 sha256，再进正式评测；未核对的权重不进入报告。
 
-#### 4.17b 开发评测集（适度扩展）
+#### 4.17b 开发评测集（首轮 200 输入；最终留出封存）
 
 * **预注册分区（先于任何候选评测，已落盘）**：MNW 清单每组有 250 张源图，当前只用
   了 20 张。已按源 sha256 + 固定 seed 写入 `dataset/mnw_div2k/dev_final_split.json`：
@@ -644,110 +644,202 @@ AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；
   **没有共享 sha256**，同一源的所有格式变体只能落在同一分区）。最终留出从**未参与
   开发**的源中抽取；这是"同生成器、不同源图"的留出，**不是**未见生成器；若需要
   未见生成器，另找数据集并单列。
-* **D1a（主开发集）**：现有 100 源 × **4 个条件**（original、jpeg_q95、q85、q70）
-  = 400 个输入；q70/q85 与 q95 使用**同一编码器/参数**，原图不动、不缩放。同一源的
-  4 个变体全部留在开发集。
-* **D1b（条件式扩展，不无限扩大）**：若 D1a 上 PROBE 的阈值错误不足 **8 次**（当前
-  200 输入只有 13 次），从开发分区再补 **每组 20 源**（4 生成器 ×20 ×4 条件 = 320
-  输入；DIV2K 同样补 20 源 ×4 = 80）——只扩一次，且仍只用开发分区。
-* **最终留出集**：从最终分区取 **每组 20 源 ×2 条件**（original + jpeg_q95）；
-  4 个生成器组 + DIV2K 共 100 源 → **200 输入**。所有变体留在最终分区。最终集
-  **只在候选短名单确定后跑一次**，不参与选专家；若连最终分区也不够（或需要未见
-  生成器），最终评测推迟，不用开发集冒充。
-* **理由**：PROBE 在当前 200 输入上阈值错误仅 **13/200**（8/100 源至少错一次），
-  无法可靠估计"纠正多少 PROBE 错误"；增加 q70/q85 有望提高错误数，但仍可能不足。
+* **D1a（首轮开发集，唯一评测口径）**：现有 **100 源 × 2 个条件**（original、
+  jpeg_q95）= **200 个输入/专家**，直接使用现有
+  `dataset/mnw_div2k/inputs_manifest.json`（清单本身即 200 条、100 源）。q95 与现有
+  清单使用**同一编码器/参数**，原图不动、不缩放。同一源的 2 个变体全部留在开发集。
+* **q85/q70 暂缓**：现有清单未生成 q85/q70；首轮**不新增、不补跑**，不参与选专家。
+  等首轮独立检测与描述性错误重合复核后，再单独决定是否补做；届时应先写清输入数、
+  目的和预算，**不把首轮隐式扩成 400 输入**。
+* **不再设自动 D1b 扩样**：首轮若 PROBE 错误数不足或某些组 CI 过宽，记录为
+  "证据不足/不可判定"，不自动追加开发源；任何扩样都要另立步骤并重新授权。
+* **最终留出集（封存）**：从最终分区取 **每组 20 源 ×2 条件**（original +
+  jpeg_q95）；4 个生成器组 + DIV2K 共 100 源 → **200 输入**。所有变体留在最终分区。
+  最终集**只在候选短名单确定后跑一次**，不参与选专家；若最终分区不够或需要未见
+  生成器，最终评测推迟，不用开发集冒充。
+* **独立单位**：首轮是 **100 个独立源**（80 Fake + 20 Real）、**200 个源×条件单元**；
+  20 张 DIV2K Real 在四个生成器组间复用，四组不独立。**不能把 200 当 200 个独立源，
+  也不能跨组池化 CI。**
+* **理由**：首轮目标是把独立检测与同源重复测量算清楚，而不是追求错误样本量。
+  PROBE 在现有 200 输入上错误仅 **13/200**（8/100 源至少错一次）；首轮因此不设
+  "最少纠正数"门槛，q85/q70 留到有明确需要时再评估。
 
 #### 4.17c 指标与互补性分析（预注册）
 
-1. **独立表现**：每组（生成器 × 条件，n=40）AUROC + 95% bootstrap CI；官方阈值下
-   的 TPR/TNR（真假分开）、失败数、耗时（均值/中位）、峰值显存。
-   * **独立源计数**：D1a = **100 个独立源**（80 Fake + 20 Real）；每个源 4 个条件
-     → **400 个源×条件单元**，但独立单位仍是 **100 个源**。组内配对 n=40 源
-     （20 Fake + 20 Real）；20 张 DIV2K Real 在四个生成器组间复用，**四组不独立**；
-     不把 400 当独立样本，不跨组池化 CI。
-2. **互补性（阈值下 2×2，按源聚类）**：`PROBE 错 & 候选对`（纠正）、
+1. **独立检测（每专家、每组 × 条件）**：
+   * 组内配对 **20 Fake + 20 Real**（DIV2K）；AUROC + 95% bootstrap CI（重采样源）；
+   * 官方默认阈值（0.5）下 Fake 召回、Real 召回（TNR）、balanced accuracy；
+   * **失败数单列**；耗时分开记录**模型加载 / 首次推理 / 稳定推理**（注明是否含
+     预处理、数据传输、CUDA 同步）；host 峰值 RSS、cgroup current、GPU
+     allocated/reserved 峰值；
+   * 保留**每图** raw score、predicted label、true label，以及模型身份（权重
+     sha256、代码 commit、预处理、输出语义）。
+   * **独立源计数**：首轮 = **100 个独立源**（80 Fake + 20 Real）、**200 个
+     源×条件单元**；独立单位仍是 **100 个源**。组内配对 n=40 源；20 张 DIV2K Real
+     在四个生成器组间复用，**四组不独立**；不把 200 当独立样本，不跨组池化 CI。
+2. **互补性（描述性 2×2；不是准入）**：`PROBE 错 & 候选对`（纠正）、
    `PROBE 对 & 候选错`（损害）、`都对`、`都错`。
-   * **独立单位是源，不是图像/格式**：同一源的 original/q95/q85/q70 是重复测量，
-     不能当 4 个独立样本；2×2 按条件分别报告，净纠正的 CI 用**按源聚类 bootstrap**
-     （重采样源，携带该源全部格式）。DIV2K 的 20 张 Real 在四个生成器组间复用，
-     组间不独立；只做组内解释，不把四组汇总成单一数字。
-   * **不要求候选整体胜过 PROBE**：PROBE 在开发集接近天花板，"整体 AUROC 必须
-     更高"既不可达，也不是互补性的定义。候选总体弱于 PROBE 也可以在特定生成器/
-     格式上提供净纠正；反之，总体不弱但只重复 PROBE 的错误则没有价值。
-   * **不平均分数、不做晚期融合、不把候选分数当校准概率**。
-3. **候选合格线（评测前写死，不因结果改；已消除"总分门槛"与互补性的矛盾）**：
-   * **不设“AUROC 必须 ≥0.70”或“整体必须胜过 PROBE”的门槛**——单专家总分门槛与
-     互补性定义冲突，也会误杀在特定组有用、总体弱的候选；
-   * **安全性（不是性能门槛）**：没有一组显著反向（每组 AUROC 的 95% CI 上界
-     ≥0.5）；若某组 CI 整段 <0.5，该组单列“危险”，候选不能只靠别组收益入选；
-   * **互补性**：**净纠正 = 纠正 − 损害 > 0**；纠正/损害按**源×条件单元**计数，
-     同一源的 4 个格式不重复计为独立事件；净纠正 CI 用**按源聚类 bootstrap**
-     （重采样源，携带其全部格式）；
-   * **最小证据量**：至少 **8 个源×条件纠正单元**，且来自 **≥5 个不同源图**、
-     **≥2 个生成器组**；若 PROBE 错误本身不足，明确写“互补性不可判定”，不硬下结论；
-   * **非冗余**：报告候选独有正确的源集合；纠正不能只来自 PROBE 也会错的同一批样本；
-   * 只有安全性/互补性/非冗余同时满足才保留；找不到合格第二专家时只保留 PROBE，
-     并如实说明。
-4. **方向/阈值**：全部使用各官方仓库的默认方向与阈值（均为 0.5）；**不因外部结果
-   翻转方向、不调阈值**。
-5. **失败处理**：权重不可用/加载失败/显存不足记为 `not_evaluated(reason)`，不插补。
+   * 按组、按条件分别报告四格计数、**sample ID** 与**每格不同源数**；同一源的
+     original/q95 是**重复测量**，不能当 2 个独立事件。
+   * **净纠正 = 纠正 − 损害**只作描述；CI 用**按源聚类 bootstrap**（1000 次，
+     固定 seed 20261026；重采样源并携带其全部条件）。DIV2K 的 20 张 Real 在四组
+     复用，组间不独立；只做组内解释，不把四组汇总成单一数字。
+   * **取消硬门槛**：不设“净纠正 > 0”“至少 8 个纠正单元”“AUROC ≥0.70”
+     “整体必须胜过 PROBE”或任何自动准入规则。候选纠正部分 PROBE 错误只说明
+     **互补潜力**，不据此声称 Agent 级提升；候选总体弱于 PROBE 也不直接淘汰。
+   * **不平均原始分数、不做晚期融合、不把候选分数当校准概率、不翻转方向、
+     不调阈值**。
+3. **专家组决定（人工、事后）**：首轮结束后，根据独立检测表现、失败率、成本与
+   描述性互补潜力综合选择 **2–3 个专家**（或只保留 PROBE）；理由、反例和证据不足
+   之处写清楚，不做自动阈值判定，不为凑数保留无效专家。
+4. **方向/阈值**：全部使用各官方仓库的默认方向与阈值（当前均为高=假、0.5）；
+   **不因外部结果翻转方向、不调阈值**。
+5. **失败处理**：权重不可用/依赖缺失/加载失败/显存不足记为
+   `not_evaluated(reason)`；单图异常或输出非有限记 `failed`，**不当 0/中性分、
+   不当错误预测、不插补**；失败过多的专家在结论中单列。
 
 #### 4.17d 执行顺序与资源预算
 
 | 步骤 | 内容 | 产物/门槛 | 资源 |
 | --- | --- | --- | --- |
-| 0 | 本表核实；SPAI/AIDE 权重与代码已核对；DRCT/SSP/DIRE 待下载 | **已完成 SPAI/AIDE**（哈希/覆盖/预处理）；DRCT/SSP/DIRE 待办 | 无 GPU |
-| 1 | 离线适配器 + CPU 测试（预处理/方向/阈值/失败包），不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py` + CPU 检查 | CPU |
-| 2 | GPU 冒烟：每候选 8 张（2 真/2 假 ×2 格式） | 加载成功、方向/阈值正确、显存/耗时记录 | **待授权**；~0.5 GPU 时 |
-| 3 | D1a 400 输入 × 候选；顺序 **SPAI → DRCT-ConvB → AIDE → SSP（若可达）→ DIRE** | 逐条分数 + 分组报告 | 估计 2 GPU 时 |
-| 4 | 互补性 2×2 + 合格线；确定 2–3 个专家 | 候选短名单 + 结论 | CPU/分析 |
-| 5 | 最终留出集（新源）复评入选专家 | 最终报告；未拿到新源则推迟 | 估计 1 GPU 时 |
+| 0 | 权重/代码/参数覆盖与官方预处理核对 | **已完成 SPAI/AIDE**（sha256/覆盖/预处理/代码 pin）；DRCT/SSP/DIRE 仍未下载 | 无 GPU |
+| 1 | 离线适配器 + CPU 测试，不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py`；`core` 720 通过 | CPU |
+| 2 | **官方路径对照**：SPAI 官方 CLI / AIDE 官方 `TestDataset`，同图张量、logit、分数、重复调用 | **已完成，均 `ok=true`**（见 §4.17e） | 已用 GPU（核验） |
+| 3 | **首轮开发集 D1a：每专家 200 输入**（100 源 × original/q95）；PROBE、SPAI、AIDE **各自独立进程、顺序执行** | 逐图分数 + 分组报告 + 失败/耗时/内存 | **待授权**；实测估计 **<20 min** |
+| 4 | 描述性 2×2 错误重合（按源聚类）；**不设合格线**；人工确定 2–3 个专家 | 候选短名单 + 结论 + 反例 | CPU/分析 |
+| 5 | 最终留出集（封存 100 源 ×2 条件）复评入选专家 | 最终报告；只跑一次 | 待短名单；估计 <20 min |
 | 6 | 之后才结合 §4.16 做协议/证据包/管线修订与新小批验收 | 新小批 + 人工验收 | 另计 |
 
-**说明**：时间/显存为估计值，以步骤 2 的实测为准；DIRE 的重建成本单列。按 400 输入
-估算：SPAI ~3–6 min、DRCT-ConvB <1 min、AIDE ~10–20 min、SSP <1 min、DIRE
-~20–40 min；加模型加载与重试，约 2 GPU 时。若触发 D1b（+400 输入），再加约 2 GPU 时。
-**本阶段不启动外部 Agent 200 会话，不生成 SFT 数据。**
+**实际命令（每专家一个进程，统一使用 `dataset/mnw_div2k/inputs_manifest.json`）：**
 
-#### 4.17e CPU 检查与 GPU 冒烟结果（2026-10-26）
+```bash
+# PROBE（主环境；GPU 需授权）
+FORENSIC_ALLOW_GPU=1 python scripts/g8_external_eval.py \
+    --inputs dataset/mnw_div2k/inputs_manifest.json --experts probe
 
-**CPU 已完成（无 GPU、无前向）：**
+# SPAI（候选 venv；独立进程）
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/g8_external_eval.py \
+    --inputs dataset/mnw_div2k/inputs_manifest.json --experts spai
+
+# AIDE progan_train（候选 venv；独立进程；不与 SPAI 同进程）
+FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+    scripts/g8_external_eval.py \
+    --inputs dataset/mnw_div2k/inputs_manifest.json --experts aide
+
+# 描述性错误重合（CPU；每个候选单独生成）
+python scripts/g8_candidate_compare.py \
+    --probe sft_data/g8_external_eval/<probe_run>/scores.jsonl \
+    --candidate sft_data/g8_external_eval/<spai_or_aide_run>/scores.jsonl \
+    --out sft_data/g8_external_eval/compare_<candidate>.json
+```
+
+**预算（以 2026-10-26 实测为准）**：
+
+| 专家 | 加载 | 首次 | 稳定中位 | 200 输入估算 | GPU 峰值 alloc/reserved | host maxRSS | cgroup current（核验时） |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PROBE | 待本轮记录 | 待本轮记录 | 历史中位 **0.210 s** | **~0.7 min** + 加载 | 待本轮记录 | 待本轮记录 | 待本轮记录 |
+| SPAI（官方 list 路径） | **2.835 s** | **0.763 s** | **0.423 s** | **~1.5–2.5 min** | **6.600 / 8.303 GB** | **1.489 GB** | **2.744 GB** |
+| AIDE（progan_train） | **4.730 s** | **1.596 s** | **1.256 s** | **~4.2–5 min** | **3.545 / 3.709 GB** | **4.407 GB**（含 mmap） | **2.848 GB** |
+
+* 200 输入 × 稳定中位是下限；真实数据分辨率不一，按 1.5–2× 余量估。三专家合计
+  **<20 min**（不含排错/重跑）；DRCT/SSP/DIRE 未下载，不在本轮预算内。
+* 测量边界：稳定耗时含该专家 `score()` 的预处理与同步；首次含 CUDA 初始化/首次
+  kernel；加载单独计时。host maxRSS 是进程峰值（mmap 页计入），cgroup current 是
+  进程结束前后读数，`memory.peak` 未暴露。
+* **本阶段不启动外部 Agent 200 会话，不生成 SFT 数据，不修改 Agent 提示词/停止
+  策略/证据解释规则，不改 b2 原始记录。**
+
+#### 4.17e 官方路径核验、内存实测与准备状态（2026-10-26）
+
+**CPU 检查（无 GPU、无前向）：**
 
 | 项目 | 结果 |
 | --- | --- |
-| 权重文件 | SPAI `934,865,338 B` / `24159f27…`；AIDE `progan_train` `3,592,077,976 B` / `ce3a9d66…`；`sd14_train` 同大小 / `382a50d1…`；`GenImage_train` `3,592,100,460 B` / `f084346d…`。**大小与 SHA256 均与 `experts/candidate_weights.json` 一致**（云侧计算；官方无公开哈希） |
-| 代码版本 | SPAI `8ff7b3b6`（70 个源文件）、AIDE `6725b710`（19 个源文件）；每文件哈希在 `third_party/*/repo/SOURCE.json` |
-| SPAI 参数覆盖 | 模型 324 键 / checkpoint 324 键，**missing 0 / unexpected 0 / shape mismatch 0** |
+| 权重文件 | SPAI `934,865,338 B` / `24159f27…`；AIDE `progan_train` `3,592,077,976 B` / `ce3a9d66…`；`sd14_train` 同大小 / `382a50d1…`；`GenImage_train` `3,592,100,460 B` / `f084346d…`。**大小与 SHA256 均与 `experts/candidate_weights.json` 一致**（云侧计算；官方无公开哈希，不能写成“官方哈希已验证”） |
+| 代码版本 | SPAI `8ff7b3b6`（70 个源文件）、AIDE `6725b710`（19 个源文件）；每文件哈希在 `third_party/*/repo/SOURCE.json`，汇总在 `experts/candidate_code.json` |
+| SPAI 参数覆盖 | 模型 324 键 / checkpoint 324 键，**missing 0 / unexpected 0 / shape mismatch 0**；`check_state_dict` 对缺失/多余/形状不符**直接抛错**，没有用 `strict=False` 掩盖 |
 | AIDE 参数覆盖 | 模型 1025 键 / checkpoint 1025 键，**missing 0 / unexpected 0 / shape mismatch 0**；`openclip_convnext_xxl.*` **378 个张量**，总 **897.9M** 参数（主干已含，无需另下） |
-| SPAI 官方预处理 | 332×500 合成图 → `[3,332,500]`、float32、范围 `[0,1]`；`ORIGINAL_RESOLUTION=True`，不缩放/不裁剪 |
-| AIDE 官方预处理 | 332×500 合成图 → `[5,3,256,256]`、float32、ImageNet 归一化；4 个 patch `[3,32,32]` + 原图 `[3,332,500]` |
-| 适配器 | `experts/candidate_common.py`（meta 构建 / 流式加载 / 覆盖检查）、`experts/spai.py`、`experts/aide.py`；`scripts/g8_external_eval.py` 增加 `--experts spai,aide`；不注册进 Agent 工具箱 |
+| SPAI 官方预处理 | 332×500 合成图 → `[3,332,500]`、float32、范围 `[0,1]`；官方 `configs/spai.yaml`，`ORIGINAL_RESOLUTION=True`，不缩放/不裁剪；`MINIMUM_PATCHES=4`（checkpoint 内是 1，**以官方 yaml 为准**） |
+| AIDE 官方预处理 | 332×500 合成图 → `[5,3,256,256]`、float32、ImageNet 归一化；顺序为 4 个 DCT patch `[3,32,32]` + 原图；官方 `TestDataset` |
+| 适配器 | `experts/candidate_common.py`（meta 构建 / 流式加载 / 覆盖检查）、`experts/spai.py`、`experts/aide.py`；`scripts/g8_external_eval.py` 支持 `--experts spai,aide`；**不注册进 Agent 工具箱** |
 | 环境 | 独立 venv `/root/autodl-tmp/venvs/candidates`（einops 0.8.0、open-clip-torch 2.24.0、albumentations 1.4.14、albucore 0.0.16、filetype、lmdb；复用系统 torch 2.5.1 / timm 1.0.30）。**主环境未被修改** |
-| 限制 | 主机 cgroup 2 GB；两项覆盖检查必须**分进程**执行（合并会 OOM）；未做整模型 CPU 前向（AIDE 3.6 GB 无法在 host 常驻）。GPU 前向需授权 |
 
 **stub 修复与同进程连续调用**：SPAI 的 seaborn/pandas stub 现在带
 `importlib.machinery.ModuleSpec`（loader=None）；`has_module()` 对无 spec 的
 `sys.modules` 条目也有回退。主环境连续 3 次 `unavailable_reason()` 稳定报告缺少
 `einops/albumentations/filetype/lmdb`；venv 连续 3 次稳定报告可用，**没有再次出现
-`find_spec()` 异常**。
+`find_spec()` 异常**。连续调用验证的是**真实专家接口**（`SPAIExpert.analyze` /
+`AIDEExpert.analyze`），不是只调 `unavailable_reason()`。
 
-**GPU 冒烟（2026-10-26，两个专家分进程顺序执行；脚本 `scripts/smoke_candidate.py`）：**
+**官方实现 vs 适配器（同图逐项，`scripts/verify_candidate_official.py`）：**
 
-| 专家 | 加载 | 首次调用 | 稳定调用（中位/范围） | GPU 峰值（alloc/reserved） | host maxRSS | cgroup current（前→后） | 同图一致性 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| SPAI | 2.745 s | 2.411 s | **1.818 s**（1.346–2.029） | **0.697 / 0.785 GB** | 1.386 GB | 1.657 → 2.442 GB | 2/2 图：张量逐位相同、分数差 **0** |
-| AIDE（progan_train） | 4.730 s | 1.596 s | **1.256 s**（0.944–1.293） | **3.545 / 3.709 GB** | 4.317 GB（含 mmap） | 1.751 → 2.482 GB | 2/2 图：张量逐位相同、分数差 **0** |
+| 检查项 | SPAI | AIDE（progan_train） |
+| --- | --- | --- |
+| 官方入口 | `python -m spai infer`（独立进程，官方 CLI + 官方 config + 官方 checkpoint） | 官方 `data.datasets.TestDataset` |
+| 预处理张量 | 2/2 图 `torch.equal=True`，max abs diff **0** | 2/2 图 `torch.equal=True`，max abs diff **0** |
+| 模型 logits | 适配器 vs 官方 tensor 前向：diff **0**（Fake `0.16683943569660187`；Real `-23.47699546813965`） | 2 类 logits 全等：Fake `[1.4218192100524902, -1.4248559474945068]`；Real `[-0.5993655920028687, 0.5093327760696411]` |
+| 最终分数 | 适配器 = 官方 CLI = 重复 analyze：Fake **0.5416133999824524**；Real **6.368987282012739e-11** | softmax[:,1] 适配器 = 官方 = 重复 analyze：Fake **0.05485343933105469**；Real **0.7518863677978516** |
+| 输出索引/方向 | sigmoid 标量；高=假；阈值 0.5 | `softmax(logits, dim=1)[:,1]`；类 1=假；阈值 0.5 |
+| 覆盖 | 324/324 | 1025/1025（含主干 378） |
+| 重复调用 | 同进程两次 `analyze` 全等、有限 | 同进程两次 `analyze` 全等、有限 |
+| 官方 CLI 端到端 | 两张图 CSV 分数与适配器**逐位相同**；进程总耗时 15.246 s（含启动/加载） | —（官方 `engine_finetune.evaluate` 的分布式 `all_gather` 循环未调用，见下） |
+| GPU 峰值 alloc/reserved | **6.600 / 8.303 GB** | **3.545 / 3.709 GB** |
+| host maxRSS / cgroup current | **1.489 GB / 2.744 GB** | **4.407 GB（含 mmap） / 2.848 GB** |
 
-* 冒烟判据是**官方路径与适配器同图数值一致**（预处理张量 `torch.equal`、分数差 0），
-  不是“假图分数必须高于真图”。两张图的原始分数只作记录：
-  SPAI Fake `0.559819` / Real `8.31e-11`；AIDE Fake `0.054853` / Real `0.751886`。
-  **两张图不构成性能评估，不据此翻转方向或调阈值。**
-* `memory.peak` 在本 cgroup 未暴露；cgroup 数字是 `memory.current` 的前后值；AIDE 的
-  host maxRSS 含 mmap 页，读数高于 cgroup 阈值不等于匿名内存超限。
-* GPU 峰值远低于预算：SPAI 0.70 GB、AIDE 3.55 GB；单图稳定耗时 SPAI ~1.82 s、
-  AIDE ~1.26 s。按 D1a 400 输入估算：SPAI ~12 min、AIDE ~8.4 min，加加载/重试
-  **<30 min**（此前 2 h 的估计偏保守）。
-* 两次 GPU 进程结束后 `nvidia-smi` 显存回到 1 MiB；未留下常驻进程。
+* **SPAI 的关键接线修正**：官方 `validate` 把**每张图一个 `1×3×H×W` 张量的 list** 传给
+  `forward_arbitrary_resolution_batch`；适配器早期传堆叠张量会走 `forward_batch`，同一图
+  分数不同（`0.559819` vs 官方 `0.541613`）。现在 `raw_logits` 固定传 list +
+  `FEATURE_EXTRACTION_BATCH`，并按官方 `configs/spai.yaml` 构建。**堆叠张量路径已废弃。**
+* **AIDE 的核验边界**：模型构建与 mmap 流式加载复用适配器（checkpoint 已含 ConvNeXt
+  主干），官方 `engine_finetune.evaluate` 的分布式循环未调用；但**官方 `TestDataset`
+  预处理与官方输出公式是独立调用的**，同图张量/logit/分数全等。结论只覆盖“预处理 +
+  前向 + 输出索引”，不覆盖官方分布式评测封装。
+* RGB/BGR：官方数据集读取均为 PIL RGB；`Expert.analyze` 接收 BGR 后转换，重复调用与
+  官方分数一致，说明入口转换未改变数值。resize/crop/pad、归一化、patch 选择与顺序、
+  模型 config、输出索引均由上述张量全等/分数全等逐项覆盖；**没有用“假图分数应高于
+  真图”判断接线**。上表两张图的分数只作逐位对照记录，不构成性能结论——AIDE 的示例
+  Fake 分数低于 Real 恰好说明不能用两张图判方向，方向由官方类定义与 `[:,1]` 决定。
+* 身份绑定：报告写入权重 sha256、代码 repo/commit、预处理、输出语义与阈值
+  （`_expert_identity`）；权重路径与哈希在 `experts/candidate_weights.json`，代码 pin 在
+  `experts/candidate_code.json`；全部输出做有限性检查，加载失败/依赖缺失/异常输出/OOM
+  记为失败，不写 0/中性分。
+* **计时口径差异**：官方核验 JSON 里 SPAI 的 `first_analyze_s=3.036 s` 是该进程在官方
+  CLI 之后另起 CUDA 上下文/模型 warmup 的首次调用；用于预算的是同一官方路径 smoke 的
+  加载 2.835 s、首次 0.763 s、稳定中位 0.423 s。两者不矛盾，但**不能混用**。
+
+**内存与 cgroup 实测（2026-10-26）**：
+
+| 项目 | 实测值 | 说明 |
+| --- | --- | --- |
+| cgroup 路径 | `/proc/self/cgroup` → `0::/`；文件在 `/sys/fs/cgroup/memory.*` | 当前可直接读取 |
+| `memory.max` | **128,849,018,880 B = 120 GiB** | 不是 2 GB |
+| `memory.high` | **126,701,535,232 B ≈ 118 GiB** | 软限制 |
+| `memory.current` | 空闲 **1,794,301,952 B ≈ 1.67 GiB** | 核验时 SPAI 2.744 GB / AIDE 2.848 GB |
+| `memory.peak` | **不存在**（读取 ENOENT） | 不能用它取历史峰值 |
+| `memory.events` | low/high/max/oom/oom_kill **全 0** | 两次核验无 OOM |
+| `memory.stat` | anon ≈ 1.00 GB、file ≈ 0.69 GB、slab ≈ 0.075 GB（空闲态） | `file` 含页缓存，不能当进程匿名内存 |
+| host | 总内存 ≈ **1.0 TiB**，available ≈ **940 GiB**；ulimit memory/virtual 均 unlimited | 主机层面充裕 |
+| 进程 RSS | SPAI **1.489 GB**；AIDE **4.407 GB** | `ru_maxrss` 含 mmap 的 checkpoint 页（file-backed），不等于匿名内存 |
+
+* **与早先“2 GB”读数的关系**：2026-10-26 早些时候 CPU 检查读到
+  `memory.max=2,147,483,648`（2 GiB），合并两项覆盖检查曾以 **exit 137** 结束；当前同一
+  路径已读到 120 GiB，`memory.events` 无 OOM 记录。**无法从现有记录判断当时是临时限制、
+  另一个 cgroup 还是读数时机差异**，因此只把 2 GB 记为“当时观测”，不再作为当前预算；
+  也不把 exit 137 追认为代码缺陷。后续仍**一次只跑一个候选进程**，便于峰值归因和释放。
+* **测量口径**：`score()` 包含预处理、H2D 传输、前向与 `.item()` 同步；加载单独计时；
+  首次包含 CUDA 初始化/首次 kernel。GPU 峰值取 `max_memory_allocated/reserved`；host
+  峰值取 `ru_maxrss`；cgroup 取进程前后 `memory.current`，不声称是峰值。
+* **预算更新**：SPAI 稳定 0.423 s/图、AIDE 1.256 s/图；200 输入首轮 SPAI ~1.5–2.5 min、
+  AIDE ~4.2–5 min，PROBE 历史中位 0.210 s/图 → ~0.7 min，加加载/重试 **<20 min**。
+  显存 SPAI reserved 8.303 GB、AIDE 3.709 GB，均远低于 24 GB 卡；两进程结束后
+  `nvidia-smi` 回到 1 MiB，无残留进程。
+
+**准备状态**：`core` 全绿 **720 passed**（含 `test_candidate_adapters.py`、扩展后的
+`test_external_eval.py`、`test_candidate_compare.py`）；权重/代码/覆盖/官方路径/重复调用/
+内存均已核实。**未运行开发集，未启动外部 Agent，未生成 SFT 数据；未改 Agent 提示词、
+停止策略、证据解释规则或 b2 原始记录。** 等用户明确授权后，按 §4.17d 的命令顺序执行
+首轮开发集。
 
 ### 4.18 旧第三方模型清理（2026-10-26，用户确认）
 
