@@ -1,5 +1,5 @@
 """
-GPU smoke for one candidate expert, one process at a time (plan §4.17e).
+Candidate smoke for one expert, one process at a time (plan §4.17e).
 
 The smoke does **not** judge wiring by "fake must score higher than real".
 It verifies the interface numerically on the same image:
@@ -7,13 +7,14 @@ It verifies the interface numerically on the same image:
   * official preprocessing tensor  ==  adapter preprocessing tensor
   * official forward score         ==  adapter score
 
-and records first-call vs steady-state time, GPU peak, host RSS and cgroup
-memory.  SPAI and AIDE must be run as two separate processes:
+and records load / first-call / steady-state time, host RSS and cgroup memory
+(GPU memory when `--device cuda`).  Each candidate must be run in a separate
+process; the AIDE checkpoints also need separate processes.
 
+  /root/autodl-tmp/venvs/candidates/bin/python \
+      scripts/smoke_candidate.py --expert drct --device cpu
   FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
-      scripts/smoke_candidate.py --expert spai
-  FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
-      scripts/smoke_candidate.py --expert aide
+      scripts/smoke_candidate.py --expert aide --checkpoint sd14_train
 
 No Agent prompt, stopping rule or b2 record is touched.
 """
@@ -76,6 +77,16 @@ def _official_tensor_spai(evaluator, pil):
     return transform(image=np.asarray(pil.convert("RGB")))["image"]
 
 
+def _official_tensor_drct(pil):
+    """Official DRCT val transform, invoked outside the adapter's method."""
+    from experts.drct import _install_import_shims
+    from data.transform import create_val_transforms
+
+    _install_import_shims()
+    transform = create_val_transforms(size=224, is_crop=True)
+    return transform(image=np.asarray(pil.convert("RGB")))["image"]
+
+
 def _official_tensor_aide(pil):
     """Official TestDataset pipeline, written here rather than calling the adapter."""
     from torchvision import transforms
@@ -108,19 +119,21 @@ def _official_score(expert: str, model, tensor, config=None) -> float:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--expert", choices=("spai", "aide"), required=True)
+    parser.add_argument("--expert", choices=("spai", "aide", "drct"), required=True)
     parser.add_argument("--checkpoint", default="progan_train",
-                        help="AIDE checkpoint (only progan_train is the smoke default)")
+                        help="AIDE checkpoint (sd14_train / GenImage_train also available)")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
 
-    if not os.environ.get("FORENSIC_ALLOW_GPU"):
+    is_cuda = args.device.startswith("cuda")
+    if is_cuda and not os.environ.get("FORENSIC_ALLOW_GPU"):
         raise SystemExit("GPU 未授权：先设置 FORENSIC_ALLOW_GPU=1（仅冒烟）")
 
     report = {
-        "schema": "candidate_gpu_smoke/1",
+        "schema": "candidate_smoke/1",
         "expert": args.expert,
+        "checkpoint": args.checkpoint if args.expert == "aide" else None,
         "started_at": datetime.now().isoformat(timespec="seconds"),
         "device": args.device,
         "cgroup_memory_start": _cgroup("current"),
@@ -133,21 +146,27 @@ def main() -> int:
         if args.expert == "spai":
             evaluator = spai_module.SPAIEvaluator(device=args.device)
             official_tensor = _official_tensor_spai
+        elif args.expert == "drct":
+            from experts.drct import DRCTEvaluator
+            evaluator = DRCTEvaluator(device=args.device)
+            official_tensor = _official_tensor_drct
         else:
             evaluator = aide_module.AIDEEvaluator(checkpoint=args.checkpoint,
                                                   device=args.device)
             official_tensor = _official_tensor_aide
 
-        torch.cuda.reset_peak_memory_stats()
+        if is_cuda and torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         t0 = time.perf_counter()
         evaluator.load()
         report["load_s"] = round(time.perf_counter() - t0, 3)
-        report["gpu_alloc_after_load_gb"] = round(
-            torch.cuda.memory_allocated() / 1024 ** 3, 3)
-        report["gpu_reserved_after_load_gb"] = round(
-            torch.cuda.memory_reserved() / 1024 ** 3, 3)
-        report["gpu_peak_after_load_gb"] = round(
-            torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
+        if is_cuda and torch.cuda.is_available():
+            report["gpu_alloc_after_load_gb"] = round(
+                torch.cuda.memory_allocated() / 1024 ** 3, 3)
+            report["gpu_reserved_after_load_gb"] = round(
+                torch.cuda.memory_reserved() / 1024 ** 3, 3)
+            report["gpu_peak_after_load_gb"] = round(
+                torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
 
         images = _pick_images()
         report["images"] = [{"path": e["path"], "sha256": e["sha256"],
@@ -193,9 +212,11 @@ def main() -> int:
         report["steady_calls_s"] = [round(x, 4) for x in steady]
         report["steady_median_s"] = round(statistics.median(steady), 4)
 
-        report["gpu_peak_gb"] = round(torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
-        report["gpu_reserved_peak_gb"] = round(
-            torch.cuda.max_memory_reserved() / 1024 ** 3, 3)
+        if is_cuda and torch.cuda.is_available():
+            report["gpu_peak_gb"] = round(
+                torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
+            report["gpu_reserved_peak_gb"] = round(
+                torch.cuda.max_memory_reserved() / 1024 ** 3, 3)
         report["host_maxrss_kb"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         report["cgroup_memory_end"] = _cgroup("current")
         report["cgroup_memory_peak"] = _cgroup("peak")
@@ -210,9 +231,10 @@ def main() -> int:
         report["traceback"] = traceback.format_exc()[-4000:]
     report["finished_at"] = datetime.now().isoformat(timespec="seconds")
 
+    label = args.expert if args.expert != "aide" else f"aide_{args.checkpoint}"
     out = args.out or os.path.join(
         PROJECT_ROOT, "sft_data", "g8_expert_eval",
-        f"smoke_{args.expert}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        f"smoke_{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)

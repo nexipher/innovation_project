@@ -1,11 +1,12 @@
 """
-Offline candidate adapters (SPAI / AIDE) — CPU-side contracts.
+Offline candidate adapters (SPAI / AIDE / DRCT) — CPU-side contracts.
 
 The heavy model loads (meta key coverage, official transforms) live in
 `scripts/check_candidate_weights.py` and are run in the isolated candidate
-venv because the host cgroup is 2 GB.  These tests pin the parts that must
-hold in the main environment: manifests, direction/threshold, and the expert
-boundary around a stubbed evaluator.
+venv (and one candidate per process, because AIDE and DRCT share a top-level
+`data` package).  These tests pin the parts that must hold in the main
+environment: manifests, direction/threshold, and the expert boundary around a
+stubbed evaluator.
 """
 
 import json
@@ -18,13 +19,14 @@ from config import PROJECT_ROOT
 from experts.candidate_common import load_candidate_code, load_candidate_weights
 from experts.spai import SPAIExpert
 from experts.aide import AIDEExpert
+from experts.drct import DRCTExpert
 from scripts.g8_external_eval import expert_orientation
 
 pytestmark = pytest.mark.core
 
 
 class TestManifests:
-    def test_the_weight_manifest_names_four_files_with_hashes(self):
+    def test_the_weight_manifest_names_all_candidates_with_hashes(self):
         payload = load_candidate_weights()
         assert payload["schema"] == "candidate_weights/1"
         spai = payload["candidates"]["spai"]
@@ -36,11 +38,18 @@ class TestManifests:
         assert aide["checkpoints"]["progan_train"]["primary"] is True
         for entry in aide["checkpoints"].values():
             assert len(entry["sha256"]) == 64 and entry["bytes"] > 0
+        drct = payload["candidates"]["drct"]
+        assert drct["archive_bytes"] > 0 and len(drct["archive_sha256"]) == 64
+        assert drct["bytes"] > 0 and len(drct["sha256"]) == 64
+        assert drct["model_state_keys"] == 346
 
     def test_the_files_exist_with_the_recorded_sizes(self):
         payload = load_candidate_weights()
         paths = [payload["candidates"]["spai"]]
         paths += list(payload["candidates"]["aide"]["checkpoints"].values())
+        paths += [payload["candidates"]["drct"],
+                  {"path": payload["candidates"]["drct"]["archive_path"],
+                   "bytes": payload["candidates"]["drct"]["archive_bytes"]}]
         for entry in paths:
             if not os.path.exists(entry["path"]):
                 pytest.skip(f"candidate weight not uploaded here: {entry['path']}")
@@ -48,7 +57,7 @@ class TestManifests:
 
     def test_the_code_manifest_pins_exact_commits(self):
         payload = load_candidate_code()
-        for name in ("spai", "aide"):
+        for name in ("spai", "aide", "drct"):
             entry = payload["pinned"][name]
             assert len(entry["commit"]) == 40
             assert entry["file_count"] > 0
@@ -89,7 +98,8 @@ class TestTheImportStubs:
 
 
 class TestSemantics:
-    @pytest.mark.parametrize("name", ["spai", "aide"])
+    @pytest.mark.parametrize("name", ["spai", "aide", "aide_sd14",
+                                      "aide_genimage", "drct"])
     def test_candidates_are_higher_is_fake_at_the_official_threshold(self, name):
         field, threshold, direction = expert_orientation(name)
         assert field == "raw_metric"
@@ -99,12 +109,13 @@ class TestSemantics:
     def test_the_candidate_semantics_file_is_not_the_agent_registry(self):
         path = os.path.join(PROJECT_ROOT, "experts", "candidate_semantics.json")
         payload = json.load(open(path, encoding="utf-8"))
-        assert set(payload["experts"]) == {"spai", "aide"}
+        assert set(payload["experts"]) == {
+            "spai", "aide", "aide_sd14", "aide_genimage", "drct"}
         # The Agent registry must not have learned about the candidates.
         registry = json.load(open(os.path.join(
             PROJECT_ROOT, "experts", "score_semantics.json"), encoding="utf-8"))
-        assert "spai_expert" not in registry["experts"]
-        assert "aide_expert" not in registry["experts"]
+        for name in ("spai_expert", "aide_expert", "drct_expert"):
+            assert name not in registry["experts"]
 
 
 class _StubEvaluator:
@@ -121,7 +132,7 @@ class TestTheExpertBoundary:
         expert._missing_dependency = lambda: ""
         return expert
 
-    @pytest.mark.parametrize("factory", [SPAIExpert, AIDEExpert])
+    @pytest.mark.parametrize("factory", [SPAIExpert, AIDEExpert, DRCTExpert])
     def test_a_stub_score_becomes_an_uncalibrated_token(self, factory, tmp_path):
         weights = tmp_path / "weights.pth"
         weights.write_bytes(b"not-a-real-checkpoint")
@@ -132,7 +143,7 @@ class TestTheExpertBoundary:
         assert result.region == "full_image"
         assert result.strength == pytest.approx(0.75)
 
-    @pytest.mark.parametrize("factory", [SPAIExpert, AIDEExpert])
+    @pytest.mark.parametrize("factory", [SPAIExpert, AIDEExpert, DRCTExpert])
     def test_a_missing_weight_file_is_refused(self, factory, tmp_path):
         expert = factory(weights_path=str(tmp_path / "missing.pth"), device="cpu")
         assert "不存在" in expert.unavailable_reason()
@@ -142,3 +153,11 @@ class TestTheExpertBoundary:
         weights.write_bytes(b"x")
         expert = AIDEExpert(weights_path=str(weights), device="cpu")
         assert expert.checkpoint == "progan_train"
+
+    @pytest.mark.parametrize("checkpoint", ["sd14_train", "GenImage_train"])
+    def test_aide_variant_checkpoints_are_explicit(self, checkpoint, tmp_path):
+        weights = tmp_path / f"{checkpoint}.pth"
+        weights.write_bytes(b"x")
+        expert = AIDEExpert(weights_path=str(weights), checkpoint=checkpoint,
+                            device="cpu")
+        assert expert.checkpoint == checkpoint

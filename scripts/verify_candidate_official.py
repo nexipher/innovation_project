@@ -9,7 +9,10 @@ model), this script calls the **official** data pipeline directly:
     end-to-end reference.  The adapter is compared on the same images.
   * AIDE: `data.datasets.TestDataset` (official TestDataset: PIL RGB ->
     ToTensor -> DCT -> Resize/Normalize) and the official output formula
-    `softmax(logits, dim=1)[:, 1]`.
+    `softmax(logits, dim=1)[:, 1]`; `--checkpoint` selects progan/sd14/GenImage.
+  * DRCT: official `data.transform.create_val_transforms(size=224, is_crop=True)`
+    and the official `network.models.get_models` factory; output formula
+    `1 - softmax(logits, dim=1)[:, 0]`.
 
 For each image it records:
   preprocessed tensor equality / max diff, official vs adapter logits,
@@ -27,7 +30,9 @@ adapter.
   FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
       scripts/verify_candidate_official.py --expert spai
   FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
-      scripts/verify_candidate_official.py --expert aide
+      scripts/verify_candidate_official.py --expert aide --checkpoint sd14_train
+  FORENSIC_ALLOW_GPU=1 /root/autodl-tmp/venvs/candidates/bin/python \
+      scripts/verify_candidate_official.py --expert drct
 """
 
 from __future__ import annotations
@@ -59,6 +64,11 @@ SPAI_CFG = os.path.join(SPAI_REPO, "configs", "spai.yaml")
 SPAI_WEIGHTS = "/root/autodl-tmp/third_party/spai/weights/spai.pth"
 AIDE_REPO = "/root/autodl-tmp/third_party/aide/repo"
 AIDE_WEIGHTS = "/root/autodl-tmp/third_party/aide/weights/progan_train.pth"
+DRCT_REPO = "/root/autodl-tmp/third_party/drct/repo"
+DRCT_WEIGHTS = (
+    "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/"
+    "convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth"
+)
 
 IMAGES = [
     ("fake", os.path.join(PROJECT_ROOT, "dataset/mnw_div2k/Fake/Adobe_Firefly_v4/"
@@ -263,13 +273,13 @@ def _run_spai(tmp: str) -> dict:
     return report
 
 
-def _run_aide(tmp: str) -> dict:
+def _run_aide(tmp: str, checkpoint: str = "progan_train") -> dict:
     from experts.aide import AIDEExpert
 
     root = _prepare_aide_data(tmp)
     official = _aide_official_tensors(root)
     torch.cuda.reset_peak_memory_stats()
-    expert = AIDEExpert(device="cuda")
+    expert = AIDEExpert(checkpoint=checkpoint, device="cuda")
     checks = []
     for name, path, label in IMAGES:
         pil = Image.open(path).convert("RGB")
@@ -302,6 +312,7 @@ def _run_aide(tmp: str) -> dict:
             "finite": _finite(first.raw_metric) and _finite(second.raw_metric),
         })
     return {
+        "checkpoint": checkpoint,
         "checks": checks,
         "coverage": _coverage(expert._evaluator),
         "identity": expert._evaluator.identity(),
@@ -324,29 +335,102 @@ def _run_aide(tmp: str) -> dict:
     }
 
 
+def _run_drct(tmp: str) -> dict:
+    from experts.drct import DRCTExpert, _install_import_shims
+    from data.transform import create_val_transforms
+
+    _install_import_shims()
+    official_transform = create_val_transforms(size=224, is_crop=True)
+    torch.cuda.reset_peak_memory_stats()
+    expert = DRCTExpert(device="cuda")
+    checks = []
+    for name, path, label in IMAGES:
+        pil = Image.open(path).convert("RGB")
+        bgr = _bgr(pil)
+        first = expert.analyze(bgr)
+        second = expert.analyze(bgr)
+        evaluator = expert._evaluator
+        adapter_tensor = evaluator.preprocess(pil)
+        official_tensor = official_transform(
+            image=np.asarray(pil.convert("RGB")))["image"]
+        adapter_logits = evaluator.raw_logits(pil)
+        with torch.no_grad():
+            official_logits = evaluator._model(
+                official_tensor.unsqueeze(0).to(evaluator.device))
+        official_score = float(torch.softmax(official_logits, dim=1)[:, 1].item())
+        adapter_score = float(torch.softmax(adapter_logits, dim=1)[:, 1].item())
+        checks.append({
+            "image": os.path.basename(path), "label": label,
+            "tensor_equal": bool(torch.equal(adapter_tensor, official_tensor)),
+            "tensor_max_abs_diff": float((adapter_tensor - official_tensor).abs().max()),
+            "adapter_logits": [float(x) for x in adapter_logits.reshape(-1)],
+            "official_logits": [float(x) for x in official_logits.reshape(-1)],
+            "logit_abs_diff_max": float(
+                (adapter_logits.reshape(-1) - official_logits.reshape(-1)).abs().max()),
+            "adapter_score": adapter_score,
+            "official_score": official_score,
+            "score_abs_diff": abs(adapter_score - official_score),
+            "expert_analyze_first": float(first.raw_metric),
+            "expert_analyze_second": float(second.raw_metric),
+            "analyze_equal": float(first.raw_metric) == float(second.raw_metric),
+            "finite": _finite(first.raw_metric) and _finite(second.raw_metric),
+        })
+    return {
+        "checks": checks,
+        "coverage": _coverage(expert._evaluator),
+        "identity": expert._evaluator.identity(),
+        "gpu_peak_gb": round(torch.cuda.max_memory_allocated() / 1024 ** 3, 3),
+        "gpu_reserved_peak_gb": round(torch.cuda.max_memory_reserved() / 1024 ** 3, 3),
+        "host_maxrss_kb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "cgroup_current": _cgroup("current"),
+        "cgroup_peak": _cgroup("peak"),
+        "reused": ["official network.models.get_models + streaming checkpoint "
+                   "load (adapter; checkpoint is the pinned official one)",
+                   "adapter preprocessing call for the tensor comparison"],
+        "independent": ["official data.transform.create_val_transforms("
+                        "size=224, is_crop=True) tensors",
+                        "official output formula 1 - softmax(logits, dim=1)[:, 0]",
+                        "repeated DRCTExpert.analyze() calls in one process"],
+        "limitation": ("official scripts/train.py --is_test DataLoader loop "
+                       "was not invoked; the official transform, official model "
+                       "factory and official output formula were used directly."),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--expert", choices=("spai", "aide"), required=True)
+    parser.add_argument("--expert", choices=("spai", "aide", "drct"), required=True)
+    parser.add_argument("--checkpoint", default=None,
+                        help="AIDE checkpoint: progan_train (default), sd14_train, GenImage_train")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
     if not os.environ.get("FORENSIC_ALLOW_GPU"):
         raise SystemExit("GPU 未授权：先设置 FORENSIC_ALLOW_GPU=1（仅核验）")
+    checkpoint = args.checkpoint or "progan_train"
     report = {"schema": "candidate_official_check/1", "expert": args.expert,
               "checked_at": datetime.now().isoformat(timespec="seconds"),
               "code": load_candidate_code()["pinned"][args.expert],
               "weights": load_candidate_weights()["candidates"][args.expert]}
+    if args.expert == "aide":
+        report["checkpoint"] = checkpoint
     with tempfile.TemporaryDirectory(prefix=f"official_{args.expert}_") as tmp:
-        report.update(_run_spai(tmp) if args.expert == "spai" else _run_aide(tmp))
+        if args.expert == "spai":
+            report.update(_run_spai(tmp))
+        elif args.expert == "aide":
+            report.update(_run_aide(tmp, checkpoint=checkpoint))
+        else:
+            report.update(_run_drct(tmp))
     report["ok"] = (
         report.get("coverage", {}).get("ok") is True
         and all(check.get("tensor_equal") and check.get("finite") and
                 check.get("analyze_equal") for check in report["checks"])
         and all(check.get("score_abs_diff", check.get("cli_score_abs_diff", 9)) <= 1e-6
                 for check in report["checks"]))
+    label = args.expert if args.expert != "aide" else f"aide_{checkpoint}"
     out = args.out or os.path.join(
         PROJECT_ROOT, "sft_data", "g8_expert_eval",
-        f"official_check_{args.expert}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        f"official_check_{label}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8") as handle:
         json.dump(report, handle, ensure_ascii=False, indent=2)

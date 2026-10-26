@@ -66,6 +66,104 @@
         "backbone_included": true
       },
       "licence": "代码 MIT；checkpoint 许可未单独声明"
+    },
+    "aide_sd14": {
+      "source_name": "aide_expert",
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 softmax 的 fake 类概率（[:,1]）；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方 engine_finetune.py 的 accuracy(..., y_pred > 0.5) 默认边界",
+        "note": "不在外部集上调整"
+      },
+      "preprocess": {
+        "name": "官方 AIDE 测试预处理",
+        "detail": "PIL RGB → ToTensor → DCT 极值 patch（4 个变体）→ Resize 256×256 → ImageNet 归一化；原图同样 Resize 256 并归一化；输入 5×3×256×256",
+        "measurement_scope": "global",
+        "source": "AIDE data/datasets.py::TestDataset + data/dct.py::DCT_base_Rec_Module"
+      },
+      "weights": {
+        "primary_checkpoint": "sd14_train",
+        "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
+        "sha256": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989",
+        "bytes": 3592077976,
+        "backbone_included": true
+      },
+      "licence": "代码 MIT；checkpoint 许可未单独声明",
+      "training_source_note": "AIDE model zoo checkpoint name is sd14_train; the repo documents CNNSpot and GenImage as training sets but does not publish a checkpoint-to-split map. sd14_train is presumed SDv1.4 but not independently confirmed."
+    },
+    "aide_genimage": {
+      "source_name": "aide_expert",
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 softmax 的 fake 类概率（[:,1]）；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方 engine_finetune.py 的 accuracy(..., y_pred > 0.5) 默认边界",
+        "note": "不在外部集上调整"
+      },
+      "preprocess": {
+        "name": "官方 AIDE 测试预处理",
+        "detail": "PIL RGB → ToTensor → DCT 极值 patch（4 个变体）→ Resize 256×256 → ImageNet 归一化；原图同样 Resize 256 并归一化；输入 5×3×256×256",
+        "measurement_scope": "global",
+        "source": "AIDE data/datasets.py::TestDataset + data/dct.py::DCT_base_Rec_Module"
+      },
+      "weights": {
+        "primary_checkpoint": "GenImage_train",
+        "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
+        "sha256": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16",
+        "bytes": 3592100460,
+        "backbone_included": true
+      },
+      "licence": "代码 MIT；checkpoint 许可未单独声明",
+      "training_source_note": "AIDE model zoo checkpoint name is GenImage_train; the repo documents CNNSpot and GenImage as training sets but does not publish a checkpoint-to-split map. The exact composition of GenImage_train is not confirmed from the repository."
+    },
+    "drct": {
+      "source_name": "drct_expert",
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 softmax 的 class-1 概率（1 - softmax[:,0]）；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方 scripts/train.py 的 eval_model 默认 threshold=0.5",
+        "note": "不在外部集上调整"
+      },
+      "preprocess": {
+        "name": "官方 DRCT 测试变换",
+        "detail": "RGB → PadIfNeeded(≥224) → CenterCrop(224) → PadIfNeeded(224) → ImageNet Normalize → ToTensor；不缩放",
+        "measurement_scope": "global",
+        "source": "data/transform.py::create_val_transforms(size=224, is_crop=True) at DRCT commit 01aa7d0b"
+      },
+      "weights": {
+        "path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+        "archive_path": "/root/autodl-tmp/third_party/drct/weights/pretrained.zip",
+        "archive_sha256": "235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046",
+        "archive_bytes": 4178790241,
+        "checkpoint": "DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+        "sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861",
+        "bytes": 354605453
+      },
+      "licence": "仓库无 LICENSE；权重许可未单独声明",
+      "training_source": "DRCT-2M ConvB / DR=SDv1.4 (sdv14)"
     }
   }
 }

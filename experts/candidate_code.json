@@ -16,6 +16,13 @@
       "path": "/root/autodl-tmp/third_party/aide/repo",
       "file_count": 19,
       "source_manifest_sha256": "4a725913dda69fe7"
+    },
+    "drct": {
+      "repo": "beibuwandeluori/DRCT",
+      "commit": "01aa7d0b6de903cf3208801f8f6b469edffbc762",
+      "path": "/root/autodl-tmp/third_party/drct/repo",
+      "file_count": 18,
+      "source_manifest_sha256": "58773d3ec7e4df7e"
     }
   },
   "loading_shims": {
@@ -30,6 +37,12 @@
       "official AIDE_Model asks open_clip for pretrained ConvNeXt-XXL; the checkpoint already contains the trunk, so pass pretrained=None and load the full state dict",
       "official models/AIDE.py imports OpenAI clip; unused in the forward path, stub module is enough",
       "DCT preprocessing is pure torch; kornia is only needed by the training dataset and is not used by the offline adapter"
+    ],
+    "drct": [
+      "official network/models.py imports OpenAI clip; a stub module is enough for ConvB",
+      "official test builds timm convnext_base_in22k with pretrained=True then strict-loads the checkpoint; the adapter builds with pretrained=False because the checkpoint covers all 346 keys",
+      "official transform create_val_transforms(size=224, is_crop=True) is used unchanged",
+      "inference does not run diffusion reconstruction; test_DRCT-2M.sh does not pass --is_dire"
     ]
   }
 }

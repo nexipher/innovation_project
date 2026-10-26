@@ -1,5 +1,5 @@
 """
-CPU checks for the SPAI/AIDE candidate adapters (plan §4.17).
+CPU checks for the SPAI/AIDE/DRCT candidate adapters (plan §4.17).
 
 Run with the isolated candidate environment:
 
@@ -70,6 +70,10 @@ def _check_files(hashes: bool) -> dict:
     check("spai", spai["path"], spai["bytes"], spai["sha256"])
     for name, entry in manifest["candidates"]["aide"]["checkpoints"].items():
         check(f"aide/{name}", entry["path"], entry["bytes"], entry["sha256"])
+    drct = manifest["candidates"]["drct"]
+    check("drct/archive", drct["archive_path"], drct["archive_bytes"],
+          drct["archive_sha256"])
+    check("drct/checkpoint", drct["path"], drct["bytes"], drct["sha256"])
     return report
 
 
@@ -124,15 +128,32 @@ def _check_aide(all_checkpoints: bool) -> dict:
     return results
 
 
+def _check_drct() -> dict:
+    from experts.drct import DRCTEvaluator
+
+    evaluator = DRCTEvaluator(device="cpu")
+    try:
+        coverage = evaluator.check_coverage()
+        preprocess = evaluator.check_preprocess(_synthetic_image())
+        return {"ok": True, "coverage": coverage, "preprocess": preprocess}
+    except Exception as exc:
+        import traceback
+
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}",
+                "traceback": traceback.format_exc()[-2000:]}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--hash", action="store_true",
-                        help="also recompute sha256 of all four files (slow, ~12 GB read)")
+                        help="also recompute sha256 of all candidate files (slow, multi-GB read)")
     parser.add_argument("--all-aide", action="store_true",
                         help="check key coverage of sd14_train and GenImage_train too")
-    parser.add_argument("--only", choices=("all", "spai", "aide"), default="all",
-                        help="run one section per process to stay under the host cgroup")
+    parser.add_argument("--only", choices=("all", "spai", "aide", "drct"), default="all",
+                        help="AIDE and DRCT both use a top-level `data` package; "
+                             "run them with separate --only aide / --only drct "
+                             "processes instead of combining them")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
 
@@ -154,6 +175,8 @@ def main() -> int:
         report["spai"] = _check_spai()
     if args.only in ("all", "aide"):
         report["aide"] = _check_aide(args.all_aide)
+    if args.only in ("all", "drct"):
+        report["drct"] = _check_drct()
     try:
         import einops
         import open_clip
@@ -171,12 +194,12 @@ def main() -> int:
 
     print(f"interpreter: {sys.executable}")
     print(f"weights: {report['weights']['problems'] or 'size/sha OK'}")
-    for name in ("spai", "aide"):
+    for name in ("spai", "aide", "drct"):
         if name not in report:
             continue
         section = report[name]
-        if name == "spai":
-            print(f"SPAI: ok={section['ok']} "
+        if name in ("spai", "drct"):
+            print(f"{name.upper()}: ok={section['ok']} "
                   f"{section.get('coverage', {}).get('model_state_keys')} keys "
                   f"{section.get('error', '')}")
         else:

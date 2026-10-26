@@ -140,7 +140,7 @@ def paired_delta(scores_a: Sequence[float], scores_b: Sequence[float],
 # 专家
 # ---------------------------------------------------------------------------
 
-CANDIDATE_NAMES = ("spai", "aide")
+CANDIDATE_NAMES = ("spai", "aide", "aide_sd14", "aide_genimage", "drct")
 
 
 def _candidate_semantics(name: str) -> dict:
@@ -159,9 +159,18 @@ def build_expert(name: str, device: str):
     if name == "spai":
         from experts.spai import SPAIExpert
         return SPAIExpert(device=device)
+    if name == "drct":
+        from experts.drct import DRCTExpert
+        return DRCTExpert(device=device)
     if name == "aide":
         from experts.aide import AIDEExpert
         return AIDEExpert(device=device)
+    if name == "aide_sd14":
+        from experts.aide import AIDEExpert
+        return AIDEExpert(checkpoint="sd14_train", device=device)
+    if name == "aide_genimage":
+        from experts.aide import AIDEExpert
+        return AIDEExpert(checkpoint="GenImage_train", device=device)
     if name == "probe":
         from experts.probe_dino import ProbeDinoExpert
         return ProbeDinoExpert(device=device)
@@ -171,7 +180,9 @@ def build_expert(name: str, device: str):
     if name == "univfd":
         from experts.univfd import UnivFDExpert
         return UnivFDExpert(device=device)
-    raise SystemExit(f"未知专家：{name}（probe / npr / univfd / spai / aide）")
+    raise SystemExit(
+        f"未知专家：{name}（probe / npr / univfd / spai / aide / "
+        f"aide_sd14 / aide_genimage / drct）")
 
 
 def expert_orientation(name: str) -> Tuple[str, float, str]:
@@ -630,9 +641,10 @@ def _expert_identity(name: str) -> dict:
     """报告要能回答"这个分数由哪份权重、哪套预处理产生"——从登记表/候选表抄。"""
     if name in CANDIDATE_NAMES:
         record = _candidate_semantics(name)
+        code_key = "aide" if name.startswith("aide") else name
         code = json.load(open(os.path.join(
             PROJECT_ROOT, "experts", "candidate_code.json"),
-            encoding="utf-8"))["pinned"][name]
+            encoding="utf-8"))["pinned"][code_key]
         return {
             "weights": record["weights"],
             "raw_score": record["raw_score"],
