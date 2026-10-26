@@ -1,0 +1,54 @@
+{
+  "schema": "candidate_smoke/1",
+  "expert": "aide",
+  "checkpoint": "GenImage_train",
+  "started_at": "2026-10-26T22:17:30",
+  "device": "cpu",
+  "cgroup_memory_start": 2481213440,
+  "host_maxrss_start_kb": 377740,
+  "load_s": 4.022,
+  "images": [
+    {
+      "path": "dataset/mnw_div2k/Fake/Adobe_Firefly_v4/Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "sha256": "12d579dfe004d0d665f4657fe05c78ef77ae1393a8e054451da1096caefca8cb",
+      "label": "Fake"
+    },
+    {
+      "path": "dataset/mnw_div2k/Real/DIV2K_valid_HR/0841.png",
+      "sha256": "0f46093cd84e7ee037d1ded8680f2f39583af5dadac0da580a3911ed482de285",
+      "label": "Real"
+    }
+  ],
+  "checks": [
+    {
+      "image": "dataset/mnw_div2k/Fake/Adobe_Firefly_v4/Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "label": "Fake",
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "official_score": 0.22843721508979797,
+      "adapter_score": 0.22843721508979797,
+      "score_abs_diff": 0.0
+    },
+    {
+      "image": "dataset/mnw_div2k/Real/DIV2K_valid_HR/0841.png",
+      "label": "Real",
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "official_score": 0.4818286895751953,
+      "adapter_score": 0.4818286895751953,
+      "score_abs_diff": 0.0
+    }
+  ],
+  "first_call_s": 1.5265,
+  "steady_calls_s": [
+    1.6583,
+    1.332,
+    1.8712
+  ],
+  "steady_median_s": 1.6583,
+  "host_maxrss_kb": 7701724,
+  "cgroup_memory_end": 6581919744,
+  "cgroup_memory_peak": null,
+  "ok": true,
+  "finished_at": "2026-10-26T22:17:47"
+}
