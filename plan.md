@@ -613,28 +613,29 @@ DIRE 作为较高成本的研究对照。最终只保留 **2–3 个可靠且互
 | **PROBE**（基线） | 已在本机；权重 sha256 `c8caa9ba…a450156` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection`，`DINOv2_best_model_step_34999.pth` 1.22 GB | 上游未声明（不再分发） | 上游未声明 | pad→336，非重叠滑窗均值，**global** | sigmoid，高=假，阈值 0.5 | 中位 210 ms/图；外部集 AUROC 0.99–1.0 | 上游语料未知；外部错误仅 13/200 |
 | **SPAI** | repo `8ff7b3b6`（2025-08-01），CVPR 2025；代码已固定到 `third_party/spai/repo` | **已上传**：`third_party/spai/weights/spai.pth`，**934,865,338 B，sha256 `24159f27…9648a55`**（云侧计算；官方无公开哈希可比） | Apache-2.0（代码与权重） | 实图自监督：latent-diffusion 训练集、COCO、LSUN（MFM ViT-B/16 预训练；仅训练需要） | 原分辨率，pad 到 ≥224，不缩放/不裁剪；归一化 [0,1] | sigmoid，高=假，阈值 0.5 | 实测 reserved **8.303 GB**、alloc 6.6 GB；稳定 **0.423 s/图**、首次 0.763 s、加载 2.835 s；139.9M 参数 | 适配器已实现；CPU 覆盖 324/324；官方 yaml 与 list 前向路径已核验；加载需 config 补默认项 + `weights_only=False`（yacs CfgNode） |
 | **AIDE** | repo `6725b710`（2025-06-04），ICLR 2025；代码已固定到 `third_party/aide/repo` | **三份已上传**：`progan_train`（主）**3,592,077,976 B，sha256 `ce3a9d66…a4a756e`**；`sd14_train` **3,592,077,976 B，sha256 `382a50d1…2f91989`**；`GenImage_train` **3,592,100,460 B，sha256 `f084346d…9a9ff16`**；**主干已含在 checkpoint**（`openclip_convnext_xxl.*` 378 个张量，897.9M 参数），无需另下 ConvNeXt | 代码 MIT；Chameleon 数据集仅学术；checkpoint 许可未单独声明 | CNNSpot（ProGAN）+ GenImage | 4 个 DCT 重建变体 + 原图，Resize 256×256，ImageNet 归一化 | 2 类 softmax，`[:,1]`=假，阈值 0.5 | 897.9M 参数；实测 reserved **3.709 GB**、alloc 3.545 GB；稳定 **1.256 s/图**、首次 1.596 s、加载 4.730 s | **内部分支算一个专家**；主候选固定 `progan_train`，另外两份保留、不混用；适配器已实现，CPU 覆盖 1025/1025 |
-| **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | ModelScope `BokingChen/DRCT-2M` `pretrained.zip`：**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`** | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | ConvB ~0.05 s/图，显存 4–6 GB；CLIP ViT-L 略高 | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`） |
-| **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | 8 个按 GenImage 生成器训练的 checkpoint，Baidu/Dropbox；**Dropbox 不可达、Baidu 需客户端；大小/sha256 待下载** | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误 |
+| **DRCT** | repo `01aa7d0b`（2025-04-05），ICML 2024 | **压缩包已到位**：`third_party/drct/weights/pretrained.zip`，**4,178,790,241 B，sha256 `235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046`**（2026-10-26 现场复算一致）；含 DRCT-2M/GenImage 的 ConvB 与 CLIP 共 6 个 `.pth` | 仓库**无 LICENSE**；权重许可未声明 | DRCT-2M（MSCOCO 实图 + SD inpainting/v1-4 重建）/ GenImage | 测试 pad + **CenterCrop 224**（`--is_crop`），ImageNet 归一化；**center crop** | 2 类 softmax，`[:,1]`=假，阈值 0.5 | ConvB ~0.05 s/图，显存 4–6 GB；CLIP ViT-L 略高 | **必须区分主干/训练集/DR 版本**；README 更正 ConvB 在 BigGAN 仅 59.81%；推理**不需要**重建（测试脚本不传 `--is_dire`）；**尚未解压/适配/评测** |
+| **SSP**（第二梯队） | repo `38e9ab30`（2026-03-03），arXiv 2402.01123 | **压缩包已到位**：`third_party/ssp.zip`，**754,886,830 B，sha256 `71d280a8d0bb3db78d584745d01816a154643fe337be7632d1a6b1a3871a7ca2`**（云侧/现场；无公开官方哈希）；8 个按生成器训练的 checkpoint，每个 94,360,575 B；`unzip -t` 通过 | MIT（代码） | GenImage 8 个生成器（每数据集一个 checkpoint） | 单 patch（`patch_size=32`）→ Resize 256，SRM + ResNet50 | sigmoid，高=假，阈值 0.5 | ~0.05 s/图，显存 ~3 GB | **SSP ≠ ESSP**（ESSP 未发布，不能套用抗压缩结果）；无统一 checkpoint，选权重会与评测生成器重叠；`test.sh` 的 `--patchsize` 是笔误；**尚未解压/适配/评测** |
 | **DIRE**（研究对照） | repo `1f89fff1`（2024-09-26），ICCV 2023 | 分类器 checkpoint 在 RecDrive/Baidu/OneDrive（RecDrive 可达但需密码/API；sha256 待下载）；扩散模型 `256x256_diffusion_uncond.pt` **2,211,383,297 B**（OpenAI Azure，可及） | 仓库根无 LICENSE；guided-diffusion 为 MIT；权重许可未声明 | DiffusionForensics（LSUN/ImageNet/CelebA-HQ，ADM） | DDIM 反演+重建（20 步，256），`abs(img-recon)` → Resize 256/CenterCrop 224/ImageNet | sigmoid，高=假，阈值 0.5 | 每图数秒（重建）+ 分类器；显存 8–12 GB | **重建误差图 ≠ 篡改定位图**；`demo.py` 直接喂原图，与论文/`compute_dire.py` 路径不一致；扩散专用，对 GAN 假图可能弱 |
 
-**权重与代码状态（2026-10-26 更新）**：`/root/autodl-tmp` 余 **16 GB**，overlay
-余 2.1 GB。SPAI/AIDE 四份权重已由用户上传并完成**云侧 sha256**：
+**权重与代码状态（2026-10-26 现场复核）**：`/root/autodl-tmp` 余 **11 GB**，overlay
+余 1.5 GB。SPAI/AIDE 四份权重已由用户上传并完成**云侧 sha256**：
 `experts/candidate_weights.json`（注意：官方只提供 Google Drive，无公开哈希，
 不能写成"官方哈希已验证"）。代码已按 commit 固定：SPAI `8ff7b3b6`（70 个源文件）、
 AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；项目内
-`experts/candidate_code.json` 记录 commit 与清单哈希。
+`experts/candidate_code.json` 记录 commit 与清单哈希。**DRCT/SSP 压缩包已在盘上并复核
+（见下表），但尚未解压、未接适配器、未评测；只有 SPAI/AIDE 进入本轮。**
 
-**仍待下载**：
-
-| 对象 | 链接 | 放置位置 | 备注 |
+| 对象 | 链接 | 放置位置 | 现场状态（2026-10-26） |
 | --- | --- | --- | --- |
-| DRCT `pretrained.zip` | [ModelScope `BokingChen/DRCT-2M`](https://modelscope.cn/datasets/BokingChen/DRCT-2M) | `/root/autodl-tmp/third_party/drct/weights/pretrained.zip` | **4,178,790,241 B，sha256 `235c0069…08dd046`**；ModelScope 本机可达，可由我下载；主配置取 ConvB + DRCT-2M + SDv1（`14_acc0.9996.pth`），解压后只保留所需 checkpoint |
-| SSP 8 个 checkpoint | [Baidu（密码 bcmi）](https://pan.baidu.com/s/1BTkl1gc7gHq4Ev457G__QQ?pwd=bcmi) / [Dropbox](https://www.dropbox.com/scl/fo/2xdvtew4rjrrsl6cseq30/AElVHGO84W1DSmlImMg1ruM?rlkey=e1a2hnzh62wuuxrnbkfv6f90v&st=getws7lp&dl=0) | `/root/autodl-tmp/third_party/ssp/weights/` | 第二梯队；本机 Dropbox 不可达、Baidu 需客户端；8 个按生成器训练的 checkpoint，无统一权重，无公开哈希 |
-| DIRE 分类器 checkpoint | [RecDrive（密码 dire）](https://rec.ustc.edu.cn/share/ec980150-4615-11ee-be0a-eb822f25e070) / [Baidu（密码 dire）](https://pan.baidu.com/s/1Rdzc7l8P0RrJft0cW0a4Gg) | `/root/autodl-tmp/third_party/dire/weights/` | 研究对照；扩散权重 `256x256_diffusion_uncond.pt`（2,211,383,297 B）可从 OpenAI Azure 下载，无需你上传 |
+| DRCT `pretrained.zip` | [ModelScope `BokingChen/DRCT-2M`](https://modelscope.cn/datasets/BokingChen/DRCT-2M) | `/root/autodl-tmp/third_party/drct/weights/pretrained.zip` | **已到位**：4,178,790,241 B，sha256 `235c0069…08dd046` **复算一致**；zip 含 6 个 `.pth`（DRCT-2M sdv14/sdv2 + GenImage sdv14，ConvB/CLIP）；**未解压/未评测** |
+| SSP 8 个 checkpoint | [Baidu（密码 bcmi）](https://pan.baidu.com/s/1BTkl1gc7gHq4Ev457G__QQ?pwd=bcmi) / [Dropbox](https://www.dropbox.com/scl/fo/2xdvtew4rjrrsl6cseq30/AElVHGO84W1DSmlImMg1ruM?rlkey=e1a2hnzh62wuuxrnbkfv6f90v&st=getws7lp&dl=0) | `/root/autodl-tmp/third_party/ssp.zip` | **已到位**：754,886,830 B，sha256 `71d280a8…7ca2`（无公开官方哈希）；8 个 checkpoint 各 94,360,575 B；`unzip -t` 通过；**未解压/未评测** |
+| DIRE 分类器 checkpoint | [RecDrive（密码 dire）](https://rec.ustc.edu.cn/share/ec980150-4615-11ee-be0a-eb822f25e070) / [Baidu（密码 dire）](https://pan.baidu.com/s/1Rdzc7l8P0RrJft0cW0a4Gg) | `/root/autodl-tmp/third_party/dire/weights/` | **未下载**；研究对照；扩散权重 `256x256_diffusion_uncond.pt`（2,211,383,297 B）可从 OpenAI Azure 下载，无需你上传 |
 | （不需要）AIDE ConvNeXt 主干 | — | — | checkpoint 已含 378 个主干张量 |
 | （不需要）SPAI MFM ViT-B/16 预训练 | — | — | 仅训练需要；推理 checkpoint 已含训练后权重 |
 
-下载/上传后先核对大小与 sha256，再进正式评测；未核对的权重不进入报告。
+下载/上传后先核对大小与 sha256，再进正式评测；未核对的权重不进入报告。DRCT/SSP
+虽已到位，但**本轮不跑**：未解压、未做适配器/官方路径核验，不能把“有压缩包”写成
+“已评测”。
 
 #### 4.17b 开发评测集（首轮 200 输入；最终留出封存）
 
@@ -702,11 +703,11 @@ AIDE `6725b710`（19 个源文件），每文件哈希在各自 `SOURCE.json`；
 
 | 步骤 | 内容 | 产物/门槛 | 资源 |
 | --- | --- | --- | --- |
-| 0 | 权重/代码/参数覆盖与官方预处理核对 | **已完成 SPAI/AIDE**（sha256/覆盖/预处理/代码 pin）；DRCT/SSP/DIRE 仍未下载 | 无 GPU |
+| 0 | 权重/代码/参数覆盖与官方预处理核对 | **已完成 SPAI/AIDE**（sha256/覆盖/预处理/代码 pin）；**DRCT/SSP 压缩包已到位并复算，未解压/未评测；DIRE 未下载** | 无 GPU |
 | 1 | 离线适配器 + CPU 测试，不改 Agent | **已实现** `experts/spai.py` / `experts/aide.py`；`core` 721 通过 | CPU |
 | 2 | **官方路径对照**：SPAI 官方 CLI / AIDE 官方 `TestDataset`，同图张量、logit、分数、重复调用 | **已完成，均 `ok=true`**（见 §4.17e） | 已用 GPU（核验） |
-| 3 | **首轮开发集 D1a：每专家 200 输入**（100 源 × original/q95）；PROBE、SPAI、AIDE **各自独立进程、顺序执行** | 逐图分数 + 分组报告 + 失败/耗时/内存 | **待授权**；实测估计 **<20 min** |
-| 4 | 描述性 2×2 错误重合（按源聚类）；**不设合格线**；人工确定 2–3 个专家 | 候选短名单 + 结论 + 反例 | CPU/分析 |
+| 3 | **首轮开发集 D1a：每专家 200 输入**（100 源 × original/q95）；PROBE、SPAI、AIDE **各自独立进程、顺序执行** | **已完成（2026-10-26）**；逐图分数 + 分组报告 + 失败/耗时/内存，见 §4.17f | 已用 GPU；三进程合计 330.2 s |
+| 4 | 描述性 2×2 错误重合（按源聚类）；**不设合格线**；人工确定 2–3 个专家 | **描述性结果已出**（§4.17f）；未设合格线/未接入 Agent；人工决定待后续 | CPU/分析 |
 | 5 | 最终留出集（封存 100 源 ×2 条件）复评入选专家 | 最终报告；只跑一次 | 待短名单；估计 <20 min |
 | 6 | 之后才结合 §4.16 做协议/证据包/管线修订与新小批验收 | 新小批 + 人工验收 | 另计 |
 
@@ -734,7 +735,7 @@ python scripts/g8_candidate_compare.py \
     --out sft_data/g8_external_eval/compare_<candidate>.json
 ```
 
-**预算（以 2026-10-26 实测为准）**：
+**赛前预算（冒烟实测；首轮实际见 §4.17f）**：
 
 | 专家 | 加载 | 首次 | 稳定中位 | 200 输入估算 | GPU 峰值 alloc/reserved | host maxRSS | cgroup current（核验时） |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -743,7 +744,8 @@ python scripts/g8_candidate_compare.py \
 | AIDE（progan_train） | **4.730 s** | **1.596 s** | **1.256 s** | **~4.2–8.4 min** | **3.545 / 3.709 GB** | **4.407 GB**（含 mmap） | **2.848 GB** |
 
 * 200 输入 × 稳定中位是下限；真实数据分辨率不一，按 1.5–2× 余量估。三专家合计
-  **<20 min**（不含排错/重跑）；DRCT/SSP/DIRE 未下载，不在本轮预算内。
+  **<20 min**（不含排错/重跑）；DRCT/SSP 压缩包已到位但未解压，DIRE 未下载，均不在
+  本轮预算内。
 * 测量边界：稳定耗时含该专家 `score()` 的预处理与同步；首次含 CUDA 初始化/首次
   kernel；加载单独计时。host maxRSS 是进程峰值（mmap 页计入），cgroup current 是
   进程结束前后读数，`memory.peak` 未暴露。
@@ -840,6 +842,91 @@ python scripts/g8_candidate_compare.py \
 内存均已核实。**未运行开发集，未启动外部 Agent，未生成 SFT 数据；未改 Agent 提示词、
 停止策略、证据解释规则或 b2 原始记录。** 等用户明确授权后，按 §4.17d 的命令顺序执行
 首轮开发集。
+
+#### 4.17f 首轮开发集结果（2026-10-26，已授权执行）
+
+**输入与进程**：`dataset/mnw_div2k/inputs_manifest.json`，100 源 × (original +
+jpeg_q95) = 200 输入/专家；PROBE、SPAI、AIDE 三个独立进程顺序执行，均
+`rows_measured=200`、`rows_failed=0`。模型加载由 `preload()` 单独计时，首次/稳定
+推理分开；未并发 Qwen。
+
+| 专家 | 加载 s | 首次 s | 稳定中位 s | 总耗时 s | GPU alloc/reserved GB | host maxRSS GB | cgroup current 前→后 GB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| PROBE | 27.172 | 0.774 | 0.215 | 103.4 | 2.724 / 3.830 | 3.127 | 2.107 → 3.542 |
+| SPAI | 2.881 | 0.783 | 0.162 | 59.2 | 6.667 / 12.676 | 1.298 | 2.100 → 2.653 |
+| AIDE `progan_train` | 4.548 | 1.548 | 0.552 | 167.6 | 3.545 / 3.709 | 4.318（含 mmap） | 2.084 → 2.751 |
+
+**独立检测（每组 20 Fake + 20 DIV2K Real；AUROC [95% CI]）**
+
+| 生成器 / 条件 | PROBE | SPAI | AIDE |
+| --- | --- | --- | --- |
+| Adobe Firefly / original | **1.000** [1.0, 1.0] | 0.9375 [0.854, 0.992] | 0.2900 [0.128, 0.473] |
+| Adobe Firefly / q95 | **0.995** [0.977, 1.0] | 0.8450 [0.720, 0.947] | 0.6375 [0.440, 0.808] |
+| ByteDance Seedream / original | **1.000** [1.0, 1.0] | **1.000** [1.0, 1.0] | 0.4100 [0.237, 0.601] |
+| ByteDance Seedream / q95 | **1.000** [1.0, 1.0] | 0.9900 [0.960, 1.0] | 0.7975 [0.643, 0.941] |
+| Google Imagen4 / original | **0.995** [0.975, 1.0] | 0.8400 [0.702, 0.950] | 0.1575 [0.045, 0.303] |
+| Google Imagen4 / q95 | **0.990** [0.960, 1.0] | 0.7350 [0.558, 0.877] | 0.4075 [0.222, 0.586] |
+| Midjourney v7 / original | **0.995** [0.973, 1.0] | 0.8875 [0.772, 0.969] | 0.6500 [0.459, 0.832] |
+| Midjourney v7 / q95 | **0.990** [0.960, 1.0] | 0.8800 [0.763, 0.965] | 0.7350 [0.560, 0.895] |
+
+**官方阈值 0.5 下（Fake 召回 / Real 召回 / balanced accuracy）**
+
+| 生成器 / 条件 | PROBE | SPAI | AIDE |
+| --- | --- | --- | --- |
+| Adobe Firefly / original | 0.95 / 1.00 / 0.975 | 0.90 / 0.80 / 0.850 | 0.00 / 0.75 / 0.375 |
+| Adobe Firefly / q95 | 0.95 / 0.95 / 0.950 | 0.85 / 0.60 / 0.725 | 0.00 / 1.00 / 0.500 |
+| ByteDance Seedream / original | 1.00 / 1.00 / 1.000 | 1.00 / 0.80 / 0.900 | 0.00 / 0.75 / 0.375 |
+| ByteDance Seedream / q95 | 1.00 / 0.95 / 0.975 | 1.00 / 0.60 / 0.800 | 0.00 / 1.00 / 0.500 |
+| Google Imagen4 / original | 0.90 / 1.00 / 0.950 | 0.70 / 0.80 / 0.750 | 0.00 / 0.75 / 0.375 |
+| Google Imagen4 / q95 | 0.90 / 0.95 / 0.925 | 0.65 / 0.60 / 0.625 | 0.00 / 1.00 / 0.500 |
+| Midjourney v7 / original | 0.85 / 1.00 / 0.925 | 0.75 / 0.80 / 0.775 | 0.20 / 0.75 / 0.475 |
+| Midjourney v7 / q95 | 0.85 / 0.95 / 0.900 | 0.90 / 0.60 / 0.750 | 0.00 / 1.00 / 0.500 |
+
+**描述性 2×2（PROBE 对/错 × 候选对/错；单元数 / 不同源数）**
+
+| 范围 | 候选 | 纠正 | 损害 | 都对 | 都错 | 净纠正 [按源聚类 95% CI] |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 全部 200 单元 | SPAI | 10 / 6 | 34 / 22 | 153 / 82 | 3 / 2 | **−24** [−41, −8] |
+| 全部 200 单元 | AIDE | 2 / 2 | 150 / 80 | 37 / 22 | 11 / 7 | **−148** [−165, −130] |
+| Adobe Firefly | SPAI | 2 / 1 | 5 / 3 | 33 / 17 | 0 / 0 | — |
+| ByteDance Seedream | SPAI | 0 / 0 | 0 / 0 | 40 / 20 | 0 / 0 | — |
+| Google Imagen4 | SPAI | 2 / 1 | 11 / 6 | 25 / 13 | 2 / 1 | — |
+| Midjourney v7 | SPAI | 6 / 4 | 7 / 5 | 27 / 16 | 0 / 0 | — |
+| DIV2K Real | SPAI | 0 / 0 | 11 / 8 | 28 / 16 | 1 / 1 | — |
+| Adobe Firefly | AIDE | 0 / 0 | 38 / 19 | 0 / 0 | 2 / 1 | — |
+| ByteDance Seedream | AIDE | 0 / 0 | 40 / 20 | 0 / 0 | 0 / 0 | — |
+| Google Imagen4 | AIDE | 0 / 0 | 36 / 18 | 0 / 0 | 4 / 2 | — |
+| Midjourney v7 | AIDE | 1 / 1 | 31 / 18 | 3 / 3 | 5 / 4 | — |
+| DIV2K Real | AIDE | 1 / 1 | 5 / 5 | 34 / 19 | 0 / 0 | — |
+
+**观察（只描述，不设准入线）**
+
+1. **PROBE 仍是唯一接近天花板的专家**：8 个格 AUROC 0.990–1.000；官方阈值下
+   Fake 召回 0.85–1.00、Real 召回 0.95–1.00；阈值错误 **13/200**；无失败。
+2. **SPAI 有局部纠正，但总体损害大于纠正**：AUROC 在 8 个格均 >0.7（0.735–1.000），
+   但 q95 的 Real 召回降到 0.60；阈值错误 **37/200**；2×2 为 10 纠正 / 34 损害
+   （6 vs 22 个源），净纠正 −24 [−41, −8]。纠正集中在 Midjourney（6 单元 / 4 源），
+   但同组也有 7 单元损害；DIV2K Real 上 0 纠正 / 11 损害。**这只能说明“在某些 PROBE
+   错误上有互补潜力”，不能说明整体补充或 Agent 级提升。**
+3. **AIDE `progan_train` 在本开发集不可用**：AUROC 0.1575–0.7975（多个格 <0.5），
+   官方阈值 0.5 下 Fake 召回 0–0.20，几乎把所有图判 Real；阈值错误 **161/200**；
+   2×2 为 2 纠正 / 150 损害（2 vs 80 个源），净纠正 −148 [−165, −130]。**不翻转
+   方向、不调阈值**；官方路径与适配器已逐位核验，低分是性能结果，不是接线错误。
+4. **失败与独立性**：三专家 600 次测量全部有限、0 失败；独立单位为 **100 个源**，
+   200 个源×条件单元；每格 20 Fake + 20 Real；20 张 DIV2K Real 在四组间复用，
+   四组不独立，不跨组池化。2×2 的 sample ID 与逐源计数在
+   `sft_data/g8_external_eval/compare_probe_{spai,aide}_dev1.json`。
+5. **本轮结论的边界**：不据此修改 Agent 提示词/停止策略/证据规则，不启动 SFT；最终
+   留出集仍未开封。按当前证据，**不建议把 SPAI 或 AIDE 接入 Agent**；PROBE 单独保留
+   是合理默认。是否继续评估 DRCT/SSP（压缩包已到位但未解压）由用户另行决定；
+   SPAI 若继续，应单独立项研究其局部互补性，不能把本轮净损害写成增益。
+
+**产物**：`sft_data/g8_external_eval/dev1_probe_20261026_2149/`（canonical；另有
+`dev1_probe_20261026_2132/` 为 preload 拆分前的预备运行，分数逐位相同）、
+`dev1_spai_20261026_2145/`、`dev1_aide_20261026_2147/`、
+`compare_probe_spai_dev1.json`、`compare_probe_aide_dev1.json`、
+`dev1_summary_20261026.json`。每个目录含 `scores.jsonl`（200 行逐图 raw score /
+predicted / true label）、`report.json`、`run.log`。
 
 ### 4.18 旧第三方模型清理（2026-10-26，用户确认）
 
