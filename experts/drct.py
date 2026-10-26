@@ -134,8 +134,8 @@ class DRCTEvaluator:
 
     def score(self, image) -> float:
         logits = self.raw_logits(image)
-        # Official eval_model: outputs.append(1 - y_pred[:, 0])
-        return float(torch.softmax(logits, dim=1)[:, 1].item())
+        # Official eval_model: outputs.append(1 - y_pred[:, 0]).
+        return float(1.0 - torch.softmax(logits, dim=1)[:, 0].item())
 
     def check_coverage(self) -> dict:
         """Build on meta and compare checkpoint keys/shapes; no tensor data read."""

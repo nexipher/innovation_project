@@ -357,8 +357,8 @@ def _run_drct(tmp: str) -> dict:
         with torch.no_grad():
             official_logits = evaluator._model(
                 official_tensor.unsqueeze(0).to(evaluator.device))
-        official_score = float(torch.softmax(official_logits, dim=1)[:, 1].item())
-        adapter_score = float(torch.softmax(adapter_logits, dim=1)[:, 1].item())
+        official_score = float(1.0 - torch.softmax(official_logits, dim=1)[:, 0].item())
+        adapter_score = float(1.0 - torch.softmax(adapter_logits, dim=1)[:, 0].item())
         checks.append({
             "image": os.path.basename(path), "label": label,
             "tensor_equal": bool(torch.equal(adapter_tensor, official_tensor)),

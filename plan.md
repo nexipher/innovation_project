@@ -959,7 +959,7 @@ PROBE 权重 sha256 `c8caa9ba…` 与登记一致、200 行输入完整，**直�
 | AIDE 参数覆盖 | `progan_train` / `sd14_train` / `GenImage_train` 各 **1025/1025**，主干 378 张量，897.9M 参数；三份都单独做了 meta 覆盖检查，**没有因结构相同跳过** |
 | DRCT 官方预处理 | 332×500 合成图 → `[3,224,224]` float32；`PadIfNeeded` → `CenterCrop(224)` → `PadIfNeeded` → ImageNet Normalize → ToTensor；不缩放 |
 | AIDE 官方预处理 | 三份均 → `[5,3,256,256]` float32；4 个 DCT 变体 + 原图，Resize 256 + ImageNet 归一化（同一路径） |
-| DRCT CPU 加载/重复调用 | 加载 **3.607 s**、首次 0.473 s、稳定 0.089 s；两次 `DRCTExpert.analyze` 有限且全等（0.0029586）；官方 transform 张量 `torch.equal`、分数差 **0** |
+| DRCT CPU 加载/重复调用 | 加载 **3.551 s**、首次 0.497 s、稳定 0.078 s；两次 `DRCTExpert.analyze` 有限且全等（0.0029587）；官方 transform 张量 `torch.equal`、分数差 **0** |
 | AIDE `sd14_train` CPU 加载/重复调用 | 加载 **4.872 s**、首次 1.802 s、稳定 1.825 s；两次 analyze 有限且全等（0.0936873）；官方预处理张量相等、分数差 **0** |
 | AIDE `GenImage_train` CPU 加载/重复调用 | 加载 **4.022 s**、首次 1.527 s、稳定 1.658 s；两次 analyze 有限且全等（0.2284372）；官方预处理张量相等、分数差 **0** |
 | dry-run | `drct`、`aide_sd14`、`aide_genimage` 各 **200 次测量**，10 个组/条件桶各 20 条；使用同一 manifest |

@@ -113,6 +113,9 @@ def _official_score(expert: str, model, tensor, config=None) -> float:
                            config.MODEL.FEATURE_EXTRACTION_BATCH)
             return float(torch.sigmoid(logits).reshape(-1)[0].item())
         logits = model(tensor.unsqueeze(0).to(device))
+    if expert == "drct":
+        # Match official eval_model: 1 - softmax[:, 0].
+        return float(1.0 - torch.softmax(logits, dim=1)[:, 0].item())
     return float(torch.softmax(logits, dim=1)[:, 1].item())
 
 
