@@ -45,7 +45,13 @@ def load_candidate_weights() -> dict:
 
 
 def has_module(name: str) -> bool:
-    return importlib.util.find_spec(name) is not None
+    """True when importable or present as an explicit stub with a spec."""
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, AttributeError, ValueError):
+        import sys
+
+        return name in sys.modules
 
 
 @contextlib.contextmanager

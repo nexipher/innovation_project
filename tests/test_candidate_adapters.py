@@ -55,6 +55,39 @@ class TestManifests:
             assert len(entry["source_manifest_sha256"]) == 16
 
 
+class TestTheImportStubs:
+    def test_repeated_find_spec_after_stubbing_does_not_raise(self):
+        """The seaborn/pandas stubs must carry a ModuleSpec (regression).
+
+        The stubs are process-global; restore sys.modules and the timm shim
+        afterwards so pandas/narwhals users in later tests see the real
+        packages (test pollution found in the full core run).
+        """
+        import sys
+
+        import timm.data.transforms as timm_transforms
+
+        from experts.candidate_common import has_module
+        from experts.spai import _install_import_shims
+
+        names = ("seaborn", "pandas", "clip")
+        saved = {name: sys.modules.get(name) for name in names}
+        had_pil_interp = hasattr(timm_transforms, "_pil_interp")
+        try:
+            _install_import_shims()
+            for _ in range(3):
+                assert isinstance(has_module("seaborn"), bool)
+                assert isinstance(has_module("pandas"), bool)
+        finally:
+            for name, module in saved.items():
+                if module is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = module
+            if not had_pil_interp and hasattr(timm_transforms, "_pil_interp"):
+                delattr(timm_transforms, "_pil_interp")
+
+
 class TestSemantics:
     @pytest.mark.parametrize("name", ["spai", "aide"])
     def test_candidates_are_higher_is_fake_at_the_official_threshold(self, name):

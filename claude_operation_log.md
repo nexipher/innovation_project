@@ -579,3 +579,19 @@
 * **涉及/修改的文件清单**：`experts/candidate_common.py (Created)`、`experts/spai.py (Created)`、`experts/aide.py (Created)`、`experts/candidate_weights.json (Created)`、`experts/candidate_code.json (Created)`、`experts/candidate_semantics.json (Created)`、`scripts/check_candidate_weights.py (Created)`、`scripts/g8_external_eval.py (Modified — 候选专家入口/身份)`、`tests/test_candidate_adapters.py (Created — 11 条)`、`plan.md (Modified — §4.17a/c/e)`、`sft_data/g8_expert_eval/cpu_checks_*.json`、`claude_operation_log.md`
 * **执行结果与验证状态**：四份权重大小/哈希核验通过（`--hash` 报告 `size/sha OK`）；SPAI/AIDE 覆盖 324/324、1025/1025；官方预处理形状/范围符合；`core` **716 通过**；主环境未被修改；**未加载完整模型、未跑 GPU、未改 Agent/b2**。
 * **置信度或遗留待办（TODO）**：①GPU 冒烟需授权（预算：SPAI 8 张 2–4 GB/0.3–1 s，AIDE 8 张 8–12 GB/0.5–1.5 s，合计 <10 min）②DRCT/SSP/DIRE 权重按链接上传到指定目录后再核对哈希③GPU 上需用官方 `infer`/`validate` 对同一图比较输出一致性④AIDE `sd14_train`/`GenImage_train` 尚未做覆盖检查（架构同、保留，待需要时再验）⑤venv 路径与依赖版本已记录，不纳入 git。
+
+### 2026-10-26 - 阶段四 4.20：SPAI stub 修复、GPU 冒烟（官方 vs 适配器同图）与互补性合格线
+
+* **当前操作动作**：修复 SPAI 的 seaborn/pandas stub 缺少 `__spec__` 导致重复 `find_spec()` 报错的问题；验证同进程连续调用；按用户要求用**官方路径与适配器同图数值一致性**做 SPAI/AIDE 冒烟（两个专家分进程顺序执行），记录首次/稳定耗时、GPU 峰值、host RSS 与 cgroup 内存；消除互补性合格线的总分门槛矛盾并明确独立源计数。**未改 Agent 提示词/停止策略/b2 数据；未跑开发集；未启动外部 Agent/SFT。**
+* **对应计划锚点**：`plan.md` §4.17c（指标/合格线）、§4.17e（CPU/GPU 结果）
+* **核心变更说明**：
+  1. **stub 修复**：`_install_import_shims()` 为 seaborn/pandas 的 stub 设置 `importlib.machinery.ModuleSpec(name, loader=None)`；`candidate_common.has_module()` 对无 spec 的 `sys.modules` 条目回退为 `name in sys.modules`。主环境连续 3 次 `unavailable_reason()` 稳定报告缺少 `einops/albumentations/filetype/lmdb`；venv 连续 3 次稳定可用，无异常。测试中增加了“stub 连续 find_spec 不报错”的回归用例，并在用例结束时恢复 `sys.modules`/timm shim，避免污染 pandas/narwhals 的其它测试（全量 core 曾因此失败 7 条，已修复）。
+  2. **冒烟接口判据**：`scripts/smoke_candidate.py` 在同一个 PIL 图上分别计算官方预处理张量与适配器预处理张量（`torch.equal`）、官方前向分数与适配器分数（差 ≤1e-6）；**不以“假图分数必须高于真图”判断接线**。两张图（1 Fake + 1 Real）用于一致性，不构成性能评估。
+  3. **SPAI 结果**（独立进程）：加载 2.745 s；首次 2.411 s；稳定中位 **1.818 s**（1.346–2.029）；GPU 峰值 **0.697 GB alloc / 0.785 GB reserved**；host maxRSS 1.386 GB；cgroup current 1.657→2.442 GB；2/2 图张量逐位相同、分数差 **0**。
+  4. **AIDE 结果**（独立进程，`progan_train`）：加载 4.730 s；首次 1.596 s；稳定中位 **1.256 s**（0.944–1.293）；GPU 峰值 **3.545 GB alloc / 3.709 GB reserved**；host maxRSS 4.317 GB（含 mmap 页）；cgroup current 1.751→2.482 GB；2/2 图张量逐位相同、分数差 **0**。
+  5. **原始分数仅记录**：SPAI Fake `0.559819` / Real `8.31e-11`；AIDE Fake `0.054853` / Real `0.751886`。两张图不足以判断性能，**未据此翻转方向或调阈值**。
+  6. **互补性合格线**：删除“AUROC 点估计 ≥0.70”和任何“整体必须胜过 PROBE”的条件（与互补性定义冲突）；安全性改为“没有一组 AUROC 的 95% CI 上界 <0.5”；净纠正 >0，按**源×条件单元**计数，CI 按**源聚类 bootstrap**；最小证据量为 ≥8 个源×条件纠正单元、≥5 个不同源图、≥2 个生成器组；非冗余要求报告候选独有正确的源集合。**独立源计数**：D1a = 100 个独立源（80 Fake + 20 Real），4 个条件 = 400 个源×条件单元，但独立单位仍是 100 个源；组内 n=40 源，20 张 DIV2K Real 在四组间复用，四组不独立，不跨组池化。
+  7. **预算更新**：实测单图稳定耗时 SPAI ~1.82 s、AIDE ~1.26 s；D1a 400 输入估算 SPAI ~12 min、AIDE ~8.4 min，加加载/重试 **<30 min**（此前 2 h 偏保守）；GPU 峰值远低于预算。两个进程结束后 `nvidia-smi` 显存回到 1 MiB。
+* **涉及/修改的文件清单**：`experts/spai.py (Modified — ModuleSpec stub)`、`experts/candidate_common.py (Modified — has_module 回退)`、`tests/test_candidate_adapters.py (Modified — stub 回归 + 防污染)`、`scripts/smoke_candidate.py (Created)`、`plan.md (Modified — §4.17c/e)`、`sft_data/g8_expert_eval/smoke_spai_20261026_204405.json`、`sft_data/g8_expert_eval/smoke_aide_20261026_204429.json`、`claude_operation_log.md`
+* **执行结果与验证状态**：SPAI/AIDE 冒烟均 `ok=true`，官方路径与适配器同图张量 `torch.equal`、分数差 0；`core` **717 通过**；GPU 显存已释放；**未跑开发集、未改 Agent/b2**。
+* **置信度或遗留待办（TODO）**：①开发集 D1a 评测需用户单独授权（冒烟授权不等于开发集授权）②DRCT `pretrained.zip` 已核对官方 sha256，SSP `ssp.zip` 结构/完整性正确、无官方哈希；两者尚未解压/评测③AIDE `sd14_train`/`GenImage_train` 保留但未跑④两张冒烟图的原始分数不构成性能结论，禁止据此翻转方向/调阈值。

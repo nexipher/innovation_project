@@ -1,0 +1,58 @@
+{
+  "schema": "candidate_gpu_smoke/1",
+  "expert": "spai",
+  "started_at": "2026-10-26T20:43:50",
+  "device": "cuda",
+  "cgroup_memory_start": 1656733696,
+  "host_maxrss_start_kb": 377816,
+  "load_s": 2.745,
+  "gpu_alloc_after_load_gb": 0.523,
+  "gpu_reserved_after_load_gb": 0.641,
+  "gpu_peak_after_load_gb": 0.564,
+  "images": [
+    {
+      "path": "dataset/mnw_div2k/Fake/Adobe_Firefly_v4/Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "sha256": "12d579dfe004d0d665f4657fe05c78ef77ae1393a8e054451da1096caefca8cb",
+      "label": "Fake"
+    },
+    {
+      "path": "dataset/mnw_div2k/Real/DIV2K_valid_HR/0841.png",
+      "sha256": "0f46093cd84e7ee037d1ded8680f2f39583af5dadac0da580a3911ed482de285",
+      "label": "Real"
+    }
+  ],
+  "checks": [
+    {
+      "image": "dataset/mnw_div2k/Fake/Adobe_Firefly_v4/Adobe_Firefly_4_09a4b560f85f4ee482b201522.jpg",
+      "label": "Fake",
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "official_score": 0.5598193407058716,
+      "adapter_score": 0.5598193407058716,
+      "score_abs_diff": 0.0
+    },
+    {
+      "image": "dataset/mnw_div2k/Real/DIV2K_valid_HR/0841.png",
+      "label": "Real",
+      "tensor_equal": true,
+      "tensor_max_abs_diff": 0.0,
+      "official_score": 8.310909599407168e-11,
+      "adapter_score": 8.310909599407168e-11,
+      "score_abs_diff": 0.0
+    }
+  ],
+  "first_call_s": 2.4105,
+  "steady_calls_s": [
+    2.0292,
+    1.3455,
+    1.8182
+  ],
+  "steady_median_s": 1.8182,
+  "gpu_peak_gb": 0.697,
+  "gpu_reserved_peak_gb": 0.785,
+  "host_maxrss_kb": 1385956,
+  "cgroup_memory_end": 2442096640,
+  "cgroup_memory_peak": null,
+  "ok": true,
+  "finished_at": "2026-10-26T20:44:05"
+}

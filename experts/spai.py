@@ -54,10 +54,17 @@ def _install_import_shims() -> None:
     bind_clip_stub()
     # spai.utils imports seaborn/pandas only for an unused visualisation helper;
     # lightweight stubs keep the 2 GB cgroup from loading two large packages.
+    import importlib.machinery
     import types
 
     for _name in ("seaborn", "pandas"):
-        sys.modules.setdefault(_name, types.ModuleType(_name))
+        if _name in sys.modules:
+            continue
+        module = types.ModuleType(_name)
+        # A stub without __spec__ makes importlib.util.find_spec() raise on
+        # every later call; give it a real (loader-less) spec.
+        module.__spec__ = importlib.machinery.ModuleSpec(_name, loader=None)
+        sys.modules[_name] = module
     import timm.data.transforms as timm_transforms
     if not hasattr(timm_transforms, "_pil_interp"):
         from PIL import Image
