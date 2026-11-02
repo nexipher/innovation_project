@@ -1387,11 +1387,10 @@ caption 均同分区（0 个跨分区源）。GenImage 以原始文件为源、�
   本轮不改 Agent。
 **执行结果（2026-11-02）**：已选 8 forged（含一个 base 的 3 个变体）+ 8 authentic，
 脚本 `scripts/trufor_autosplice_smoke.py` 就绪。**但本轮未能产出 map/conf/score**：
-GPU 当前不可见（`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、
-`nvidia-smi -L` 无设备）；CPU 回退在读取/加载模型后被 SIGKILL（exit -9，RSS 约
-0.52 GB），此时 cgroup `memory.max` 回到 **2,147,483,648 B (2 GiB)**、
-`memory.current` 约 1.76 GB、events `max=6285` 但 `oom_kill=0`。这是环境阻塞，
-不是 TruFor 结果；需恢复 GPU/更大 cgroup 后重跑。失败记录保留在
+当时 GPU 不可见（`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、
+`nvidia-smi` 无设备）；CPU 回退在约 0.52 GB RSS 时被 SIGKILL，当时 cgroup 为
+**2 GiB**。这是环境阻塞，不是 TruFor 结果。**迁移检查时 GPU/120 GiB cgroup 已恢复，
+TruFor 小批仍待重跑。**失败记录保留在
 `sft_data/g8_localization/trufor_autosplice_smoke_20261102.json`。IML-ViT 官方
 代码/权重仍缺（Google Drive/Baidu），准备清单见
 `docs/development/IML_VIT_PREP_20261102.md`。
@@ -1413,3 +1412,27 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 `.sha256` sidecar 一并删除。删除后 `/root/autodl-tmp` 可用约 **23.9 GiB**。
 删除清单见 `sft_data/g8_inventory/deleted_assets_20261102.json`；AIDE/DRCT 代码与
 `experts/*` 历史身份保留。**Qwen3-VL 未移动、未删除；迁移按用户要求暂不开展。**
+
+### 10.7 Qwen3-VL 系统盘→数据盘迁移（2026-11-02）
+
+用户明确要求把 Qwen3 从系统盘迁移到数据盘；只迁移模型缓存，不改变模型身份或代码。
+
+- **源**：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct`
+  （约 17 GB；snapshot `0c351dd0…`；含 blobs/snapshots 符号链接）。
+- **目标**：`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`（数据盘；当前可用约 24 GB）。
+- **方式**：`rsync -aH` 复制到 `.partial` 目录，保留符号链接/权限/时间；核对文件清单、
+  相对路径、大小和链接目标；通过后再替换旧路径为指向目标的符号链接，最后删除旧目录。
+  **不在复制完成/核对通过前删除源。**
+- **运行检查**：`du -sh`、文件数、`diff` 相对路径/大小/链接目标；用
+  `TRANSFORMERS_OFFLINE=1 HF_HUB_OFFLINE=1` 做 `AutoConfig`/`AutoProcessor`
+  的本地缓存解析检查；不加载 17 GB 权重（当前 2 GiB cgroup/GPU 不可见）。
+- **边界**：不迁移 DINOv2/其它缓存；不改 Qwen revision 或代码；迁移失败保留源并回滚。
+
+**完成结果（2026-11-02）**：`rsync -aH` rc=0；源/目标 **33/33 条目**、相对路径、大小和
+符号链接目标完全一致（17,545,927,779 B；4 个 safetensors shard 共 17,534,339,512 B）。
+目标为 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`；旧路径已替换为指向目标的
+符号链接；旧系统盘 Qwen 目录已删除。overlay 可用约 **18.1 GiB**，数据盘可用约 7.6 GiB。
+运行检查：固定 revision 的 `snapshot_download` 成功；`AutoConfig`/`AutoProcessor` 本地
+加载成功；实际 `Qwen3VLClient._ensure_loaded()` **7.1 s**、峰值显存 **17.53 GB**、
+4 shards、`thinking_supported=false`，**未执行推理**。记录见
+`sft_data/g8_inventory/qwen_migration_20261102.json`。

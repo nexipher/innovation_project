@@ -7,15 +7,16 @@
     "status_note": "b2 export was committed as e0e794b before inventory; this file and the GenImage manifest are the only new artifacts"
   },
   "disk": {
-    "df": "/dev/md0       53687091200 28007985152 25679106048  53% /root/autodl-tmp"
+    "df": "/dev/md0       53687091200 45554348032 8132743168  85% /root/autodl-tmp",
+    "overlay_df": "overlay        32212254720 12744441856 19467812864  40% /"
   },
   "cgroup": {
-    "max": "2147483648",
+    "max": "128849018880",
     "high": "max",
-    "current": "1794887680",
-    "events": "low 0\nhigh 0\nmax 6285\noom 0\noom_kill 0"
+    "current": "18724098048",
+    "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0"
   },
-  "gpu": "unavailable: ERROR:[Errno 8] Exec format error: 'nvidia-smi'",
+  "gpu": "NVIDIA GeForce RTX 4090, 24564 MiB, 0 MiB",
   "genimage": {
     "root": "dataset/GenImage_Test",
     "real_root": "dataset/Real",
@@ -431,12 +432,24 @@
     }
   },
   "qwen3vl": {
-    "cache": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct",
-    "bytes": 17545961472,
-    "snapshots": [
-      "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b"
-    ],
-    "bytes_note": "du -s --block-size=1 (disk usage; apparent symlink targets not double-counted)"
+    "model_id": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "cache": "/root/autodl-tmp/models/Qwen3-VL-8B-Instruct",
+    "old_cache_path": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct",
+    "old_cache_is_symlink": true,
+    "bytes": 17545927779,
+    "entries": 33,
+    "migrated": true,
+    "old_system_directory_deleted": true,
+    "load_check": {
+      "elapsed_s": 7.1,
+      "vram_peak_gb": 17.53,
+      "vram_reserved_gb": 16.35,
+      "thinking_supported": false,
+      "model_loaded": true,
+      "inference_run": false
+    },
+    "record": "sft_data/g8_inventory/qwen_migration_20261102.json"
   },
   "candidate_weights": {
     "spai": {
@@ -489,11 +502,11 @@
     "AutoSplice mask is shared per base; no per-variant mask",
     "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-02T22:38:50",
+  "updated_at": "2026-11-02T23:04:16",
   "trufor_smoke": {
-    "status": "blocked_environment",
+    "status": "blocked_earlier_environment_now_restored",
     "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102.json",
-    "reason": "GPU invisible; CPU SIGKILL under 2 GiB cgroup"
+    "reason": "GPU/cgroup were unavailable during the attempt; not rerun in the migration turn"
   },
   "retired_assets": {
     "deleted_at": "2026-11-02T22:38:50",

@@ -36,13 +36,13 @@
 
 | 资产 | 现场结果 |
 | --- | --- |
-| Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`，缓存约 **17.5 GB**；本轮未加载 |
+| Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`；**已迁移至数据盘** `dataset` 同级 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`；旧缓存路径为符号链接；约 **17.5 GB**；已做实际加载检查（7.1 s，峰值 17.53 GB，未推理） |
 | TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**小批被环境阻塞**（无 GPU、2 GiB cgroup） |
 | PROBE / SPAI / AIDE / DRCT | PROBE、SPAI 权重保留；**AIDE 三份与 DRCT 权重已于 2026-11-02 删除**；代码、注册表和历史结果保留 |
-| 磁盘 | `/root/autodl-tmp` 可用约 **23.9 GiB**（53% 已用；删除旧专家后）；overlay 余量约 1.9 GB |
-| cgroup | **max 2 GiB**（2026-11-02 重新出现；此前一度读到 120 GiB）；当前 `memory.current` ~1.7 GB，events `max=6285`、`oom_kill=0`；TruFor CPU 进程在 ~0.52 GB RSS 时被 SIGKILL |
-| GPU | **当前不可见**：`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、`nvidia-smi -L` 无设备；此前为 RTX 4090 24 GB |
-| 测试 | 清点时 `core` 728 passed；当前 2 GiB cgroup 下完整 `core` 被 SIGKILL；`tests/test_new_splits.py` 单独 3 passed |
+| 磁盘 | `/root/autodl-tmp` 可用约 **7.6 GiB**（85% 已用；Qwen 迁移后）；overlay 可用约 **18.1 GiB**（40% 已用） |
+| cgroup | 迁移检查时回到 **120 GiB**；当前 `memory.current` 约 17.4 GB（含 Qwen 加载/page cache），events 全 0 |
+| GPU | **已恢复**：RTX 4090 24 GB，`nvidia-smi` 可用；Qwen 加载后显存回到 0 MiB |
+| 测试 | 清点时 `core` 728 passed；`tests/test_new_splits.py` 3 passed；完整 core 在 2 GiB 限制期间曾被 SIGKILL，环境恢复后可重跑 |
 
 ## 4.1 旧专家资产删除（2026-11-02）
 
@@ -62,10 +62,23 @@
 - `/root/autodl-tmp` 可用空间从约 9.0 GiB 增至 **23.9 GiB**。
 - **Qwen3-VL 未移动、未删除**；迁移按用户要求暂不开展。
 
+## 4.2 Qwen3 迁移（2026-11-02）
+
+- 源：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct`（旧系统盘目录）
+- 目标：`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`
+- 方式：`rsync -aH` 完整复制，核对 **33/33** 个条目、相对路径、大小与符号链接目标完全一致；
+  复制完成后把旧路径替换为指向目标的符号链接，再删除旧系统盘目录。
+- 结果：旧系统盘 Qwen 数据已删除；旧路径仅剩符号链接；overlay 可用从约 1.9 GiB 增至
+  **约 18.1 GiB**；数据盘可用约 7.6 GiB。
+- 运行检查：`snapshot_download`（固定 revision）解析成功；`AutoConfig`/`AutoProcessor`
+  本地加载成功；实际 `Qwen3VLClient._ensure_loaded()` **7.1 s**、峰值显存 **17.53 GB**、
+  4 个 shard、`thinking_supported=false`；未执行推理。
+- 记录：`sft_data/g8_inventory/qwen_migration_20261102.json`。
+
 ## 5. 阻塞项与下一步
 
-1. **TruFor 小批环境阻塞**：GPU 当前不可见；CPU 回退在 2 GiB cgroup 下被 SIGKILL。
-   需恢复 GPU/更大 cgroup 后重跑；尚无 map/conf/score，不能把失败当模型结论。
+1. **TruFor 小批待重跑**：此前的失败是环境阻塞（GPU 不可见、2 GiB cgroup）；现在 GPU 和
+   120 GiB cgroup 已恢复，但本轮只做 Qwen 迁移，尚未重跑；不能把旧失败当模型结论。
 2. **IML-ViT 缺失**：需要代码和权重（Google Drive/Baidu）；TruFor 小批恢复后可并行
    准备接口/预处理，但双定位器比较仍无法开始。
 3. **AutoSplice mask 语义**：mask 是 base 级 shared-by-base，30/60 抽查支持

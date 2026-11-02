@@ -208,7 +208,7 @@ dataset/
 
 | 项目 | 路径 / 说明 |
 |------|-------------|
-| 当前（g8） | **Qwen3-VL-8B-Instruct**，`Qwen/Qwen3-VL-8B-Instruct` @ `0c351dd0…`（固定 revision，apache-2.0，17.55 GB，HF 缓存） |
+| 当前（g8） | **Qwen3-VL-8B-Instruct**，`Qwen/Qwen3-VL-8B-Instruct` @ `0c351dd0…`（固定 revision，apache-2.0，17.55 GB；数据盘 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`，旧 HF 路径为符号链接） |
 | g7（已冻结） | Qwen2.5-VL-7B-Instruct（16.6 GB，5 × safetensors） |
 | g7 权重 | **已于 2026-10-26 删除**（用户确认退出；原 `...PENDING-DELETE-20261015`，释放 16 GB）。`--mllm qwen25` 仅供历史复算，缺权重时明确报错；要复算须重新下载 |
 | 配置 | `config.py` → `QWEN_MODEL_PATH`（指向旧路径；文件不存在时显式拒绝） |
@@ -605,7 +605,7 @@ G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最�
 | **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | **系统性反向**（两组 × 五格式 = 10/10 格点估计 < 0.5；q85 的 CI 两次都整段低于 0.5） | A 组 **0.426** / D 组（独立复测，64 源全新图）**0.384**，两组整体 CI 均跨 0.5 | **不准入全局链**（一个分数越高越像 Real 的检测器接进去只会把 AI 图推向 Real）；留作 L1 局部篡改研究对照 |
 
 - PROBE 与现有专家的 Spearman 相关 |ρ| ≤ 0.23（不冗余，但融合后增益在 C 组仍落进噪声：见 §7.3）。
-- **候选专家 SPAI / AIDE / DRCT 只在离线适配器中做过独立评测，均未注册进 Agent 工具箱或证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g/§4.17h。两轮结果为：PROBE 阈值错误 13/200，SPAI −24（10 纠正/34 损害），DRCT −77（7/84），AIDE `progan_train`/`sd14_train`/`GenImage_train` 为 −148/−145/−122（三份全部展示）。**当前证据只支持 PROBE 单独作为专家组；SPAI 保留离线候选；DRCT/AIDE 不接入。** 2026-11-02 已删除 AIDE 三份权重、DRCT 压缩包/已解压权重和 SSP 压缩包；AIDE/DRCT 代码与历史记录保留；Qwen3 未迁移。DIRE 未下载。
+- **候选专家 SPAI / AIDE / DRCT 只在离线适配器中做过独立评测，均未注册进 Agent 工具箱或证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g/§4.17h。两轮结果为：PROBE 阈值错误 13/200，SPAI −24（10 纠正/34 损害），DRCT −77（7/84），AIDE `progan_train`/`sd14_train`/`GenImage_train` 为 −148/−145/−122（三份全部展示）。**当前证据只支持 PROBE 单独作为专家组；SPAI 保留离线候选；DRCT/AIDE 不接入。** 2026-11-02 已删除 AIDE 三份权重、DRCT 压缩包/已解压权重和 SSP 压缩包；AIDE/DRCT 代码与历史记录保留；Qwen3 已迁移至数据盘，旧系统盘 Qwen 目录已删除（旧缓存路径仅保留符号链接）。DIRE 未下载。
 
 > 专家的 `support`、`interpretation_text`、`reasoning` 与 `phenomenon` 已按实测方向改写（`BaseExpert.metric_polarity` + `inverted_text_map`）；进入证据链前由 `EvidenceRectifier` 统一方向权威（校准概率 > 专家声明 > 自由文本）。
 

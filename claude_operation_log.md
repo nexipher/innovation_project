@@ -735,3 +735,17 @@
 * **涉及/修改的文件清单**：`/root/autodl-tmp/third_party/aide/weights/{progan_train,sd14_train,GenImage_train}.pth` 及 sidecar (Deleted)、`/root/autodl-tmp/third_party/drct/weights/pretrained.zip` (Deleted)、`.../DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth` 及 sidecar (Deleted)、`/root/autodl-tmp/third_party/ssp.zip` (Deleted)、`sft_data/g8_inventory/deleted_assets_20261102.json (Created)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`plan.md (Modified — §10.6)`、`README.md (Modified — 旧权重状态)`、`claude_operation_log.md`
 * **执行结果与验证状态**：六项目标均不存在；AIDE 三份哈希复算一致，DRCT/SSP 采用既有记录且大小核对通过；未删除代码/数据/报告；Qwen3 未动；未跑 GPU/Agent/SFT。
 * **置信度或遗留待办（TODO）**：①Qwen3 系统盘→数据盘迁移尚未开展，需另行授权/执行并做完整性与运行检查；②AIDE/DRCT 代码与历史结果保留，后续若复评需重新获取权重并核对哈希；③删除不可逆，历史报告中的分数仍可追溯但模型不可重跑。
+
+### 2026-11-02 - 阶段四 4.30：Qwen3-VL 系统盘→数据盘迁移与加载检查
+
+* **当前操作动作**：按用户要求把 Qwen3-VL-8B-Instruct 从系统盘 HF 缓存迁移到数据盘；复制后核对文件树/大小/符号链接，替换旧路径为符号链接，删除旧系统盘目录，并执行实际模型加载检查。**未做推理、未改 Agent/SFT/b2。**
+* **对应计划锚点**：`plan.md` §10.7（Qwen3 迁移）；`docs/development/ASSET_INVENTORY_20261102.md` §4.2
+* **核心变更说明**：
+  1. **源/目标**：源 `/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct`（约 17 GB，revision `0c351dd0…`）→ 目标 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`。
+  2. **复制核对**：`rsync -aH` 返回 **rc=0**；源/目标均 **33 个条目**，相对路径、文件大小、符号链接目标 **0 差异**；总字节 **17,545,927,779 B**，4 个 safetensors shard 共 **17,534,339,512 B**。
+  3. **切换与删除**：目标从 `.partial` 改名为最终目录；旧缓存路径改为指向目标的符号链接；**旧系统盘 Qwen 目录已删除**（不是保留副本）。overlay 可用由约 1.9 GiB 增至 **约 18.1 GiB**；数据盘可用约 **7.6 GiB**。
+  4. **运行检查**：固定 revision 的 `snapshot_download(local_files_only=True)` 成功；`AutoConfig`/`AutoProcessor` 从缓存加载成功；实际 `Qwen3VLClient._ensure_loaded()` 用时 **7.1 s**，峰值 VRAM **17.53 GB**、reserved **16.35 GB**，4 shards，`thinking_supported=false`；进程退出后 GPU 回到 0 MiB。未执行生成/推理。
+  5. **环境变化**：迁移检查时 cgroup 已恢复为 **120 GiB**，GPU 恢复为 RTX 4090 24 GB（此前 2 GiB/GPU 不可见），因此先前被阻塞的 TruFor 小批现在具备重跑条件，但本轮未重跑。
+* **涉及/修改的文件清单**：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct (旧目录删除；现为符号链接)`、`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct (Created)`、`sft_data/g8_inventory/qwen_migration_20261102.json (Created)`、`sft_data/g8_inventory/qwen_rsync_20261102.log (Created; ignored)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`plan.md (Modified — §10.7)`、`README.md (Modified — Qwen 路径)`、`claude_operation_log.md`
+* **执行结果与验证状态**：rsync rc=0；树/大小/链接 0 差异；旧系统盘目录已删除；模型实际加载成功（7.1 s/17.53 GB）；未推理；未改 Agent/b2/SFT；GPU 空闲。
+* **置信度或遗留待办（TODO）**：①TruFor 小批此前因环境阻塞未完成，环境已恢复，待重跑；②IML-ViT 代码/权重仍缺；③完整 core 在 2 GiB 期间被 SIGKILL，环境恢复后可重跑；④模型权重未做全量 sha256（迁移核对基于 rsync + 33/33 树/大小/链接；加载检查通过）。
