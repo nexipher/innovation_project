@@ -721,6 +721,13 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 
 ### 7.2 当前路线图
 
+> **2026-11-02 新方向**：后续实施以 [`docs/development/NEXT_WORKFLOW_20261102.md`](docs/development/NEXT_WORKFLOW_20261102.md)
+> 为交接入口，改为 **JPEG q95 only**：GenImage 八生成器做基础全局开发，MNW+DIV2K
+> 做较新生成器评测，AutoSplice 做局部检测/定位。资产清点见
+> [`docs/development/ASSET_INVENTORY_20261102.md`](docs/development/ASSET_INVENTORY_20261102.md)：
+> GenImage/MNW 已在本机，**AutoSplice 与 IML-ViT 缺失**，GenImage q95 尚未派生。
+> 本表以下旧阶段按记录日期理解。
+
 以 [`plan.md`](plan.md) 为准（阶段 1 收尾 → 阶段 2 Qwen3-VL 迁移冒烟 → 阶段 3 替代专家评测 →
 阶段 4 解耦与退役 → SFT）。本表只留概览：
 

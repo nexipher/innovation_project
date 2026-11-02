@@ -1253,3 +1253,37 @@ _已完成、不再是待确认项：新代次目录与归档范围、历史路�
 **用途限制（随清单一起入库，不得被后续便利覆盖）**：`purpose = External evaluation only; do not use for SFT or threshold fitting`；MNW `Evaluation only; no training or commercial use`；DIV2K `Academic research only`。清单自带的 caveats 同样生效：组合集非官方配对测试集、**不保证**与骨干预训练数据逐图不相交、格式/分辨率/内容混杂必须分开分析。
 
 因此：这份清单解锁的是**外部评测**（仍需 GPU 与固定抽样规则），**不解锁训练**——训练线仍走 b2 验收与协议验证。
+
+## 10. 新方向交接与资产清点（2026-11-02）
+
+新方向的实施入口以 `docs/development/NEXT_WORKFLOW_20261102.md` 为准；本文件 §1–§9 中
+旧阶段、旧候选和旧条件按记录日期理解。新方向聚焦 **JPEG q95 only**：GenImage 八个
+生成器做基础全局开发，MNW+DIV2K 做较新生成器评测，AutoSplice 做局部检测/定位；
+不再扩展 original/q85/q70。本次只做资产清点与跟踪，未改运行时代码、未跑 GPU。
+
+**代码与 b2 审核**：起点提交 `e0e794b`。`sft_data/g8/review/b2/review_g8_b2.json`
+（32 条决定，27 revise / 5 pass，sha256 `0564b83b…`）已纳入 Git 跟踪；
+`g8_review_import.py --dry-run` 为 32 接受、0 拒收、0 过期，但**未导入台账**，
+b2 仍未通过验收、未冻结；5 条 pass 不代表整批通过。详见同目录 `REVIEW_EXPORT.md`。
+
+**盘点结果**：
+
+| 资产 | 结果 |
+| --- | --- |
+| GenImage_Test | 8 × 1000 = 8000 PNG，2.8 GB；ADM 为 RGBA，BigGAN 128、Glide/VQDM 256、SD14/SD15/Wukong/Midjourney 512–1024；SD15 有 1 对重复哈希；**无 q95、无配对 manifest** |
+| GenImage Real | 1000 JPG，35 MB，500px 级、纵横比不一；八组共享，组间不独立 |
+| MNW/DIV2K | 4×250 假图 +100 真图，1.1 GB；现有 manifest 1100 条；q95 输入 100 条；final 分区未使用 |
+| AutoSplice | **缺失**；官方 2273 authentic + 3621 forged，JPEG100/90/75+mask，学术非商业，Google Drive/Baidu 下载，本机不可达 |
+| IML-ViT | **缺失**（无代码/权重）；TruFor 已有 commit `ae54475d…` 与权重 `ac1d90e3…` |
+| Qwen3-VL | snapshot `0c351dd0…`，缓存约 17.5 GB，未加载 |
+| 资源 | 磁盘可用 11.16 GB；cgroup max 120 GiB/events 0；GPU 24 GB 空闲（1 MiB） |
+
+**可复用 q95 测量**：MNW 六个已有专家各有 100 条 q95 行（PROBE、SPAI、AIDE
+progan、DRCT、AIDE sd14、AIDE GenImage）；GenImage/AutoSplice 尚无 q95 输入。
+复用只取 q95-only，不把 original 混入新方案。
+
+**阻塞与下一步**：①AutoSplice 需用户上传；②IML-ViT 需代码+权重；③GenImage q95
+需按固定编码器派生，并先确定共享真图配对与 SD15 重复处理；④磁盘需同时容纳 q95、
+AutoSplice 和后续轨迹；⑤新方向真实 Agent 冒烟/评测仍需单独 GPU 授权。详细清单见
+`docs/development/ASSET_INVENTORY_20261102.md` 与
+`sft_data/g8_inventory/asset_inventory_20261102.json`。

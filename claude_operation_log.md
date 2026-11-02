@@ -662,3 +662,18 @@
 * **涉及/修改的文件清单**：`plan.md (Modified — §4.17g/h)`、`README.md (Modified — 两轮结果/建议)`、`sft_data/g8_external_eval/dev2_drct/`、`dev2_aide_sd14/`、`dev2_aide_genimage/`（各 scores/report/run.log）、`compare_probe_drct_dev2.json`、`compare_probe_aide_sd14_dev2.json`、`compare_probe_aide_genimage_dev2.json`、`expert_group_summary_20261026.json`、`expert_group_summary_20261026.md`、`sft_data/g8_expert_eval/official_check_{drct,aide_sd14_train,aide_GenImage_train}_*.json`、`smoke_{drct,aide_sd14_train,aide_GenImage_train}_gpu_*.json`、`claude_operation_log.md`
 * **执行结果与验证状态**：三候选 600/600 新测量有限、0 失败；官方对照/冒烟均 `ok=true`；`bash scripts/run_tests.sh core` **728 passed**；GPU 已释放（1 MiB）；未跑最终留出集，未接入 Agent，未启动 SFT，未改 b2。
 * **置信度或遗留待办（TODO）**：①本轮是开发集描述性结果，不能外推为最终留出集或 Agent 级提升；②AIDE `GenImage_train` 具体训练组成未确认；③专家组的最终确认可由用户复核建议；④SSP 压缩包未解压/未评测、DIRE 未下载；⑤q85/q70 未跑、不扩大范围；⑥最终留出集继续封存；⑦未修改 Agent/提示词/停止策略/证据规则/b2。
+
+### 2026-11-02 - 阶段四 4.25：b2 原始审核纳入跟踪与新方向资产清点
+
+* **当前操作动作**：将用户重新上传的 b2 人工审核导出纳入 Git 跟踪并写明只读处置；按新交接文档 `NEXT_WORKFLOW_20261102.md` 完成第一轮 CPU 资产清点（GenImage、MNW/DIV2K、AutoSplice、TruFor/IML-ViT、Qwen3-VL、磁盘/内存/GPU、q95 可复用测量），同步 plan/README。**未导入审核台账、未跑 GPU、未改运行时代码、未启动 Agent/SFT。**
+* **对应计划锚点**：`plan.md` §4.16（b2 输入说明）、新增 §10（新方向与资产清点）；`docs/development/NEXT_WORKFLOW_20261102.md` 阶段 1/2
+* **核心变更说明**：
+  1. **b2 跟踪**：`review_g8_b2.json` 12,218 B，sha256 `0564b83b…`；32 条决定、**27 revise / 5 pass**；`g8_review_import.py --dry-run` 为 **32 接受、0 拒收、0 过期**（32/32 指纹与当前记录+trace 一致）。文件按原样跟踪，未改写；新增 `REVIEW_EXPORT.md` 记录哈希、数量和处置。**未导入 dispositions 台账、未冻结、未把 5 条 pass 当整批通过。**
+  2. **GenImage 清点**：8 个生成器各 1000 张 PNG，共 8000 张 / 2.8 GB；ADM 为 RGBA 256×256，BigGAN 128×128，Glide/VQDM 256×256，SD14/SD15/Wukong 512×512，Midjourney 1024×1024；`dataset/Real` 1000 张 JPG / 35 MB、500px 级且纵横比不一。逐文件 sha256 已写入 `sft_data/g8_inventory/genimage_inventory_20261102.json`；发现 SD15 一对重复哈希（`459_sdv5_00039.png` 与 `680_sdv5_00100.png`），无本地真假配对 manifest、无 q95。
+  3. **MNW/DIV2K 清点**：4 组假图各 250 + DIV2K 100，1.1 GB；现有 manifest 1100 条；`inputs_manifest.json` 200 条（100 源 × original/q95），q95 输入 100 条；分组 dev_current/dev_extension/final 各 20/20/20。已有 q95-only 测量：PROBE、SPAI、AIDE progan、DRCT、AIDE sd14、AIDE GenImage 各 100 条，可复用。
+  4. **缺失项**：`dataset/AutoSplice/` **不存在**（官方 2273 authentic + 3621 forged、JPEG100/90/75 + mask，学术非商业，Google Drive/Baidu 下载）；IML-ViT 代码/权重**缺失**；TruFor 已有 commit `ae54475d…`、权重 281,496,429 B / sha256 `ac1d90e3…`。GenImage q95 未派生。
+  5. **资源**：`/root/autodl-tmp` 可用 11.16 GB；cgroup max 120 GiB、events 全 0，当前 current 约 24 GB（file/page-cache 约 23 GB，anon 约 0.98 GB）；GPU RTX 4090 24 GB，1 MiB，无 compute app；Qwen3-VL snapshot `0c351dd0…` 缓存约 17.5 GB。
+  6. **新方向同步**：plan §10 与 README §7.2 明确新入口为 `NEXT_WORKFLOW_20261102.md`，当前 **q95-only**、GenImage/MNW/AutoSplice 分工；旧阶段按日期理解，不按旧方案重选机器/数据/压缩条件。
+* **涉及/修改的文件清单**：`sft_data/g8/review/b2/review_g8_b2.json (Tracked)`、`sft_data/g8/review/b2/REVIEW_EXPORT.md (Created)`、`sft_data/g8_inventory/genimage_inventory_20261102.json (Created)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Created)`、`docs/development/ASSET_INVENTORY_20261102.md (Created)`、`plan.md (Modified — §4.16/§10)`、`README.md (Modified — §7.2 新方向)`、`claude_operation_log.md`
+* **执行结果与验证状态**：b2 dry-run 32 接受/0 拒收/0 过期；GenImage 9000 个文件（8000 fake+1000 real）逐文件哈希完成，磁盘/尺寸/模式已核对；MNW manifest 与 q95 可复用行已核对；`core` 本次清点未改代码，最近仍为 **728 passed**；**未跑 GPU/GPU 模型**；未改 b2 内容、未导入台账、未冻结。
+* **置信度或遗留待办（TODO）**：①AutoSplice 需用户上传并核对 Authentic/Forged/Mask/Caption 与许可；②IML-ViT 需代码+权重；③GenImage q95 需先确定共享真图配对、SD15 重复处理和编码参数；④磁盘 11.16 GB 需为 q95/AutoSplice/轨迹预留；⑤新方向 GPU 冒烟和评测需单独授权；⑥本次仅资产清点，不改变专家结论或 Agent 管线。
