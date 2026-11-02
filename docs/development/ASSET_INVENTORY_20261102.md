@@ -21,7 +21,7 @@
 | MNW | 4 组假图 **4×250=1000** + DIV2K 真图 **100**，1.1 GB | 现有 `manifest.json` 1100 条，含字节/哈希；仅评测用途 |
 | MNW 开发清单 | `inputs_manifest.json` **200 条 = 100 源 × (original + q95)**；`inputs/` 下 q95 100 张 | q95-only 子集为 100 条；旧 original 仅历史参考 |
 | MNW 分区 | 每组 `dev_current 20 / dev_extension 20 / final 20`；final 未使用 | 最终留出继续封存 |
-| AutoSplice | **缺失**（`dataset/AutoSplice/` 不存在） | 官方：2273 authentic + 3621 forged，JPEG100/90/75 + masks/captions；学术非商业；下载仅 Google Drive / Baidu，本机不可达，需用户上传 |
+| AutoSplice | **已上传并解压**：`dataset/AutoSplice/` 16,558 文件、494 MB；Authentic 2273、Forged_JPEG100/90/75 各 3621、Mask 1710、Caption 1710；README 计数一致 | 1710 个 base 源对应 1–3 个 forged 变体；每个 base 一份 mask/caption；mask 与对应 fake 尺寸 3621/3621 一致，但 mask 对每个变体的语义尚需确认；**q95 尚未派生**；学术非商业。archive 473,548,367 B，sha256 `0d94e2df…`，解压后已删除 |
 | IML-ViT | **缺失**（无代码/权重） | 局部定位对照组无法开始；TruFor 已在本机 |
 
 ## 3. 可复用测量
@@ -39,21 +39,21 @@
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`，缓存约 **17.5 GB**；本轮未加载 |
 | TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…` |
 | PROBE / SPAI / DRCT / AIDE | 权重均在盘；SPAI/AIDE/DRCT 的路径与 sha256 已在 `experts/candidate_weights.json` |
-| 磁盘 | `/root/autodl-tmp` 可用 **10.38 GB**（81% 已用，q95 派生后）；overlay 余量约 1.5 GB |
+| 磁盘 | `/root/autodl-tmp` 可用 **9.2 GiB**（82% 已用；q95 + AutoSplice 解压后）；overlay 余量约 1.6 GB |
 | cgroup | max 120 GiB、events 全 0；当前 `memory.current` 约 24 GB，其中 anon ~0.98 GB、file/page-cache ~23 GB，不是进程常驻 |
 | GPU | RTX 4090 24 GB，当前 1 MiB，无 compute app |
 | 代码/测试 | 清点时 `core` 728 passed；本清点未改运行时代码 |
 
 ## 5. 阻塞项与下一步
 
-1. **AutoSplice 缺失**：需要用户从 Google Drive/Baidu 下载后上传到
-   `dataset/AutoSplice/`；上传后核对 Authentic/Forged_JPEG100/Mask/Caption 的数量、
-   配对、mask 尺寸与许可，再做 q95。
+1. **AutoSplice q95 未派生**：当前只解压原数据；需按 q95 协议从
+   `Authentic` + `Forged_JPEG100` 派生，`Forged_JPEG90/75` 保留不用。mask 与
+   1–3 个 forged 变体的对应语义需先核实，不能把一份 mask 直接复制给所有变体。
 2. **IML-ViT 缺失**：需要代码和权重；TruFor 已可先做接口核对，但双定位器比较
    无法开始。
 3. **GenImage 配对**：没有本地逐源真/假配对 manifest；当前方案是每组 1000 假图
    对共享 `dataset/Real` 1000 真图，组间复用、不独立；SD15 重复对已在 q95 清单标记，
    评测前按固定规则去重。
-4. **磁盘**：q95 派生后可用 10.38 GB；AutoSplice 上传前先核对其大小，再决定是否
-   需要清理旧候选或分批。
-5. **GPU**：新方向的真实 Agent 冒烟/评测仍需单独授权；本次只做 CPU 派生。
+4. **磁盘**：q95 + AutoSplice 解压后可用 **9.2 GiB**；AutoSplice 原图 494 MB，
+   q95 派生还需额外空间，注意 overlay 只剩约 1.6 GB。
+5. **GPU**：新方向的真实 Agent 冒烟/评测仍需单独授权；本次只做 CPU 解压/核对。

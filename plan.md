@@ -1273,7 +1273,7 @@ b2 仍未通过验收、未冻结；5 条 pass 不代表整批通过。详见同
 | GenImage_Test | 8 × 1000 = 8000 PNG，2.8 GB；ADM 为 RGBA，BigGAN 128、Glide/VQDM 256、SD14/SD15/Wukong/Midjourney 512–1024；SD15 有 1 对重复哈希；**无 q95、无配对 manifest** |
 | GenImage Real | 1000 JPG，35 MB，500px 级、纵横比不一；八组共享，组间不独立 |
 | MNW/DIV2K | 4×250 假图 +100 真图，1.1 GB；现有 manifest 1100 条；q95 输入 100 条；final 分区未使用 |
-| AutoSplice | **缺失**；官方 2273 authentic + 3621 forged，JPEG100/90/75+mask，学术非商业，Google Drive/Baidu 下载，本机不可达 |
+| AutoSplice | **已上传并解压**：`dataset/AutoSplice/` 16,558 文件、494 MB；Authentic 2273、Forged 三版本各 3621、Mask/Caption 各 1710；archive 473,548,367 B / sha256 `0d94e2df…` 解压后删除；q95 未派生 |
 | IML-ViT | **缺失**（无代码/权重）；TruFor 已有 commit `ae54475d…` 与权重 `ac1d90e3…` |
 | Qwen3-VL | snapshot `0c351dd0…`，缓存约 17.5 GB，未加载 |
 | 资源 | 磁盘可用 11.16 GB；cgroup max 120 GiB/events 0；GPU 24 GB 空闲（1 MiB） |
@@ -1282,13 +1282,24 @@ b2 仍未通过验收、未冻结；5 条 pass 不代表整批通过。详见同
 progan、DRCT、AIDE sd14、AIDE GenImage）；GenImage/AutoSplice 尚无 q95 输入。
 复用只取 q95-only，不把 original 混入新方案。
 
-**阻塞与下一步**：①AutoSplice 需用户上传；②IML-ViT 需代码+权重；③GenImage q95
-需按固定编码器派生，并先确定共享真图配对与 SD15 重复处理；④磁盘需同时容纳 q95、
+**阻塞与下一步**：①AutoSplice 已解压但 q95 未派生，且需先核实 1710 个 base 的
+mask 与 1–3 个 forged 变体的对应语义；②IML-ViT 需代码+权重；③GenImage q95 已完成，
+但无逐源真假配对 manifest，SD15 重复对需按规则去重；④磁盘需同时容纳 q95、
 AutoSplice 和后续轨迹；⑤新方向真实 Agent 冒烟/评测仍需单独 GPU 授权。详细清单见
 `docs/development/ASSET_INVENTORY_20261102.md` 与
 `sft_data/g8_inventory/asset_inventory_20261102.json`。
 
-### 10.1 GenImage q95 派生（2026-11-02，CPU，已完成）
+### 10.1 AutoSplice 解压与核对（2026-11-02，CPU）
+
+用户上传 `dataset/AutoSplice.zip`（473,548,367 B，sha256 `0d94e2df…`）后解压到
+`dataset/AutoSplice/`：Authentic 2273、Forged_JPEG100/90/75 各 3621、Mask 1710、
+Caption 1710，共 16,558 文件/494 MB，README 计数一致。1710 个 base 源对应 1–3 个
+forged 变体（1 个 487、2 个 535、3 个 688）；每个 base 一份 mask/caption，mask 与对应
+fake 尺寸 3621/3621 一致，但同一 base 的多个变体是否共享同一 mask 语义尚未确认。
+archive 在解压并核对后删除；`Forged_JPEG90/75` 保留原位，本轮不使用。AutoSplice q95
+尚未派生。
+
+### 10.2 GenImage q95 派生（2026-11-02，CPU，已完成）
 
 在资产清点基础上，先只为 GenImage + 共享 Real 派生 q95，供后续全局评测使用；不派生
 q85/q70，不改变原文件。

@@ -681,13 +681,27 @@
 ### 2026-11-02 - 阶段四 4.26：GenImage q95 派生（CPU）
 
 * **当前操作动作**：按新方向 `NEXT_WORKFLOW_20261102.md` 的 q95-only 协议，为 GenImage 八个生成器与共享 Real 池生成 q95 评测输入，写清单并核对；**未跑 GPU、未改 Agent、未启动 SFT**。
-* **对应计划锚点**：`plan.md` §10.1（GenImage q95 派生）；`docs/development/ASSET_INVENTORY_20261102.md`
+* **对应计划锚点**：`plan.md` §10.2（GenImage q95 派生）；`docs/development/ASSET_INVENTORY_20261102.md`
 * **核心变更说明**：
   1. **输入/输出**：`dataset/GenImage_Test/` 8 组各 1000 张 + `dataset/Real/` 1000 张，共 9000 张；输出 `dataset/GenImage_q95/<generator>/` 8000 张、`dataset/Real_q95/` 1000 张；图片不入 Git，清单入 Git。
   2. **编码身份**：Pillow **11.0.0** / libjpeg **6.2**，`quality=95`、`subsampling=2`、`optimize=False`、`progressive=False`；不缩放、不裁剪；真假同路径。ADM 的 1000 张 RGBA 显式转 RGB，其余模式保持/记录。
   3. **清单**：`dataset/GenImage_q95/manifest.json`（6,867,293 B）记录 9000 条源/派生 path、source sha256/bytes、derived sha256/bytes、宽高、source mode、encoder、`duplicate_group`；SD15 的 `459_sdv5_00039.png` 与 `680_sdv5_00100.png` 同源哈希，两条均保留并标记。
   4. **配对口径**：没有逐源真假配对；每组假图对共享 Real 1000 张，Real 在八组间复用、组间不独立；清单 `one_to_one=false` 明示。
   5. **资源**：q95 输出约 **763 MB**；派生后 `/root/autodl-tmp` 可用 **10.38 GB**；未加载模型。
-* **涉及/修改的文件清单**：`scripts/build_genimage_q95.py (Created)`、`dataset/GenImage_q95/manifest.json (Created; 图片忽略)`、`dataset/Real_q95/*.jpg (Ignored)`、`.gitignore (Modified — q95 图片)`、`plan.md (Modified — §10.1 完成)`、`README.md (Modified — 资产状态)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`sft_data/g8_inventory/build_genimage_q95_20261102.log (Created; ignored?)`、`claude_operation_log.md`
+* **涉及/修改的文件清单**：`scripts/build_genimage_q95.py (Created)`、`dataset/GenImage_q95/manifest.json (Created; 图片忽略)`、`dataset/Real_q95/*.jpg (Ignored)`、`.gitignore (Modified — q95 图片)`、`plan.md (Modified — §10.2 完成)`、`README.md (Modified — 资产状态)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`sft_data/g8_inventory/build_genimage_q95_20261102.log (Created; ignored?)`、`claude_operation_log.md`
 * **执行结果与验证状态**：dry-run 9000（8000 fake +1000 real）；实跑 9000/9000，派生文件全部存在且尺寸与源一致，manifest 无空哈希/缺文件；编码器与 MNW q95 一致；`core` 未改运行时代码，最近仍 728 passed；未跑 GPU。
 * **置信度或遗留待办（TODO）**：①未做逐源真假配对，报告只能按生成器组对共享 Real；②SD15 重复对评测前按固定规则去重；③AutoSplice 与 IML-ViT 仍缺失，局部任务阻塞；④新方向全局/局部评测需 GPU 单独授权；⑤q95 清单已固定，后续不得因结果挑图或改编码参数。
+
+### 2026-11-02 - 阶段四 4.27：AutoSplice 解压、核对与压缩包删除
+
+* **当前操作动作**：用户上传 `dataset/AutoSplice.zip` 后，先做 zip 完整性/内容清单核对，再解压到 `dataset/AutoSplice/`；核对文件数、目录结构与 README 计数、mask 尺寸/配对关系，确认成功后删除压缩包。**未跑 GPU、未派生 AutoSplice q95、未改 Agent/SFT。**
+* **对应计划锚点**：`plan.md` §10.1（AutoSplice 解压与核对）、§10（资产清点）；`docs/development/ASSET_INVENTORY_20261102.md`
+* **核心变更说明**：
+  1. **压缩包**：`dataset/AutoSplice.zip` **473,548,367 B**，sha256 `0d94e2df6842f44c11e21ee207707c49fd9717ec89048bd6f28fc1e07c4a5e36`；`unzip -t` 无错误；解压后按用户要求删除 zip（哈希已登记）。
+  2. **目录/计数**：解压到 `dataset/AutoSplice/`，共 **16,558 文件 / 494 MB**；Authentic **2273**，Forged_JPEG100/90/75 各 **3621**，Mask **1710**，Caption **1710**；与 README.txt 一致。
+  3. **配对核对**：1710 个 base 源对应 1–3 个 forged 变体（1 个：487，2 个：535，3 个：688）；1710 个 mask/caption 与 base 完全重叠；mask 与对应 fake 尺寸 **3621/3621 一致**。**同一 base 的多个变体是否共享同一 mask 语义尚未确认**，已记为下一步核对项；`Forged_JPEG90/75` 保留原位，本轮不用。
+  4. **许可/边界**：README 声明学术、非商业使用；本次只解压与核对，不派生 q95、不生成 SFT、不进入 Agent。
+  5. **磁盘**：解压后 `/root/autodl-tmp` 可用 **9.2 GiB**（82% 已用）；删除 zip 后未保留压缩副本。
+* **涉及/修改的文件清单**：`dataset/AutoSplice.zip (Deleted after successful extraction)`、`dataset/AutoSplice/ (Extracted; Git-ignored)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified — AutoSplice 统计/archive 哈希/删除标记)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`plan.md (Modified — §10.1)`、`README.md (Modified — 资产状态)`、`claude_operation_log.md`
+* **执行结果与验证状态**：zip `unzip -t` 通过；解压 16,558 文件，目录/计数与 README 一致；mask/caption/base 1710 全匹配，mask/fake 尺寸 3621/3621 一致；压缩包已删除；未跑 GPU，未改 Agent/b2/SFT。
+* **置信度或遗留待办（TODO）**：①AutoSplice q95 未派生；②同一 base 的 1–3 个 forged 变体与单份 mask 的对应语义需核实，不能默认所有变体共享同一 mask；③IML-ViT 代码/权重仍缺失；④新方向 GPU 评测需单独授权；⑤AutoSplice 仅学术非商业用途。
