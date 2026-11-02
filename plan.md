@@ -1287,3 +1287,28 @@ progan、DRCT、AIDE sd14、AIDE GenImage）；GenImage/AutoSplice 尚无 q95 �
 AutoSplice 和后续轨迹；⑤新方向真实 Agent 冒烟/评测仍需单独 GPU 授权。详细清单见
 `docs/development/ASSET_INVENTORY_20261102.md` 与
 `sft_data/g8_inventory/asset_inventory_20261102.json`。
+
+### 10.1 GenImage q95 派生（2026-11-02，CPU，已完成）
+
+在资产清点基础上，先只为 GenImage + 共享 Real 派生 q95，供后续全局评测使用；不派生
+q85/q70，不改变原文件。
+
+- **输入**：`dataset/GenImage_Test/<8 generators>/` 各 1000 张原图；`dataset/Real/`
+  1000 张原图。ADM 的 RGBA 图显式转 RGB；不做缩放、裁剪、锐化或色彩管理。
+- **编码**：复用 MNW q95 的同一组参数 — Pillow **11.0.0**、libjpeg **6.2**、
+  `quality=95`、`subsampling=2`、`optimize=False`、`progressive=False`。真假两半
+  走同一代码路径；原文件保留并以 sha256 核对。
+- **输出布局**：`dataset/GenImage_q95/<generator>/<stem>.jpg`、
+  `dataset/Real_q95/<stem>.jpg`；图片受 `.gitignore` 管理，不入 Git；清单
+  `dataset/GenImage_q95/manifest.json` 入库。
+- **清单字段**：源/派生 path、source sha256/bytes、derived sha256/bytes、group、
+  label、宽高、源 mode、encoder identity、duplicate 标记。SD15 的重复哈希对保留
+  两份源记录但标记为 duplicate；评测时按固定规则去重。
+- **配对与报告**：没有本地逐源真/假配对 manifest；每个生成器组使用共享 1000 张
+  Real，组间复用、组间不独立。这是分组评测，不伪造一源一图配对。
+- **边界**：只生成评测输入，不生成 SFT/训练数据；不按分数挑选；不改变 original。
+**完成结果（2026-11-02）**：已生成 **8000 假 + 1000 真 = 9000** 张 q95；Pillow
+11.0.0 / libjpeg 6.2，参数与 MNW q95 相同；ADM 的 1000 张 RGBA 已转 RGB；
+`dataset/GenImage_q95/manifest.json` 记录源/派生哈希、尺寸、mode、编码器与重复标记；
+SD15 的 1 对重复哈希保留源记录并标记。输出约 **763 MB**，派生后磁盘可用 **10.38 GB**。
+图片按 `.gitignore` 不入库，清单入库；未跑 GPU。

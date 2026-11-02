@@ -677,3 +677,17 @@
 * **涉及/修改的文件清单**：`sft_data/g8/review/b2/review_g8_b2.json (Tracked)`、`sft_data/g8/review/b2/REVIEW_EXPORT.md (Created)`、`sft_data/g8_inventory/genimage_inventory_20261102.json (Created)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Created)`、`docs/development/ASSET_INVENTORY_20261102.md (Created)`、`plan.md (Modified — §4.16/§10)`、`README.md (Modified — §7.2 新方向)`、`claude_operation_log.md`
 * **执行结果与验证状态**：b2 dry-run 32 接受/0 拒收/0 过期；GenImage 9000 个文件（8000 fake+1000 real）逐文件哈希完成，磁盘/尺寸/模式已核对；MNW manifest 与 q95 可复用行已核对；`core` 本次清点未改代码，最近仍为 **728 passed**；**未跑 GPU/GPU 模型**；未改 b2 内容、未导入台账、未冻结。
 * **置信度或遗留待办（TODO）**：①AutoSplice 需用户上传并核对 Authentic/Forged/Mask/Caption 与许可；②IML-ViT 需代码+权重；③GenImage q95 需先确定共享真图配对、SD15 重复处理和编码参数；④磁盘 11.16 GB 需为 q95/AutoSplice/轨迹预留；⑤新方向 GPU 冒烟和评测需单独授权；⑥本次仅资产清点，不改变专家结论或 Agent 管线。
+
+### 2026-11-02 - 阶段四 4.26：GenImage q95 派生（CPU）
+
+* **当前操作动作**：按新方向 `NEXT_WORKFLOW_20261102.md` 的 q95-only 协议，为 GenImage 八个生成器与共享 Real 池生成 q95 评测输入，写清单并核对；**未跑 GPU、未改 Agent、未启动 SFT**。
+* **对应计划锚点**：`plan.md` §10.1（GenImage q95 派生）；`docs/development/ASSET_INVENTORY_20261102.md`
+* **核心变更说明**：
+  1. **输入/输出**：`dataset/GenImage_Test/` 8 组各 1000 张 + `dataset/Real/` 1000 张，共 9000 张；输出 `dataset/GenImage_q95/<generator>/` 8000 张、`dataset/Real_q95/` 1000 张；图片不入 Git，清单入 Git。
+  2. **编码身份**：Pillow **11.0.0** / libjpeg **6.2**，`quality=95`、`subsampling=2`、`optimize=False`、`progressive=False`；不缩放、不裁剪；真假同路径。ADM 的 1000 张 RGBA 显式转 RGB，其余模式保持/记录。
+  3. **清单**：`dataset/GenImage_q95/manifest.json`（6,867,293 B）记录 9000 条源/派生 path、source sha256/bytes、derived sha256/bytes、宽高、source mode、encoder、`duplicate_group`；SD15 的 `459_sdv5_00039.png` 与 `680_sdv5_00100.png` 同源哈希，两条均保留并标记。
+  4. **配对口径**：没有逐源真假配对；每组假图对共享 Real 1000 张，Real 在八组间复用、组间不独立；清单 `one_to_one=false` 明示。
+  5. **资源**：q95 输出约 **763 MB**；派生后 `/root/autodl-tmp` 可用 **10.38 GB**；未加载模型。
+* **涉及/修改的文件清单**：`scripts/build_genimage_q95.py (Created)`、`dataset/GenImage_q95/manifest.json (Created; 图片忽略)`、`dataset/Real_q95/*.jpg (Ignored)`、`.gitignore (Modified — q95 图片)`、`plan.md (Modified — §10.1 完成)`、`README.md (Modified — 资产状态)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`sft_data/g8_inventory/build_genimage_q95_20261102.log (Created; ignored?)`、`claude_operation_log.md`
+* **执行结果与验证状态**：dry-run 9000（8000 fake +1000 real）；实跑 9000/9000，派生文件全部存在且尺寸与源一致，manifest 无空哈希/缺文件；编码器与 MNW q95 一致；`core` 未改运行时代码，最近仍 728 passed；未跑 GPU。
+* **置信度或遗留待办（TODO）**：①未做逐源真假配对，报告只能按生成器组对共享 Real；②SD15 重复对评测前按固定规则去重；③AutoSplice 与 IML-ViT 仍缺失，局部任务阻塞；④新方向全局/局部评测需 GPU 单独授权；⑤q95 清单已固定，后续不得因结果挑图或改编码参数。

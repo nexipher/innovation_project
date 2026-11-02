@@ -7,7 +7,7 @@
     "status_note": "b2 export was committed as e0e794b before inventory; this file and the GenImage manifest are the only new artifacts"
   },
   "disk": {
-    "df": "/dev/md0       53687091200 42528296960 11158794240  80% /root/autodl-tmp"
+    "df": "/dev/md0       53687091200 43311439872 10375651328  81% /root/autodl-tmp"
   },
   "cgroup": {
     "max": "128849018880",
@@ -227,8 +227,36 @@
         "GenImage_Test/SD15/680_sdv5_00100.png"
       ]
     ],
-    "q95_present": false,
-    "pairing_manifest": null
+    "q95_present": true,
+    "pairing_manifest": null,
+    "q95_manifest": "dataset/GenImage_q95/manifest.json",
+    "q95_counts": {
+      "total": 9000,
+      "fake": 8000,
+      "real": 1000,
+      "by_group": {
+        "ADM": 1000,
+        "BigGAN": 1000,
+        "Glide": 1000,
+        "Midjourney": 1000,
+        "Real": 1000,
+        "SD14": 1000,
+        "SD15": 1000,
+        "VQDM": 1000,
+        "Wukong": 1000
+      }
+    },
+    "q95_bytes": 763128470,
+    "q95_encoder": {
+      "library": "Pillow 11.0.0",
+      "jpeg_backend": "6.2",
+      "params": {
+        "quality": 95,
+        "subsampling": 2,
+        "optimize": false,
+        "progressive": false
+      }
+    }
   },
   "mnw_div2k": {
     "manifest_samples": 1100,
@@ -353,8 +381,8 @@
   "blockers": [
     "dataset/AutoSplice missing; official download requires Google Drive/Baidu",
     "IML-ViT code/weights missing",
-    "GenImage q95 inputs not derived",
     "one duplicate GenImage SD15 hash pair",
     "no local GenImage real/fake pairing manifest"
-  ]
+  ],
+  "updated_at": "2026-11-02T20:53:34"
 }

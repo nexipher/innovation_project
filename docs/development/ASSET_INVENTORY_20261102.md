@@ -16,7 +16,7 @@
 
 | 数据 | 现场结果 | 限制 / 缺项 |
 | --- | --- | --- |
-| GenImage_Test 八个生成器 | **8 × 1000 = 8000 PNG，2.8 GB**；ADM 1000 张 **RGBA** 256×256；BigGAN 128×128；Glide/VQDM 256×256；SD14/SD15/Wukong 512×512；Midjourney 1024×1024 | 无 q95 派生；无本地真/假配对 manifest；SD15 有 **1 对重复哈希**（`459_sdv5_00039.png` 与 `680_sdv5_00100.png`） |
+| GenImage_Test 八个生成器 | **8 × 1000 = 8000 PNG，2.8 GB**；ADM 1000 张 **RGBA** 256×256；BigGAN 128×128；Glide/VQDM 256×256；SD14/SD15/Wukong 512×512；Midjourney 1024×1024；**q95 已派生 8000 张**（`dataset/GenImage_q95/`，与 Real 合计约 763 MB） | 无本地真/假配对 manifest；SD15 有 **1 对重复哈希**（`459_sdv5_00039.png` 与 `680_sdv5_00100.png`），清单已标记 |
 | GenImage Real | `dataset/Real/` **1000 JPG，35 MB**，500px 级、纵横比不一 | 作为八组共享真图；跨组复用，组间不独立；与假图分辨率和来源不同 |
 | MNW | 4 组假图 **4×250=1000** + DIV2K 真图 **100**，1.1 GB | 现有 `manifest.json` 1100 条，含字节/哈希；仅评测用途 |
 | MNW 开发清单 | `inputs_manifest.json` **200 条 = 100 源 × (original + q95)**；`inputs/` 下 q95 100 张 | q95-only 子集为 100 条；旧 original 仅历史参考 |
@@ -29,7 +29,7 @@
 - MNW q95：六个已有专家（PROBE、SPAI、AIDE progan、DRCT、AIDE sd14、
   AIDE GenImage）各有 **100 条 q95 测量**；可直接按 q95-only 子集复用，不能把
   original 混入新方案。
-- GenImage q95：**尚无派生输入，也无旧测量**；需要按固定 JPEG q95 协议派生后再评测。
+- GenImage q95：已按固定协议派生 **8000 假 + 1000 真**；清单为 `dataset/GenImage_q95/manifest.json`（源/派生哈希、尺寸、mode、编码器、重复标记）。尚无旧测量，下一步才是评测。
 - AutoSplice q95：数据缺失，尚不可派生。
 
 ## 4. 模型与运行环境
@@ -39,7 +39,7 @@
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`，缓存约 **17.5 GB**；本轮未加载 |
 | TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…` |
 | PROBE / SPAI / DRCT / AIDE | 权重均在盘；SPAI/AIDE/DRCT 的路径与 sha256 已在 `experts/candidate_weights.json` |
-| 磁盘 | `/root/autodl-tmp` 可用 **11.16 GB**（80% 已用）；overlay 余量约 1.5 GB |
+| 磁盘 | `/root/autodl-tmp` 可用 **10.38 GB**（81% 已用，q95 派生后）；overlay 余量约 1.5 GB |
 | cgroup | max 120 GiB、events 全 0；当前 `memory.current` 约 24 GB，其中 anon ~0.98 GB、file/page-cache ~23 GB，不是进程常驻 |
 | GPU | RTX 4090 24 GB，当前 1 MiB，无 compute app |
 | 代码/测试 | 清点时 `core` 728 passed；本清点未改运行时代码 |
@@ -51,9 +51,9 @@
    配对、mask 尺寸与许可，再做 q95。
 2. **IML-ViT 缺失**：需要代码和权重；TruFor 已可先做接口核对，但双定位器比较
    无法开始。
-3. **GenImage q95 未派生**：需按固定编码器/参数生成，并登记源文件与派生文件哈希。
-   当前没有本地配对 manifest；建议以共享 `dataset/Real` 1000 张真图与每组 1000 张假图
-   配对，并明确组间复用不独立。SD15 重复对先去重或标记。
-4. **磁盘**：11.16 GB 需同时容纳 GenImage q95、AutoSplice 及后续轨迹；先算清
-   AutoSplice 上传大小，再决定 q95 派生范围。
-5. **GPU**：新方向的真实 Agent 冒烟/评测仍需单独授权；本次清点未运行 GPU 模型。
+3. **GenImage 配对**：没有本地逐源真/假配对 manifest；当前方案是每组 1000 假图
+   对共享 `dataset/Real` 1000 真图，组间复用、不独立；SD15 重复对已在 q95 清单标记，
+   评测前按固定规则去重。
+4. **磁盘**：q95 派生后可用 10.38 GB；AutoSplice 上传前先核对其大小，再决定是否
+   需要清理旧候选或分批。
+5. **GPU**：新方向的真实 Agent 冒烟/评测仍需单独授权；本次只做 CPU 派生。
