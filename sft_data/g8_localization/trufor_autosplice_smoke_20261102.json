@@ -1,0 +1,55 @@
+{
+  "schema": "trufor_autosplice_smoke/1",
+  "created_at": "2026-11-02T21:50:07",
+  "ok": false,
+  "error": "RuntimeError: trufor_expert：批量运行缺少 16 张的结果（退出码 -9）\nstdout 尾部：\nstderr 尾部：oaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.\n  checkpoint = torch.load(model_state_file, map_location=torch.device(device))\n",
+  "weights": {
+    "path": "/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar",
+    "source": "GRIP-UNINA TruFor (CVPR 2023) · TruFor_weights.zip",
+    "licence": "GRIP-UNINA：仅限信息性与非营利用途；本项目不再分发其代码与权重",
+    "sha256": "ac1d90e329a72e0d66e8665e123a19e94bfae3209c3ef8a4f9ca3b91578c7844",
+    "size_bytes": 281496429
+  },
+  "sample_ids": [
+    "autosplice__52550__0__q95",
+    "autosplice__52550__1__q95",
+    "autosplice__52550__2__q95",
+    "autosplice__44699__1__q95",
+    "autosplice__64910__1__q95",
+    "autosplice__71174__0__q95",
+    "autosplice__40433__0__q95",
+    "autosplice__71305__2__q95",
+    "autosplice__49651__authentic__q95",
+    "autosplice__43815__authentic__q95",
+    "autosplice__67206__authentic__q95",
+    "autosplice__60661__authentic__q95",
+    "autosplice__40269__authentic__q95",
+    "autosplice__52206__authentic__q95",
+    "autosplice__55518__authentic__q95",
+    "autosplice__47688__authentic__q95"
+  ],
+  "status": "blocked_environment",
+  "device": null,
+  "attempts": [
+    {
+      "device": "cuda",
+      "error": "torch.cuda.is_available() == False; /dev/nvidia* absent; nvidia-smi lists no device",
+      "log": "sft_data/g8_localization_run.log"
+    },
+    {
+      "device": "cpu",
+      "error": "subprocess exit -9 (SIGKILL) at ~0.52 GB RSS; cgroup memory.current ~2 GB",
+      "log": "sft_data/g8_localization_cpu_run.log"
+    }
+  ],
+  "environment": {
+    "cgroup_memory_max": "2147483648",
+    "cgroup_memory_high": "max",
+    "cgroup_memory_current": "1987534848",
+    "cgroup_memory_events": "low 0\nhigh 0\nmax 6285\noom 0\noom_kill 0",
+    "torch_cuda_available": false,
+    "torch_cuda_device_count": 0,
+    "nvidia_smi": "ERROR:[Errno 8] Exec format error: 'nvidia-smi'"
+  },
+  "note": "No map/conf/score was produced. This is an environment blocker, not a TruFor result; retry after the 2 GiB cgroup limit/GPU visibility is restored."
+}

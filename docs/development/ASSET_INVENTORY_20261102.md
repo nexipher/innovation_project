@@ -21,8 +21,8 @@
 | MNW | 4 组假图 **4×250=1000** + DIV2K 真图 **100**，1.1 GB | 现有 `manifest.json` 1100 条，含字节/哈希；仅评测用途 |
 | MNW 开发清单 | `inputs_manifest.json` **200 条 = 100 源 × (original + q95)**；`inputs/` 下 q95 100 张 | q95-only 子集为 100 条；旧 original 仅历史参考 |
 | MNW 分区 | 每组 `dev_current 20 / dev_extension 20 / final 20`；final 未使用 | 最终留出继续封存 |
-| AutoSplice | **已上传并解压**：`dataset/AutoSplice/` 16,558 文件、494 MB；Authentic 2273、Forged_JPEG100/90/75 各 3621、Mask 1710、Caption 1710；README 计数一致 | 1710 个 base 源对应 1–3 个 forged 变体；每个 base 一份 mask/caption；mask 与对应 fake 尺寸 3621/3621 一致，但 mask 对每个变体的语义尚需确认；**q95 尚未派生**；学术非商业。archive 473,548,367 B，sha256 `0d94e2df…`，解压后已删除 |
-| IML-ViT | **缺失**（无代码/权重） | 局部定位对照组无法开始；TruFor 已在本机 |
+| AutoSplice | **已解压并派生 q95**：原数据 16,558 文件/494 MB；Authentic 2273、Forged_JPEG100/90/75 各 3621、Mask/Caption 各 1710；q95 输入 **5894（2273 Real + 3621 Fake，227 MB）**；配对清单、审计和划分已生成 | 1710 个 base 对应 1–3 个 forged 变体；每个 base 一份 mask/caption（shared-by-base）；30 个 base/60 个变体抽查 mask 内差异均大于外，mask 与 fake 尺寸 3621/3621 一致；逐变体独立 mask 不存在；`Forged_JPEG90/75` 未用；学术非商业 |
+| IML-ViT | **缺失**（无代码/权重）；官方 commit `07dd2be0…`、MIT、权重 Google Drive/Baidu | 局部定位对照组无法开始；准备清单见 `IML_VIT_PREP_20261102.md`；TruFor 已在本机但环境阻塞 |
 
 ## 3. 可复用测量
 
@@ -30,30 +30,30 @@
   AIDE GenImage）各有 **100 条 q95 测量**；可直接按 q95-only 子集复用，不能把
   original 混入新方案。
 - GenImage q95：已按固定协议派生 **8000 假 + 1000 真**；清单为 `dataset/GenImage_q95/manifest.json`（源/派生哈希、尺寸、mode、编码器、重复标记）。尚无旧测量，下一步才是评测。
-- AutoSplice q95：数据缺失，尚不可派生。
+- AutoSplice q95：已按固定协议派生 **2273 Real + 3621 Fake**；清单为 `dataset/AutoSplice_q95/inputs_manifest.json`，配对清单 `pairing_manifest.json`（含 30 base/60 变体 audit）。尚无旧测量，下一步是 TruFor/IML-ViT 小批。
 
 ## 4. 模型与运行环境
 
 | 资产 | 现场结果 |
 | --- | --- |
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`，缓存约 **17.5 GB**；本轮未加载 |
-| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…` |
+| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**小批被环境阻塞**（无 GPU、2 GiB cgroup） |
 | PROBE / SPAI / DRCT / AIDE | 权重均在盘；SPAI/AIDE/DRCT 的路径与 sha256 已在 `experts/candidate_weights.json` |
-| 磁盘 | `/root/autodl-tmp` 可用 **9.2 GiB**（82% 已用；q95 + AutoSplice 解压后）；overlay 余量约 1.6 GB |
-| cgroup | max 120 GiB、events 全 0；当前 `memory.current` 约 24 GB，其中 anon ~0.98 GB、file/page-cache ~23 GB，不是进程常驻 |
-| GPU | RTX 4090 24 GB，当前 1 MiB，无 compute app |
-| 代码/测试 | 清点时 `core` 728 passed；本清点未改运行时代码 |
+| 磁盘 | `/root/autodl-tmp` 可用约 **9.0 GiB**（83% 已用；GenImage/AutoSplice q95 后）；overlay 余量约 1.6 GB |
+| cgroup | **max 2 GiB**（2026-11-02 重新出现；此前一度读到 120 GiB）；当前 `memory.current` ~1.7 GB，events `max=6285`、`oom_kill=0`；TruFor CPU 进程在 ~0.52 GB RSS 时被 SIGKILL |
+| GPU | **当前不可见**：`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、`nvidia-smi -L` 无设备；此前为 RTX 4090 24 GB |
+| 测试 | 清点时 `core` 728 passed；当前 2 GiB cgroup 下完整 `core` 被 SIGKILL；`tests/test_new_splits.py` 单独 3 passed |
 
 ## 5. 阻塞项与下一步
 
-1. **AutoSplice q95 未派生**：当前只解压原数据；需按 q95 协议从
-   `Authentic` + `Forged_JPEG100` 派生，`Forged_JPEG90/75` 保留不用。mask 与
-   1–3 个 forged 变体的对应语义需先核实，不能把一份 mask 直接复制给所有变体。
-2. **IML-ViT 缺失**：需要代码和权重；TruFor 已可先做接口核对，但双定位器比较
-   无法开始。
-3. **GenImage 配对**：没有本地逐源真/假配对 manifest；当前方案是每组 1000 假图
-   对共享 `dataset/Real` 1000 真图，组间复用、不独立；SD15 重复对已在 q95 清单标记，
-   评测前按固定规则去重。
-4. **磁盘**：q95 + AutoSplice 解压后可用 **9.2 GiB**；AutoSplice 原图 494 MB，
-   q95 派生还需额外空间，注意 overlay 只剩约 1.6 GB。
-5. **GPU**：新方向的真实 Agent 冒烟/评测仍需单独授权；本次只做 CPU 解压/核对。
+1. **TruFor 小批环境阻塞**：GPU 当前不可见；CPU 回退在 2 GiB cgroup 下被 SIGKILL。
+   需恢复 GPU/更大 cgroup 后重跑；尚无 map/conf/score，不能把失败当模型结论。
+2. **IML-ViT 缺失**：需要代码和权重（Google Drive/Baidu）；TruFor 小批恢复后可并行
+   准备接口/预处理，但双定位器比较仍无法开始。
+3. **AutoSplice mask 语义**：mask 是 base 级 shared-by-base，30/60 抽查支持
+   mask 内差异大于外；没有逐变体独立 mask，报告需保留这一限制。
+4. **GenImage 配对/去重**：无本地逐源真假配对 manifest；共享 Real 1000 跨八组复用，
+   组间不独立；SD15 `680_sdv5_00100` 固定排除，canonical `459_sdv5_00039`。
+5. **划分已完成**：AutoSplice dev/val/test = 1591/340/342 源；GenImage 各生成器
+   ~700/150/150（SD15 699），共享 Real 700/150/150；test 封存。
+6. **磁盘**：q95 后可用约 9.0 GiB；后续轨迹/AutoSplice q95/定位 raw 需继续控制。

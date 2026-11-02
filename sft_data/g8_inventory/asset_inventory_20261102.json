@@ -7,15 +7,15 @@
     "status_note": "b2 export was committed as e0e794b before inventory; this file and the GenImage manifest are the only new artifacts"
   },
   "disk": {
-    "df": "/dev/md0       53687091200 43830628352 9856462848  82% /root/autodl-tmp"
+    "df": "/dev/md0       53687091200 44068900864 9618190336  83% /root/autodl-tmp"
   },
   "cgroup": {
-    "max": "128849018880",
-    "high": "126701535232",
-    "current": "24364756992",
-    "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0"
+    "max": "2147483648",
+    "high": "max",
+    "current": "1794887680",
+    "events": "low 0\nhigh 0\nmax 6285\noom 0\noom_kill 0"
   },
-  "gpu": "NVIDIA GeForce RTX 4090, 24564 MiB, 1 MiB",
+  "gpu": "unavailable: ERROR:[Errno 8] Exec format error: 'nvidia-smi'",
   "genimage": {
     "root": "dataset/GenImage_Test",
     "real_root": "dataset/Real",
@@ -256,6 +256,60 @@
         "optimize": false,
         "progressive": false
       }
+    },
+    "q95_split": {
+      "manifest": "dataset/GenImage_q95/split_manifest.json",
+      "seed": 20261102,
+      "sources_by_group": {
+        "ADM": {
+          "dev": 700,
+          "test": 150,
+          "val": 150
+        },
+        "BigGAN": {
+          "test": 150,
+          "val": 150,
+          "dev": 700
+        },
+        "Glide": {
+          "dev": 700,
+          "test": 150,
+          "val": 150
+        },
+        "Midjourney": {
+          "dev": 700,
+          "val": 150,
+          "test": 150
+        },
+        "Real": {
+          "dev": 700,
+          "test": 150,
+          "val": 150
+        },
+        "SD14": {
+          "test": 150,
+          "val": 150,
+          "dev": 700
+        },
+        "SD15": {
+          "dev": 699,
+          "val": 150,
+          "test": 150
+        },
+        "VQDM": {
+          "dev": 700,
+          "val": 150,
+          "test": 150
+        },
+        "Wukong": {
+          "dev": 700,
+          "val": 150,
+          "test": 150
+        }
+      },
+      "duplicate_exclusions": {
+        "dataset/GenImage_q95/SD15/680_sdv5_00100.jpg": "dataset/GenImage_Test/SD15/459_sdv5_00039.png"
+      }
     }
   },
   "mnw_div2k": {
@@ -340,7 +394,29 @@
       "mask_fake_size_mismatches": 0,
       "note": "one mask/caption per base source; 1-3 forged variants per base; mask semantics per variant not yet established"
     },
-    "license": "academic/noncommercial only (README.txt)"
+    "license": "academic/noncommercial only (README.txt)",
+    "q95": {
+      "inputs_manifest": "dataset/AutoSplice_q95/inputs_manifest.json",
+      "pairing_manifest": "dataset/AutoSplice_q95/pairing_manifest.json",
+      "counts": {
+        "total": 5894,
+        "real": 2273,
+        "fake": 3621
+      },
+      "bytes": 213838712,
+      "audit_bases": 30,
+      "audit_variants": 60,
+      "all_sampled_inside_gt_outside": true
+    },
+    "split": {
+      "manifest": "dataset/AutoSplice_q95/split_manifest.json",
+      "seed": 20261102,
+      "counts": {
+        "dev": 1591,
+        "val": 340,
+        "test": 342
+      }
+    }
   },
   "localization": {
     "trufor": {
@@ -397,9 +473,15 @@
     }
   },
   "blockers": [
+    "TruFor small batch blocked: GPU invisible and 2 GiB cgroup kills CPU fallback",
     "IML-ViT code/weights missing",
-    "one duplicate GenImage SD15 hash pair",
-    "no local GenImage real/fake pairing manifest"
+    "AutoSplice mask is shared per base; no per-variant mask",
+    "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-02T21:26:53"
+  "updated_at": "2026-11-02T21:54:01",
+  "trufor_smoke": {
+    "status": "blocked_environment",
+    "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102.json",
+    "reason": "GPU invisible; CPU SIGKILL under 2 GiB cgroup"
+  }
 }

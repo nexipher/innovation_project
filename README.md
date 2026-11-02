@@ -725,7 +725,7 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 > 为交接入口，改为 **JPEG q95 only**：GenImage 八生成器做基础全局开发，MNW+DIV2K
 > 做较新生成器评测，AutoSplice 做局部检测/定位。资产清点见
 > [`docs/development/ASSET_INVENTORY_20261102.md`](docs/development/ASSET_INVENTORY_20261102.md)：
-> GenImage/MNW 已在本机，GenImage q95（8000 假 + 1000 真）已派生；AutoSplice 已解压（2273 authentic + 3×3621 forged + 1710 mask/caption，q95 未派生）；**IML-ViT 仍缺失**。
+> GenImage/MNW 已在本机，GenImage q95（8000 假 + 1000 真）已派生；AutoSplice 已解压并派生 q95（2273 Real + 3621 Fake，含配对/mask 清单）；两套数据已完成 dev/val/test 划分。**IML-ViT 仍缺失，TruFor 小批因 GPU/2 GiB cgroup 暂阻塞**。
 > 本表以下旧阶段按记录日期理解。
 
 以 [`plan.md`](plan.md) 为准（阶段 1 收尾 → 阶段 2 Qwen3-VL 迁移冒烟 → 阶段 3 替代专家评测 →

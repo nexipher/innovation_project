@@ -1,0 +1,185 @@
+{
+  "schema": "new_splits/1",
+  "created_at": "2026-11-02T21:46:24",
+  "seed": 20261102,
+  "autosplice": {
+    "split_manifest": "dataset/AutoSplice_q95/split_manifest.json",
+    "counts": {
+      "sources": {
+        "dev": 1591,
+        "val": 340,
+        "test": 342
+      },
+      "sources_by_variant_count": {
+        "0": {
+          "dev": 394,
+          "test": 85,
+          "val": 84
+        },
+        "1": {
+          "val": 73,
+          "dev": 341,
+          "test": 73
+        },
+        "2": {
+          "val": 80,
+          "dev": 374,
+          "test": 81
+        },
+        "3": {
+          "dev": 482,
+          "val": 103,
+          "test": 103
+        }
+      },
+      "inputs": {
+        "by_group": {
+          "Authentic": {
+            "dev": 1591,
+            "val": 340,
+            "test": 342
+          },
+          "Forged_JPEG100": {
+            "dev": 2535,
+            "val": 542,
+            "test": 544
+          }
+        },
+        "by_label": {
+          "Fake": {
+            "dev": 2535,
+            "val": 542,
+            "test": 544
+          },
+          "Real": {
+            "dev": 1591,
+            "val": 340,
+            "test": 342
+          }
+        }
+      }
+    }
+  },
+  "genimage": {
+    "split_manifest": "dataset/GenImage_q95/split_manifest.json",
+    "counts": {
+      "inputs": {
+        "by_group": {
+          "ADM": {
+            "dev": 700,
+            "test": 150,
+            "val": 150
+          },
+          "BigGAN": {
+            "test": 150,
+            "val": 150,
+            "dev": 700
+          },
+          "Glide": {
+            "dev": 700,
+            "test": 150,
+            "val": 150
+          },
+          "Midjourney": {
+            "dev": 700,
+            "val": 150,
+            "test": 150
+          },
+          "Real": {
+            "dev": 700,
+            "test": 150,
+            "val": 150
+          },
+          "SD14": {
+            "test": 150,
+            "val": 150,
+            "dev": 700
+          },
+          "SD15": {
+            "dev": 699,
+            "val": 150,
+            "test": 150,
+            "excluded_duplicate": 1
+          },
+          "VQDM": {
+            "dev": 700,
+            "val": 150,
+            "test": 150
+          },
+          "Wukong": {
+            "dev": 700,
+            "val": 150,
+            "test": 150
+          }
+        },
+        "by_label": {
+          "Fake": {
+            "dev": 5599,
+            "test": 1200,
+            "val": 1200,
+            "excluded_duplicate": 1
+          },
+          "Real": {
+            "dev": 700,
+            "test": 150,
+            "val": 150
+          }
+        }
+      },
+      "sources_by_group": {
+        "ADM": {
+          "dev": 700,
+          "test": 150,
+          "val": 150
+        },
+        "BigGAN": {
+          "test": 150,
+          "val": 150,
+          "dev": 700
+        },
+        "Glide": {
+          "dev": 700,
+          "test": 150,
+          "val": 150
+        },
+        "Midjourney": {
+          "dev": 700,
+          "val": 150,
+          "test": 150
+        },
+        "Real": {
+          "dev": 700,
+          "test": 150,
+          "val": 150
+        },
+        "SD14": {
+          "test": 150,
+          "val": 150,
+          "dev": 700
+        },
+        "SD15": {
+          "dev": 699,
+          "val": 150,
+          "test": 150
+        },
+        "VQDM": {
+          "dev": 700,
+          "val": 150,
+          "test": 150
+        },
+        "Wukong": {
+          "dev": 700,
+          "val": 150,
+          "test": 150
+        }
+      }
+    },
+    "duplicate_exclusions": {
+      "dataset/GenImage_q95/SD15/680_sdv5_00100.jpg": "dataset/GenImage_Test/SD15/459_sdv5_00039.png"
+    }
+  },
+  "mnw_div2k": {
+    "split": "dataset/mnw_div2k/dev_final_split.json",
+    "note": "existing dev_current/dev_extension/final; no re-split"
+  }
+}
