@@ -7,7 +7,7 @@
     "status_note": "b2 export was committed as e0e794b before inventory; this file and the GenImage manifest are the only new artifacts"
   },
   "disk": {
-    "df": "/dev/md0       53687091200 44068900864 9618190336  83% /root/autodl-tmp"
+    "df": "/dev/md0       53687091200 28007985152 25679106048  53% /root/autodl-tmp"
   },
   "cgroup": {
     "max": "2147483648",
@@ -442,34 +442,45 @@
     "spai": {
       "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
       "bytes": 934865338,
-      "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55"
+      "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+      "present": true
     },
     "aide": {
       "progan_train": {
         "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
         "bytes": 3592077976,
-        "sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e"
+        "sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e",
+        "present": false,
+        "deleted_at": "2026-11-02T22:38:50"
       },
       "sd14_train": {
         "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
         "bytes": 3592077976,
-        "sha256": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989"
+        "sha256": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989",
+        "present": false,
+        "deleted_at": "2026-11-02T22:38:50"
       },
       "GenImage_train": {
         "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
         "bytes": 3592100460,
-        "sha256": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16"
+        "sha256": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16",
+        "present": false,
+        "deleted_at": "2026-11-02T22:38:50"
       }
     },
     "drct": {
       "path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
       "bytes": 354605453,
-      "sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861"
+      "sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861",
+      "present": false,
+      "deleted_at": "2026-11-02T22:38:50",
+      "archive_deleted": true
     },
     "probe": {
       "path": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
       "bytes": 1217679947,
-      "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156"
+      "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+      "present": true
     }
   },
   "blockers": [
@@ -478,10 +489,58 @@
     "AutoSplice mask is shared per base; no per-variant mask",
     "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-02T21:54:01",
+  "updated_at": "2026-11-02T22:38:50",
   "trufor_smoke": {
     "status": "blocked_environment",
     "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102.json",
     "reason": "GPU invisible; CPU SIGKILL under 2 GiB cgroup"
+  },
+  "retired_assets": {
+    "deleted_at": "2026-11-02T22:38:50",
+    "record": "sft_data/g8_inventory/deleted_assets_20261102.json",
+    "items": [
+      {
+        "name": "aide/progan_train",
+        "path": "/root/autodl-tmp/third_party/aide/weights/progan_train.pth",
+        "bytes": 3592077976,
+        "sha256": "ce3a9d66c124e4c24846a6e513d4c66a7e34a16c46bd46a8041f809c2a4a756e",
+        "hash_source": "recomputed 2026-11-02"
+      },
+      {
+        "name": "aide/sd14_train",
+        "path": "/root/autodl-tmp/third_party/aide/weights/sd14_train.pth",
+        "bytes": 3592077976,
+        "sha256": "382a50d199541db79d4bb4f3b1647e69289dff3e88eb2d6907081f6f12f91989",
+        "hash_source": "recomputed 2026-11-02"
+      },
+      {
+        "name": "aide/GenImage_train",
+        "path": "/root/autodl-tmp/third_party/aide/weights/GenImage_train.pth",
+        "bytes": 3592100460,
+        "sha256": "f084346dfb0cd05ab4201fe82a62d4f1b4381ee28f2c8295d6cb14d559a9ff16",
+        "hash_source": "recomputed 2026-11-02"
+      },
+      {
+        "name": "drct/pretrained.zip",
+        "path": "/root/autodl-tmp/third_party/drct/weights/pretrained.zip",
+        "bytes": 4178790241,
+        "sha256": "235c006947cb87a44425afc1480f74f0a25713095686a6d0c10d3495c08dd046",
+        "hash_source": "recorded; size unchanged"
+      },
+      {
+        "name": "drct/DRCT-2M-sdv14-convB",
+        "path": "/root/autodl-tmp/third_party/drct/weights/DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth",
+        "bytes": 354605453,
+        "sha256": "d3de0fe494bf345cb165334741cc2bc18bed62c3b858bc090ee406bd41d13861",
+        "hash_source": "recorded; size unchanged"
+      },
+      {
+        "name": "ssp/ssp.zip",
+        "path": "/root/autodl-tmp/third_party/ssp.zip",
+        "bytes": 754886830,
+        "sha256": "71d280a8d0bb3db78d584745d01816a154643fe337be7632d1a6b1a3871a7ca2",
+        "hash_source": "recorded; size unchanged"
+      }
+    ]
   }
 }

@@ -1395,3 +1395,21 @@ GPU 当前不可见（`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存�
 `sft_data/g8_localization/trufor_autosplice_smoke_20261102.json`。IML-ViT 官方
 代码/权重仍缺（Google Drive/Baidu），准备清单见
 `docs/development/IML_VIT_PREP_20261102.md`。
+
+### 10.6 旧专家资产删除（2026-11-02，用户授权）
+
+按用户要求，删除已退出候选的六项权重/压缩包（代码、注册表和历史结果保留）：
+
+| 资产 | 大小 | sha256 |
+| --- | ---: | --- |
+| AIDE `progan_train.pth` | 3,592,077,976 | `ce3a9d66…` |
+| AIDE `sd14_train.pth` | 3,592,077,976 | `382a50d1…` |
+| AIDE `GenImage_train.pth` | 3,592,100,460 | `f084346d…` |
+| DRCT `pretrained.zip` | 4,178,790,241 | `235c0069…` |
+| DRCT ConvB `14_acc0.9996.pth` | 354,605,453 | `d3de0fe4…` |
+| SSP `ssp.zip` | 754,886,830 | `71d280a8…` |
+
+AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删除前大小未变。
+`.sha256` sidecar 一并删除。删除后 `/root/autodl-tmp` 可用约 **23.9 GiB**。
+删除清单见 `sft_data/g8_inventory/deleted_assets_20261102.json`；AIDE/DRCT 代码与
+`experts/*` 历史身份保留。**Qwen3-VL 未移动、未删除；迁移按用户要求暂不开展。**

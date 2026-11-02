@@ -38,11 +38,29 @@
 | --- | --- |
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`，缓存约 **17.5 GB**；本轮未加载 |
 | TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**小批被环境阻塞**（无 GPU、2 GiB cgroup） |
-| PROBE / SPAI / DRCT / AIDE | 权重均在盘；SPAI/AIDE/DRCT 的路径与 sha256 已在 `experts/candidate_weights.json` |
-| 磁盘 | `/root/autodl-tmp` 可用约 **9.0 GiB**（83% 已用；GenImage/AutoSplice q95 后）；overlay 余量约 1.6 GB |
+| PROBE / SPAI / AIDE / DRCT | PROBE、SPAI 权重保留；**AIDE 三份与 DRCT 权重已于 2026-11-02 删除**；代码、注册表和历史结果保留 |
+| 磁盘 | `/root/autodl-tmp` 可用约 **23.9 GiB**（53% 已用；删除旧专家后）；overlay 余量约 1.9 GB |
 | cgroup | **max 2 GiB**（2026-11-02 重新出现；此前一度读到 120 GiB）；当前 `memory.current` ~1.7 GB，events `max=6285`、`oom_kill=0`；TruFor CPU 进程在 ~0.52 GB RSS 时被 SIGKILL |
 | GPU | **当前不可见**：`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、`nvidia-smi -L` 无设备；此前为 RTX 4090 24 GB |
 | 测试 | 清点时 `core` 728 passed；当前 2 GiB cgroup 下完整 `core` 被 SIGKILL；`tests/test_new_splits.py` 单独 3 passed |
+
+## 4.1 旧专家资产删除（2026-11-02）
+
+按用户要求完成删除前核对并删除以下六项；AIDE/DRCT 代码、注册表和历史报告保留，Qwen3 未迁移。
+
+| 资产 | 路径 | 大小 | sha256 | 哈希来源 |
+| --- | --- | ---: | --- | --- |
+| AIDE progan_train | `third_party/aide/weights/progan_train.pth` | 3,592,077,976 | `ce3a9d66…` | 2026-11-02 复算 |
+| AIDE sd14_train | `third_party/aide/weights/sd14_train.pth` | 3,592,077,976 | `382a50d1…` | 2026-11-02 复算 |
+| AIDE GenImage_train | `third_party/aide/weights/GenImage_train.pth` | 3,592,100,460 | `f084346d…` | 2026-11-02 复算 |
+| DRCT pretrained.zip | `third_party/drct/weights/pretrained.zip` | 4,178,790,241 | `235c0069…` | 既有记录，大小未变 |
+| DRCT ConvB checkpoint | `third_party/drct/weights/DRCT-2M/sdv14/.../14_acc0.9996.pth` | 354,605,453 | `d3de0fe4…` | 既有记录，大小未变 |
+| SSP 压缩包 | `third_party/ssp.zip` | 754,886,830 | `71d280a8…` | 既有记录，大小未变 |
+
+- 六项均已删除；对应的 `.sha256` sidecar 一并删除。
+- 删除清单：`sft_data/g8_inventory/deleted_assets_20261102.json`。
+- `/root/autodl-tmp` 可用空间从约 9.0 GiB 增至 **23.9 GiB**。
+- **Qwen3-VL 未移动、未删除**；迁移按用户要求暂不开展。
 
 ## 5. 阻塞项与下一步
 
@@ -56,4 +74,4 @@
    组间不独立；SD15 `680_sdv5_00100` 固定排除，canonical `459_sdv5_00039`。
 5. **划分已完成**：AutoSplice dev/val/test = 1591/340/342 源；GenImage 各生成器
    ~700/150/150（SD15 699），共享 Real 700/150/150；test 封存。
-6. **磁盘**：q95 后可用约 9.0 GiB；后续轨迹/AutoSplice q95/定位 raw 需继续控制。
+6. **磁盘**：删除旧专家后可用约 **23.9 GiB**；Qwen3 迁移暂缓。

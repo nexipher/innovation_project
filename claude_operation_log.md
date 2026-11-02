@@ -721,3 +721,17 @@
 * **涉及/修改的文件清单**：`scripts/build_autosplice_q95.py (Created)`、`scripts/build_new_splits.py (Created)`、`scripts/trufor_autosplice_smoke.py (Created)`、`dataset/AutoSplice_q95/{pairing_manifest.json,inputs_manifest.json,split_manifest.json} (Created; images ignored)`、`dataset/GenImage_q95/manifest.json (Modified — split/duplicate)`、`dataset/GenImage_q95/split_manifest.json (Created)`、`dataset/splits_20261102.json (Created)`、`tests/test_new_splits.py (Created)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`docs/development/IML_VIT_PREP_20261102.md (Created)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`sft_data/g8_localization/trufor_autosplice_smoke_20261102.json (Created — blocked)`、`plan.md (Modified — §10.3/10.4/10.5)`、`README.md (Modified — 新方向状态)`、`.gitignore (Modified — AutoSplice q95 图片)`、`claude_operation_log.md`
 * **执行结果与验证状态**：AutoSplice 配对/审计全量 + 30/60 抽查通过；q95 5894/5894 生成、无缺文件/空哈希；划分不变量测试 3 passed；TruFor 小批未产出结果（环境阻塞）；未跑 Agent/GPU 模型；b2 未动。
 * **置信度或遗留待办（TODO）**：①需恢复 GPU/更大 cgroup 后重跑 TruFor 小批；②IML-ViT 代码+权重需上传；③AutoSplice mask 为 base 级共享，不能声称逐变体独立 GT；④GenImage 无逐源真假配对 manifest，共享 Real 组间不独立；⑤定位专家未定，暂不修 Agent 区域观察/证据回传/结案流程。
+
+### 2026-11-02 - 阶段四 4.29：旧专家 AIDE/DRCT/SSP 权重删除检查与删除
+
+* **当前操作动作**：按用户明确授权，对 AIDE 三份权重、DRCT 压缩包、DRCT 已解压权重、SSP 压缩包做删除前核对并删除；记录大小、sha256 与删除清单。**Qwen3-VL 未迁移、未删除；迁移任务按用户要求暂不开展。**
+* **对应计划锚点**：`plan.md` §10.6（旧专家资产删除）；`docs/development/ASSET_INVENTORY_20261102.md` §4.1
+* **核心变更说明**：
+  1. **删除前核对**：AIDE `progan_train.pth`/`sd14_train.pth`/`GenImage_train.pth` 于 2026-11-02 重新计算 sha256，分别为 `ce3a9d66…`/`382a50d1…`/`f084346d…`，与登记一致；DRCT `pretrained.zip`（4,178,790,241 B / `235c0069…`）、DRCT ConvB checkpoint（354,605,453 B / `d3de0fe4…`）、SSP `ssp.zip`（754,886,830 B / `71d280a8…`）使用既有记录且删除前大小未变。
+  2. **删除**：六项权重/压缩包及各自 `.sha256` sidecar 已删除；AIDE 权重目录为空，DRCT 权重目录已清理，SSP zip 不存在。未删除 AIDE/DRCT 官方代码、`experts/*` 注册表、历史报告或数据。
+  3. **空间**：`/root/autodl-tmp` 可用从约 9.0 GiB 增至 **23.9 GiB**（53% 已用）。
+  4. **记录**：`sft_data/g8_inventory/deleted_assets_20261102.json` 记录六项 path/bytes/sha256/hash_source；资产清单同步标记 AIDE/DRCT 权重已删除，PROBE/SPAI 保留。
+  5. **Qwen3**：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct` 未移动、未删除；系统盘/数据盘迁移未开始。
+* **涉及/修改的文件清单**：`/root/autodl-tmp/third_party/aide/weights/{progan_train,sd14_train,GenImage_train}.pth` 及 sidecar (Deleted)、`/root/autodl-tmp/third_party/drct/weights/pretrained.zip` (Deleted)、`.../DRCT-2M/sdv14/convnext_base_in22k_224_drct_amp_crop/14_acc0.9996.pth` 及 sidecar (Deleted)、`/root/autodl-tmp/third_party/ssp.zip` (Deleted)、`sft_data/g8_inventory/deleted_assets_20261102.json (Created)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`plan.md (Modified — §10.6)`、`README.md (Modified — 旧权重状态)`、`claude_operation_log.md`
+* **执行结果与验证状态**：六项目标均不存在；AIDE 三份哈希复算一致，DRCT/SSP 采用既有记录且大小核对通过；未删除代码/数据/报告；Qwen3 未动；未跑 GPU/Agent/SFT。
+* **置信度或遗留待办（TODO）**：①Qwen3 系统盘→数据盘迁移尚未开展，需另行授权/执行并做完整性与运行检查；②AIDE/DRCT 代码与历史结果保留，后续若复评需重新获取权重并核对哈希；③删除不可逆，历史报告中的分数仍可追溯但模型不可重跑。
