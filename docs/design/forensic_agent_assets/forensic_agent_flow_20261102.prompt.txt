@@ -1,0 +1,20 @@
+Use case: infographic-diagram. Create a beautiful, precise, publication-quality Chinese system architecture flowchart as a landscape PNG, high resolution approximately 2560x1600. White/light ivory background, navy typography, restrained blue teal and amber accents, generous spacing, crisp readable simplified Chinese sans serif. Flat vector-like design, no decoration or photos, no watermark. Title: "主动探索式图像法证 Agent". Subtitle: "全局检测 × 局部定位 × 可追溯证据". Small top-right badge "方案设计 · 非当前实现".
+Exact logical design:
+At top left input card "输入图像" small "源图身份 · 尺寸 · q95".
+Main upper horizontal path from input → large blue card "MLLM 观察与假设" with small "描述内容 · 提出可疑区域（可为空）" → blue diamond "自主决策".
+From decision branch down into one wide teal container "按需调用的专家与操作" containing three clearly separated cards:
+1 "全局检测" with "PROBE｜SPAI（候选）" and "整图判别分数 · 无定位含义".
+2 "局部定位" with "TruFor / IML-ViT（待选）" and "整图输入 → 定位 map" and tiny "TruFor 可附 conf 与 score".
+3 "区域核查" with "裁剪原图与对应 map" and "框比较 · 放大观察 · 按需验证".
+These are alternative tool actions, NOT a mandatory sequential chain, NOT all run automatically.
+All three outputs merge into amber card "证据追加与执行记录" with "工具 · 输入 · 原始结果 · 坐标 · 状态".
+Then arrow to central wide amber card "统一证据包" with "整图证据｜区域证据｜调用时间线" and "事实只追加，假设可更新".
+From evidence package a bold clear feedback arrow returns to MLLM observation/hypothesis card labelled "真实结果进入下一轮上下文". This is the main visible loop.
+From decision diamond rightward arrow labelled "自主结案" leads to navy card "最终报告" with "整图生成判断" "局部定位状态与区域" "证据引用 · 冲突 · 未完成事项". Finish icon.
+A grey dashed boundary container/bar below tool and decision system titled "外部控制器：执行边界" text "预算上限｜协议检查｜失败记录｜相同请求缓存" and "不静默改判，不替代 MLLM 正常结案". Dashed connectors represent constraints, not forensic evidence. Add subtle arrow from budget boundary to report labelled "预算耗尽：明确记录未完成".
+Bottom two small callout notes, exact:
+"无视觉怀疑，也可调用全局或局部专家"
+"可疑框 ≠ 篡改 mask；分数 ≠ 已校准概率"
+Make connectors unambiguous with no crossings through boxes. Keep text brief as specified, Chinese characters accurate. Blue = agent decisions, teal = tools, amber = evidence, grey dashed = guardrails. Balanced professional layout, no invented extra processing modules.
+
+Revision: Correct connectors so the sole investigation loop is MLLM -> decision -> selected tool -> execution record -> evidence bundle -> MLLM. All tool outputs enter execution record first. The controller constrains execution and records budget exhaustion without silently changing verdicts.
