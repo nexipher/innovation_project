@@ -119,6 +119,11 @@ def _metrics(score: float, map_array: np.ndarray, conf_array, mask, label: str) 
     map_array = np.squeeze(map_array)
     if map_array.ndim != 2:
         raise RuntimeError(f"map shape is not 2-D: {map_array.shape}")
+    if label != "Fake":
+        # Authentic images have no GT mask.  Some authentic rows inherit the
+        # base's mask path from the pairing manifest; it must not be used to
+        # exclude pixels from the false-positive statistics.
+        mask = None
     if mask is None:
         mask = np.zeros_like(map_array, dtype=bool)
     else:
@@ -228,6 +233,7 @@ def main() -> int:
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "ok": all(c["map_finite"] and c.get("conf_finite", True) for c in checks),
         "device": args.device,
+        "environment": _environment(),
         "weights": expert.provenance().as_dict(),
         "inputs_manifest": INPUTS,
         "seed": SEED,

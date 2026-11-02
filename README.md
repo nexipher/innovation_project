@@ -604,6 +604,7 @@ G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最�
 | **PROBE-DINOv2** | DINOv2-L + 线性头；336 滑窗 → 均值 logit → sigmoid = P(AI-generated) | **正向**（无需校正） | A 组 0.960 [0.924, 0.986]：native 0.967 / png 0.973 / q95 0.977 / q85 0.987 / **q70 0.995**；**未见生成器 0.952**；C 组独立验证 **0.986** | **准入，主检测器**（入口 3 接线） |
 | **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | **系统性反向**（两组 × 五格式 = 10/10 格点估计 < 0.5；q85 的 CI 两次都整段低于 0.5） | A 组 **0.426** / D 组（独立复测，64 源全新图）**0.384**，两组整体 CI 均跨 0.5 | **不准入全局链**（一个分数越高越像 Real 的检测器接进去只会把 AI 图推向 Real）；留作 L1 局部篡改研究对照 |
 
+- TruFor 的全局分数方向仍为反向，**未准入全局链**；其局部定位能力另做小批（2026-11-02 CPU 16 张：IoU 0.307/F1 0.434，真图 4/8 高响应 >1%，尚不足选定位专家），见 `plan.md` §10.5 与资产清单 §4.3。
 - PROBE 与现有专家的 Spearman 相关 |ρ| ≤ 0.23（不冗余，但融合后增益在 C 组仍落进噪声：见 §7.3）。
 - **候选专家 SPAI / AIDE / DRCT 只在离线适配器中做过独立评测，均未注册进 Agent 工具箱或证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g/§4.17h。两轮结果为：PROBE 阈值错误 13/200，SPAI −24（10 纠正/34 损害），DRCT −77（7/84），AIDE `progan_train`/`sd14_train`/`GenImage_train` 为 −148/−145/−122（三份全部展示）。**当前证据只支持 PROBE 单独作为专家组；SPAI 保留离线候选；DRCT/AIDE 不接入。** 2026-11-02 已删除 AIDE 三份权重、DRCT 压缩包/已解压权重和 SSP 压缩包；AIDE/DRCT 代码与历史记录保留；Qwen3 已迁移至数据盘，旧系统盘 Qwen 目录已删除（旧缓存路径仅保留符号链接）。DIRE 未下载。
 
@@ -725,7 +726,7 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 > 为交接入口，改为 **JPEG q95 only**：GenImage 八生成器做基础全局开发，MNW+DIV2K
 > 做较新生成器评测，AutoSplice 做局部检测/定位。资产清点见
 > [`docs/development/ASSET_INVENTORY_20261102.md`](docs/development/ASSET_INVENTORY_20261102.md)：
-> GenImage/MNW 已在本机，GenImage q95（8000 假 + 1000 真）已派生；AutoSplice 已解压并派生 q95（2273 Real + 3621 Fake，含配对/mask 清单）；两套数据已完成 dev/val/test 划分。**IML-ViT 仍缺失，TruFor 小批因 GPU/2 GiB cgroup 暂阻塞**。
+> GenImage/MNW 已在本机，GenImage q95（8000 假 + 1000 真）已派生；AutoSplice 已解压并派生 q95（2273 Real + 3621 Fake，含配对/mask 清单）；两套数据已完成 dev/val/test 划分。**IML-ViT 仍缺失；TruFor 已在 CPU 上完成 16 张 AutoSplice 小批（IoU 0.307/F1 0.434，真图 4/8 高响应 >1%），但不足以选定位专家**。
 > 本表以下旧阶段按记录日期理解。
 
 以 [`plan.md`](plan.md) 为准（阶段 1 收尾 → 阶段 2 Qwen3-VL 迁移冒烟 → 阶段 3 替代专家评测 →

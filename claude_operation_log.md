@@ -749,3 +749,18 @@
 * **涉及/修改的文件清单**：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct (旧目录删除；现为符号链接)`、`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct (Created)`、`sft_data/g8_inventory/qwen_migration_20261102.json (Created)`、`sft_data/g8_inventory/qwen_rsync_20261102.log (Created; ignored)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`plan.md (Modified — §10.7)`、`README.md (Modified — Qwen 路径)`、`claude_operation_log.md`
 * **执行结果与验证状态**：rsync rc=0；树/大小/链接 0 差异；旧系统盘目录已删除；模型实际加载成功（7.1 s/17.53 GB）；未推理；未改 Agent/b2/SFT；GPU 空闲。
 * **置信度或遗留待办（TODO）**：①TruFor 小批此前因环境阻塞未完成，环境已恢复，待重跑；②IML-ViT 代码/权重仍缺；③完整 core 已在环境恢复后重跑：**730 passed, 1 skipped**（缺少已删除的 AIDE/DRCT 权重导致存在性检查跳过）；④模型权重未做全量 sha256（迁移核对基于 rsync + 33/33 树/大小/链接；加载检查通过）。
+
+### 2026-11-02 - 阶段四 4.31：TruFor AutoSplice CPU 小批定位重跑
+
+* **当前操作动作**：环境恢复后，用 CPU 重跑同一 16 张 AutoSplice dev 小批（8 forged + 8 authentic），保存并核对 map/conf/score、mask 内/外响应、像素 IoU/F1 与真实图误报；修正 authentic 行继承 base mask 导致统计口径错误的问题。**未改 Agent/提示词/停止策略/SFT/b2，未跑 GPU。**
+* **对应计划锚点**：`plan.md` §10.5（TruFor 小批与 IML-ViT 准备）；`docs/development/ASSET_INVENTORY_20261102.md` §4.3；`sft_data/g8_inventory/asset_inventory_20261102.json`
+* **核心变更说明**：
+  1. **运行**：首次尝试因 GPU 不可见、2 GiB cgroup 下 CPU 回退 SIGKILL，无结果；环境恢复到 120 GiB 后以 `--device cpu` 重跑，官方 `test.py -g -1`，权重 `ac1d90e3…`。冷跑 **14.61 s / 0.913 s 每张**；16 份 raw npz 落盘约 12 MB。最终报告复用 raw，`timing` 显示 16 次 cache hit（0.07 s），不是冷跑耗时。
+  2. **几何/数值**：16/16 的 `map`/`conf` 有限，形状随原图纵横比变化；高响应阈值固定 0.5，未调阈值、未翻方向。
+  3. **Forged（8）**：score 均值 **0.554**；IoU 均值 **0.307**（中位 0.207，范围 0.076–0.641）；F1 均值 **0.434**；precision **0.980–1.000**，recall **0.076–0.648**；仅 2/8 IoU > 0.6。高响应基本落在 mask 内，但覆盖明显不足。
+  4. **Authentic（8）**：score 均值 **0.328**；全图高响应面积均值 **11.8%**，**4/8 > 1%**；最差一张 **55.1%**（score 0.923），另有 16.3% / 19.9%。score ≥ 0.5 时 forged 5/8、authentic 2/8，仅作描述。
+  5. **口径**：此前 GenImage/MNW 全局评测中 TruFor 分数系统性反向；本小批是 AutoSplice 局部篡改，raw score 反而 forged 均值更高。不能把全局分数方向直接搬到局部定位，也不能用 16 张选专家。
+  6. **修正**：authentic 行可能从配对清单继承 base mask；脚本现在对 Real 一律不使用 mask，避免 `map_outside_mean` 被截窄。最终版取代首版；首版保留为 `..._cpu_v1.json`。新增 `tests/test_trufor_smoke_metrics.py` 锁定 Real/Fake 的 mask 语义。**未修改 Agent。**
+* **涉及/修改的文件清单**：`scripts/trufor_autosplice_smoke.py (Modified — Real 忽略继承 mask；成功报告记录 environment)`、`tests/test_trufor_smoke_metrics.py (Created)`、`sft_data/g8_localization/trufor_autosplice_smoke_20261102_cpu.json (Created — 最终版)`、`..._cpu_v1.json (Created — 被取代的首版)`、`sft_data/g8_localization/trufor_autosplice_smoke_20261102.json (Preserved — 首次环境阻塞)`、`sft_data/g8_localization/trufor_raw/ (Created; ignored; 16 份 raw npz)`、`sft_data/g8_localization/trufor_cpu_rerun_20261102.log (Created; ignored)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified — §4.3/§5)`、`plan.md (Modified — §10.5)`、`README.md (Modified — TruFor 状态)`、`.gitignore (Modified — 忽略 g8 trufor_raw)`、`claude_operation_log.md`
+* **执行结果与验证状态**：CPU 16/16 完成、`ok=true`、map/conf 全有限；冷跑 14.61 s；新增几何测试 2 passed；`bash scripts/run_tests.sh core` 为 **732 passed, 1 skipped, 845 deselected**。未使用 GPU；未改 Agent/b2/SFT；test/val 未解封；未据此选定位专家。
+* **置信度或遗留待办（TODO）**：①16 张仅作管线/几何/误报检查，不能选专家；下一步扩大 dev 定位评估，并与 IML-ViT 同输入对照；②IML-ViT 代码/权重仍缺（Google Drive/Baidu）；③定位专家确定前不修 Agent 区域观察/证据回传/结案流程；④首版 `..._cpu_v1.json` 的 Real `map_outside_mean` 受继承 mask 影响，引用时必须用最终版。

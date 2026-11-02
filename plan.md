@@ -1274,7 +1274,7 @@ b2 仍未通过验收、未冻结；5 条 pass 不代表整批通过。详见同
 | GenImage Real | 1000 JPG，35 MB，500px 级、纵横比不一；八组共享，组间不独立 |
 | MNW/DIV2K | 4×250 假图 +100 真图，1.1 GB；现有 manifest 1100 条；q95 输入 100 条；final 分区未使用 |
 | AutoSplice | **已解压并派生 q95**：原数据 16,558 文件/494 MB；Authentic 2273、Forged 三版本各 3621、Mask/Caption 各 1710；q95 输入 5894（227 MB），配对/审计/划分清单已生成 |
-| IML-ViT | **缺失**（无代码/权重）；TruFor 已有 commit `ae54475d…` 与权重 `ac1d90e3…` |
+| IML-ViT | **缺失**（无代码/权重）；TruFor 已有 commit `ae54475d…` 与权重 `ac1d90e3…`，CPU 16 张小批已完成（IoU 0.307/F1 0.434；真图 4/8 高响应 >1%），但不足以选定位专家 |
 | Qwen3-VL | snapshot `0c351dd0…`，缓存约 17.5 GB，未加载 |
 | 资源 | 磁盘可用 11.16 GB；cgroup max 120 GiB/events 0；GPU 24 GB 空闲（1 MiB） |
 
@@ -1284,9 +1284,10 @@ q95（5894）已生成，尚无旧测量。复用只取 q95-only，不把 origin
 
 **阻塞与下一步**：①AutoSplice mask 按 base 共享的语义已用 30 个 base/60 个变体
 抽查（mask 内差异均大于外），但逐变体独立 GT 仍不存在；②IML-ViT 需代码+权重；
-③GenImage 无逐源真假配对 manifest，SD15 重复对已固定排除；④TruFor 小批被环境
-阻塞（cgroup 回到 2 GiB、GPU 当前不可见）；⑤新方向真实 Agent 冒烟/评测仍需单独
-GPU 授权。详细清单见 `docs/development/ASSET_INVENTORY_20261102.md` 与
+③GenImage 无逐源真假配对 manifest，SD15 重复对已固定排除；④TruFor CPU 16 张
+小批已完成（map/conf/score 有限；IoU 0.307/F1 0.434，真图 4/8 高响应 >1%），但只作
+管线/几何检查，不能据此选定位专家，下一步需扩大 dev 评估并等 IML-ViT；⑤新方向
+真实 Agent 冒烟/评测仍需单独 GPU 授权。详细清单见 `docs/development/ASSET_INVENTORY_20261102.md` 与
 `sft_data/g8_inventory/asset_inventory_20261102.json`。
 
 ### 10.1 AutoSplice 解压与核对（2026-11-02，CPU）
@@ -1385,14 +1386,37 @@ caption 均同分区（0 个跨分区源）。GenImage 以原始文件为源、�
   完成同输入对照后才比较。
 - **后续**：定位专家初步确定后，才进入 Agent 区域观察、证据回传和结案流程修整；
   本轮不改 Agent。
-**执行结果（2026-11-02）**：已选 8 forged（含一个 base 的 3 个变体）+ 8 authentic，
-脚本 `scripts/trufor_autosplice_smoke.py` 就绪。**但本轮未能产出 map/conf/score**：
-当时 GPU 不可见（`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、
-`nvidia-smi` 无设备）；CPU 回退在约 0.52 GB RSS 时被 SIGKILL，当时 cgroup 为
-**2 GiB**。这是环境阻塞，不是 TruFor 结果。**迁移检查时 GPU/120 GiB cgroup 已恢复，
-TruFor 小批仍待重跑。**失败记录保留在
-`sft_data/g8_localization/trufor_autosplice_smoke_20261102.json`。IML-ViT 官方
-代码/权重仍缺（Google Drive/Baidu），准备清单见
+**首次尝试（2026-11-02，环境阻塞）**：已选 8 forged（含一个 base 的 3 个变体）+
+8 authentic，脚本 `scripts/trufor_autosplice_smoke.py` 就绪，但未产出 map/conf/score：
+GPU 不可见（`torch.cuda.is_available()=False`、`/dev/nvidia*` 不存在、`nvidia-smi`
+无设备）；CPU 回退在约 0.52 GB RSS 时被 SIGKILL，cgroup 为 **2 GiB**。这是环境阻塞，
+不是模型结论；失败记录保留在
+`sft_data/g8_localization/trufor_autosplice_smoke_20261102.json`。
+
+**CPU 重跑（2026-11-02 23:07，完成）**：环境恢复到 120 GiB 后，用 `--device cpu`
+重跑同一 16 张；官方权重 `ac1d90e3…`，`test.py -g -1`。冷跑 **14.61 s / 0.913 s
+每张**；16 份 raw `map`/`conf`/`score` 已落盘（约 12 MB）。最终报告为
+`sft_data/g8_localization/trufor_autosplice_smoke_20261102_cpu.json`；因复用已落盘
+raw 结果，其 `timing` 显示 16 次 cache hit（0.07 s），不是冷跑时间。16 张的
+`map`/`conf` 全部有限，形状随原图纵横比变化。
+
+- **Forged（8）**：score 均值 **0.554**；像素 IoU 均值 **0.307**（中位 0.207，
+  范围 0.076–0.641），F1 均值 **0.434**；precision **0.980–1.000**，recall
+  **0.076–0.648**。高响应几乎都在 mask 内，但覆盖不足；仅 2/8 的 IoU > 0.6。
+- **Authentic（8）**：score 均值 **0.328**；全图高响应面积均值 **11.8%**，
+  **4/8** 超过 1%（1% 只是小批描述阈值，不是校准 FPR）；最差一张高响应 **55.1%**、
+  score 0.923，另有 16.3% / 19.9%。
+- **阈值只作描述**：score ≥ 0.5 时 forged 5/8、authentic 2/8；不据此调阈值或翻方向。
+- **口径冲突**：此前 GenImage/MNW 全局评测中 TruFor 分数呈系统性反向；本小批是
+  AutoSplice 局部篡改，raw score 反而是 forged 均值更高。两者不能互相推翻，只说明
+  **不能把全局分数方向直接搬到局部定位**；需在扩大后的 dev 集上分别评估定位图与
+  图像分数。
+- **结论**：管线/数组/几何检查通过，但 recall 低、真图高响应误报明显；16 张不足以
+  选择定位专家。**不修改 Agent 的区域观察/证据回传/结案流程**。保留
+  `..._cpu_v1.json` 作为修正 Real mask 语义前的首版（其全图误报聚合不变，但
+  `map_outside_mean` 受继承 mask 影响，已由最终版取代）。
+
+IML-ViT 官方代码/权重仍缺（Google Drive/Baidu），准备清单见
 `docs/development/IML_VIT_PREP_20261102.md`。
 
 ### 10.6 旧专家资产删除（2026-11-02，用户授权）
@@ -1435,5 +1459,6 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 运行检查：固定 revision 的 `snapshot_download` 成功；`AutoConfig`/`AutoProcessor` 本地
 加载成功；实际 `Qwen3VLClient._ensure_loaded()` **7.1 s**、峰值显存 **17.53 GB**、
 4 shards、`thinking_supported=false`，**未执行推理**。环境恢复后 `core` 重跑为
-**730 passed, 1 skipped**（缺少已删除的 AIDE/DRCT 权重时，文件存在性检查按设计跳过）。记录见
+730 passed, 1 skipped；§10.5 的 TruFor 小批新增 2 项几何测试后为
+**732 passed, 1 skipped**（缺少已删除的 AIDE/DRCT 权重时，文件存在性检查按设计跳过）。记录见
 `sft_data/g8_inventory/qwen_migration_20261102.json`。
