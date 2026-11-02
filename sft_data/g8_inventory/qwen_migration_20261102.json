@@ -40,5 +40,13 @@
     "data_disk_avail_gib": 7.6,
     "overlay_avail_gib": 19
   },
-  "note": "Qwen weights now live only on the data disk; the old cache path is a symlink. Full model load was checked; no generation was run."
+  "note": "Qwen weights now live only on the data disk; the old cache path is a symlink. Full model load was checked; no generation was run.",
+  "post_migration_check": {
+    "command": "bash scripts/run_tests.sh core",
+    "passed": 730,
+    "skipped": 1,
+    "deselected": 845,
+    "skip_reason": "existence checks for deleted AIDE/DRCT weights",
+    "inference_run": false
+  }
 }

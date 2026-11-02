@@ -449,7 +449,16 @@
       "model_loaded": true,
       "inference_run": false
     },
-    "record": "sft_data/g8_inventory/qwen_migration_20261102.json"
+    "record": "sft_data/g8_inventory/qwen_migration_20261102.json",
+    "post_migration_check": {
+      "core_tests": {
+        "passed": 730,
+        "skipped": 1,
+        "deselected": 845,
+        "skip_reason": "existence checks for deleted AIDE/DRCT weights"
+      },
+      "inference_run": false
+    }
   },
   "candidate_weights": {
     "spai": {
@@ -497,12 +506,12 @@
     }
   },
   "blockers": [
-    "TruFor small batch blocked: GPU invisible and 2 GiB cgroup kills CPU fallback",
+    "TruFor small batch was blocked earlier by GPU invisibility/2 GiB cgroup; environment restored 2026-11-02, rerun pending",
     "IML-ViT code/weights missing",
     "AutoSplice mask is shared per base; no per-variant mask",
     "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-02T23:04:16",
+  "updated_at": "2026-11-02T23:30:00",
   "trufor_smoke": {
     "status": "blocked_earlier_environment_now_restored",
     "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102.json",

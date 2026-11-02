@@ -37,16 +37,16 @@
 | 资产 | 现场结果 |
 | --- | --- |
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`；**已迁移至数据盘** `dataset` 同级 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`；旧缓存路径为符号链接；约 **17.5 GB**；已做实际加载检查（7.1 s，峰值 17.53 GB，未推理） |
-| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**小批被环境阻塞**（无 GPU、2 GiB cgroup） |
+| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；小批此前被环境阻塞（无 GPU、2 GiB cgroup），环境已恢复，**待重跑** |
 | PROBE / SPAI / AIDE / DRCT | PROBE、SPAI 权重保留；**AIDE 三份与 DRCT 权重已于 2026-11-02 删除**；代码、注册表和历史结果保留 |
 | 磁盘 | `/root/autodl-tmp` 可用约 **7.6 GiB**（85% 已用；Qwen 迁移后）；overlay 可用约 **18.1 GiB**（40% 已用） |
 | cgroup | 迁移检查时回到 **120 GiB**；当前 `memory.current` 约 17.4 GB（含 Qwen 加载/page cache），events 全 0 |
 | GPU | **已恢复**：RTX 4090 24 GB，`nvidia-smi` 可用；Qwen 加载后显存回到 0 MiB |
-| 测试 | 清点时 `core` 728 passed；`tests/test_new_splits.py` 3 passed；完整 core 在 2 GiB 限制期间曾被 SIGKILL，环境恢复后可重跑 |
+| 测试 | 环境恢复后 `core` **730 passed, 1 skipped**（缺 AIDE/DRCT 权重导致的存在性检查跳过）；`tests/test_new_splits.py` 3 passed |
 
 ## 4.1 旧专家资产删除（2026-11-02）
 
-按用户要求完成删除前核对并删除以下六项；AIDE/DRCT 代码、注册表和历史报告保留，Qwen3 未迁移。
+按用户要求完成删除前核对并删除以下六项；AIDE/DRCT 代码、注册表和历史报告保留。删除执行时 Qwen3 尚未迁移（后续见 4.2）。
 
 | 资产 | 路径 | 大小 | sha256 | 哈希来源 |
 | --- | --- | ---: | --- | --- |
@@ -60,7 +60,7 @@
 - 六项均已删除；对应的 `.sha256` sidecar 一并删除。
 - 删除清单：`sft_data/g8_inventory/deleted_assets_20261102.json`。
 - `/root/autodl-tmp` 可用空间从约 9.0 GiB 增至 **23.9 GiB**。
-- **Qwen3-VL 未移动、未删除**；迁移按用户要求暂不开展。
+- 删除执行时 **Qwen3-VL 未移动、未删除**；迁移随后在 4.2 完成。
 
 ## 4.2 Qwen3 迁移（2026-11-02）
 
@@ -87,4 +87,4 @@
    组间不独立；SD15 `680_sdv5_00100` 固定排除，canonical `459_sdv5_00039`。
 5. **划分已完成**：AutoSplice dev/val/test = 1591/340/342 源；GenImage 各生成器
    ~700/150/150（SD15 699），共享 Real 700/150/150；test 封存。
-6. **磁盘**：删除旧专家后可用约 **23.9 GiB**；Qwen3 迁移暂缓。
+6. **磁盘**：Qwen3 迁移后数据盘可用约 **7.6 GiB**、overlay 约 **18.1 GiB**；迁移已完成（见 4.2）。

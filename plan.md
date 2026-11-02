@@ -1411,7 +1411,7 @@ TruFor 小批仍待重跑。**失败记录保留在
 AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删除前大小未变。
 `.sha256` sidecar 一并删除。删除后 `/root/autodl-tmp` 可用约 **23.9 GiB**。
 删除清单见 `sft_data/g8_inventory/deleted_assets_20261102.json`；AIDE/DRCT 代码与
-`experts/*` 历史身份保留。**Qwen3-VL 未移动、未删除；迁移按用户要求暂不开展。**
+`experts/*` 历史身份保留。删除执行时 **Qwen3-VL 未移动、未删除**；迁移在 §10.7 完成。
 
 ### 10.7 Qwen3-VL 系统盘→数据盘迁移（2026-11-02）
 
@@ -1419,7 +1419,7 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 
 - **源**：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct`
   （约 17 GB；snapshot `0c351dd0…`；含 blobs/snapshots 符号链接）。
-- **目标**：`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`（数据盘；当前可用约 24 GB）。
+- **目标**：`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`（数据盘；迁移前可用约 24 GB）。
 - **方式**：`rsync -aH` 复制到 `.partial` 目录，保留符号链接/权限/时间；核对文件清单、
   相对路径、大小和链接目标；通过后再替换旧路径为指向目标的符号链接，最后删除旧目录。
   **不在复制完成/核对通过前删除源。**
@@ -1434,5 +1434,6 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 符号链接；旧系统盘 Qwen 目录已删除。overlay 可用约 **18.1 GiB**，数据盘可用约 7.6 GiB。
 运行检查：固定 revision 的 `snapshot_download` 成功；`AutoConfig`/`AutoProcessor` 本地
 加载成功；实际 `Qwen3VLClient._ensure_loaded()` **7.1 s**、峰值显存 **17.53 GB**、
-4 shards、`thinking_supported=false`，**未执行推理**。记录见
+4 shards、`thinking_supported=false`，**未执行推理**。环境恢复后 `core` 重跑为
+**730 passed, 1 skipped**（缺少已删除的 AIDE/DRCT 权重时，文件存在性检查按设计跳过）。记录见
 `sft_data/g8_inventory/qwen_migration_20261102.json`。

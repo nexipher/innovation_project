@@ -748,4 +748,4 @@
   5. **环境变化**：迁移检查时 cgroup 已恢复为 **120 GiB**，GPU 恢复为 RTX 4090 24 GB（此前 2 GiB/GPU 不可见），因此先前被阻塞的 TruFor 小批现在具备重跑条件，但本轮未重跑。
 * **涉及/修改的文件清单**：`/root/.cache/huggingface/hub/models--Qwen--Qwen3-VL-8B-Instruct (旧目录删除；现为符号链接)`、`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct (Created)`、`sft_data/g8_inventory/qwen_migration_20261102.json (Created)`、`sft_data/g8_inventory/qwen_rsync_20261102.log (Created; ignored)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`plan.md (Modified — §10.7)`、`README.md (Modified — Qwen 路径)`、`claude_operation_log.md`
 * **执行结果与验证状态**：rsync rc=0；树/大小/链接 0 差异；旧系统盘目录已删除；模型实际加载成功（7.1 s/17.53 GB）；未推理；未改 Agent/b2/SFT；GPU 空闲。
-* **置信度或遗留待办（TODO）**：①TruFor 小批此前因环境阻塞未完成，环境已恢复，待重跑；②IML-ViT 代码/权重仍缺；③完整 core 在 2 GiB 期间被 SIGKILL，环境恢复后可重跑；④模型权重未做全量 sha256（迁移核对基于 rsync + 33/33 树/大小/链接；加载检查通过）。
+* **置信度或遗留待办（TODO）**：①TruFor 小批此前因环境阻塞未完成，环境已恢复，待重跑；②IML-ViT 代码/权重仍缺；③完整 core 已在环境恢复后重跑：**730 passed, 1 skipped**（缺少已删除的 AIDE/DRCT 权重导致存在性检查跳过）；④模型权重未做全量 sha256（迁移核对基于 rsync + 33/33 树/大小/链接；加载检查通过）。
