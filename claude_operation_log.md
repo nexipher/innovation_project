@@ -843,3 +843,12 @@
 * **涉及/修改的文件清单**：`docs/development/GENIMAGE_PROBE_PARTIAL_20261102.md (Created)`、`claude_operation_log.md`
 * **执行结果与验证状态**：报告由既有 JSON 生成；未重测；未使用 test；未改 Agent/SFT。
 * **置信度或遗留待办（TODO）**：①SPAI 全量仍需 GPU；②双专家并排与选择结论待 SPAI；③当前 2 GiB/GPU 不可见。
+
+### 2026-11-04 - 阶段四 4.43：记录 GPU 恢复后的固定评测命令
+
+* **当前操作动作**：在计划书中固定 SPAI 全量、双专家报告重建、扩大 TruFor 和 IML-ViT 权重到位后的命令；不执行。
+* **对应计划锚点**：`plan.md` §11.7
+* **核心变更说明**：明确 SPAI 用同一 scores.jsonl resume、最终用 `--report-only --experts probe,spai` 重建；TruFor 用 220 输入固定子集和 batch 32；IML-ViT 仅在官方 checkpoint 到位后运行。
+* **涉及/修改的文件清单**：`plan.md (Modified)`、`claude_operation_log.md`
+* **执行结果与验证状态**：仅文档；未加载模型、未跑 GPU、未改代码。
+* **置信度或遗留待办（TODO）**：命令中的环境变量需在 GPU 授权后按实际 cgroup/设备复核。

@@ -1621,3 +1621,20 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 
 - 扩大的 TruFor 评测脚本 `scripts/trufor_autosplice_eval.py` 已准备：按 32 张分块、
   逐图/按源聚合、失败列表、计时和资源；当前 2 GiB cgroup 不运行，待环境恢复。
+
+**GPU/内存恢复后的固定命令（未执行）**：
+
+```bash
+# SPAI 全量 dev；PROBE 结果已在同一 scores.jsonl
+NO_ALBUMENTATIONS_UPDATE=1 FORENSIC_ALLOW_GPU=1 \
+python scripts/g8_genimage_eval.py --experts spai --device cuda --resume \
+  --out sft_data/g8_external_eval/genimage_dev_20261102
+python scripts/g8_genimage_eval.py --report-only --experts probe,spai \
+  --out sft_data/g8_external_eval/genimage_dev_20261102
+
+# 扩大 TruFor；固定子集 220 输入
+NO_ALBUMENTATIONS_UPDATE=1 python scripts/trufor_autosplice_eval.py \
+  --device cuda --batch-size 32
+
+# IML-ViT 仅在官方权重到位后运行；当前仍缺 checkpoint
+```
