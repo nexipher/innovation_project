@@ -726,7 +726,8 @@ v2 原样保留供历史批次复算；策略选择进入配置指纹。
 > 为交接入口，改为 **JPEG q95 only**：GenImage 八生成器做基础全局开发，MNW+DIV2K
 > 做较新生成器评测，AutoSplice 做局部检测/定位。资产清点见
 > [`docs/development/ASSET_INVENTORY_20261102.md`](docs/development/ASSET_INVENTORY_20261102.md)：
-> GenImage/MNW 已在本机，GenImage q95（8000 假 + 1000 真）已派生；AutoSplice 已解压并派生 q95（2273 Real + 3621 Fake，含配对/mask 清单）；两套数据已完成 dev/val/test 划分。**IML-ViT 仍缺失；TruFor 已在 CPU 上完成 16 张 AutoSplice 小批（IoU 0.307/F1 0.434，真图 4/8 高响应 >1%），但不足以选定位专家**。
+> GenImage/MNW 已在本机，GenImage q95（8000 假 + 1000 真）已派生；AutoSplice 已解压并派生 q95（2273 Real + 3621 Fake，含配对/mask 清单）；两套数据已完成 dev/val/test 划分。**IML-ViT 代码已按固定 commit 到位，权重仍缺**；TruFor 已在 CPU 上完成 16 张 AutoSplice 小批（IoU 0.307/F1 0.434，真图 4/8 高响应 >1%），但不足以选定位专家。
+> **2026-11-04 使用历史审计**：新 test 的旧划分为 train **1,258** / val **37** / test **42** / holdout **13**；旧 test 也有 30/286 源先验使用，因此**没有可靠、可证明未见的 GenImage q95 最终测试**，test 继续隔离、只作污染开发检查。CPU 已固定 AutoSplice 100 base/220 输入子集、完成 TruFor 16 张面板、IML-ViT 代码/预处理核实（权重仍缺）、MNW q95 既有测量单独报告；SPAI 全量与 TruFor 扩展待 GPU/更大 cgroup。
 > 本表以下旧阶段按记录日期理解。
 
 以 [`plan.md`](plan.md) 为准（阶段 1 收尾 → 阶段 2 Qwen3-VL 迁移冒烟 → 阶段 3 替代专家评测 →
