@@ -819,3 +819,15 @@
 * **涉及/修改的文件清单**：`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`claude_operation_log.md`
 * **执行结果与验证状态**：JSON 解析通过；未跑模型；未改 test/Agent/SFT；环境状态与 `agent.md` 无卡约束一致。
 * **置信度或遗留待办（TODO）**：环境可能在恢复后再次变化；每次跑模型前仍须检查 cgroup/GPU。
+
+### 2026-11-04 - 阶段四 4.41：IML-ViT 子集预处理全量核对
+
+* **当前操作动作**：用固定 commit 的官方 `get_albu_transforms(type_='pad', outputsize=1024)` 对已固定的 AutoSplice 100 base / 220 输入逐个做 CPU 预处理检查；不构建模型、不加载权重。
+* **对应计划锚点**：`plan.md` §11.5/§11.7；`docs/development/IML_VIT_VERIFICATION_20261104.md`
+* **核心变更说明**：
+  1. 220/220 输入全部得到 `3×1024×1024` float32 tensor，范围约 `[-2.1179, 2.6400]`。
+  2. 带 mask 的输入得到 `1024×1024` 二值 mask；无失败。
+  3. 子集源图尺寸 256×260 到 459×459，均小于 1024，不触发官方 top-left crop 丢内容；`albumentations 1.4.14` 下通过，但官方 pin 1.3.0 的完整兼容性仍待权重到位后核验。
+* **涉及/修改的文件清单**：`scripts/check_iml_vit_preprocess.py (Modified — --subset)`、`sft_data/g8_inventory/iml_vit_code_20261104.json (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/IML_VIT_VERIFICATION_20261104.md (Modified)`、`claude_operation_log.md`
+* **执行结果与验证状态**：220/220 通过、0 failures；未加载模型/权重；未跑前向；未改 Agent/SFT/test。
+* **置信度或遗留待办（TODO）**：①官方权重仍缺；②模型构建/state_dict/前向未验证；③GPU/2 GiB 环境仍不允许定位评测。
