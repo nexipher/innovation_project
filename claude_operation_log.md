@@ -806,3 +806,16 @@
 * **涉及/修改的文件清单**：`scripts/trufor_autosplice_eval.py (Created)`、`tests/test_trufor_autosplice_eval.py (Created)`、`plan.md`、`claude_operation_log.md`
 * **执行结果与验证状态**：`python -m py_compile` 通过；`tests/test_trufor_autosplice_eval.py` **1 passed**；未运行 TruFor 模型；未改 Agent/SFT/test。
 * **置信度或遗留待办（TODO）**：①当前 2 GiB cgroup 不能加载 TruFor，待 GPU/更大 cgroup 后跑 220 输入；②同源变体统计仍需在真实结果上检查；③IML-ViT 权重仍缺。
+
+### 2026-11-04 - 阶段四 4.40：刷新无卡环境与资产清单
+
+* **当前操作动作**：把 2026-11-04 实测的 2 GiB cgroup、GPU 不可见、磁盘可用空间和新增测试/脚本状态写回资产清单与机器可读 inventory。
+* **对应计划锚点**：`plan.md` §11.7；`docs/development/ASSET_INVENTORY_20261102.md` §4/§5
+* **核心变更说明**：
+  1. cgroup 由 120 GiB 记录改为当前 **2 GiB**（current 约 1.85 GB，events 全 0）；GPU 注明当前不可见，2026-11-02 曾恢复。
+  2. 磁盘更新为数据盘约 **7.6 GiB**、overlay 约 **17 GB**。
+  3. TruFor 行补充扩大的 `trufor_autosplice_eval.py` 已准备但因环境未跑；测试行补充新增 10 项 CPU 测试，完整 core 未在 2 GiB 下重跑。
+  4. 下一步列表增加“GPU/内存恢复前不能跑模型”的阻塞项，并重排编号。
+* **涉及/修改的文件清单**：`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`claude_operation_log.md`
+* **执行结果与验证状态**：JSON 解析通过；未跑模型；未改 test/Agent/SFT；环境状态与 `agent.md` 无卡约束一致。
+* **置信度或遗留待办（TODO）**：环境可能在恢复后再次变化；每次跑模型前仍须检查 cgroup/GPU。

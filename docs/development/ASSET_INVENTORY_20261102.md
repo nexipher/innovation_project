@@ -37,12 +37,12 @@
 | 资产 | 现场结果 |
 | --- | --- |
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`；**已迁移至数据盘** `dataset` 同级 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`；旧缓存路径为符号链接；约 **17.5 GB**；已做实际加载检查（7.1 s，峰值 17.53 GB，未推理） |
-| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**CPU 16 张 AutoSplice 小批已完成**（冷跑 14.61 s；IoU 0.307/F1 0.434；真图 4/8 高响应 >1%） |
+| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**CPU 16 张 AutoSplice 小批已完成**（冷跑 14.61 s；IoU 0.307/F1 0.434；真图 4/8 高响应 >1%）；扩大脚本 `trufor_autosplice_eval.py` 已准备，2026-11-04 因 2 GiB/GPU 不可见未跑 |
 | PROBE / SPAI / AIDE / DRCT | PROBE、SPAI 权重保留；**AIDE 三份与 DRCT 权重已于 2026-11-02 删除**；代码、注册表和历史结果保留 |
-| 磁盘 | `/root/autodl-tmp` 可用约 **7.6 GiB**（85% 已用；Qwen 迁移后）；overlay 可用约 **18.1 GiB**（40% 已用） |
-| cgroup | 迁移检查时回到 **120 GiB**；当前 `memory.current` 约 17.4 GB（含 Qwen 加载/page cache），events 全 0 |
-| GPU | **已恢复**：RTX 4090 24 GB，`nvidia-smi` 可用；Qwen 加载后显存回到 0 MiB |
-| 测试 | 截至 4.31，`core` **732 passed, 1 skipped**（缺 AIDE/DRCT 权重导致的存在性检查跳过；新增 TruFor 几何测试 2 项）；`tests/test_new_splits.py` 3 passed |
+| 磁盘 | `/root/autodl-tmp` 可用约 **7.6 GiB**（85% 已用）；overlay 可用约 **17 GB**（44% 已用；2026-11-04） |
+| cgroup | **2026-11-04 回到 2 GiB**；`memory.current` 约 1.85 GB，events 全 0（无 OOM kill） |
+| GPU | **2026-11-04 不可见**（`nvidia-smi` 无设备）；2026-11-02 曾恢复 RTX 4090 24 GB |
+| 测试 | 4.31 时 `core` 732 passed, 1 skipped；2026-11-04 新增审计/子集/MNW/TruFor 聚合测试共 **10 passed**；2 GiB 下未重跑完整 core |
 
 ## 4.1 旧专家资产删除（2026-11-02）
 
@@ -109,10 +109,12 @@
    定位专家，下一步扩大 dev 评估，并等 IML-ViT 做同输入对照。
 2. **IML-ViT 代码已到位，权重仍缺**：官方 Google Drive 连接超时、Baidu 需登录、
    HF 镜像无权重；代码/预处理/输出语义已核实，但没有 checkpoint，不能做同输入对照。
-3. **AutoSplice mask 语义**：mask 是 base 级 shared-by-base，30/60 抽查支持
+3. **GPU/内存恢复前不能跑模型**：2026-11-04 为 2 GiB cgroup、GPU 不可见；
+   SPAI 全量 dev、TruFor 220 输入扩展和 IML-ViT 前向都等待环境恢复。
+4. **AutoSplice mask 语义**：mask 是 base 级 shared-by-base，30/60 抽查支持
    mask 内差异大于外；没有逐变体独立 mask，报告需保留这一限制。
-4. **GenImage 配对/去重**：无本地逐源真假配对 manifest；共享 Real 1000 跨八组复用，
+5. **GenImage 配对/去重**：无本地逐源真假配对 manifest；共享 Real 1000 跨八组复用，
    组间不独立；SD15 `680_sdv5_00100` 固定排除，canonical `459_sdv5_00039`。
-5. **划分已完成**：AutoSplice dev/val/test = 1591/340/342 源；GenImage 各生成器
+6. **划分已完成**：AutoSplice dev/val/test = 1591/340/342 源；GenImage 各生成器
    ~700/150/150（SD15 699），共享 Real 700/150/150；test 封存。
-6. **磁盘**：Qwen3 迁移后数据盘可用约 **7.6 GiB**、overlay 约 **18.1 GiB**；迁移已完成（见 4.2）。
+7. **磁盘**：2026-11-04 数据盘可用约 **7.6 GiB**、overlay 约 **17 GB**；Qwen3 迁移已完成（见 4.2）。

@@ -7,16 +7,18 @@
     "status_note": "b2 export was committed as e0e794b before inventory; this file and the GenImage manifest are the only new artifacts"
   },
   "disk": {
-    "df": "/dev/md0       53687091200 45554348032 8132743168  85% /root/autodl-tmp",
-    "overlay_df": "overlay        32212254720 12744441856 19467812864  40% /"
+    "data_disk_avail_gib": 7.6,
+    "overlay_avail_gib": 15.8,
+    "note": "2026-11-04 df -h: /root/autodl-tmp 7.6 GiB avail; overlay 17 GB block display"
   },
   "cgroup": {
-    "max": "128849018880",
+    "max": "2147483648",
     "high": "max",
-    "current": "18724098048",
-    "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0"
+    "current": "1852616704",
+    "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0",
+    "checked_at": "2026-11-04"
   },
-  "gpu": "NVIDIA GeForce RTX 4090, 24564 MiB, 0 MiB",
+  "gpu": "No devices found on 2026-11-04; RTX 4090 24 GB was visible on 2026-11-02",
   "genimage": {
     "root": "dataset/GenImage_Test",
     "real_root": "dataset/Real",
@@ -537,7 +539,7 @@
     "AutoSplice mask is shared per base; no per-variant mask",
     "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-04T21:55:56",
+  "updated_at": "2026-11-04T21:59:07",
   "trufor_smoke": {
     "status": "completed_cpu_smoke",
     "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102_cpu.json",
@@ -574,7 +576,9 @@
       "16 images are a plumbing/geometry check, not an expert-selection result",
       "precision is high but recall is low (under-coverage); real-image high-response false positives are notable",
       "global TruFor score direction on GenImage/MNW was reversed; this local-manipulation sample is not a direction calibration"
-    ]
+    ],
+    "expanded_script": "scripts/trufor_autosplice_eval.py",
+    "expanded_status": "prepared; not run under 2 GiB cgroup / GPU unavailable"
   },
   "retired_assets": {
     "deleted_at": "2026-11-02T22:38:50",
