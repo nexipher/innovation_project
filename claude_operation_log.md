@@ -764,3 +764,32 @@
 * **涉及/修改的文件清单**：`scripts/trufor_autosplice_smoke.py (Modified — Real 忽略继承 mask；成功报告记录 environment)`、`tests/test_trufor_smoke_metrics.py (Created)`、`sft_data/g8_localization/trufor_autosplice_smoke_20261102_cpu.json (Created — 最终版)`、`..._cpu_v1.json (Created — 被取代的首版)`、`sft_data/g8_localization/trufor_autosplice_smoke_20261102.json (Preserved — 首次环境阻塞)`、`sft_data/g8_localization/trufor_raw/ (Created; ignored; 16 份 raw npz)`、`sft_data/g8_localization/trufor_cpu_rerun_20261102.log (Created; ignored)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified — §4.3/§5)`、`plan.md (Modified — §10.5)`、`README.md (Modified — TruFor 状态)`、`.gitignore (Modified — 忽略 g8 trufor_raw)`、`claude_operation_log.md`
 * **执行结果与验证状态**：CPU 16/16 完成、`ok=true`、map/conf 全有限；冷跑 14.61 s；新增几何测试 2 passed；`bash scripts/run_tests.sh core` 为 **732 passed, 1 skipped, 845 deselected**。未使用 GPU；未改 Agent/b2/SFT；test/val 未解封；未据此选定位专家。
 * **置信度或遗留待办（TODO）**：①16 张仅作管线/几何/误报检查，不能选专家；下一步扩大 dev 定位评估，并与 IML-ViT 同输入对照；②IML-ViT 代码/权重仍缺（Google Drive/Baidu）；③定位专家确定前不修 Agent 区域观察/证据回传/结案流程；④首版 `..._cpu_v1.json` 的 Real `map_outside_mean` 受继承 mask 影响，引用时必须用最终版。
+
+### 2026-11-02 - 阶段四 4.32：GenImage q95 PROBE 全量 dev 测量（SPAI 暂缺）
+
+* **当前操作动作**：在使用历史审计和 dev manifest 固定后，用 GPU 跑 PROBE 在 GenImage q95 全量 dev（6,299 输入）上的分数；SPAI 全量未启动（随后按用户要求暂停）。
+* **对应计划锚点**：`plan.md` §11.4（全局线）；`docs/development/GENIMAGE_USAGE_AUDIT_20261102.md`
+* **核心变更说明**：
+  1. **输入**：`dataset/GenImage_q95/eval_dev_manifest_20261102.json`，6,299 输入（Fake 5,599 + Real 700；SD15 699）；每行带源/q95 hash、旧/新划分和 usage flags。
+  2. **运行**：PROBE 全量 6,299/6,299，`rc=0`，耗时 **426.8 s**，load **4.4 s**；GPU peak allocated **1.66 GB** / reserved **1.93 GB**；cgroup events 全 0。
+  3. **结果视图**：报告同时给 `dev_all` 与 `dev_no_known_use`（5,619）；按八个生成器分别计算，Real 共享，不报告合并 AUROC。`dev_no_known_use` 上 PROBE AUROC 0.972–1.000、平衡准确率 0.904–0.966（仅落盘，不作专家选择结论）。
+  4. **边界**：SPAI 全量未跑；没有把 PROBE 与 SPAI 合并；新 test 未使用；未改 Agent/SFT。
+* **涉及/修改的文件清单**：`scripts/g8_genimage_eval.py (Created)`、`dataset/GenImage_q95/eval_dev_manifest_20261102.json`、`eval_val_manifest_20261102.json`、`sft_data/g8_external_eval/genimage_dev_20261102/{scores.jsonl,report.json,report.md}`、`sft_data/g8_external_eval/genimage_dev_20261102/probe_full.log (ignored)`、`plan.md`、`claude_operation_log.md`
+* **执行结果与验证状态**：6,299 行分数落盘；报告仅含 PROBE；GPU 已释放到 0 MiB；未使用 test；未跑 SPAI。
+* **置信度或遗留待办（TODO）**：①SPAI 全量 dev 需 GPU，待环境恢复后跑；②双专家并排报告、错误样本和分数分布需在 SPAI 完成后生成；③不能据此单独选专家组。
+
+### 2026-11-04 - 阶段四 4.33：GenImage 使用审计、AutoSplice 子集、TruFor 面板与 IML-ViT 代码核实（CPU-only）
+
+* **当前操作动作**：在 GPU 未开启、2 GiB cgroup 的无卡模式下，完成使用历史审计、固定 AutoSplice 定位子集、TruFor 16 张面板记录、IML-ViT 代码/预处理/输出语义核实和 MNW q95 既有测量单独报告；**未加载模型、未跑前向**。
+* **对应计划锚点**：`plan.md` §11（审计与评测口径）、§11.7（无卡模式）；`docs/development/{GENIMAGE_USAGE_AUDIT_20261102,AUTOSPLICE_LOCALIZATION_SUBSET_20261102,TRUFOR_PANEL_FINDINGS_20261102,IML_VIT_VERIFICATION_20261104}.md`
+* **核心变更说明**：
+  1. **使用历史审计**：逐源核对旧 `split_v2`、新 q95 划分、训练/SFT/校准/轨迹/审核；新 test 旧划分为 train **1,258** / val **37** / test **42** / holdout **13**；实际训练证据仅 **20 源/237 样本**；新 test **1,212 无已知使用、138 有已知使用**；旧 test 也有 **30/286** 先验使用。结论：**没有可靠未见测试**，test 隔离、只作污染开发检查。
+  2. **评测口径**：固定 `dev_all` 6,299、`dev_no_known_use` 5,619、`val_all` 1,350、`val_no_known_use` 1,192；test 不用于选择/阈值拟合；共享 Real 700/435（dev），组间不独立，不报告合并 AUROC。
+  3. **AutoSplice 子集**：100 base / 220 输入（30 authentic-only、35 单变体、20 双变体、15 三变体）；mask 面积三分位；q95/源图/mask 哈希核对 **220/220/190**，失败 0；未跑模型。
+  4. **TruFor 面板**：16 张四联图（原图/GT mask/map/conf）与 contact sheet；观察确认欠覆盖（IoU 均值 0.307，典型 52550_0 recall 0.128）和真图误报（4/8 >1%，最差 67206 高响应 55.1%）；仅为诊断，不选定专家。
+  5. **IML-ViT**：固定 commit `07dd2be…` 代码经 `ghfast.top` 到位，archive sha `de140401…`；import 与官方 pad/ImageNet-norm/mask 预处理检查通过；官方输出仅为 sigmoid map、无 image-level score/conf。权重 Google Drive 超时、Baidu 需登录、HF 镜像无 checkpoint，**权重 blocker 保留**。
+  6. **MNW/DIV2K**：从 2026-10-26 既有 q95 分数生成单独报告；不重跑、不混入 GenImage、不拟合阈值。
+  7. **测试**：新增使用审计、子集、MNW 报告测试，共 **9 passed**；未运行完整 core（2 GiB 下不冒险加载模型测试）。
+* **涉及/修改的文件清单**：`scripts/audit_genimage_usage.py`、`scripts/build_autosplice_localization_subset.py`、`scripts/render_trufor_panels.py`、`scripts/check_iml_vit_preprocess.py`、`scripts/mnw_q95_existing_report.py`、`sft_data/g8_audit/genimage_usage_history_20261102.json`、`dataset/GenImage_q95/eval_{dev,val}_manifest_20261102.json`、`sft_data/g8_localization/autosplice_dev_subset_20261102.json`、`sft_data/g8_localization/panels_20261102/`、`sft_data/g8_external_eval/mnw_q95_existing_20261102.{json,md}`、`sft_data/g8_inventory/iml_vit_code_20261104.json`、`docs/development/*`、`tests/test_{genimage_usage_audit,autosplice_localization_subset,mnw_q95_existing_report}.py`、`plan.md`、`claude_operation_log.md`
+* **执行结果与验证状态**：审计/子集/MNW 测试 **9 passed**；IML-ViT 仅 import/transform，未构建模型/加载权重；TruFor 未重跑；无 GPU 进程；未使用 test；未改 Agent/SFT/b2。
+* **置信度或遗留待办（TODO）**：①SPAI 全量 dev 需 GPU；②TruFor 扩大评测需 GPU/更大 cgroup，当前 2 GiB 下不跑；③IML-ViT 官方权重需用户上传或提供可达链接；④test 无可靠未见性，不能恢复成“最终测试”；⑤定位专家未定前不改 Agent。

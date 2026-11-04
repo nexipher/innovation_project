@@ -1462,3 +1462,159 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 730 passed, 1 skipped；§10.5 的 TruFor 小批新增 2 项几何测试后为
 **732 passed, 1 skipped**（缺少已删除的 AIDE/DRCT 权重时，文件存在性检查按设计跳过）。记录见
 `sft_data/g8_inventory/qwen_migration_20261102.json`。
+
+## 11. GenImage 使用历史审计与使用相容评测口径（2026-11-02）
+
+用户要求先补查 GenImage 新划分的历史使用情况，再推进全局与局部两条专家评测线。
+本节是执行前的口径，**先于本轮代码/评测落地**；旧记录只读，不覆盖、不重写。
+
+### 11.1 审计范围与证据
+
+- **划分**：`sft_data/split_v2.json`（旧 train/val/test 与 98 个 holdout）、
+  `dataset/GenImage_q95/manifest.json`、`dataset/GenImage_q95/split_manifest.json`、
+  `dataset/splits_20261102.json`。
+- **训练**：`sft_data/train/final_v2`（G4 的 237 个样本，20 个源）、
+  `sft_data/lora_runs/provisional_20src{,_v2}/run_manifest.json`；只把有逐源样本的
+  G4 final_v2 记为 `known_train`。旧 train 成员本身**不**记为训练使用。
+- **SFT 数据构造**：`archive/legacy_v1_20261015/experiments/train_final`（509 个
+  验收样本，排除 68 个 rejected）、`train_final_v2`、`train_batches_g7_b1/b2`
+  的验收样本；这些记为 `known_sft_data`，**不自动等同于实际训练**。
+- **拟合/校准**：`calibration/set/manifest.json`（98 个 holdout 源）、
+  `g7_split.json`（A 62 / B 18 / C 18）、`manifest_d.json`（64 个 val 源）、
+  `acceptance_batch.json`（24 源）；A 组是 G7 拟合，B/C 是选择/验收，D 是
+  TruFor 独立复测，不参与决策。
+- **开发评测/轨迹/审核**：`sft_data/g8_eval`（旧 val 284 源）、
+  `traces/sft_sessions`、`traces/dry_run_sessions`、`traces/g7_acceptance*`、
+  `sft_data/g8/trajectories/b1|b2`、`sft_data/g8/review/b1|b2`、
+  `sft_data/review/dispositions.jsonl`、`sft_data/g8_smoke`。
+- **哈希**：以 GenImage 源文件的 `source_sha256` 和 q95 派生文件的 `sha256` 为
+  对照键；源 ID 只作为索引，最终清单同时保存两个哈希。
+
+### 11.2 初步核验结果（以审计脚本输出为准）
+
+- 旧 split 共 **8,902** 源：train 8,332、val 284、test 286；另有 **98** 个
+  `calibration_g2b` holdout 不在旧 `sources` 中。
+- 新 q95 共 **9,000** 输入：dev **6,299**、val **1,350**、test **1,350**、
+  excluded_duplicate 1。
+- **新 test 的旧划分来源**：train **1,258**、val **37**、test **42**、
+  holdout **13**。用户指出的 1,258/37 已复核；另外 42 个来自旧 test、13 个来自
+  校准 holdout，均不能忽略。
+- **旧 train 成员不等于实际训练**：可核实的实际训练样本只覆盖 **20 个源**
+  （G4 final_v2 的 237 个样本）；其余旧 train 源没有逐源训练证据。`known_sft_data`
+  另标，不能当作已训练。
+- 初步按“仅划分归属、无已知使用”统计：新 dev 约 **5,619**、新 val 约 **1,192**、
+  新 test 约 **1,212**；新 test 其余约 **138** 个有已知使用（训练/拟合/开发评测/
+  审核/SFT 数据构造之一）。这些数字在审计脚本中逐源固化，不在本段硬编码为最终值。
+- **旧 test 也不是天然干净**：旧 test 286 源中初步有 **30** 个出现在轨迹、SFT 数据
+  构造或旧开发记录中；256 个仅划分归属。旧 test 继续封存，但不能再被默认成
+  “从未使用”的最终留出集。
+- **旧 val 284 源全部进入过 `sft_data/g8_eval` 的 val 评测**（PROBE 等专家，
+  1,136 输入）；新 test 中的 37 个 old-val 源因此有开发评测历史。
+
+**结论（审计口径）**：目前**没有可靠、可证明未见的 GenImage q95 最终测试集**。
+新 test 虽有约 1,212 个“无已知使用”源，但其 1,258 个旧 train 归属、训练记录
+不完整、旧 test 的 30 个先验使用都使“未见”无法成立；不能为凑比例宣称独立。
+因此新 test **保持隔离、只作后续受污染的开发检查，不参与本轮专家选择**；旧 test
+继续封存且不启用。若后续要构造真正未见测试，必须重新采集或提供完整逐源训练/
+使用台账。
+
+### 11.3 与使用历史相容的评测口径
+
+| 集合 | 定义 | 用途 |
+| --- | --- | --- |
+| `dev_all` | 新 dev 全部 6,299 输入 | 描述性全量对照；含已知使用源，单独标注 |
+| `dev_no_known_use` | 新 dev 中所有 usage flag 均为空的源 | **主专家选择集**；约 5,619 输入，假图每组约 648、共享 Real 435 |
+| `val_all` | 新 val 全部 1,350 输入 | 描述性/确认；含已知使用源 |
+| `val_no_known_use` | 新 val 中无已知使用的源 | **确认/选择集**；约 1,192 输入，假图每组约 135、共享 Real 93 |
+| `test_sealed` | 新 test 全部 1,350 输入 | **不用于选择/阈值拟合**；标注“污染/使用未知，不是未见测试” |
+| `old_test_sealed` | 旧 test 286 源 | 继续封存；不启用 |
+| `mnw_q95_existing` | MNW/DIV2K 既有 100 输入 q95 | 单独报告较新生成器；不混入 GenImage，不训练/拟合 |
+
+- **主指标**用 `dev_no_known_use`，全量 `dev_all` 作为描述性对照；`val_no_known_use`
+  只作确认。阈值使用登记表既有值（PROBE 0.5、SPAI 0.5），**不在任何集合上拟合**。
+- 共享 Real 池：GenImage dev 的 700 张 Real 在八个生成器组间复用（无已知使用的
+  435 张也复用）；组间不独立。**不报告跨生成器合并的总 AUROC**；每组单独报告，
+  并明确 Real 侧错误在组间重复。组内按源 bootstrap 只作描述性 CI。
+- 新 test 即使有 1,212 个“无已知使用”源，也不改名为 clean/unseen；test 的角色是
+  `sealed_contaminated_dev_check`，本轮不计算、不查看成绩。
+- 旧记录保持原样；审计只新增 `sft_data/g8_audit/` 与 q95 评测 manifest，不改旧
+  split、旧轨迹、旧校准或旧审核文件。
+
+### 11.4 全局线：PROBE 与 SPAI（GenImage q95 dev）
+
+- **复用核对**：现有 GenImage q95 没有 PROBE/SPAI 测量；`sft_data/g8_external_eval`
+  的既有分数全部来自 `dataset/mnw_div2k/inputs_manifest.json`，只能用于 MNW 线。
+  因此 GenImage dev 的 PROBE/SPAI 均需补跑；MNW q95 直接复用已有分数，不重跑。
+- **输入**：`dataset/GenImage_q95` 的 dev 6,299 输入；生成固定 manifest
+  `dataset/GenImage_q95/eval_dev_manifest_20261102.json`（含 variant_id、源/q95
+  hash、group、label、old/new split、usage flags）。同一批输入顺序跑 PROBE、SPAI，
+  两专家不共享分数、不融合。
+- **报告**：每个生成器分别给出 AUROC（按源 bootstrap CI）、固定阈值 0.5 下的
+  TPR（假图召回）、TNR（真图召回）、平衡准确率、分数分布（分位数/均值）、
+  错误样本（FN/FP 的 source_id/哈希/分数）、失败、耗时和资源；同时给出
+  `dev_all` 与 `dev_no_known_use` 两套视图。共享 Real 的依赖写在每组表头。
+- **MNW/DIV2K**：只读既有 q95 测量，单独报告四个较新生成器组；不与 GenImage
+  合并，不进入训练或阈值拟合。
+- **GPU**：只运行 PROBE/SPAI，不加载 Qwen；分进程顺序执行，记录显存/cgroup。
+
+### 11.5 局部线：TruFor 与 IML-ViT
+
+- **16 张对照面板**：从已完成的 16 张 TruFor 结果生成“原图 / GT mask / map / conf”
+  四联图，逐张检查欠覆盖与真图误报；不据此选专家。
+- **固定 AutoSplice q95 dev 子集**：采用 100 个 base、220 个输入：
+  - 30 个 authentic-only base（30 Real）；
+  - 35 个 1 变体 base（35 Real + 35 Fake）；
+  - 20 个 2 变体 base（20 Real + 40 Fake）；
+  - 15 个 3 变体 base（15 Real + 45 Fake）；
+  - 合计 Real 100、Fake 120；按 mask area 三分位分层，种子固定，先写 manifest
+    再跑；保留源/q95/mask/caption 哈希和 shared-mask 标记。
+- **TruFor 扩展**：在固定子集上跑 CPU（当前 CPU 小批约 0.9 s/张），报告逐图与
+  按源聚合的 IoU/F1/precision/recall、真实图异常面积/误报、图像级 score（TruFor
+  有 score）、失败、耗时；同源多变体按 base 聚合，不把变体当独立源。
+- **IML-ViT**：代码/权重仍未到位。先尝试固定 commit 的官方代码核对；权重不可得
+  则如实记录 blocker，不伪造输出、不把未验证的接口写成已核实。若代码/权重到位，
+  用同一 220 输入与 TruFor 对照；预处理、padding、归一化、map 通道/尺寸还原逐项
+  核实；IML-ViT 若无图像级 score，不强行补造。
+- **Agent 边界**：定位专家未定前，不改 Agent 的区域观察、证据回传、结案流程；
+  不启动 SFT/训练。
+
+### 11.6 产物与验收
+
+- `sft_data/g8_audit/genimage_usage_history_20261102.json`（逐源 flags/roles/证据/
+  双哈希）与 `.md` 摘要；`dataset/GenImage_q95/eval_dev_manifest_20261102.json`。
+- `sft_data/g8_external_eval/genimage_dev_20261102/{scores.jsonl,report.json,report.md}`；
+  `sft_data/g8_external_eval/mnw_q95_existing_20261102.json`。
+- `sft_data/g8_localization/autosplice_dev_subset_20261102.json` 与 TruFor
+  `report.json`/面板；IML-ViT 核查记录。
+- 测试：审计不变量、manifest 同源/分区/哈希、TruFor 几何、PROBE/SPAI 报告口径；
+  core 测试不回归。所有新脚本先 dry-run/小批，CPU 检查通过后再 GPU。
+
+### 11.7 2026-11-04 无卡模式继续（CPU-only）
+
+当前实例回到 **2 GiB cgroup、GPU 不可见**，按 `agent.md` §3.2 不加载任何模型权重。
+本轮只推进可在 CPU 完成、且不依赖模型前向的工作：
+
+1. 固化 AutoSplice q95 dev 定位子集（100 base / 220 输入，30 authentic-only +
+   35 单变体 + 20 双变体 + 15 三变体；mask 面积三分位分层；先 manifest 后运行）；
+2. 完善 16 张 TruFor 面板的定量/目视记录，并准备扩大的 TruFor 评测脚本；
+   不在 2 GiB 下重跑 TruFor；
+3. 读取并核对 IML-ViT 官方代码（若网络可得），记录 commit/预处理/输出语义；
+   权重不可得则明确 blocker；
+4. 从既有 MNW/DIV2K q95 分数生成单独报告；不重跑、不混入 GenImage；
+5. 提交本轮审计、面板、子集和脚本；SPAI 全量/TruFor 扩展等待 GPU 或更大 cgroup。
+
+**边界**：不启动 GPU、不加载 Qwen、不跑 SPAI/TruFor 前向、不碰 test、不改 Agent/SFT。
+
+**完成情况（2026-11-04，CPU-only）**：
+
+- 使用历史审计与 dev/val manifest 已落盘；新 test 复核为 train 1,258 / val 37 /
+  test 42 / holdout 13，确认没有可靠未见测试，test 继续隔离。
+- AutoSplice q95 dev 子集已固定：100 base / 220 输入，q95/源图/mask 哈希逐项核对
+  通过（220/220/190），未跑模型。
+- TruFor 16 张四联图与逐张指标已完成，面板文档见
+  `docs/development/TRUFOR_PANEL_FINDINGS_20261102.md`；当前 2 GiB cgroup 不重跑。
+- IML-ViT 代码已按固定 commit 到位并完成 import/预处理/输出语义核实；官方权重
+  Google Drive 超时、Baidu 需登录、HF 镜像无权重，**权重 blocker 保留**，未使用
+  非官方 checkpoint。
+- MNW/DIV2K q95 既有测量已单独成报，不混入 GenImage、不重跑、不拟合阈值。
+- PROBE 全量 GenImage dev 已在 2026-11-02 完成（6,299/6,299）；SPAI 全量仍需 GPU。
