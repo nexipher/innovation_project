@@ -1,0 +1,1104 @@
+{
+  "schema": "mnw_q95_existing/1",
+  "created_at": "2026-11-04T21:55:08",
+  "source": "Existing 2026-10-26 MNW/DIV2K measurements; q95 only; no rerun.",
+  "rules": {
+    "only_q95": true,
+    "no_threshold_fitting": true,
+    "per_generator_only": true,
+    "real_images_shared": true,
+    "no_genimage_mixing": true
+  },
+  "experts": {
+    "probe": {
+      "scores": "sft_data/g8_external_eval/dev1_probe_20261026_2132/scores.jsonl",
+      "identity": {
+        "weights": {
+          "file": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+          "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+          "bytes": 1217679947
+        },
+        "raw_score": {
+          "field": "raw_metric",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "direction": "higher_is_fake",
+          "is_calibrated_probability": false,
+          "note": "上游判别器的 sigmoid 输出；本项目只用其排序，概率映射由本地校准层另记"
+        },
+        "threshold": {
+          "value": 0.5,
+          "chosen_on": "外部默认",
+          "note": "本项目不据此下结论，只作对照"
+        },
+        "preprocess": {
+          "name": "pad→336 滑窗均值",
+          "detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+          "measurement_scope": "global"
+        },
+        "licence": "上游未声明（仓库无 LICENSE）；仅本地研究，不再分发"
+      },
+      "run": {
+        "started_at": "2026-10-26T21:32:18",
+        "elapsed_s": 103.4,
+        "device": "cuda",
+        "experts": [
+          "probe"
+        ],
+        "rows": 200,
+        "written_this_run": 200,
+        "rows_measured": 200,
+        "rows_failed": 0,
+        "timing": {
+          "probe": {
+            "first_ms": 27612.2,
+            "steady_median_ms": 215.5,
+            "steady_min_ms": 162.3,
+            "steady_max_ms": 711.1,
+            "n": 200,
+            "scope": "expert.analyze() including preprocessing, forward and .item() sync; image loading excluded"
+          }
+        },
+        "gpu_peak_allocated_gb": 2.724,
+        "gpu_peak_reserved_gb": 3.83,
+        "host_maxrss_kb": 3141524,
+        "cgroup_current_start": 2071592960,
+        "cgroup_current_end": 3609493504,
+        "cgroup_peak": null,
+        "cgroup_note": "memory.current is anon+file+slab; file-backed mmap pages are reclaimable. memory.peak is not exposed in this cgroup."
+      }
+    },
+    "spai": {
+      "scores": "sft_data/g8_external_eval/dev1_spai_20261026_2145/scores.jsonl",
+      "identity": {
+        "weights": {
+          "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+          "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+          "bytes": 934865338
+        },
+        "raw_score": {
+          "field": "raw_metric",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "direction": "higher_is_fake",
+          "meaning": "官方 sigmoid 输出；越高越像 AI 生成"
+        },
+        "threshold": {
+          "value": 0.5,
+          "chosen_on": "官方代码 validate() 的默认决策边界（accuracy/AP/AUC 默认 threshold=0.5）",
+          "note": "不在外部集上调整"
+        },
+        "preprocess": {
+          "name": "官方 SPAI 测试变换",
+          "detail": "原分辨率（不缩放/不裁剪）→ PadIfNeeded 到 ≥224×224 → [0,1] 归一化 → ToTensor",
+          "measurement_scope": "global",
+          "source": "spai/data/data_finetune.py::build_transform(is_train=False) with the official configs/spai.yaml (MINIMUM_PATCHES=4, IMG_SIZE=224)"
+        },
+        "licence": "Apache-2.0（代码与权重，README 声明）",
+        "code": {
+          "repo": "mever-team/spai",
+          "commit": "8ff7b3b6779b4fcb43cf313471d9cb1c62d129a4"
+        },
+        "output": {
+          "transform": "sigmoid",
+          "threshold": 0.5,
+          "meaning": "官方 sigmoid 输出；越高越像 AI 生成"
+        }
+      },
+      "run": {
+        "started_at": "2026-10-26T21:34:57",
+        "elapsed_s": 59.2,
+        "device": "cuda",
+        "experts": [
+          "spai"
+        ],
+        "rows": 200,
+        "written_this_run": 200,
+        "rows_measured": 200,
+        "rows_failed": 0,
+        "load_s": {
+          "spai": 2.881
+        },
+        "load_errors": {},
+        "timing": {
+          "spai": {
+            "first_ms": 782.9,
+            "steady_median_ms": 162.3,
+            "steady_min_ms": 99.3,
+            "steady_max_ms": 508.5,
+            "n": 200,
+            "scope": "expert.analyze() including preprocessing, forward and .item() sync; image loading excluded"
+          }
+        },
+        "gpu_peak_allocated_gb": 6.667,
+        "gpu_peak_reserved_gb": 12.676,
+        "host_maxrss_kb": 1298020,
+        "cgroup_current_start": 2100076544,
+        "cgroup_current_end": 2653089792,
+        "cgroup_peak": null,
+        "cgroup_note": "memory.current is anon+file+slab; file-backed mmap pages are reclaimable. memory.peak is not exposed in this cgroup."
+      }
+    }
+  },
+  "groups": {
+    "Adobe_Firefly_v4": {
+      "probe": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.995,
+          "ci95": [
+            0.977,
+            1.0
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 0.95,
+        "tnr": 0.95,
+        "balanced_accuracy": 0.95,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.795001,
+            "std": 0.170432,
+            "min": 0.425539,
+            "p05": 0.523207,
+            "p25": 0.678876,
+            "p50": 0.871051,
+            "p75": 0.94167,
+            "p95": 0.986823,
+            "max": 0.989622
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.044568,
+            "std": 0.132703,
+            "min": 2.7e-05,
+            "p05": 4.9e-05,
+            "p25": 0.000253,
+            "p50": 0.001263,
+            "p75": 0.007334,
+            "p95": 0.276687,
+            "max": 0.568419
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 546.1,
+          "median": 560.9,
+          "min": 374.8,
+          "max": 693.4
+        },
+        "errors": [
+          {
+            "variant_id": "Adobe_Firefly_v4__Adobe_Firefly_4_232dcb0b0a0f4c1b97e2b283b__jpeg_q95",
+            "source_id": "Adobe_Firefly_v4/Adobe_Firefly_4_232dcb0b0a0f4c1b97e2b283b",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.425539
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.568419
+          }
+        ]
+      },
+      "spai": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.845,
+          "ci95": [
+            0.7093,
+            0.9474
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 0.85,
+        "tnr": 0.6,
+        "balanced_accuracy": 0.725,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.841831,
+            "std": 0.300794,
+            "min": 0.00745,
+            "p05": 0.05525,
+            "p25": 0.880157,
+            "p50": 0.990807,
+            "p75": 0.999954,
+            "p95": 1.0,
+            "max": 1.0
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.385214,
+            "std": 0.432555,
+            "min": 0.0,
+            "p05": 0.0,
+            "p25": 0.0,
+            "p50": 0.087949,
+            "p75": 0.861553,
+            "p95": 0.995692,
+            "max": 0.99901
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 393.9,
+          "median": 433.9,
+          "min": 259.0,
+          "max": 508.5
+        },
+        "errors": [
+          {
+            "variant_id": "Adobe_Firefly_v4__Adobe_Firefly_4_09a4b560f85f4ee482b201522__jpeg_q95",
+            "source_id": "Adobe_Firefly_v4/Adobe_Firefly_4_09a4b560f85f4ee482b201522",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.446208
+          },
+          {
+            "variant_id": "Adobe_Firefly_v4__Adobe_Firefly_4_5bbe5a6e2498425f8ef763977__jpeg_q95",
+            "source_id": "Adobe_Firefly_v4/Adobe_Firefly_4_5bbe5a6e2498425f8ef763977",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.00745
+          },
+          {
+            "variant_id": "Adobe_Firefly_v4__Adobe_Firefly_4_85e39633b4b1453e915bc6c7d__jpeg_q95",
+            "source_id": "Adobe_Firefly_v4/Adobe_Firefly_4_85e39633b4b1453e915bc6c7d",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.057765
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0874__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0874",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.839266
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0886__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0886",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.704052
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0865__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0865",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.995518
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.81292
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0855__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0855",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99901
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0822__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0822",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.938619
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0879__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0879",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.928413
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0864__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0864",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99342
+          }
+        ]
+      }
+    },
+    "ByteDance_Seedream_v4": {
+      "probe": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 1.0,
+        "tnr": 0.95,
+        "balanced_accuracy": 0.975,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.999341,
+            "std": 0.001207,
+            "min": 0.995019,
+            "p05": 0.996909,
+            "p25": 0.999341,
+            "p50": 0.999863,
+            "p75": 0.999955,
+            "p95": 0.999972,
+            "max": 0.999977
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.044568,
+            "std": 0.132703,
+            "min": 2.7e-05,
+            "p05": 4.9e-05,
+            "p25": 0.000253,
+            "p50": 0.001263,
+            "p75": 0.007334,
+            "p95": 0.276687,
+            "max": 0.568419
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 415.3,
+          "median": 480.2,
+          "min": 203.9,
+          "max": 710.7
+        },
+        "errors": [
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.568419
+          }
+        ]
+      },
+      "spai": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.99,
+          "ci95": [
+            0.9624,
+            1.0
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 1.0,
+        "tnr": 0.6,
+        "balanced_accuracy": 0.8,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.999434,
+            "std": 0.001653,
+            "min": 0.993187,
+            "p05": 0.996046,
+            "p25": 0.999977,
+            "p50": 0.999999,
+            "p75": 1.0,
+            "p95": 1.0,
+            "max": 1.0
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.385214,
+            "std": 0.432555,
+            "min": 0.0,
+            "p05": 0.0,
+            "p25": 0.0,
+            "p50": 0.087949,
+            "p75": 0.861553,
+            "p95": 0.995692,
+            "max": 0.99901
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 277.6,
+          "median": 299.8,
+          "min": 132.7,
+          "max": 504.0
+        },
+        "errors": [
+          {
+            "variant_id": "DIV2K_valid_HR__0874__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0874",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.839266
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0886__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0886",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.704052
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0865__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0865",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.995518
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.81292
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0855__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0855",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99901
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0822__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0822",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.938619
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0879__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0879",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.928413
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0864__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0864",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99342
+          }
+        ]
+      }
+    },
+    "Google_Imagen4": {
+      "probe": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.99,
+          "ci95": [
+            0.96,
+            1.0
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 0.9,
+        "tnr": 0.95,
+        "balanced_accuracy": 0.925,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.843775,
+            "std": 0.23654,
+            "min": 0.015478,
+            "p05": 0.435928,
+            "p25": 0.86754,
+            "p50": 0.932273,
+            "p75": 0.970922,
+            "p95": 0.997852,
+            "max": 0.998403
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.044568,
+            "std": 0.132703,
+            "min": 2.7e-05,
+            "p05": 4.9e-05,
+            "p25": 0.000253,
+            "p50": 0.001263,
+            "p75": 0.007334,
+            "p95": 0.276687,
+            "max": 0.568419
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 339.9,
+          "median": 297.2,
+          "min": 164.0,
+          "max": 690.0
+        },
+        "errors": [
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_24297c7685064a4c9a5ef39e7__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_24297c7685064a4c9a5ef39e7",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.015478
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_d3ec616aa90b40239866c0220__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_d3ec616aa90b40239866c0220",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.458057
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.568419
+          }
+        ]
+      },
+      "spai": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.735,
+          "ci95": [
+            0.5703,
+            0.8722
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 0.65,
+        "tnr": 0.6,
+        "balanced_accuracy": 0.625,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.640205,
+            "std": 0.387407,
+            "min": 0.000293,
+            "p05": 0.002821,
+            "p25": 0.350621,
+            "p50": 0.843294,
+            "p75": 0.997721,
+            "p95": 0.999992,
+            "max": 0.999999
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.385214,
+            "std": 0.432555,
+            "min": 0.0,
+            "p05": 0.0,
+            "p25": 0.0,
+            "p50": 0.087949,
+            "p75": 0.861553,
+            "p95": 0.995692,
+            "max": 0.99901
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 214.9,
+          "median": 189.8,
+          "min": 99.3,
+          "max": 470.9
+        },
+        "errors": [
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_b299b112763d49d2bcb2ab4b7__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_b299b112763d49d2bcb2ab4b7",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.008544
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_24297c7685064a4c9a5ef39e7__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_24297c7685064a4c9a5ef39e7",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.000293
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_5948b7ea70be44a1b7e8e548c__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_5948b7ea70be44a1b7e8e548c",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.393876
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_3d9e8c0bf8bc443d8b4cd386d__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_3d9e8c0bf8bc443d8b4cd386d",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.002954
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_5da58e66864941538e35995ae__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_5da58e66864941538e35995ae",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.006259
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_29bb6507939549239f5fb0d61__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_29bb6507939549239f5fb0d61",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.220859
+          },
+          {
+            "variant_id": "Google_Imagen4__Google_Imagen4_033f6e4b22b74db3b06dd67bf__jpeg_q95",
+            "source_id": "Google_Imagen4/Google_Imagen4_033f6e4b22b74db3b06dd67bf",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.4056
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0874__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0874",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.839266
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0886__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0886",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.704052
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0865__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0865",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.995518
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.81292
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0855__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0855",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99901
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0822__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0822",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.938619
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0879__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0879",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.928413
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0864__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0864",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99342
+          }
+        ]
+      }
+    },
+    "Midjourney_v7": {
+      "probe": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.99,
+          "ci95": [
+            0.9621,
+            1.0
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 0.85,
+        "tnr": 0.95,
+        "balanced_accuracy": 0.9,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.87826,
+            "std": 0.238511,
+            "min": 0.193643,
+            "p05": 0.320674,
+            "p25": 0.958323,
+            "p50": 0.990991,
+            "p75": 0.998432,
+            "p95": 0.999574,
+            "max": 0.999587
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.044568,
+            "std": 0.132703,
+            "min": 2.7e-05,
+            "p05": 4.9e-05,
+            "p25": 0.000253,
+            "p50": 0.001263,
+            "p75": 0.007334,
+            "p95": 0.276687,
+            "max": 0.568419
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 328.5,
+          "median": 272.4,
+          "min": 162.3,
+          "max": 690.0
+        },
+        "errors": [
+          {
+            "variant_id": "Midjourney_v7__Midjourney_v7_c52f9e42b30446178ba1a068b__jpeg_q95",
+            "source_id": "Midjourney_v7/Midjourney_v7_c52f9e42b30446178ba1a068b",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.327359
+          },
+          {
+            "variant_id": "Midjourney_v7__Midjourney_v7_b6bfa586ff214cc9b5eea29d4__jpeg_q95",
+            "source_id": "Midjourney_v7/Midjourney_v7_b6bfa586ff214cc9b5eea29d4",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.193643
+          },
+          {
+            "variant_id": "Midjourney_v7__Midjourney_v7_150f2be811e04c2fad6a29d25__jpeg_q95",
+            "source_id": "Midjourney_v7/Midjourney_v7_150f2be811e04c2fad6a29d25",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.489952
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.568419
+          }
+        ]
+      },
+      "spai": {
+        "n": 40,
+        "n_measured": 40,
+        "n_fake": 20,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": {
+          "auroc": 0.88,
+          "ci95": [
+            0.7594,
+            0.9649
+          ],
+          "bootstrap": 1000
+        },
+        "tpr": 0.9,
+        "tnr": 0.6,
+        "balanced_accuracy": 0.75,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": {
+            "n": 20,
+            "mean": 0.875064,
+            "std": 0.281131,
+            "min": 0.005325,
+            "p05": 0.133772,
+            "p25": 0.949113,
+            "p50": 0.999758,
+            "p75": 1.0,
+            "p95": 1.0,
+            "max": 1.0
+          },
+          "real": {
+            "n": 20,
+            "mean": 0.385214,
+            "std": 0.432555,
+            "min": 0.0,
+            "p05": 0.0,
+            "p25": 0.0,
+            "p50": 0.087949,
+            "p75": 0.861553,
+            "p95": 0.995692,
+            "max": 0.99901
+          }
+        },
+        "elapsed_ms": {
+          "n": 40,
+          "mean": 223.9,
+          "median": 200.6,
+          "min": 112.4,
+          "max": 470.9
+        },
+        "errors": [
+          {
+            "variant_id": "Midjourney_v7__Midjourney_v7_159bb8f8a7bb4743bf6ef5daf__jpeg_q95",
+            "source_id": "Midjourney_v7/Midjourney_v7_159bb8f8a7bb4743bf6ef5daf",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.005325
+          },
+          {
+            "variant_id": "Midjourney_v7__Midjourney_v7_322c2ea2616b4b2c9a625c4d3__jpeg_q95",
+            "source_id": "Midjourney_v7/Midjourney_v7_322c2ea2616b4b2c9a625c4d3",
+            "label": "Fake",
+            "predicted": "Real",
+            "score": 0.140532
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0874__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0874",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.839266
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0886__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0886",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.704052
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0865__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0865",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.995518
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.81292
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0855__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0855",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99901
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0822__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0822",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.938619
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0879__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0879",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.928413
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0864__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0864",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99342
+          }
+        ]
+      }
+    },
+    "Real_only": {
+      "probe": {
+        "n": 20,
+        "n_measured": 20,
+        "n_fake": 0,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": null,
+        "tpr": null,
+        "tnr": 0.95,
+        "balanced_accuracy": null,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": null,
+          "real": {
+            "n": 20,
+            "mean": 0.044568,
+            "std": 0.132703,
+            "min": 2.7e-05,
+            "p05": 4.9e-05,
+            "p25": 0.000253,
+            "p50": 0.001263,
+            "p75": 0.007334,
+            "p95": 0.276687,
+            "max": 0.568419
+          }
+        },
+        "elapsed_ms": {
+          "n": 20,
+          "mean": 490.6,
+          "median": 482.7,
+          "min": 374.8,
+          "max": 690.0
+        },
+        "errors": [
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.568419
+          }
+        ]
+      },
+      "spai": {
+        "n": 20,
+        "n_measured": 20,
+        "n_fake": 0,
+        "n_real": 20,
+        "failures": 0,
+        "auroc": null,
+        "tpr": null,
+        "tnr": 0.6,
+        "balanced_accuracy": null,
+        "threshold": 0.5,
+        "score_distribution": {
+          "fake": null,
+          "real": {
+            "n": 20,
+            "mean": 0.385214,
+            "std": 0.432555,
+            "min": 0.0,
+            "p05": 0.0,
+            "p25": 0.0,
+            "p50": 0.087949,
+            "p75": 0.861553,
+            "p95": 0.995692,
+            "max": 0.99901
+          }
+        },
+        "elapsed_ms": {
+          "n": 20,
+          "mean": 319.5,
+          "median": 307.5,
+          "min": 259.0,
+          "max": 470.9
+        },
+        "errors": [
+          {
+            "variant_id": "DIV2K_valid_HR__0874__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0874",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.839266
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0886__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0886",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.704052
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0865__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0865",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.995518
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0857__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0857",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.81292
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0855__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0855",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99901
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0822__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0822",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.938619
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0879__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0879",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.928413
+          },
+          {
+            "variant_id": "DIV2K_valid_HR__0864__jpeg_q95",
+            "source_id": "DIV2K_valid_HR/0864",
+            "label": "Real",
+            "predicted": "Fake",
+            "score": 0.99342
+          }
+        ]
+      }
+    }
+  }
+}
