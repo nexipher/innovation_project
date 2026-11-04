@@ -793,3 +793,16 @@
 * **涉及/修改的文件清单**：`scripts/audit_genimage_usage.py`、`scripts/build_autosplice_localization_subset.py`、`scripts/render_trufor_panels.py`、`scripts/check_iml_vit_preprocess.py`、`scripts/mnw_q95_existing_report.py`、`sft_data/g8_audit/genimage_usage_history_20261102.json`、`dataset/GenImage_q95/eval_{dev,val}_manifest_20261102.json`、`sft_data/g8_localization/autosplice_dev_subset_20261102.json`、`sft_data/g8_localization/panels_20261102/`、`sft_data/g8_external_eval/mnw_q95_existing_20261102.{json,md}`、`sft_data/g8_inventory/iml_vit_code_20261104.json`、`docs/development/*`、`tests/test_{genimage_usage_audit,autosplice_localization_subset,mnw_q95_existing_report}.py`、`plan.md`、`claude_operation_log.md`
 * **执行结果与验证状态**：审计/子集/MNW 测试 **9 passed**；IML-ViT 仅 import/transform，未构建模型/加载权重；TruFor 未重跑；无 GPU 进程；未使用 test；未改 Agent/SFT/b2。
 * **置信度或遗留待办（TODO）**：①SPAI 全量 dev 需 GPU；②TruFor 扩大评测需 GPU/更大 cgroup，当前 2 GiB 下不跑；③IML-ViT 官方权重需用户上传或提供可达链接；④test 无可靠未见性，不能恢复成“最终测试”；⑤定位专家未定前不改 Agent。
+
+### 2026-11-04 - 阶段四 4.38：准备扩大的 TruFor 定位评测脚本
+
+* **当前操作动作**：为已固定的 AutoSplice 100 base / 220 输入子集编写扩大的 TruFor 评测脚本和纯聚合测试；**未加载模型、未运行前向**。
+* **对应计划锚点**：`plan.md` §11.5/§11.7；`docs/development/AUTOSPLICE_LOCALIZATION_SUBSET_20261102.md`
+* **核心变更说明**：
+  1. 脚本按 32 张分块调用 `TruForExpert.analyze_many`，记录每块失败而不把失败当 0 分；从已落盘 npz 计算 map/conf/score。
+  2. 逐图输出 IoU/F1/precision/recall、mask 内外均值、真实图高响应面积；按 base 聚合同源变体，不把变体当独立源；同时给出 image-level 与 source-level score AUROC（后者为主，前者标注描述性）。
+  3. 保留 TruFor 的 image-level score；不伪造 IML-ViT 的 score；报告包含 shared-mask 说明、失败、计时和资源。
+  4. 新增纯聚合单测：两个 base、一个多变体、一个真图，验证按源聚合和真图误报列表。
+* **涉及/修改的文件清单**：`scripts/trufor_autosplice_eval.py (Created)`、`tests/test_trufor_autosplice_eval.py (Created)`、`plan.md`、`claude_operation_log.md`
+* **执行结果与验证状态**：`python -m py_compile` 通过；`tests/test_trufor_autosplice_eval.py` **1 passed**；未运行 TruFor 模型；未改 Agent/SFT/test。
+* **置信度或遗留待办（TODO）**：①当前 2 GiB cgroup 不能加载 TruFor，待 GPU/更大 cgroup 后跑 220 输入；②同源变体统计仍需在真实结果上检查；③IML-ViT 权重仍缺。

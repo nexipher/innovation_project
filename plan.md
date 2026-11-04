@@ -1618,3 +1618,6 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
   非官方 checkpoint。
 - MNW/DIV2K q95 既有测量已单独成报，不混入 GenImage、不重跑、不拟合阈值。
 - PROBE 全量 GenImage dev 已在 2026-11-02 完成（6,299/6,299）；SPAI 全量仍需 GPU。
+
+- 扩大的 TruFor 评测脚本 `scripts/trufor_autosplice_eval.py` 已准备：按 32 张分块、
+  逐图/按源聚合、失败列表、计时和资源；当前 2 GiB cgroup 不运行，待环境恢复。
