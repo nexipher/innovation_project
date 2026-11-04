@@ -430,7 +430,31 @@
       "smoke_status": "completed_cpu"
     },
     "iml_vit": {
-      "present": false
+      "code_present": true,
+      "weights_present": false,
+      "commit": "07dd2be0f4ea27a5c97c9fa5ffbe236733833eac",
+      "licence": "MIT",
+      "archive_sha256": "de140401ff941cd9c722b2b42d37cdece0ad310d6a66522cff9b2473579784fb",
+      "local_path": "/root/autodl-tmp/third_party/IML-ViT/IML-ViT-07dd2be0f4ea27a5c97c9fa5ffbe236733833eac",
+      "verification_report": "docs/development/IML_VIT_VERIFICATION_20261104.md",
+      "inventory_record": "sft_data/g8_inventory/iml_vit_code_20261104.json",
+      "preprocess_check": {
+        "import_ok": true,
+        "tensor_shape": [
+          3,
+          1024,
+          1024
+        ],
+        "mask_shape": [
+          1024,
+          1024
+        ],
+        "mask_binary": true,
+        "model_build": false,
+        "weights_loaded": false,
+        "forward_run": false
+      },
+      "blocker": "Official weights not available: Google Drive timeout, Baidu login, HF mirror has README only; current cgroup 2 GiB/GPU invisible."
     }
   },
   "qwen3vl": {
@@ -513,7 +537,7 @@
     "AutoSplice mask is shared per base; no per-variant mask",
     "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-02T23:10:14",
+  "updated_at": "2026-11-04T21:55:56",
   "trufor_smoke": {
     "status": "completed_cpu_smoke",
     "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102_cpu.json",

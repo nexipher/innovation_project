@@ -1,7 +1,7 @@
 # IML-ViT 准备清单（2026-11-02）
 
-IML-ViT 是 TruFor 之外的局部定位候选；本清单先固定来源与约束，**代码/权重尚未到位**，
-因此不阻塞 TruFor 小批。
+IML-ViT 是 TruFor 之外的局部定位候选；本清单先固定来源与约束。2026-11-04 更新：
+**代码已按固定 commit 到位，权重仍缺**；详见 `IML_VIT_VERIFICATION_20261104.md`。
 
 ## 来源与许可
 
@@ -12,7 +12,7 @@ IML-ViT 是 TruFor 之外的局部定位候选；本清单先固定来源与约�
 | 论文 | `arXiv:2307.14863`，IML-ViT: Benchmarking Image Manipulation Localization by Vision Transformer |
 | 代码许可 | **MIT**（LICENSE） |
 | 权重 | Google Drive / Baidu NetDisk，README 链接；2024-03-24 发布 CASIAv2 与 CAT-Net/TruFor 协议 checkpoint |
-| 本地状态 | **代码、权重均缺失**；需要用户上传或提供可达链接 |
+| 本地状态 | **代码已到位**（2026-11-04，固定 commit 解压到 `third_party/IML-ViT/`）；**权重仍缺失**，需要用户上传或提供可达链接 |
 
 ## 官方推理路径（待代码到位后逐项核实）
 
@@ -32,8 +32,13 @@ IML-ViT 是 TruFor 之外的局部定位候选；本清单先固定来源与约�
 5. 只有 TruFor + IML-ViT 同输入对照完成后，才比较定位专家并决定接入哪一个；
    在此之前不改 Agent 的区域观察/证据回传/结案流程。
 
-## 当前阻塞
+## 当前阻塞（2026-11-04 更新）
 
-- 代码/权重缺失（Google Drive/Baidu，本机不可达）。
-- GPU 当前不可见；cgroup 回到 2 GiB，连 CPU TruFor 小批也被 SIGKILL。
-  需先恢复运行环境，再继续定位专家评测。
+- **代码已到位**：固定 commit `07dd2be…` 解压到
+  `/root/autodl-tmp/third_party/IML-ViT/IML-ViT-07dd2be0f4ea27a5c97c9fa5ffbe236733833eac`；
+  archive sha256 `de140401…`。详细代码/预处理/输出语义见
+  `docs/development/IML_VIT_VERIFICATION_20261104.md`。
+- **权重仍缺**：Google Drive 直链连接超时，Baidu 需登录，HF 镜像 `HJYOGC/IML-ViT`
+  只有 README，没有 checkpoint；没有使用非官方权重。
+- 当前实例为 **2 GiB cgroup、GPU 不可见**；未构建模型、未加载权重。需先恢复
+  GPU/更大 cgroup，并由用户上传或提供可达的官方 checkpoint，再做同输入对照。

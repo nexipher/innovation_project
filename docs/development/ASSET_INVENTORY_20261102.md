@@ -22,7 +22,7 @@
 | MNW 开发清单 | `inputs_manifest.json` **200 条 = 100 源 × (original + q95)**；`inputs/` 下 q95 100 张 | q95-only 子集为 100 条；旧 original 仅历史参考 |
 | MNW 分区 | 每组 `dev_current 20 / dev_extension 20 / final 20`；final 未使用 | 最终留出继续封存 |
 | AutoSplice | **已解压并派生 q95**：原数据 16,558 文件/494 MB；Authentic 2273、Forged_JPEG100/90/75 各 3621、Mask/Caption 各 1710；q95 输入 **5894（2273 Real + 3621 Fake，227 MB）**；配对清单、审计和划分已生成 | 1710 个 base 对应 1–3 个 forged 变体；每个 base 一份 mask/caption（shared-by-base）；30 个 base/60 个变体抽查 mask 内差异均大于外，mask 与 fake 尺寸 3621/3621 一致；逐变体独立 mask 不存在；`Forged_JPEG90/75` 未用；学术非商业 |
-| IML-ViT | **缺失**（无代码/权重）；官方 commit `07dd2be0…`、MIT、权重 Google Drive/Baidu | 局部定位对照组无法开始；准备清单见 `IML_VIT_PREP_20261102.md`；TruFor CPU 16 张小批已完成（见 §4.3），但不足以选专家 |
+| IML-ViT | **代码已到位，权重仍缺**；固定 commit `07dd2be0…`、MIT；代码 archive sha256 `de140401…`；官方 Google Drive/Baidu 权重不可达 | 局部定位对照仍无法开始；代码/预处理/输出语义核实见 `IML_VIT_VERIFICATION_20261104.md`；TruFor CPU 16 张小批已完成（见 §4.3），但不足以选专家 |
 
 ## 3. 可复用测量
 
@@ -107,8 +107,8 @@
 1. **TruFor CPU 小批已完成**：16 张 map/conf/score 有限；IoU 0.307、F1 0.434，
    真图 4/8 高响应 >1%。管线可用，但定位 recall 低、真图误报明显；16 张不足以选
    定位专家，下一步扩大 dev 评估，并等 IML-ViT 做同输入对照。
-2. **IML-ViT 缺失**：需要代码和权重（Google Drive/Baidu）；其接口/预处理准备可与
-   扩大的 TruFor dev 评估并行，但双定位器同输入比较仍无法开始。
+2. **IML-ViT 代码已到位，权重仍缺**：官方 Google Drive 连接超时、Baidu 需登录、
+   HF 镜像无权重；代码/预处理/输出语义已核实，但没有 checkpoint，不能做同输入对照。
 3. **AutoSplice mask 语义**：mask 是 base 级 shared-by-base，30/60 抽查支持
    mask 内差异大于外；没有逐变体独立 mask，报告需保留这一限制。
 4. **GenImage 配对/去重**：无本地逐源真假配对 manifest；共享 Real 1000 跨八组复用，
