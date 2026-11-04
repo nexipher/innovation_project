@@ -831,3 +831,15 @@
 * **涉及/修改的文件清单**：`scripts/check_iml_vit_preprocess.py (Modified — --subset)`、`sft_data/g8_inventory/iml_vit_code_20261104.json (Modified)`、`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/IML_VIT_VERIFICATION_20261104.md (Modified)`、`claude_operation_log.md`
 * **执行结果与验证状态**：220/220 通过、0 failures；未加载模型/权重；未跑前向；未改 Agent/SFT/test。
 * **置信度或遗留待办（TODO）**：①官方权重仍缺；②模型构建/state_dict/前向未验证；③GPU/2 GiB 环境仍不允许定位评测。
+
+### 2026-11-04 - 阶段四 4.42：整理 PROBE 全量 dev 部分报告
+
+* **当前操作动作**：从已完成的 PROBE GenImage q95 dev 分数生成可读的部分报告，明确标注 SPAI 未跑；不重跑模型、不做双专家结论。
+* **对应计划锚点**：`plan.md` §11.4；`sft_data/g8_external_eval/genimage_dev_20261102/report.json`
+* **核心变更说明**：
+  1. 报告分别列出 `dev_all` 6,299 与 `dev_no_known_use` 5,619 的逐生成器 AUROC、TPR、TNR、平衡准确率、fake/real 分数中位和错误计数。
+  2. 写明共享 Real 跨组复用、不报告合并 AUROC；阈值固定 0.5。
+  3. 记录运行 426.8 s、load 4.4 s、GPU peak 1.66/1.93 GB、6,299/6,299 measured；SPAI 未跑。
+* **涉及/修改的文件清单**：`docs/development/GENIMAGE_PROBE_PARTIAL_20261102.md (Created)`、`claude_operation_log.md`
+* **执行结果与验证状态**：报告由既有 JSON 生成；未重测；未使用 test；未改 Agent/SFT。
+* **置信度或遗留待办（TODO）**：①SPAI 全量仍需 GPU；②双专家并排与选择结论待 SPAI；③当前 2 GiB/GPU 不可见。
