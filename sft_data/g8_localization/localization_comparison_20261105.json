@@ -1,0 +1,305 @@
+{
+  "schema": "localization_comparison/1",
+  "created_at": "2026-11-05T08:28:52",
+  "subset": {
+    "path": "sft_data/g8_localization/autosplice_dev_subset_20261102.json",
+    "bases": 100,
+    "inputs": 220,
+    "real": 100,
+    "fake": 120,
+    "mask": "shared by base"
+  },
+  "experts": {
+    "trufor": {
+      "report": "sft_data/g8_localization/trufor_autosplice_dev_20261102/report.json",
+      "checkpoint": {
+        "path": "/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar",
+        "source": "GRIP-UNINA TruFor (CVPR 2023) · TruFor_weights.zip",
+        "licence": "GRIP-UNINA：仅限信息性与非营利用途；本项目不再分发其代码与权重",
+        "sha256": "ac1d90e329a72e0d66e8665e123a19e94bfae3209c3ef8a4f9ca3b91578c7844",
+        "size_bytes": 281496429
+      },
+      "timing": {
+        "wall_s": 107.67,
+        "per_input_s": 0.489,
+        "adapter": {
+          "runs": 220,
+          "mode": "batch",
+          "images_in_batches": 220,
+          "batches": 7,
+          "cold_start_s": 15.87,
+          "per_image_mean_s": 0.491,
+          "per_image_min_s": 0.45,
+          "total_s": 107.58,
+          "cache_hits": 0
+        }
+      },
+      "environment": {
+        "cgroup_max": "128849018880",
+        "cgroup_high": "max",
+        "cgroup_current": "3675332608",
+        "cgroup_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0",
+        "torch_cuda_available": true,
+        "torch_cuda_device_count": 1
+      }
+    },
+    "iml_vit": {
+      "report": "sft_data/g8_localization/iml_vit_autosplice_dev_20261102/report.json",
+      "checkpoint": {
+        "repo": "/root/autodl-tmp/third_party/IML-ViT/IML-ViT-07dd2be0f4ea27a5c97c9fa5ffbe236733833eac",
+        "commit": "07dd2be0f4ea27a5c97c9fa5ffbe236733833eac",
+        "checkpoint": "/root/autodl-tmp/third_party/IML-ViT/weights/iml-vit_checkpoint_trufor_20231104.pth",
+        "checkpoint_sha256": "9fa9ae88cafeb6eab28c2afd5bef74679416cf0a790b2370fa6a6fb4c122c58c",
+        "checkpoint_bytes": 367195954,
+        "checkpoint_tensors": 212,
+        "model_tensors": 212,
+        "strict_load": true
+      },
+      "timing": {
+        "wall_s": 23.64,
+        "load_s": 3.817,
+        "per_input_s": 0.107
+      },
+      "resources": {
+        "gpu_peak_allocated_gb": 9.9,
+        "gpu_peak_reserved_gb": 10.941,
+        "host_maxrss_kb": 2061224
+      }
+    }
+  },
+  "aggregate": {
+    "trufor": {
+      "forged_variant_iou": {
+        "n": 120,
+        "mean": 0.536633,
+        "std": 0.286329,
+        "min": 0.0,
+        "p25": 0.370101,
+        "p50": 0.577233,
+        "p75": 0.773815,
+        "max": 0.938652
+      },
+      "forged_variant_f1": {
+        "n": 120,
+        "mean": 0.644765,
+        "std": 0.292745,
+        "min": 0.0,
+        "p25": 0.540252,
+        "p50": 0.731769,
+        "p75": 0.872479,
+        "max": 0.968355
+      },
+      "forged_variant_recall": {
+        "n": 120,
+        "mean": 0.569963,
+        "std": 0.306142,
+        "min": 0.0,
+        "p25": 0.384211,
+        "p50": 0.646954,
+        "p75": 0.822795,
+        "max": 0.988862
+      },
+      "forged_source_iou_mean": {
+        "n": 70,
+        "mean": 0.523242,
+        "std": 0.267924,
+        "min": 0.0,
+        "p25": 0.35928,
+        "p50": 0.54862,
+        "p75": 0.752949,
+        "max": 0.913047
+      },
+      "real_high_fraction": {
+        "n": 100,
+        "mean": 0.062128,
+        "std": 0.121214,
+        "min": 0.0,
+        "p25": 0.007063,
+        "p50": 0.024138,
+        "p75": 0.046133,
+        "max": 0.863419
+      },
+      "real_false_positive_sources": 68,
+      "auroc_source_score": {
+        "auroc": 0.8784,
+        "ci95": [
+          0.8236,
+          0.9254
+        ],
+        "bootstrap": 1000
+      }
+    },
+    "iml_vit": {
+      "forged_variant_iou": {
+        "n": 120,
+        "mean": 0.160538,
+        "std": 0.189272,
+        "min": 0.0,
+        "p25": 0.017108,
+        "p50": 0.085719,
+        "p75": 0.2223,
+        "max": 0.925179
+      },
+      "forged_variant_f1": {
+        "n": 120,
+        "mean": 0.238837,
+        "std": 0.235563,
+        "min": 0.0,
+        "p25": 0.033641,
+        "p50": 0.157891,
+        "p75": 0.363726,
+        "max": 0.961136
+      },
+      "forged_variant_recall": {
+        "n": 120,
+        "mean": 0.175714,
+        "std": 0.210454,
+        "min": 0.0,
+        "p25": 0.017174,
+        "p50": 0.085923,
+        "p75": 0.241747,
+        "max": 0.962665
+      },
+      "forged_variant_precision": {
+        "n": 120,
+        "mean": 0.770376,
+        "std": 0.32405,
+        "min": 0.0,
+        "p25": 0.620638,
+        "p50": 0.948553,
+        "p75": 0.99769,
+        "max": 1.0
+      },
+      "forged_source_iou_mean": {
+        "n": 70,
+        "mean": 0.160338,
+        "std": 0.165698,
+        "min": 0.0,
+        "p25": 0.036059,
+        "p50": 0.123899,
+        "p75": 0.203888,
+        "max": 0.925179
+      },
+      "real_high_fraction": {
+        "n": 100,
+        "mean": 0.046971,
+        "std": 0.071046,
+        "min": 0.0,
+        "p25": 0.00527,
+        "p50": 0.014142,
+        "p75": 0.054144,
+        "max": 0.366235
+      },
+      "real_false_positive_sources": 58,
+      "auroc_source_score": null
+    }
+  },
+  "paired_forged_sources": {
+    "n": 70,
+    "trufor_better": 61,
+    "iml_better": 9,
+    "delta": {
+      "n": 70,
+      "mean": 0.362904,
+      "p50": 0.404386,
+      "min": -0.925179,
+      "max": 0.840468
+    },
+    "examples_trufor_better": [
+      {
+        "source_id": "68092",
+        "variant_count": 1,
+        "trufor_iou": 0.843495,
+        "iml_iou": 0.003027,
+        "delta_trufor_minus_iml": 0.840468
+      },
+      {
+        "source_id": "53560",
+        "variant_count": 1,
+        "trufor_iou": 0.832556,
+        "iml_iou": 0.003397,
+        "delta_trufor_minus_iml": 0.829159
+      },
+      {
+        "source_id": "72315",
+        "variant_count": 1,
+        "trufor_iou": 0.913047,
+        "iml_iou": 0.133201,
+        "delta_trufor_minus_iml": 0.779846
+      },
+      {
+        "source_id": "50949",
+        "variant_count": 1,
+        "trufor_iou": 0.79238,
+        "iml_iou": 0.013043,
+        "delta_trufor_minus_iml": 0.779337
+      },
+      {
+        "source_id": "69769",
+        "variant_count": 2,
+        "trufor_iou": 0.763363,
+        "iml_iou": 0.014902,
+        "delta_trufor_minus_iml": 0.748461
+      }
+    ],
+    "examples_iml_better": [
+      {
+        "source_id": "72093",
+        "variant_count": 1,
+        "trufor_iou": 0.0,
+        "iml_iou": 0.925179,
+        "delta_trufor_minus_iml": -0.925179
+      },
+      {
+        "source_id": "58775",
+        "variant_count": 3,
+        "trufor_iou": 0.069808,
+        "iml_iou": 0.171426,
+        "delta_trufor_minus_iml": -0.101618
+      },
+      {
+        "source_id": "52626",
+        "variant_count": 1,
+        "trufor_iou": 0.42352,
+        "iml_iou": 0.521365,
+        "delta_trufor_minus_iml": -0.09784499999999996
+      },
+      {
+        "source_id": "44505",
+        "variant_count": 3,
+        "trufor_iou": 0.014964,
+        "iml_iou": 0.10501,
+        "delta_trufor_minus_iml": -0.090046
+      },
+      {
+        "source_id": "48535",
+        "variant_count": 1,
+        "trufor_iou": 0.001019,
+        "iml_iou": 0.0885,
+        "delta_trufor_minus_iml": -0.08748099999999999
+      }
+    ]
+  },
+  "paired_real_sources": {
+    "n": 100,
+    "trufor_high_higher": 53,
+    "iml_high_higher": 47,
+    "delta": {
+      "n": 100,
+      "mean": 0.015157,
+      "p50": 0.002328,
+      "min": -0.358628,
+      "max": 0.861196
+    },
+    "trufor_high_mean": 0.062128,
+    "iml_high_mean": 0.046971
+  },
+  "visual": "sft_data/g8_localization/localization_compare16_20261105/contact_sheet.png",
+  "notes": [
+    "Both experts use the same 220 inputs and base-level shared masks; variants are not independent.",
+    "TruFor has an image-level score; IML-ViT does not, so no IML image-score AUROC is reported.",
+    "No threshold was fitted; the 0.5 map threshold is fixed.",
+    "TruFor GPU peak was not captured because inference runs in an official subprocess; wall/host/cgroup are reported.",
+    "This is one fixed dev subset, not an unseen final test. No Agent change is made here."
+  ]
+}

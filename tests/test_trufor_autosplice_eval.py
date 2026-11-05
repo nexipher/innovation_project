@@ -33,7 +33,7 @@ def test_variants_are_aggregated_by_source_not_counted_as_independent():
     out = _source_aggregate(checks)
     assert out["n_sources"] == 2
     assert out["n_forged_sources"] == 1
-    assert out["n_real_sources"] == 1
+    assert out["n_real_sources"] == 2
     assert out["forged_variant_iou"]["mean"] == pytest.approx(0.4)
     assert out["forged_source_iou_mean"]["mean"] == pytest.approx(0.4)
     assert out["real_false_positive_sources"][0]["source_id"] == "b"

@@ -65,6 +65,15 @@ def _dist(values):
     }
 
 
+def _mean_not_none(values):
+    vals = [value for value in values if value is not None]
+    return round(statistics.mean(vals), 6) if vals else None
+
+
+def _dist_not_none(values):
+    return _dist([value for value in values if value is not None])
+
+
 def _source_aggregate(checks):
     """Aggregate variants by base; never treat same-source variants as independent."""
     by_source = {}
@@ -103,13 +112,13 @@ def _source_aggregate(checks):
                 "iou_mean": round(statistics.mean(row["iou"] for row in fake), 6),
                 "iou_max": round(max(row["iou"] for row in fake), 6),
                 "f1_mean": round(statistics.mean(row["f1"] for row in fake), 6),
-                "precision_mean": round(statistics.mean(row["precision"] for row in fake), 6),
-                "recall_mean": round(statistics.mean(row["recall"] for row in fake), 6),
+                "precision_mean": _mean_not_none(row["precision"] for row in fake),
+                "recall_mean": _mean_not_none(row["recall"] for row in fake),
             }
         sources.append(source)
 
     forged_sources = [source for source in sources if source["variant_count"]]
-    real_sources = [source for source in sources if not source["variant_count"]]
+    real_sources = [source for source in sources if source["authentic"] is not None]
     image_scores = [check["score"] for check in checks]
     image_labels = [1 if check["label"] == "Fake" else 0 for check in checks]
     source_scores = [source["forged_summary"]["score_mean"] for source in forged_sources] + \
@@ -120,12 +129,12 @@ def _source_aggregate(checks):
         "n_sources": len(sources),
         "n_forged_sources": len(forged_sources),
         "n_real_sources": len(real_sources),
-        "forged_variant_iou": _dist([row["iou"] for row in checks
-                                     if row["label"] == "Fake"]),
-        "forged_variant_f1": _dist([row["f1"] for row in checks
-                                    if row["label"] == "Fake"]),
-        "forged_variant_recall": _dist([row["recall"] for row in checks
-                                        if row["label"] == "Fake"]),
+        "forged_variant_iou": _dist_not_none(
+            [row["iou"] for row in checks if row["label"] == "Fake"]),
+        "forged_variant_f1": _dist_not_none(
+            [row["f1"] for row in checks if row["label"] == "Fake"]),
+        "forged_variant_recall": _dist_not_none(
+            [row["recall"] for row in checks if row["label"] == "Fake"]),
         "forged_source_iou_mean": _dist(
             [source["forged_summary"]["iou_mean"] for source in forged_sources]),
         "forged_source_f1_mean": _dist(
