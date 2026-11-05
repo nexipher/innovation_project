@@ -37,7 +37,7 @@ FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>
 批量与验收（不是"启动命令"，是流程步骤）：
 
 ```bash
-python scripts/generate_trajectories_g4.py --generation g8 --batch b1 --policies probe+noise  # GPU
+python scripts/generate_trajectories_g4.py --generation g8 --batch b1 --policies probe+npr+univfd  # GPU
 python scripts/g7_b2_report.py --batch g7_b2                                     # 统计（读归档副本）
 python scripts/cpu_acceptance_r5.py                                              # CPU 五检查
 python scripts/build_review_from_trajectories.py --generation g8 --batch b1      # 审核材料
@@ -47,16 +47,23 @@ python scripts/batch_inventory.py                                               
 历史版本只能显式开启：`FORENSIC_HALTING_POLICY=v1|v2`（非法值直接报错）；
 无环境变量时即当前版本 v3。
 
-## 4. 实际可用的专家
+## 4. 实际可用的专家（2026-11-05）
+
+当前运行时只注册 `probe` / `npr` / `univfd`（`state_machine/controller.py::CURRENT_TOOL_TAGS`）。
+旧 `freq` / `jpeg` / `noise` 已退役，源码只保留旧 trace 的派发/解析映射；`frequency` v1、`ela`
+不注册。全局/定位评测结论见 `docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md` 与
+`LOCALIZATION_COMPARISON_20261105.md`。
 
 | 工具键 | 代码 | 权重 | 当前角色 | 备注 |
 |--------|------|------|----------|------|
-| `probe` | `experts/probe_dino.py` | **外部，不随仓库分发**（`PROBE_WEIGHTS`） | 主检测器（分离度 ≈0.98，A 组拟合） | 未配置权重时该工具**缺席**，其余照常 |
-| `noise` | `experts/noise.py` | 仓库内 | 辅助线索；高值统计上指向 Real（极性已校正） | **候选保留**：与 NPR/UnivFD 同标准评测，缺乏增益与互补性才退出（提案 §1） |
-| `jpeg` | `experts/jpeg.py` | 仓库内 | 辅助线索；q70 下分离度仅 0.40 | **已决定退出**工具箱 |
-| `freq` | `experts/frequency_v2.py` | 仓库内 | 弱信号（0.66），只作辅助 | **已决定退出**工具箱 |
-| — | `experts/frequency.py`（v1）、`experts/ela.py` | — | **已退役**，不进入工具箱 | 保留代码供复算 |
-| — | `experts/trufor.py` | 外部 | **不在全局主链**，只作对照评测 | 与 PROBE 同属外部模型，未经许可不得再分发 |
+| `probe` | `experts/probe_dino.py` | **外部，不随仓库分发**（`PROBE_WEIGHTS`） | 主检测器（全局线保留） | 未配置权重时该工具**缺席**，其余照常 |
+| `npr` | `experts/npr.py` | 外部 | 运行时辅助专家 | PNG 条件补充；按会话工具箱注册 |
+| `univfd` | `experts/univfd.py` | 外部 | 运行时小批对照 | 真实会话不静默降级，不可用时显式报错 |
+| — | `experts/frequency*.py`、`noise.py`、`jpeg.py` | — | **已退役**；仅 replay 旧 trace | 不再进入新提示词 |
+| — | `experts/trufor.py` | 外部 | **不在全局主链**；局部定位初步候选、未接入 Agent | 2026-11-05 220 输入 IoU/F1 0.537/0.645；不重分发 |
+| — | `scripts/iml_vit_autosplice_eval.py`（官方代码在本机） | 外部；2026-11-05 已核实 | **未选中**定位候选 | 220 输入 IoU/F1 0.161/0.239；无 image-level score |
+| — | `experts/spai.py` | 外部 | **仅离线评测**，不接入 | GenImage dev/val 低于 PROBE；见全局比较 |
+| — | `experts/aide.py`、`drct.py` | 权重已删除 | 已退出 | 代码/历史保留 |
 
 工具集会按格式适用性裁剪（`APPLICABILITY_THRESHOLD=0.65`）：不适用的组合直接不生成该条会话。
 

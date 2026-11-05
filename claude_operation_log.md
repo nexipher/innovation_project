@@ -889,3 +889,16 @@
 * **涉及/修改的文件清单**：`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`claude_operation_log.md`
 * **执行结果与验证状态**：rc=0；16.52 s；未加载模型权重；未改 test/Agent/SFT。
 * **置信度或遗留待办（TODO）**：GPU/模型评测已另记 4.44/4.45；test 仍未使用。
+
+### 2026-11-05 - 阶段四 4.49：统一 README/plan 当前状态入口
+
+* **当前操作动作**：修订 README 开头、plan 顶部/当前状态、架构文档和 KNOWN_ISSUES 的过时专家注册表与 IML 权重表述；不改运行代码或评测数据。
+* **对应计划锚点**：`plan.md` §0/§11；README §0/§2/§6；`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md` §4；`KNOWN_ISSUES.md` 顶部
+* **核心变更说明**：
+  1. README 顶部新增 2026-11-05 当前状态块，明确运行时工具箱 `probe/npr/univfd`、旧三专家 replay-only、全局 PROBE、SPAI 不接入、TruFor 初步定位候选、IML 已核实未选中、test 无未见性。
+  2. README §0/§0.2/§2/§5/§6 的注册表、架构图、工具标签和 Qwen 名称同步到当前实现；新增最新审计/比较/IML 文档入口。
+  3. plan 顶部加入当前状态横幅；§0 增加运行时工具箱、全局/定位/test 状态；更新资产表中的 IML/Qwen/资源；对历史“IML 权重仍缺”段落加“2026-11-05 已更新”注记，不改写历史结论。
+  4. `docs/design/CURRENT_PROGRAM_ARCHITECTURE.md` §4 与 `KNOWN_ISSUES.md` C2/C3 同步为当前运行时与评测结论。
+* **涉及/修改的文件清单**：`README.md (Modified)`、`plan.md (Modified)`、`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md (Modified)`、`KNOWN_ISSUES.md (Modified)`、`claude_operation_log.md`
+* **执行结果与验证状态**：`git diff --check` 通过；文档-only，未改代码/模型/数据；此前 core 745 passed；未使用 test；未改 Agent/SFT。
+* **置信度或遗留待办（TODO）**：①历史段落仍保留当时快照，但顶部入口已声明以当前状态/§11 为准；②后续如专家接入 Agent，需再同步 README/plan/架构文档。

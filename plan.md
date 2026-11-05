@@ -1,5 +1,13 @@
 # 计划（当前代次 g8）
 
+> **2026-11-05 当前状态（入口；覆盖历史段落中的过时表述）**：运行时工具箱是
+> **`probe` / `npr` / `univfd`**；`freq` / `jpeg` / `noise` 已退役、仅 replay；`ela` /
+> `frequency` v1 不注册。全局线 **PROBE 保留、SPAI 不接入**；定位线 **TruFor 为初步候选、
+> 尚未接入 Agent**，**IML-ViT 代码与官方权重均已到位并完成 220 输入对照，但未选中**。
+> GenImage test 有使用历史且无未见性，继续隔离；选择只用 dev/val。最新结果见 §11.4/§11.5/
+> §11.7 与 `docs/development/{GENIMAGE_GLOBAL_COMPARISON_20261105,LOCALIZATION_COMPARISON_20261105,IML_VIT_VERIFICATION_20261104}.md`。
+> 历史段落保留当时记录；凡与本条冲突，以本条和 §11 为准。
+
 > **本文件从 2026-10-15 起只记当前代次的工作，只追加、不改写已写下的条目。**
 > v1 计划（Qwen2.5-VL + PROBE/noise/jpeg/frequency_v2 时代，含其全部阶段与决策记录）已归档：
 > `archive/legacy_v1_20261015/docs/plan_v1.md`，配套操作日志
@@ -12,11 +20,15 @@
 > `KNOWN_ISSUES.md`（问题清单）、`docs/development/TESTING.md`（测试分层与运行方式）。
 > 文档布局见 §1b：**根目录只保留四份日常文档**，其余在 `docs/{design,development,archive}/`。
 
-## 0. 当前状态（2026-10-15）
+## 0. 当前状态（2026-11-05 更新）
 
 | 事实 | 值 |
 |------|-----|
-| 当前代次 | `g8`（`sft_data/g8/`，模型 Qwen3-VL-8B **待确认版本**；`g7` 及更早已冻结） |
+| 当前代次 | `g8`（`sft_data/g8/`，Qwen3-VL-8B-Instruct 固定 revision `0c351dd0…`；`g7` 及更早已冻结） |
+| 运行时工具箱 | `probe`（主检测器）/ `npr` / `univfd`；`freq` / `jpeg` / `noise` 仅旧 trace replay |
+| 全局线 | GenImage q95 dev/val：**PROBE 保留，SPAI 不接入**（见 §11.4） |
+| 定位线 | **TruFor 初步候选、未接入 Agent**；IML-ViT 已核实但未选中（见 §11.5） |
+| test | 无可靠未见性：新 test 旧划分为 train 1,258/val 37/test 42/holdout 13，旧 test 30/286 先验使用；test 隔离 |
 | 默认策略 | `v3`（Qwen 主导；`config.HALTING_POLICY`，可用 `FORENSIC_HALTING_POLICY` 选择 v1/v2 复算） |
 | 数据布局 | 代次是目录、批次名是纯名字：`sft_data/<generation>/{trajectories,variants,review,train/batches}/<batch>/`；三个写入入口的 `--generation` **必填** |
 | 冻结 | `sft_data/FROZEN.json` 以 **(代次, 批次)** 为身份，代码层拒收；**两级**：未登记代次一律拒、冻结代次下不得新建任何批次、已登记冻结批次走 `--allow-frozen` 复算。九个写入入口同一函数 |
@@ -1274,9 +1286,10 @@ b2 仍未通过验收、未冻结；5 条 pass 不代表整批通过。详见同
 | GenImage Real | 1000 JPG，35 MB，500px 级、纵横比不一；八组共享，组间不独立 |
 | MNW/DIV2K | 4×250 假图 +100 真图，1.1 GB；现有 manifest 1100 条；q95 输入 100 条；final 分区未使用 |
 | AutoSplice | **已解压并派生 q95**：原数据 16,558 文件/494 MB；Authentic 2273、Forged 三版本各 3621、Mask/Caption 各 1710；q95 输入 5894（227 MB），配对/审计/划分清单已生成 |
-| IML-ViT | **缺失**（无代码/权重）；TruFor 已有 commit `ae54475d…` 与权重 `ac1d90e3…`，CPU 16 张小批已完成（IoU 0.307/F1 0.434；真图 4/8 高响应 >1%），但不足以选定位专家 |
-| Qwen3-VL | snapshot `0c351dd0…`，缓存约 17.5 GB，未加载 |
-| 资源 | 磁盘可用 11.16 GB；cgroup max 120 GiB/events 0；GPU 24 GB 空闲（1 MiB） |
+| IML-ViT | **代码与官方权重均已到位**（2026-11-05，strict load）；220 输入 IoU/F1 **0.161/0.239**，未选中 |
+| TruFor | 代码/权重已有；220 输入 IoU/F1 **0.537/0.645**、source score AUROC 0.878；**初步定位候选、未接入 Agent** |
+| Qwen3-VL | snapshot `0c351dd0…`，已迁移到数据盘（`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`）；实际加载检查 7.1 s/17.53 GB，未推理（见 §10.7） |
+| 资源（2026-11-05） | 数据盘可用约 7 GiB、overlay 约 18 GB；cgroup 120 GiB/events 0；RTX 4090 24 GB 空闲（0 MiB） |
 
 **可复用 q95 测量**：MNW 六个已有专家各有 100 条 q95 行（PROBE、SPAI、AIDE
 progan、DRCT、AIDE sd14、AIDE GenImage）；GenImage q95（9000）与 AutoSplice
@@ -1416,8 +1429,10 @@ raw 结果，其 `timing` 显示 16 次 cache hit（0.07 s），不是冷跑时�
   `..._cpu_v1.json` 作为修正 Real mask 语义前的首版（其全图误报聚合不变，但
   `map_outside_mean` 受继承 mask 影响，已由最终版取代）。
 
-IML-ViT 官方代码/权重仍缺（Google Drive/Baidu），准备清单见
+IML-ViT 官方代码/权重当时未到位（Google Drive/Baidu），准备清单见
 `docs/development/IML_VIT_PREP_20261102.md`。
+**（历史记录；2026-11-05 已更新：代码与官方权重均到位并完成 220 输入对照，见
+§11.5 与 `IML_VIT_VERIFICATION_20261104.md`。）**
 
 ### 10.6 旧专家资产删除（2026-11-02，用户授权）
 
@@ -1577,10 +1592,10 @@ SPAI 不接入**。报告：`docs/development/GENIMAGE_GLOBAL_COMPARISON_2026110
 - **TruFor 扩展**：在固定子集上跑 CPU（当前 CPU 小批约 0.9 s/张），报告逐图与
   按源聚合的 IoU/F1/precision/recall、真实图异常面积/误报、图像级 score（TruFor
   有 score）、失败、耗时；同源多变体按 base 聚合，不把变体当独立源。
-- **IML-ViT**：代码/权重仍未到位。先尝试固定 commit 的官方代码核对；权重不可得
-  则如实记录 blocker，不伪造输出、不把未验证的接口写成已核实。若代码/权重到位，
-  用同一 220 输入与 TruFor 对照；预处理、padding、归一化、map 通道/尺寸还原逐项
-  核实；IML-ViT 若无图像级 score，不强行补造。
+- **IML-ViT**：2026-11-05 已完成。代码固定在官方 commit，官方 checkpoint 已上传并通过
+  strict load；用同一 220 输入与 TruFor 对照，预处理/padding/归一化/map 尺寸还原逐项
+  核实；IML-ViT 无图像级 score，不补造。结果见下方完成结果与
+  `docs/development/IML_VIT_VERIFICATION_20261104.md`。
 - **Agent 边界**：定位专家未定前，不改 Agent 的区域观察、证据回传、结案流程；
   不启动 SFT/训练。
 
@@ -1656,7 +1671,7 @@ python scripts/g8_genimage_eval.py --report-only --experts probe,spai \
 NO_ALBUMENTATIONS_UPDATE=1 python scripts/trufor_autosplice_eval.py \
   --device cuda --batch-size 32
 
-# IML-ViT 仅在官方权重到位后运行；当前仍缺 checkpoint
+# IML-ViT 权重已到位；以下命令仅在需要复算时使用
 ```
 
 **2026-11-05 更新**：GPU 已开启，SPAI dev/val、TruFor 220、IML-ViT 220 均已完成，

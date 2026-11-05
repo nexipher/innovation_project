@@ -3,20 +3,29 @@
 **主动探索型双分支图像取证系统**
 MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的法证报告。
 
-> **先读 §0：当前版本与入口。** §0–§6 描述**当前代码**，但其中的示例命令、批次路径与
-> 实测数字来自 **g7 代次（Qwen2.5-VL + 旧专家组）**——那一代的**数据产物已全部归档**
-> （见 §0.3），文字作为结论保留。§7 是历史进展与路线图，§7.3 的实测结论仍然有效。
+> **先读这里（2026-11-05 当前状态）**：当前代次 **g8**（Qwen3-VL-8B-Instruct）；运行时
+> 工具箱是 **`probe` / `npr` / `univfd`**，`freq` / `jpeg` / `noise` 已退役、仅保留旧 trace
+> 的 replay 映射。全局评测结论是 **PROBE 单独作为主检测器**，SPAI 保留离线候选、不接入；
+> 定位线 **TruFor 为初步候选但尚未接入 Agent**，IML-ViT 代码/权重已核实但未选中。
+> GenImage test 已被使用历史污染、旧 test 也有先验使用，**没有可靠未见测试**，test 继续隔离；
+> 专家选择使用 dev/val。Qwen3 已迁移到数据盘；未训练/SFT。
+>
+> 最新证据入口：`plan.md` §11、`docs/development/GENIMAGE_USAGE_AUDIT_20261102.md`、
+> `GENIMAGE_GLOBAL_COMPARISON_20261105.md`、`LOCALIZATION_COMPARISON_20261105.md`、
+> `IML_VIT_VERIFICATION_20261104.md`、`ASSET_INVENTORY_20261102.md`。§0–§6 的旧 g7 示例和
+> 历史数字仍保留，但**不得覆盖本条当前状态**；§7 是历史进展，§7.3 的实测结论仍有效。
 
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1170%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-745%20core%20passed-brightgreen)](./tests/)
 
 ---
 
-## 0. 当前版本与代次（2026-10-15）
+## 0. 当前版本与代次（2026-11-05 更新）
 
-**当前代次是 g8**（Qwen3-VL-8B + PROBE / 候选新专家，**待建**）；**g7 及更早全部冻结并归档**。
+**当前代次是 g8**：Qwen3-VL-8B-Instruct + 运行时工具箱 `probe` / `npr` / `univfd`；
+旧 `freq` / `jpeg` / `noise` 已退役，只保留旧 trace replay 映射。**g7 及更早全部冻结并归档**。
 代码默认态即当前版本，不需要额外开关：
 
 ```bash
@@ -29,7 +38,8 @@ FORENSIC_HALTING_POLICY=v2 python main.py --image <path>  # 仅用于历史复�
 `qwen25` 的 Qwen2.5-VL 权重已于 2026-10-26 删除；历史复算需先重新下载（缺权重时显式报错）。
 （假会话产出的 trace 与真实会话无异，验收会把它当成真结果）。要跑 CPU 就显式写 `--mllm mock`。
 
-**当前任务**：全局 AI 生成检测（Real / Fake）。**Qwen 主导调用与结案，控制器负责执行与安全约束**；
+**当前任务**：全局 AI 生成检测（Real / Fake）是主交付；AutoSplice 局部定位是并行研究线，
+TruFor 仅为初步候选、尚未接入 Agent。**Qwen 主导调用与结案，控制器负责执行与安全约束**；
 参考后验只作对照、不覆盖标签。默认策略是 **v3**（`config.HALTING_POLICY`）。
 
 ### 0.1 数据布局：代次是目录，批次名是纯名字
@@ -52,6 +62,11 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 | [`docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) | 新专家组与 Agent 重整方案（原案；**有效内容已整合进 `plan.md` §2–§7**） |
 | [`docs/archive/NEW_GENERATION_NAMING.md`](docs/archive/NEW_GENERATION_NAMING.md) | 代次/冻结/归档映射的规则记录（§6 已执行完毕） |
 | [`docs/development/TESTING.md`](docs/development/TESTING.md) | 测试三层（core / module / full）与"换专家后哪些测试退役" |
+| [`docs/development/ASSET_INVENTORY_20261102.md`](docs/development/ASSET_INVENTORY_20261102.md) | 当前数据/权重/环境/删除清单；含 GenImage/AutoSplice/q95 与 IML 状态 |
+| [`docs/development/GENIMAGE_USAGE_AUDIT_20261102.md`](docs/development/GENIMAGE_USAGE_AUDIT_20261102.md) | GenImage 使用历史审计：旧/新划分、训练/校准/评测/审核 flags、test 未见性结论 |
+| [`docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md`](docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md) | PROBE vs SPAI 的 GenImage dev/val 并排结果与选择结论 |
+| [`docs/development/LOCALIZATION_COMPARISON_20261105.md`](docs/development/LOCALIZATION_COMPARISON_20261105.md) | TruFor vs IML-ViT 的 220 输入定位对照与初步选择 |
+| [`docs/development/IML_VIT_VERIFICATION_20261104.md`](docs/development/IML_VIT_VERIFICATION_20261104.md) | IML-ViT 固定 commit、权重、预处理和输出语义核实 |
 | [`docs/archive/ARCHIVE_INVENTORY.md`](docs/archive/ARCHIVE_INVENTORY.md) | v1 归档清单快照（口径、角色、能证明什么/不能证明什么） |
 | [`sft_data/BATCH_INVENTORY.md`](sft_data/BATCH_INVENTORY.md) | 批次台账（自动生成；已归档批次会标明读的是归档副本） |
 
@@ -60,11 +75,11 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 当前架构、新专家组方案原案）、`docs/development/`（测试与工程协作规范）、
 `docs/archive/`（归档清单快照、代次/冻结规则）。规则与例外见 §8.1。
 
-**当前注册的专家**：`probe`（外部权重，主检测器）、`noise`、`jpeg`、`freq`，处置按
-[`docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md`](docs/design/NEW_EXPERT_GROUP_REBUILD_PROPOSAL.md) §1：
-`jpeg` 与 `freq`(frequency_v2) **已决定退出**；`noise` 是**候选保留**，与 NPR / UnivFD 一起
-按"能否在 Agent 流程里带来增益与互补性"评测，**缺乏收益时才退出**——不预设它退役。
-`frequency`(v1)、`ela` 已退役；`trufor` 不在全局主链，仅作对照。
+**当前运行时工具箱**（`main.py` / `state_machine/controller.py::CURRENT_TOOL_TAGS`）：
+`probe`（外部权重，主检测器）、`npr`、`univfd`。旧 `freq`(frequency_v2) / `jpeg` / `noise`
+已退役，源码仍保留派发/解析映射以 replay 旧 trace；`frequency`(v1)、`ela` 不再注册。
+`trufor` 不在全局主链，只作局部定位研究；`spai` 只在离线评测中，不接入 Agent；AIDE/DRCT/SSP
+已退出并删除权重；IML-ViT 代码/权重已核实但未选中（见上方当前状态与 §7.3）。
 
 ### 0.3 v1 归档（2026-10-15）
 
@@ -95,12 +110,12 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 
 ## 1. 项目概览
 
-多模态大语言模型（MLLM，如 GPT-4o、Qwen2.5-VL）长于高层语义理解，却对频域伪迹、微观噪声分布、JPEG 压缩痕迹等底层物理法证特征处于"睁眼瞎"状态——其视觉编码器（CLIP）在下采样过程中丢弃了这些关键信息。
+多模态大语言模型（MLLM，如 GPT-4o、Qwen3-VL）长于高层语义理解，却对频域伪迹、微观噪声分布、JPEG 压缩痕迹等底层物理法证特征处于"睁眼瞎"状态——其视觉编码器（CLIP）在下采样过程中丢弃了这些关键信息。
 
 **本系统**将 MLLM 作为"法官"，与传统法证"专家组"结合，构建主动探索式闭环：
 
 1. MLLM 扫描图像，锁定可疑区域（Planning）
-2. 按需**主动调用**法证专家（g7 时代的工具集是 `freq` / `noise` / `jpeg` + `probe`；g8 待换）
+2. 按需**主动调用**法证专家（当前 g8 工具集是 `probe` / `npr` / `univfd`；旧 `freq`/`jpeg`/`noise` 仅 replay）
 3. 专家输出被抽象为结构化 **Evidence Token**（含物理现象描述 + 置信度）
 4. MLLM 交叉质证全部证据，生成证据锚定的可解释真伪判定报告
 
@@ -118,14 +133,14 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 flowchart TB
     IMG["🖼️ 输入图像"] --> FSM["状态机控制器<br/>(ForensicStateMachine)"]
 
-    FSM -->|"1. 构建 SOP Prompt + 图像"| MLLM["🧑⚖️ MLLM 法官<br/>(Qwen2.5-VL / Mock)"]
+    FSM -->|"1. 构建 SOP Prompt + 图像"| MLLM["🧑⚖️ MLLM 法官<br/>(Qwen3-VL / Mock)"]
     MLLM -->|"2. 结构化输出<br/>&lt;planning&gt; + &lt;call_*&gt;[bbox]"| FSM
     FSM -->|"3. 坐标转换<br/>[0,1000] → 像素"| CT["CoordinateTransformer"]
     CT -->|"4. 裁剪 bbox"| EXP["🔬 法证专家组"]
 
-    EXP --> E1["频域专家<br/>2D-FFT 网格伪迹"]
-    EXP --> E2["噪声专家<br/>SRM 残差一致性"]
-    EXP --> E3["JPEG 专家<br/>块效应+双重量化"]
+    EXP --> E1["PROBE-DINOv2<br/>主检测器"]
+    EXP --> E2["NPR<br/>残差伪迹"]
+    EXP --> E3["UnivFD<br/>通用伪造检测"]
 
     E1 --> TOK["Evidence Tokenizer<br/>(标量 → 语义软描述)"]
     E2 --> TOK
@@ -146,12 +161,12 @@ sequenceDiagram
     participant E as 专家组
 
     SM->>M: System Prompt (SOP) + 图像 + 历史
-    M-->>SM: <planning> + <call_noise>[bbox]
-    SM->>E: 裁剪 bbox → NoiseExpert.analyze()
+    M-->>SM: <planning> + <call_probe>[bbox]
+    SM->>E: 裁剪 bbox → ProbeDinoExpert.analyze()
     E-->>SM: ExpertResult(strength=0.76, ...)
     SM->>M: Evidence Token JSON
-    M-->>SM: <reasoning> + <call_freq>[bbox]
-    SM->>E: FrequencyExpert.analyze()
+    M-->>SM: <reasoning> + <call_npr>[bbox]
+    SM->>E: NPRExpert.analyze()
     E-->>SM: ExpertResult(strength=0.48, ...)
     SM->>M: Evidence Token JSON
     M-->>SM: <reasoning> + <verdict>{...}
@@ -165,12 +180,12 @@ sequenceDiagram
 | 控制 | `state_machine/controller.py` | 主循环编排：解析 → 执行专家 → 注入证据 → 终止判断 |
 | 控制 | `state_machine/halting.py` | 四重终止守卫（verdict / budget / conflict / info_gain） |
 | 控制 | `state_machine/evidence_tokenizer.py` | 标量 → 语义映射 + Evidence Token Schema 构建 |
-| 模型 | `mllm/qwen_client.py` | 真实 Qwen2.5-VL 推理 + 格式纠错反馈环 |
+| 模型 | `mllm/qwen3_client.py` | 真实 Qwen3-VL 推理 + 格式纠错反馈环 |
 | 模型 | `mllm/mock_client.py` | 模板驱动 Mock（4 种行为模式，CPU 测试用） |
 | 模型 | `mllm/message_builder.py` | 多轮消息构建：原图 + 诊断区域裁剪图（G1） |
-| 专家 | `experts/frequency.py` / `frequency_v2.py` | 2D-FFT 功率谱周期峰值检测 |
-| 专家 | `experts/noise.py` | SRM 高通滤波 + 局部方差不一致性 |
-| 专家 | `experts/jpeg.py` | 8×8 块效应 + DCT 直方图双重量化 |
+| 专家 | `experts/probe_dino.py` | PROBE-DINOv2 整图 AI 生成检测（主检测器） |
+| 专家 | `experts/npr.py` / `univfd.py` | NPR 残差伪迹 / UnivFD 通用伪造检测 |
+| 专家（历史） | `experts/{frequency,frequency_v2,noise,jpeg}.py` | 旧三专家；仅保留旧 trace replay，不在当前工具箱 |
 | 工具 | `utils/parser.py` | 正则解析 XML 标签 + 容错归一化 |
 | 工具 | `utils/coordinate_transformer.py` | 双空间坐标转换（normalized_1000 ↔ pixels，G1） |
 | 工具 | `utils/evidence_consistency.py` | 证据方向一致性门：strength 与论述方向必须一致（G1） |
@@ -184,7 +199,7 @@ sequenceDiagram
 
 - Python 3.12+
 - **CPU 模式**：完全可用（专家算法 + Mock MLLM 无需 GPU）
-- **GPU 模式**：真实 Qwen2.5-VL 推理需 RTX 4090（24 GB）或同等显存
+- **GPU 模式**：真实 Qwen3-VL 推理需 RTX 4090（24 GB）或同等显存
 
 ### 3.2 安装
 
@@ -228,6 +243,9 @@ dataset/
 - 运行时每个 Evidence Token 都会带上**来源 URL、权重的 sha256（带副文件缓存）、输入预处理描述**，见 `experts/external_base.py` 的 `WeightProvenance`。
 - 网络：本机 `raw.githubusercontent.com` 与 `huggingface.co` **不通**，获取走替代源（`ghfast.top` / `cdn.jsdelivr.net` / `hf-mirror.com` / ModelScope）。
 - **论文引用仅为学术归属，不构成使用授权。**
+- **2026-11-05 资产补充**：运行时还使用 NPR / UnivFD（两者为当前工具箱）；SPAI 仅离线评测；
+  IML-ViT 代码与官方权重已核实但未选中；AIDE/DRCT/SSP 权重已删除。完整路径/哈希/状态见
+  [`ASSET_INVENTORY_20261102.md`](docs/development/ASSET_INVENTORY_20261102.md)。
 
 ```bash
 # 适配器与评测（CPU 可跑 Mock；真实推理需 GPU 授权）
@@ -243,7 +261,7 @@ python scripts/g7_baselines.py --validate-c                               # 冻�
 # CPU 模式（Mock MLLM）
 python main.py --image dataset/GenImage_Test/Midjourney/0_midjourney_169.png
 
-# GPU 模式（真实 Qwen2.5-VL）
+# GPU 模式（真实 Qwen3-VL）
 python main.py --image dataset/GenImage_Test/Midjourney/0_midjourney_169.png --mllm qwen
 ```
 
@@ -375,16 +393,15 @@ innovation_project/
 │
 ├── experts/                        # 法证专家模块（纯 CPU）
 │   ├── base.py                     # BaseExpert 抽象类 + ExpertResult 数据结构
-│   ├── frequency.py                # 2D-FFT 功率谱峰值检测（v1）
-│   ├── frequency_v2.py             # 多尺度 FFT（全图 + 50% 降采样，v2）
-│   ├── noise.py                    # SRM 高通滤波 + 局部方差不一致性
-│   └── jpeg.py                     # 块效应度量 + DCT 双重量化检测
+│   ├── probe_dino.py               # PROBE-DINOv2 主检测器
+│   ├── npr.py / univfd.py          # 当前工具箱的辅助外部专家
+│   └── frequency*.py / noise.py / jpeg.py  # 旧三专家；仅 replay
 │
 ├── mllm/                           # MLLM 客户端抽象层
 │   ├── base.py                     # BaseMLLMClient 抽象接口
 │   ├── mock_client.py              # 模板驱动 Mock（4 种行为模式，CPU）
 │   ├── message_builder.py          # Qwen 多轮消息构建（原图 + 区域裁剪图，G1）
-│   └── qwen_client.py              # 真实 Qwen2.5-VL 客户端（GPU）+ 格式纠错环
+│   └── qwen3_client.py             # 真实 Qwen3-VL 客户端（GPU）+ 格式纠错环
 │
 ├── state_machine/                  # 状态机核心
 │   ├── controller.py               # 主循环：解析→执行专家→Evidence Token 注入→终止
@@ -426,7 +443,7 @@ innovation_project/
 ├── tests/                          # CPU 单元测试与端到端测试
 │
 ├── sft_data/                       # 数据区：代次是目录，批次名是纯名字
-│   ├── g8/                         # 当前代次（待建）：{trajectories,variants,review,train/batches}/<batch>/
+│   ├── g8/                         # 当前代次：{trajectories,variants,review,train/batches}/<batch>/
 │   ├── FROZEN.json                 # 冻结登记：身份是 (代次, 批次)，写入入口据此拒收
 │   ├── GENERATIONS.json            # 代次索引（模型身份；批次身份仍以各批次 VERSIONS.json 为准）
 │   ├── split_v2.json               # G4-a 源级划分（9000 源，含校准源 holdout 与采样权重）
@@ -502,7 +519,7 @@ innovation_project/
 | 标签 | 格式 | 说明 |
 |------|------|------|
 | `<planning>` | 文本块 | 必含 Suspected Region / Visual Anomalies / Expert Target & Hypothesis |
-| `<call_freq\|noise\|jpeg>` | `[ymin, xmin, ymax, xmax]` | bbox 范围 [0, 1000]（对齐 Qwen2.5-VL 规范） |
+| `<call_probe\|npr\|univfd>` | `[ymin, xmin, ymax, xmax]` | bbox 范围 [0, 1000]（当前工具箱；旧 `freq/noise/jpeg` 仅 replay） |
 | `<reasoning>` | 文本块 | 物理-语义一致性校验 + 环境污染质询 |
 | `<verdict>` | JSON | 见下方 Schema |
 
@@ -534,7 +551,7 @@ innovation_project/
   "final_verdict": { "verdict": "Fake", "confidence": 0.86, "..." : "..." },
   "conversations": [
     { "from": "user", "value": "<image>\n请分析这张图像的真实性..." },
-    { "from": "gpt",  "value": "<planning>...</planning><call_noise>...</call_noise>" },
+    { "from": "gpt",  "value": "<planning>...</planning><call_probe>...</call_probe>" },
     { "from": "user", "value": "{\"evidence_name\": \"...\", \"strength\": 0.76, ...}" },
     { "from": "gpt",  "value": "<reasoning>...</reasoning><verdict>{...}</verdict>" }
   ],
@@ -585,9 +602,14 @@ innovation_project/
 
 ## 6. 法证专家与终止机制
 
-### 6.1 专家准入（G2 标定后的实测口径）
+### 6.1 专家准入（历史 G2 口径 + 2026-11-05 当前运行时）
 
-G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最初的理论相反；G2-e 据此逐个准入：
+> **当前运行时（2026-11-05）**：`main.py` 只注册 **`probe` / `npr` / `univfd`**
+> （`CURRENT_TOOL_TAGS`）。`freq` / `jpeg` / `noise` 已退役，源码只保留旧 trace 的
+> replay 映射；`frequency` v1 / `ela` 不注册。下面的 G2 表是**历史准入记录**，
+> “保留/仅佐证”等列**不代表当前注册表**。
+
+G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最初的理论相反；G2-e 据此逐个准入（历史）：
 
 | 专家 | 算法 | 实测方向 | 逐格分离度（极性校正） | 准入 |
 |------|------|----------|------------------------|------|
@@ -602,11 +624,14 @@ G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最�
 | 专家 | 方法 | 方向 | 实测判别力（按源 CI） | 处置 |
 |------|------|------|----------------------|------|
 | **PROBE-DINOv2** | DINOv2-L + 线性头；336 滑窗 → 均值 logit → sigmoid = P(AI-generated) | **正向**（无需校正） | A 组 0.960 [0.924, 0.986]：native 0.967 / png 0.973 / q95 0.977 / q85 0.987 / **q70 0.995**；**未见生成器 0.952**；C 组独立验证 **0.986** | **准入，主检测器**（入口 3 接线） |
-| **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | **系统性反向**（两组 × 五格式 = 10/10 格点估计 < 0.5；q85 的 CI 两次都整段低于 0.5） | A 组 **0.426** / D 组（独立复测，64 源全新图）**0.384**，两组整体 CI 均跨 0.5 | **不准入全局链**（一个分数越高越像 Real 的检测器接进去只会把 AI 图推向 Real）；留作 L1 局部篡改研究对照 |
+| **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | 全局 score **系统性反向**（历史 A 0.426 / D 0.384） | 2026-11-05 AutoSplice 220 输入：forged variant IoU **0.537** / F1 **0.645**，source score AUROC 0.878 | **不接入全局链**（方向反向）；**局部定位初步候选**，尚未接入 Agent |
+| **IML-ViT** | ViT + IML head；仅输出 `map`，无 image-level score | 未提供全局 score | 2026-11-05 同一 220 输入：IoU **0.161** / F1 **0.239**，明显低于 TruFor | **不作为当前定位候选**；代码/官方权重已核实 |
 
-- TruFor 的全局分数方向仍为反向，**未准入全局链**；其局部定位能力另做小批（2026-11-02 CPU 16 张：IoU 0.307/F1 0.434，真图 4/8 高响应 >1%，尚不足选定位专家），见 `plan.md` §10.5 与资产清单 §4.3。
+
+- TruFor 的全局分数方向仍为反向，**未准入全局链**；其局部定位能力已扩大到固定 220 输入（2026-11-05：IoU 0.537/F1 0.645，真图 68/100 高响应 >1%），作为**初步定位候选**但尚未接入 Agent；IML-ViT 同一批 220 输入的 IoU/F1 为 0.161/0.239，且无 image-level score，不选。详见 `LOCALIZATION_COMPARISON_20261105.md`。
 - PROBE 与现有专家的 Spearman 相关 |ρ| ≤ 0.23（不冗余，但融合后增益在 C 组仍落进噪声：见 §7.3）。
 - **候选专家 SPAI / AIDE / DRCT 只在离线适配器中做过独立评测，均未注册进 Agent 工具箱或证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g/§4.17h。两轮结果为：PROBE 阈值错误 13/200，SPAI −24（10 纠正/34 损害），DRCT −77（7/84），AIDE `progan_train`/`sd14_train`/`GenImage_train` 为 −148/−145/−122（三份全部展示）。**当前证据只支持 PROBE 单独作为专家组；SPAI 保留离线候选；DRCT/AIDE 不接入。** 2026-11-02 已删除 AIDE 三份权重、DRCT 压缩包/已解压权重和 SSP 压缩包；AIDE/DRCT 代码与历史记录保留；Qwen3 已迁移至数据盘，旧系统盘 Qwen 目录已删除（旧缓存路径仅保留符号链接）。DIRE 未下载。
+- **2026-11-05 GenImage dev/val 复核**：PROBE 在每个生成器的 AUROC/平衡准确率都高于 SPAI，SPAI 在 BigGAN 的 AUROC 仅 0.341（dev）/0.367（val）；错误重叠中 PROBE-only 远多于 SPAI-only。**全局线保留 PROBE，SPAI 不接入**；详见 `GENIMAGE_GLOBAL_COMPARISON_20261105.md`。
 
 > 专家的 `support`、`interpretation_text`、`reasoning` 与 `phenomenon` 已按实测方向改写（`BaseExpert.metric_polarity` + `inverted_text_map`）；进入证据链前由 `EvidenceRectifier` 统一方向权威（校准概率 > 专家声明 > 自由文本）。
 
