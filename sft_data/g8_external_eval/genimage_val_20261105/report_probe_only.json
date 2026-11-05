@@ -1,0 +1,3169 @@
+{
+  "schema": "genimage_external_eval/1",
+  "created_at": "2026-11-05T08:31:35",
+  "inputs_manifest": "dataset/GenImage_q95/eval_val_manifest_20261102.json",
+  "inputs_manifest_sha256": "cd813598bbcdb458dc367fff4bd9d2b25e8a549941516a0247b75ddef6da4225",
+  "manifest_split": "val",
+  "rules": {
+    "no_threshold_fitting": true,
+    "fixed_thresholds": true,
+    "per_generator_only": true,
+    "no_pooled_auroc": true,
+    "real_images_shared_across_groups": true,
+    "test_not_used": true
+  },
+  "experts": {
+    "probe": {
+      "weights": {
+        "file": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+        "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "bytes": 1217679947
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "上游判别器的 sigmoid 输出；本项目只用其排序，概率映射由本地校准层另记"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "外部默认",
+        "note": "本项目不据此下结论，只作对照"
+      },
+      "preprocess": {
+        "name": "pad→336 滑窗均值",
+        "detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+        "measurement_scope": "global"
+      },
+      "licence": "上游未声明（仓库无 LICENSE）；仅本地研究，不再分发"
+    }
+  },
+  "usage": {
+    "val_all": {
+      "inputs": 1350,
+      "no_known_use": 1192,
+      "signatures": {
+        "known_dev_eval|known_sft_data": 56,
+        "known_dev_eval": 69,
+        "split_only_unknown": 1192,
+        "known_calibration|known_dev_eval|known_fit": 10,
+        "known_calibration|known_fit": 8,
+        "known_calibration|known_dev_eval": 10,
+        "known_calibration|known_dev_eval|known_sft_data": 1,
+        "known_calibration|known_dev_eval|known_fit|known_sft_data": 1,
+        "known_dev_eval|known_review|known_sft_data|known_train": 3
+      },
+      "by_group": {
+        "ADM": 150,
+        "BigGAN": 150,
+        "Glide": 150,
+        "Midjourney": 150,
+        "Real": 150,
+        "SD14": 150,
+        "SD15": 150,
+        "VQDM": 150,
+        "Wukong": 150
+      }
+    },
+    "val_no_known_use": {
+      "inputs": 1192,
+      "no_known_use": 1192,
+      "signatures": {
+        "split_only_unknown": 1192
+      },
+      "by_group": {
+        "ADM": 142,
+        "BigGAN": 133,
+        "Glide": 138,
+        "Midjourney": 134,
+        "Real": 93,
+        "SD14": 139,
+        "SD15": 137,
+        "VQDM": 136,
+        "Wukong": 140
+      }
+    }
+  },
+  "sets": {
+    "val_all": {
+      "n_inputs": 1350,
+      "n_fake_inputs": 1200,
+      "n_real_inputs": 150,
+      "n_no_known_use": 1192,
+      "groups": {
+        "ADM": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9702,
+                "ci95": [
+                  0.9501,
+                  0.9866
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.9,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.923333,
+              "threshold_accuracy": 0.923333,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.873497,
+                  "std": 0.25254,
+                  "min": 0.002142,
+                  "p05": 0.170224,
+                  "p25": 0.894031,
+                  "p50": 0.988863,
+                  "p75": 0.998533,
+                  "p95": 0.999838,
+                  "max": 0.99993
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__ADM__112_adm_34__q95",
+                  "source_id": "ADM/112_adm_34",
+                  "source_sha256": "efc8f2e69afb271ab370b5db41d8e1320eafe3fd7efa65d03de736b97374ed87",
+                  "sha256": "89a1d767b27a1a288da849b769ca734eb86de1fc74ab2f22fd190d6d03cd802f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.356202,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__ADM__191_adm_91__q95",
+                  "source_id": "ADM/191_adm_91",
+                  "source_sha256": "c366039596236879ec8d440aa29f10b5afa312afd28dc84ed30c91f4684f4233",
+                  "sha256": "144f583e6c43af6c445eefcbb57693153bd2ac805dd73f5c26b2667d6ec47972",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.302066,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__225_adm_174__q95",
+                  "source_id": "ADM/225_adm_174",
+                  "source_sha256": "fa2b74044524c4ba3844eff52b849696f0a49e27b519e84ba93b0522c3198a1a",
+                  "sha256": "8f432ff371c4b3d6c72e1673dc5eab9bb796a64c47a1083f8b15c235c8ca4ee9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.002142,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__280_adm_153__q95",
+                  "source_id": "ADM/280_adm_153",
+                  "source_sha256": "81fbab5746af0f49b6c9efcdabcd011df2581209cd6c82a180e4e495b3c9d3b0",
+                  "sha256": "9cdc2d7c4cf926997988f050abc04c888032bd471cf62cdb39ea33800e98a748",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.148815,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__288_adm_7__q95",
+                  "source_id": "ADM/288_adm_7",
+                  "source_sha256": "0bfaa9aa03f7ce1c80aba0f527a8ace403c7e119f9bd124d2500a3450979b576",
+                  "sha256": "c169919e0b53781a3938d045934b33f9281ef47aacdd93744bfa6291e69bf455",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.022678,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__349_adm_7__q95",
+                  "source_id": "ADM/349_adm_7",
+                  "source_sha256": "8d2c38ba69011286e3fe68528ebfa9fc1bfd70ad5ff3a32dd42362980f4ba7f4",
+                  "sha256": "1957746b4189c973c5e5ba35915a3c3a15e682d01a972aff111e5f2be7907a21",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.196391,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__431_adm_91__q95",
+                  "source_id": "ADM/431_adm_91",
+                  "source_sha256": "9eba4dad7b8fe0097ec922e61147197e3b156905700c5d816feb57811a55b69b",
+                  "sha256": "a1bf340a10a08e67afa07deea0e4a8c3bb07270d663fc224ff3d883eb96f419b",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.009334,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__484_adm_174__q95",
+                  "source_id": "ADM/484_adm_174",
+                  "source_sha256": "42c2121fb6d49c2304c5c48f5a11eed7ca0e8918040e6813cf7506544b3862b3",
+                  "sha256": "c06e648a5bb395464c7c2589aad5bbdc2c6ef249e990b469420a870f4b3069c8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.361198,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__536_adm_91__q95",
+                  "source_id": "ADM/536_adm_91",
+                  "source_sha256": "f07435f08255f33395effb94775b4680a1c9c667c0579ac1904d5ae703e36a6f",
+                  "sha256": "3cceb8b4397d78118c075ab57b96876c7a3fc5f61f608164b2bf707ab4c071c5",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.003794,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__58_adm_7__q95",
+                  "source_id": "ADM/58_adm_7",
+                  "source_sha256": "b4494209cddf8dd3f4628d45a11baea8d21fdd61063ea87bf7d3ab10a553cff7",
+                  "sha256": "21be9a16751400387d93f724a591f84a99640e0ed8b42daf2ff37a13bb5fcefb",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.327251,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__879_adm_153__q95",
+                  "source_id": "ADM/879_adm_153",
+                  "source_sha256": "d8895a518acc7726c40895441b58691ff1049de0ce5332290a1065096f790c9d",
+                  "sha256": "42bd6089b97c361f4ae8d6a6837961558476707bfe68e4f6a9bbe1a377fe9356",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.002179,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__918_adm_153__q95",
+                  "source_id": "ADM/918_adm_153",
+                  "source_sha256": "7edbb607daeb468f183aa19c6bb59a8614bef34b25a2960ade5f410742d180e5",
+                  "sha256": "a16f1b0314fce0b18afff9978206b4f89aa44f004a589974f718525d10014b28",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.068182,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__929_adm_34__q95",
+                  "source_id": "ADM/929_adm_34",
+                  "source_sha256": "af074cf13a0e89b2e32215ca40c59090f2c34b37efe4548381962c581695b647",
+                  "sha256": "fadf6a6433e693e6b9b3948d5af9dc31941c4fc9d73c72e49241d34ab408d348",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.431232,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__96_adm_91__q95",
+                  "source_id": "ADM/96_adm_91",
+                  "source_sha256": "39a1c96df045856d4aa4c8237239ba3fd2ae6bb16af15a77c35497d2ddcaf715",
+                  "sha256": "f0b30eb6fbc558b21122e07c98d6f71a685e1dbdb4b69abc93c5e9c48975cf85",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.403327,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__99_adm_85__q95",
+                  "source_id": "ADM/99_adm_85",
+                  "source_sha256": "5a1da0b044c0c3cd529fad18c85e1e8fe3e9159bb61b3a406edacb2421a7cbe3",
+                  "sha256": "1efafd6be9a1a559bd3a1ce8f00df719232f6ef64b2211e8fbdc10f56aababa2",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.111113,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "BigGAN": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9736,
+                "ci95": [
+                  0.9573,
+                  0.9873
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.893333,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.92,
+              "threshold_accuracy": 0.92,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.83206,
+                  "std": 0.241288,
+                  "min": 0.015126,
+                  "p05": 0.265581,
+                  "p25": 0.76233,
+                  "p50": 0.951785,
+                  "p75": 0.98617,
+                  "p95": 0.998003,
+                  "max": 0.999814
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__BigGAN__006_biggan_00020__q95",
+                  "source_id": "BigGAN/006_biggan_00020",
+                  "source_sha256": "3a2c5b42a4e655303958ff854d1ca653338d9328b4a70390760653e33690ef93",
+                  "sha256": "085c10cdd9b53bf6d991ffcd45206469b8cad268d2169734f3553050d0d28113",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.306315,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__BigGAN__006_biggan_00127__q95",
+                  "source_id": "BigGAN/006_biggan_00127",
+                  "source_sha256": "1a505f210ac58e60522ceb0efb7df2d7850db040783c3f481979a8b312fcb591",
+                  "sha256": "b35b45c16ea4ecf1f6bd871ec2712ea0b8f70a9d35db974c1eb394703d7ac107",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.232253,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__BigGAN__010_biggan_00074__q95",
+                  "source_id": "BigGAN/010_biggan_00074",
+                  "source_sha256": "ed08702b1af91c6fea45db902ba97ce562920f0704223a129d29f32ea9c6673e",
+                  "sha256": "47bc4d412b3e89b1fb7372dc6a9c90bb0f6be5a737774ae6b6832f9631173d65",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.455699,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__BigGAN__037_biggan_00074__q95",
+                  "source_id": "BigGAN/037_biggan_00074",
+                  "source_sha256": "20510072ec0ba5fa5d1b79182ce5b9c6ceaa250bceff1b8354646571454e29de",
+                  "sha256": "5596a9c213271aa561552d229affcc1ca6d71e19d8cf832b9337023ce15f422d",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.055305,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__BigGAN__085_biggan_00127__q95",
+                  "source_id": "BigGAN/085_biggan_00127",
+                  "source_sha256": "1d9cc28863cd78850739fe8efb4961c5f6354fc999aece76b0ef4fce13db5e6f",
+                  "sha256": "38d5670e9eb4defc170f0aa3fd9abd5e37361edcb5a8ec9875342d6b98e6a5d9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.076564,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__123_biggan_00074__q95",
+                  "source_id": "BigGAN/123_biggan_00074",
+                  "source_sha256": "a9c50e4e14e5f6fc6006986d5f3b9bfb4cfbb872055acd35c27aa6afb81dde47",
+                  "sha256": "e5a8f93dd73d70962e0456823b1725c4fa0631321271a05a913c98f2e0e79664",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.477959,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__135_biggan_00020__q95",
+                  "source_id": "BigGAN/135_biggan_00020",
+                  "source_sha256": "047bf73649c1d7c9f3215917e8f54d147f3d9dcd8bf57ef3694e2cd4b4f91b8f",
+                  "sha256": "61760547b9888f27c785ed5582d634daaef6ce81c5d44b6af0765aac37d0c210",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.458165,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__272_biggan_00074__q95",
+                  "source_id": "BigGAN/272_biggan_00074",
+                  "source_sha256": "30ed7fcfe74715cf7d1578b93e09b9a8afa6354d1186ae05f5a8e733e53eb7aa",
+                  "sha256": "b99a12782385eed34ba12aebd82bcdc302fbb913f056d4cbe093cc28bb269717",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.101638,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__340_biggan_00127__q95",
+                  "source_id": "BigGAN/340_biggan_00127",
+                  "source_sha256": "3bf1ab547a6e25acde688db59bbfe06301a8c1609adc13549dee90a0afac0500",
+                  "sha256": "705d4b70dd9df38fd4fe3e78b8032f896492b7fe7875abd23f4671a8cedb7572",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.474227,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__462_biggan_00127__q95",
+                  "source_id": "BigGAN/462_biggan_00127",
+                  "source_sha256": "3e3892c9864d96e796247fd2487b3cd37b64b1e4b0845ad1f850515c52898e8b",
+                  "sha256": "4268ea829f9a16447b03e53b0d1c7e27de2e7d78d1a9f7f5cf8a9e50cb69cbbf",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.104937,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__709_biggan_00039__q95",
+                  "source_id": "BigGAN/709_biggan_00039",
+                  "source_sha256": "1ff0f9a7ed03642feb3b3f067fef086050170beb61a103cf98c742cb9ccd803f",
+                  "sha256": "30261cdb8620314e4ecb149acf2f5b940c5662b07189b54e0001e378680f8c94",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.031556,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__735_biggan_00020__q95",
+                  "source_id": "BigGAN/735_biggan_00020",
+                  "source_sha256": "5bd5915b917b45e66111726e90e25d1f03b10f5c8d1e682348e390e09857b25c",
+                  "sha256": "37e4c73e2e7bc2a0a4994f952362717782400f2a4167a9bf25ef55abf2a84819",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.441457,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__755_biggan_00074__q95",
+                  "source_id": "BigGAN/755_biggan_00074",
+                  "source_sha256": "3c6f1ee8f4336e2c994930bf9605d37668fbd970278e1e76049da858c3442ab2",
+                  "sha256": "61fe076c17683afe623429f05398b47b782f700f6ee3ba74630f3a177fed5d82",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.423573,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__917_biggan_00074__q95",
+                  "source_id": "BigGAN/917_biggan_00074",
+                  "source_sha256": "b532a84625e44016e643bfaaf25f31fdcaa59ac0bf941791f58cfee8877864ca",
+                  "sha256": "060bdd2613e15bea8fedde171cad64f99dcc1f1b002c4b2795b27050ac1651e9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.155134,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__917_biggan_00143__q95",
+                  "source_id": "BigGAN/917_biggan_00143",
+                  "source_sha256": "0fd59aa3391a8efb28c131b183acefc3d9a37c1ff99e0b311d7f8b807c70156e",
+                  "sha256": "d375466194877da459f379c152e985c9296a316a8c1bd77198c18fbdd33b7b4c",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.015126,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__937_biggan_00039__q95",
+                  "source_id": "BigGAN/937_biggan_00039",
+                  "source_sha256": "5d2d86dda101c23abeabe75673fa0f27f6f2a8768850c54e1a89c584e323da80",
+                  "sha256": "0a221ae01fb2eaec31bdeb7d5195faac74ba3251a532490805a575a962cfeee8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.347768,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "Glide": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9727,
+                "ci95": [
+                  0.9552,
+                  0.9876
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.846667,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.896667,
+              "threshold_accuracy": 0.896667,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.829305,
+                  "std": 0.251714,
+                  "min": 0.001885,
+                  "p05": 0.277551,
+                  "p25": 0.749003,
+                  "p50": 0.962886,
+                  "p75": 0.997326,
+                  "p95": 0.999907,
+                  "max": 0.999971
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_00_012_glide_00127__q95",
+                  "source_id": "Glide/GLIDE_1000_200_00_012_glide_00127",
+                  "source_sha256": "7be8b2fc15b587da3ecdddd0660fa67e6b3b77825c66862b71a48cd90addd4f1",
+                  "sha256": "345678069958869ee4653070124c8a94f5ce7f7be477de4db139749ed4838d15",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.403561,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_00_013_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_00_013_glide_00020",
+                  "source_sha256": "9e5673ba59f6268969757414209c18b0159236cb17edbde055e7211e77cb482c",
+                  "sha256": "6517b40062f8bdf2c7b918a5bd06c8de7c4da69f38e0b144a14fb300ddb3e296",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.478461,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_00_061_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_00_061_glide_00074",
+                  "source_sha256": "9143fc0b3c889be773fcda0553dd53d1739cbd9a03e3ed4fb2080e0598851994",
+                  "sha256": "2a4d2da45578d720f77cf6f3ff4814de7ae4ba22a2033de793b140f4a6237911",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.33829,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_00_073_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_00_073_glide_00020",
+                  "source_sha256": "db82d39fb75ff92886310c6e5b4b3a0d32f67cdea355594cb2610a7761751cf8",
+                  "sha256": "babf1fc193625572a6f45062a2ecfa5f98867d9bba366c762b6e50858548a7d8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.001885,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_121_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_121_glide_00074",
+                  "source_sha256": "6fad872e6eecbf42cd6047d9825432928b13fe7ae820ec095db21001f25504ef",
+                  "sha256": "a520c6ffcf96cb081e936426f77ea8c00855b4d3658d6aef0e1b085fab8c2810",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.452257,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_129_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_129_glide_00020",
+                  "source_sha256": "f54fbcc2fcee0a9a5c313c86eeb9667c63e0a903ad75847c82b30c22c28c1e6a",
+                  "sha256": "e56230f8c71fc868aa8df5c81300b5e25b829637f0e677d24443c8c61b0229a1",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.288662,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_137_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_137_glide_00035",
+                  "source_sha256": "47f506450274d34cdae2bbdcaf66bfd00695724a0914103e4905a8b7942e3bd3",
+                  "sha256": "651ce48436eb0adc998d9c703611c1ae50b83a6afbcb18790e12eeb7ba063b47",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.304307,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_165_glide_00143__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_165_glide_00143",
+                  "source_sha256": "d8b3142d28164b3ceeb7587bfec28b4b01a07bcfce216ca368d155d0ea13cb75",
+                  "sha256": "fa9f37016b87d8dd1574d46016a2311b65376868a2e21a5ea4cb0f219f9702b8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.435697,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_192_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_192_glide_00020",
+                  "source_sha256": "caed9e22acf74b7fdd9168db40e915908b8255bf53c30234258d4f0fb8b009be",
+                  "sha256": "51942b390b14ddc0f1d01ae82e5ce021dd5b7c37d3325d0705db4fd23915df2c",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.437184,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_195_glide_00143__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_195_glide_00143",
+                  "source_sha256": "a82d70442b821041333fb12e1a72d08af8609e448759fea5af69aff25654edef",
+                  "sha256": "d58403f6f6fa445a61925ac9f0da84c66631f36c5184d2711b2b18e815a0663c",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.26846,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_02_213_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_02_213_glide_00020",
+                  "source_sha256": "b94c546eb5468d4382b93e1f8d4dd8f4fea8862aed162c09317e6b59173504a1",
+                  "sha256": "f9ece2963c773a07233c6017caf63f65b76ea786b4abf4659d9602ab261ec107",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.36758,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_03_314_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_03_314_glide_00035",
+                  "source_sha256": "8c0a69dd86cbcaa9238b82bddb3024f5a22113e770d2c7b63a36cc4028ac2d75",
+                  "sha256": "8e51bcc66a5ac606e6144a974a886af8719770467c889cd73c911b463d7f0678",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.186436,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_03_322_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_03_322_glide_00020",
+                  "source_sha256": "3b1154b40fd37cf9e8134121fd9cddd88fc61c84aaf12f8dfe5dd29a6adfa778",
+                  "sha256": "c04a7ab9a47d8a17882985e64815c92b4323bfce40b5e38fdb0835ef817cd0c7",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.118601,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_04_441_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_04_441_glide_00074",
+                  "source_sha256": "7006dcfa18a52b4704d83f321dc8936a9d7d05fab01af93ab3e383ded9674d04",
+                  "sha256": "c5af56a72e31c9b223e5b80384ab8309ec226f80f3a9fe8e8059390bff2388c9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.407393,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_04_464_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_04_464_glide_00035",
+                  "source_sha256": "d7538dcba2f0bc06e4c7cb3e1a97fe25e4a71d3d11103193690fa91261197aba",
+                  "sha256": "2883b2ddaf3169ca5fe3e791f43858a17dc21ea61094a5becfa20e09f0c5ddef",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.197976,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_05_522_glide_00039__q95",
+                  "source_id": "Glide/GLIDE_1000_200_05_522_glide_00039",
+                  "source_sha256": "e7799e04b18b5046e0be9c6457ea8e5044058c29686fd1ac5d7f9e7accb5fe23",
+                  "sha256": "0f77d94b999e399391eeb6715461144f83610d684b02c26afe95e7395f856307",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.412072,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_05_590_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_05_590_glide_00074",
+                  "source_sha256": "8db2039d5daa3c27b9cecc8b7c1bb3898f7c934f5fb79c4461e6448171cdf91f",
+                  "sha256": "f1ad9b9faf3c02aea4901417453c4e1bf947fd2e77ba6864716e5f73e9573d3a",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.420816,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_06_664_glide_00143__q95",
+                  "source_id": "Glide/GLIDE_1000_200_06_664_glide_00143",
+                  "source_sha256": "25285fef5be717e16e9c16e34b42f4ae9375ca5cb4f1d4e7533daff9213cf0e7",
+                  "sha256": "bb1dce6755d7b8eeb54a5749cf3158bd9b54e6c999d22610bf01c8a3069ca17b",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.44687,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_08_823_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_08_823_glide_00020",
+                  "source_sha256": "401a910bb313023027081f3a0ccc2e575b2a60687b2bc0f6c977bf6c19b738ec",
+                  "sha256": "e1ebb5615b3c82a3a4215361a432a0245c771e84dd5a7d4505d2bc18dae1519f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.249866,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_08_861_glide_00127__q95",
+                  "source_id": "Glide/GLIDE_1000_200_08_861_glide_00127",
+                  "source_sha256": "08e3fc6d0f8844832762b1e0423af60d4aa8cfbb41ed130af427bd6977f6c0fd",
+                  "sha256": "39300ffa02cad82d8154482b8f2a474267290b2a0907a7f2d021159ae5189795",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.026305,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_09_949_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_09_949_glide_00020",
+                  "source_sha256": "7fea4806796f9e32aeb98434ba44935dda2508e793cfb828c6654260908c2d13",
+                  "sha256": "30cc83852afaa70ffc9186c7a528e2d36288c44dd742e824daa0855c23369d75",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.129151,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_09_980_glide_00039__q95",
+                  "source_id": "Glide/GLIDE_1000_200_09_980_glide_00039",
+                  "source_sha256": "6cf23447dae8cf49d2f09c4be03240cace81245c79bd758488d3acce487cd28f",
+                  "sha256": "7ca765906fbae5f0f3f94d9a9a32805cb743f9bf92a79f3c0a08989759bbb5c9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.453668,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_09_983_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_09_983_glide_00035",
+                  "source_sha256": "a0eab444010e9646e3f3dc617cbafc46b9d129f76a666459afee82ab8a140159",
+                  "sha256": "e9a02d05d0d1495d70a6399cddfaf3eef46c3a71584ddb83149720738dc63e08",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.331232,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "Midjourney": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9964,
+                "ci95": [
+                  0.9925,
+                  0.9992
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.973333,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.96,
+              "threshold_accuracy": 0.96,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.973183,
+                  "std": 0.106717,
+                  "min": 0.288418,
+                  "p05": 0.921344,
+                  "p25": 0.995072,
+                  "p50": 0.999464,
+                  "p75": 0.99986,
+                  "p95": 0.999966,
+                  "max": 0.99998
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Midjourney__281_midjourney_169__q95",
+                  "source_id": "Midjourney/281_midjourney_169",
+                  "source_sha256": "7c2a92257016845133a11e957a1b8f7c99b4e0ae198fb36427614771f3398f45",
+                  "sha256": "c1b3af5d54878135c90492fd74f77258af9e01a0a06d5d16dcc58510a8652e99",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.34784,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Midjourney__845_midjourney_88__q95",
+                  "source_id": "Midjourney/845_midjourney_88",
+                  "source_sha256": "6ced43d2510b1e27480d265dea6b95feafd86dc1bce487322a6c8a114645fb68",
+                  "sha256": "0a584322cfa9f582b01e258815f7616cbcdd02d601bb8b0e6bc687319b30244f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.447352,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Midjourney__897_midjourney_198__q95",
+                  "source_id": "Midjourney/897_midjourney_198",
+                  "source_sha256": "9f77e342d059cfa770957d2ca2f47e400e633381bdbf67b50b636c9c02300147",
+                  "sha256": "93730cc1082cb7e777c8d4cd092f58c69451db06fc91702bb9e038d1eff7adb9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.288418,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Midjourney__928_midjourney_169__q95",
+                  "source_id": "Midjourney/928_midjourney_169",
+                  "source_sha256": "b7c7cafb9670b91a509e048e5de67465d9e20c7bd7dbc10e059c26286d109557",
+                  "sha256": "ac4fb7ef25a347720e6ea8ad9416e6b362d7fbbb6888fb7abc13e24197cf58f2",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.327879,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "SD14": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 1.0,
+                "ci95": [
+                  1.0,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 1.0,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.973333,
+              "threshold_accuracy": 0.973333,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.999935,
+                  "std": 0.000129,
+                  "min": 0.998498,
+                  "p05": 0.999853,
+                  "p25": 0.999942,
+                  "p50": 0.999963,
+                  "p75": 0.999971,
+                  "p95": 0.999978,
+                  "max": 0.999985
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "SD15": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 1.0,
+                "ci95": [
+                  1.0,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 1.0,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.973333,
+              "threshold_accuracy": 0.973333,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.999859,
+                  "std": 0.000565,
+                  "min": 0.994668,
+                  "p05": 0.999787,
+                  "p25": 0.999936,
+                  "p50": 0.999962,
+                  "p75": 0.999972,
+                  "p95": 0.999978,
+                  "max": 0.999984
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "VQDM": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9976,
+                "ci95": [
+                  0.9942,
+                  0.9996
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.993333,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.97,
+              "threshold_accuracy": 0.97,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.98304,
+                  "std": 0.058401,
+                  "min": 0.399372,
+                  "p05": 0.915743,
+                  "p25": 0.992298,
+                  "p50": 0.9989,
+                  "p75": 0.999662,
+                  "p95": 0.999917,
+                  "max": 0.999953
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__VQDM__VQDM_1000_200_02_285_vqdm_00020__q95",
+                  "source_id": "VQDM/VQDM_1000_200_02_285_vqdm_00020",
+                  "source_sha256": "483ee32978ec15f73fab051993be2b093e4d7d368d2d82bf269f92e947c2cb2c",
+                  "sha256": "5ccd2fcac3758667c48ea040b1ab1f57fabf1c81bbe5603a113a170151b53a5f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.399372,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        },
+        "Wukong": {
+          "n_fake_inputs": 150,
+          "n_real_inputs": 150,
+          "real_pool_shared": true,
+          "real_pool_sha256": "de3850378fff8b3998ac3e4f8b36c6417a2bd6c62fc58ff732c43bb9640ad171",
+          "experts": {
+            "probe": {
+              "n": 300,
+              "n_measured": 300,
+              "n_fake": 150,
+              "n_real": 150,
+              "n_sources": 300,
+              "failures": 0,
+              "auroc": {
+                "auroc": 1.0,
+                "ci95": [
+                  1.0,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 1.0,
+              "tnr": 0.946667,
+              "balanced_accuracy": 0.973333,
+              "threshold_accuracy": 0.973333,
+              "score_distribution": {
+                "fake": {
+                  "n": 150,
+                  "mean": 0.999929,
+                  "std": 0.000134,
+                  "min": 0.998947,
+                  "p05": 0.999772,
+                  "p25": 0.999944,
+                  "p50": 0.999963,
+                  "p75": 0.999975,
+                  "p95": 0.999981,
+                  "max": 0.999984
+                },
+                "real": {
+                  "n": 150,
+                  "mean": 0.08474,
+                  "std": 0.193488,
+                  "min": 4.7e-05,
+                  "p05": 8.3e-05,
+                  "p25": 0.00076,
+                  "p50": 0.003595,
+                  "p75": 0.054244,
+                  "p95": 0.494737,
+                  "max": 0.966998
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+                  "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+                  "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+                  "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.914676,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+                  "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+                  "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+                  "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.966998,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+                  "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+                  "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+                  "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.847765,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+                  "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+                  "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+                  "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.924557,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+                  "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+                  "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+                  "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.605374,
+                  "no_known_use": false
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+                  "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+                  "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+                  "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.930484,
+                  "no_known_use": false
+                }
+              ]
+            }
+          }
+        }
+      },
+      "real_only": {
+        "probe": {
+          "n": 150,
+          "n_measured": 150,
+          "n_fake": 0,
+          "n_real": 150,
+          "n_sources": 150,
+          "failures": 0,
+          "auroc": null,
+          "threshold": {
+            "value": 0.5,
+            "direction": "higher_is_fake",
+            "chosen_on": "registered fixed threshold; not fitted here"
+          },
+          "tpr": null,
+          "tnr": 0.946667,
+          "balanced_accuracy": null,
+          "threshold_accuracy": 0.946667,
+          "score_distribution": {
+            "fake": null,
+            "real": {
+              "n": 150,
+              "mean": 0.08474,
+              "std": 0.193488,
+              "min": 4.7e-05,
+              "p05": 8.3e-05,
+              "p25": 0.00076,
+              "p50": 0.003595,
+              "p75": 0.054244,
+              "p95": 0.494737,
+              "max": 0.966998
+            }
+          },
+          "errors": [
+            {
+              "variant_id": "genimage__Real__22ef036b-8d2a-4e86-a758-3263a0b14695__q95",
+              "source_id": "Real/22ef036b-8d2a-4e86-a758-3263a0b14695",
+              "source_sha256": "17de4b4fd716a7199bc4c7d8ba44a2676be6c040089e01fc100cb6ba0749507d",
+              "sha256": "677728c2a8fa6ae7622bb6445bf225890148641a93f5748cfe6afd4467fee12d",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.914676,
+              "no_known_use": false
+            },
+            {
+              "variant_id": "genimage__Real__248b971a-e5c0-434d-9fd9-e1fce0124323__q95",
+              "source_id": "Real/248b971a-e5c0-434d-9fd9-e1fce0124323",
+              "source_sha256": "03cf62b6fc46cf31f9da593356bc46f0da5011e667a72d7534d9d12dc4e2df0e",
+              "sha256": "24a2b4bdf6bc386a45c736bb3a54e72d4299cf3ddebd6669bec6f88120ad3151",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.966998,
+              "no_known_use": false
+            },
+            {
+              "variant_id": "genimage__Real__5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed__q95",
+              "source_id": "Real/5e8ab5cb-a6b9-4452-ab8b-c8c05a3b7fed",
+              "source_sha256": "19c11e0dc79fc2adda125aa056c72c1e5ef1acf612b635aaa52f76485d9c81df",
+              "sha256": "fe232baa4fff9fdc0b48657aa061e78aef334e9058d184483100d4960b535eb2",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.847765,
+              "no_known_use": false
+            },
+            {
+              "variant_id": "genimage__Real__73427dc1-33b6-4aeb-a81b-e8d04185dec0__q95",
+              "source_id": "Real/73427dc1-33b6-4aeb-a81b-e8d04185dec0",
+              "source_sha256": "305698258fe43652bfafb0f224cc55847052dba52fa35f1122182447762150c4",
+              "sha256": "183ca73c224e23703e7092cc80cac8d88dca8b60a29bd2ed440dc14d3d929912",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.924557,
+              "no_known_use": false
+            },
+            {
+              "variant_id": "genimage__Real__85db2551-4dd1-42eb-a63a-22e23805e7ea__q95",
+              "source_id": "Real/85db2551-4dd1-42eb-a63a-22e23805e7ea",
+              "source_sha256": "cd7531c24287d1b5b901d0a7a2752f7934dcbd7479ffeec358c5d6628b66d10e",
+              "sha256": "afbf228ff4cb80350dcd1d6c07d8a27cfea8a4ba12aedb91d11806dc5d447a91",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.605374,
+              "no_known_use": false
+            },
+            {
+              "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+              "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+              "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+              "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.519092,
+              "no_known_use": true
+            },
+            {
+              "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+              "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+              "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+              "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.518188,
+              "no_known_use": true
+            },
+            {
+              "variant_id": "genimage__Real__f80f11ce-2510-4905-8676-01877c2d9d91__q95",
+              "source_id": "Real/f80f11ce-2510-4905-8676-01877c2d9d91",
+              "source_sha256": "f54a103ad73c3f08b4b1ecea1ce53ebe37c05c7341fb445c191f00eed30d6038",
+              "sha256": "32d6c5218676be9654244cb896ce00f236778a85f32320e5f94c77f833635058",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.930484,
+              "no_known_use": false
+            }
+          ]
+        }
+      },
+      "caveat": "Real inputs are shared across all eight generator groups; group metrics are not independent and no pooled AUROC is reported."
+    },
+    "val_no_known_use": {
+      "n_inputs": 1192,
+      "n_fake_inputs": 1099,
+      "n_real_inputs": 93,
+      "n_no_known_use": 1192,
+      "groups": {
+        "ADM": {
+          "n_fake_inputs": 142,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 235,
+              "n_measured": 235,
+              "n_fake": 142,
+              "n_real": 93,
+              "n_sources": 235,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9783,
+                "ci95": [
+                  0.9611,
+                  0.9913
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.901408,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.939952,
+              "threshold_accuracy": 0.931915,
+              "score_distribution": {
+                "fake": {
+                  "n": 142,
+                  "mean": 0.873241,
+                  "std": 0.255041,
+                  "min": 0.002142,
+                  "p05": 0.151194,
+                  "p25": 0.905922,
+                  "p50": 0.989665,
+                  "p75": 0.998533,
+                  "p95": 0.999828,
+                  "max": 0.999915
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__ADM__191_adm_91__q95",
+                  "source_id": "ADM/191_adm_91",
+                  "source_sha256": "c366039596236879ec8d440aa29f10b5afa312afd28dc84ed30c91f4684f4233",
+                  "sha256": "144f583e6c43af6c445eefcbb57693153bd2ac805dd73f5c26b2667d6ec47972",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.302066,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__225_adm_174__q95",
+                  "source_id": "ADM/225_adm_174",
+                  "source_sha256": "fa2b74044524c4ba3844eff52b849696f0a49e27b519e84ba93b0522c3198a1a",
+                  "sha256": "8f432ff371c4b3d6c72e1673dc5eab9bb796a64c47a1083f8b15c235c8ca4ee9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.002142,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__280_adm_153__q95",
+                  "source_id": "ADM/280_adm_153",
+                  "source_sha256": "81fbab5746af0f49b6c9efcdabcd011df2581209cd6c82a180e4e495b3c9d3b0",
+                  "sha256": "9cdc2d7c4cf926997988f050abc04c888032bd471cf62cdb39ea33800e98a748",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.148815,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__288_adm_7__q95",
+                  "source_id": "ADM/288_adm_7",
+                  "source_sha256": "0bfaa9aa03f7ce1c80aba0f527a8ace403c7e119f9bd124d2500a3450979b576",
+                  "sha256": "c169919e0b53781a3938d045934b33f9281ef47aacdd93744bfa6291e69bf455",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.022678,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__349_adm_7__q95",
+                  "source_id": "ADM/349_adm_7",
+                  "source_sha256": "8d2c38ba69011286e3fe68528ebfa9fc1bfd70ad5ff3a32dd42362980f4ba7f4",
+                  "sha256": "1957746b4189c973c5e5ba35915a3c3a15e682d01a972aff111e5f2be7907a21",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.196391,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__431_adm_91__q95",
+                  "source_id": "ADM/431_adm_91",
+                  "source_sha256": "9eba4dad7b8fe0097ec922e61147197e3b156905700c5d816feb57811a55b69b",
+                  "sha256": "a1bf340a10a08e67afa07deea0e4a8c3bb07270d663fc224ff3d883eb96f419b",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.009334,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__484_adm_174__q95",
+                  "source_id": "ADM/484_adm_174",
+                  "source_sha256": "42c2121fb6d49c2304c5c48f5a11eed7ca0e8918040e6813cf7506544b3862b3",
+                  "sha256": "c06e648a5bb395464c7c2589aad5bbdc2c6ef249e990b469420a870f4b3069c8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.361198,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__536_adm_91__q95",
+                  "source_id": "ADM/536_adm_91",
+                  "source_sha256": "f07435f08255f33395effb94775b4680a1c9c667c0579ac1904d5ae703e36a6f",
+                  "sha256": "3cceb8b4397d78118c075ab57b96876c7a3fc5f61f608164b2bf707ab4c071c5",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.003794,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__58_adm_7__q95",
+                  "source_id": "ADM/58_adm_7",
+                  "source_sha256": "b4494209cddf8dd3f4628d45a11baea8d21fdd61063ea87bf7d3ab10a553cff7",
+                  "sha256": "21be9a16751400387d93f724a591f84a99640e0ed8b42daf2ff37a13bb5fcefb",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.327251,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__879_adm_153__q95",
+                  "source_id": "ADM/879_adm_153",
+                  "source_sha256": "d8895a518acc7726c40895441b58691ff1049de0ce5332290a1065096f790c9d",
+                  "sha256": "42bd6089b97c361f4ae8d6a6837961558476707bfe68e4f6a9bbe1a377fe9356",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.002179,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__918_adm_153__q95",
+                  "source_id": "ADM/918_adm_153",
+                  "source_sha256": "7edbb607daeb468f183aa19c6bb59a8614bef34b25a2960ade5f410742d180e5",
+                  "sha256": "a16f1b0314fce0b18afff9978206b4f89aa44f004a589974f718525d10014b28",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.068182,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__929_adm_34__q95",
+                  "source_id": "ADM/929_adm_34",
+                  "source_sha256": "af074cf13a0e89b2e32215ca40c59090f2c34b37efe4548381962c581695b647",
+                  "sha256": "fadf6a6433e693e6b9b3948d5af9dc31941c4fc9d73c72e49241d34ab408d348",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.431232,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__96_adm_91__q95",
+                  "source_id": "ADM/96_adm_91",
+                  "source_sha256": "39a1c96df045856d4aa4c8237239ba3fd2ae6bb16af15a77c35497d2ddcaf715",
+                  "sha256": "f0b30eb6fbc558b21122e07c98d6f71a685e1dbdb4b69abc93c5e9c48975cf85",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.403327,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__ADM__99_adm_85__q95",
+                  "source_id": "ADM/99_adm_85",
+                  "source_sha256": "5a1da0b044c0c3cd529fad18c85e1e8fe3e9159bb61b3a406edacb2421a7cbe3",
+                  "sha256": "1efafd6be9a1a559bd3a1ce8f00df719232f6ef64b2211e8fbdc10f56aababa2",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.111113,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "BigGAN": {
+          "n_fake_inputs": 133,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 226,
+              "n_measured": 226,
+              "n_fake": 133,
+              "n_real": 93,
+              "n_sources": 226,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9888,
+                "ci95": [
+                  0.979,
+                  0.9962
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.909774,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.944135,
+              "threshold_accuracy": 0.938053,
+              "score_distribution": {
+                "fake": {
+                  "n": 133,
+                  "mean": 0.843671,
+                  "std": 0.230072,
+                  "min": 0.015126,
+                  "p05": 0.393251,
+                  "p25": 0.797947,
+                  "p50": 0.956237,
+                  "p75": 0.988602,
+                  "p95": 0.998027,
+                  "max": 0.999814
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__BigGAN__085_biggan_00127__q95",
+                  "source_id": "BigGAN/085_biggan_00127",
+                  "source_sha256": "1d9cc28863cd78850739fe8efb4961c5f6354fc999aece76b0ef4fce13db5e6f",
+                  "sha256": "38d5670e9eb4defc170f0aa3fd9abd5e37361edcb5a8ec9875342d6b98e6a5d9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.076564,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__123_biggan_00074__q95",
+                  "source_id": "BigGAN/123_biggan_00074",
+                  "source_sha256": "a9c50e4e14e5f6fc6006986d5f3b9bfb4cfbb872055acd35c27aa6afb81dde47",
+                  "sha256": "e5a8f93dd73d70962e0456823b1725c4fa0631321271a05a913c98f2e0e79664",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.477959,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__135_biggan_00020__q95",
+                  "source_id": "BigGAN/135_biggan_00020",
+                  "source_sha256": "047bf73649c1d7c9f3215917e8f54d147f3d9dcd8bf57ef3694e2cd4b4f91b8f",
+                  "sha256": "61760547b9888f27c785ed5582d634daaef6ce81c5d44b6af0765aac37d0c210",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.458165,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__272_biggan_00074__q95",
+                  "source_id": "BigGAN/272_biggan_00074",
+                  "source_sha256": "30ed7fcfe74715cf7d1578b93e09b9a8afa6354d1186ae05f5a8e733e53eb7aa",
+                  "sha256": "b99a12782385eed34ba12aebd82bcdc302fbb913f056d4cbe093cc28bb269717",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.101638,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__340_biggan_00127__q95",
+                  "source_id": "BigGAN/340_biggan_00127",
+                  "source_sha256": "3bf1ab547a6e25acde688db59bbfe06301a8c1609adc13549dee90a0afac0500",
+                  "sha256": "705d4b70dd9df38fd4fe3e78b8032f896492b7fe7875abd23f4671a8cedb7572",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.474227,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__462_biggan_00127__q95",
+                  "source_id": "BigGAN/462_biggan_00127",
+                  "source_sha256": "3e3892c9864d96e796247fd2487b3cd37b64b1e4b0845ad1f850515c52898e8b",
+                  "sha256": "4268ea829f9a16447b03e53b0d1c7e27de2e7d78d1a9f7f5cf8a9e50cb69cbbf",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.104937,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__709_biggan_00039__q95",
+                  "source_id": "BigGAN/709_biggan_00039",
+                  "source_sha256": "1ff0f9a7ed03642feb3b3f067fef086050170beb61a103cf98c742cb9ccd803f",
+                  "sha256": "30261cdb8620314e4ecb149acf2f5b940c5662b07189b54e0001e378680f8c94",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.031556,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__735_biggan_00020__q95",
+                  "source_id": "BigGAN/735_biggan_00020",
+                  "source_sha256": "5bd5915b917b45e66111726e90e25d1f03b10f5c8d1e682348e390e09857b25c",
+                  "sha256": "37e4c73e2e7bc2a0a4994f952362717782400f2a4167a9bf25ef55abf2a84819",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.441457,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__755_biggan_00074__q95",
+                  "source_id": "BigGAN/755_biggan_00074",
+                  "source_sha256": "3c6f1ee8f4336e2c994930bf9605d37668fbd970278e1e76049da858c3442ab2",
+                  "sha256": "61fe076c17683afe623429f05398b47b782f700f6ee3ba74630f3a177fed5d82",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.423573,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__917_biggan_00074__q95",
+                  "source_id": "BigGAN/917_biggan_00074",
+                  "source_sha256": "b532a84625e44016e643bfaaf25f31fdcaa59ac0bf941791f58cfee8877864ca",
+                  "sha256": "060bdd2613e15bea8fedde171cad64f99dcc1f1b002c4b2795b27050ac1651e9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.155134,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__917_biggan_00143__q95",
+                  "source_id": "BigGAN/917_biggan_00143",
+                  "source_sha256": "0fd59aa3391a8efb28c131b183acefc3d9a37c1ff99e0b311d7f8b807c70156e",
+                  "sha256": "d375466194877da459f379c152e985c9296a316a8c1bd77198c18fbdd33b7b4c",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.015126,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__BigGAN__937_biggan_00039__q95",
+                  "source_id": "BigGAN/937_biggan_00039",
+                  "source_sha256": "5d2d86dda101c23abeabe75673fa0f27f6f2a8768850c54e1a89c584e323da80",
+                  "sha256": "0a221ae01fb2eaec31bdeb7d5195faac74ba3251a532490805a575a962cfeee8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.347768,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "Glide": {
+          "n_fake_inputs": 138,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 231,
+              "n_measured": 231,
+              "n_fake": 138,
+              "n_real": 93,
+              "n_sources": 231,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.992,
+                "ci95": [
+                  0.9843,
+                  0.9976
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.869565,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.92403,
+              "threshold_accuracy": 0.91342,
+              "score_distribution": {
+                "fake": {
+                  "n": 138,
+                  "mean": 0.846541,
+                  "std": 0.232618,
+                  "min": 0.118601,
+                  "p05": 0.30196,
+                  "p25": 0.805538,
+                  "p50": 0.970547,
+                  "p75": 0.997387,
+                  "p95": 0.999914,
+                  "max": 0.999971
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_00_061_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_00_061_glide_00074",
+                  "source_sha256": "9143fc0b3c889be773fcda0553dd53d1739cbd9a03e3ed4fb2080e0598851994",
+                  "sha256": "2a4d2da45578d720f77cf6f3ff4814de7ae4ba22a2033de793b140f4a6237911",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.33829,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_121_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_121_glide_00074",
+                  "source_sha256": "6fad872e6eecbf42cd6047d9825432928b13fe7ae820ec095db21001f25504ef",
+                  "sha256": "a520c6ffcf96cb081e936426f77ea8c00855b4d3658d6aef0e1b085fab8c2810",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.452257,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_129_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_129_glide_00020",
+                  "source_sha256": "f54fbcc2fcee0a9a5c313c86eeb9667c63e0a903ad75847c82b30c22c28c1e6a",
+                  "sha256": "e56230f8c71fc868aa8df5c81300b5e25b829637f0e677d24443c8c61b0229a1",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.288662,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_137_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_137_glide_00035",
+                  "source_sha256": "47f506450274d34cdae2bbdcaf66bfd00695724a0914103e4905a8b7942e3bd3",
+                  "sha256": "651ce48436eb0adc998d9c703611c1ae50b83a6afbcb18790e12eeb7ba063b47",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.304307,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_165_glide_00143__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_165_glide_00143",
+                  "source_sha256": "d8b3142d28164b3ceeb7587bfec28b4b01a07bcfce216ca368d155d0ea13cb75",
+                  "sha256": "fa9f37016b87d8dd1574d46016a2311b65376868a2e21a5ea4cb0f219f9702b8",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.435697,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_192_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_192_glide_00020",
+                  "source_sha256": "caed9e22acf74b7fdd9168db40e915908b8255bf53c30234258d4f0fb8b009be",
+                  "sha256": "51942b390b14ddc0f1d01ae82e5ce021dd5b7c37d3325d0705db4fd23915df2c",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.437184,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_01_195_glide_00143__q95",
+                  "source_id": "Glide/GLIDE_1000_200_01_195_glide_00143",
+                  "source_sha256": "a82d70442b821041333fb12e1a72d08af8609e448759fea5af69aff25654edef",
+                  "sha256": "d58403f6f6fa445a61925ac9f0da84c66631f36c5184d2711b2b18e815a0663c",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.26846,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_03_314_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_03_314_glide_00035",
+                  "source_sha256": "8c0a69dd86cbcaa9238b82bddb3024f5a22113e770d2c7b63a36cc4028ac2d75",
+                  "sha256": "8e51bcc66a5ac606e6144a974a886af8719770467c889cd73c911b463d7f0678",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.186436,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_03_322_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_03_322_glide_00020",
+                  "source_sha256": "3b1154b40fd37cf9e8134121fd9cddd88fc61c84aaf12f8dfe5dd29a6adfa778",
+                  "sha256": "c04a7ab9a47d8a17882985e64815c92b4323bfce40b5e38fdb0835ef817cd0c7",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.118601,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_04_441_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_04_441_glide_00074",
+                  "source_sha256": "7006dcfa18a52b4704d83f321dc8936a9d7d05fab01af93ab3e383ded9674d04",
+                  "sha256": "c5af56a72e31c9b223e5b80384ab8309ec226f80f3a9fe8e8059390bff2388c9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.407393,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_04_464_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_04_464_glide_00035",
+                  "source_sha256": "d7538dcba2f0bc06e4c7cb3e1a97fe25e4a71d3d11103193690fa91261197aba",
+                  "sha256": "2883b2ddaf3169ca5fe3e791f43858a17dc21ea61094a5becfa20e09f0c5ddef",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.197976,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_05_522_glide_00039__q95",
+                  "source_id": "Glide/GLIDE_1000_200_05_522_glide_00039",
+                  "source_sha256": "e7799e04b18b5046e0be9c6457ea8e5044058c29686fd1ac5d7f9e7accb5fe23",
+                  "sha256": "0f77d94b999e399391eeb6715461144f83610d684b02c26afe95e7395f856307",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.412072,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_05_590_glide_00074__q95",
+                  "source_id": "Glide/GLIDE_1000_200_05_590_glide_00074",
+                  "source_sha256": "8db2039d5daa3c27b9cecc8b7c1bb3898f7c934f5fb79c4461e6448171cdf91f",
+                  "sha256": "f1ad9b9faf3c02aea4901417453c4e1bf947fd2e77ba6864716e5f73e9573d3a",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.420816,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_06_664_glide_00143__q95",
+                  "source_id": "Glide/GLIDE_1000_200_06_664_glide_00143",
+                  "source_sha256": "25285fef5be717e16e9c16e34b42f4ae9375ca5cb4f1d4e7533daff9213cf0e7",
+                  "sha256": "bb1dce6755d7b8eeb54a5749cf3158bd9b54e6c999d22610bf01c8a3069ca17b",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.44687,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_08_823_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_08_823_glide_00020",
+                  "source_sha256": "401a910bb313023027081f3a0ccc2e575b2a60687b2bc0f6c977bf6c19b738ec",
+                  "sha256": "e1ebb5615b3c82a3a4215361a432a0245c771e84dd5a7d4505d2bc18dae1519f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.249866,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_09_949_glide_00020__q95",
+                  "source_id": "Glide/GLIDE_1000_200_09_949_glide_00020",
+                  "source_sha256": "7fea4806796f9e32aeb98434ba44935dda2508e793cfb828c6654260908c2d13",
+                  "sha256": "30cc83852afaa70ffc9186c7a528e2d36288c44dd742e824daa0855c23369d75",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.129151,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_09_980_glide_00039__q95",
+                  "source_id": "Glide/GLIDE_1000_200_09_980_glide_00039",
+                  "source_sha256": "6cf23447dae8cf49d2f09c4be03240cace81245c79bd758488d3acce487cd28f",
+                  "sha256": "7ca765906fbae5f0f3f94d9a9a32805cb743f9bf92a79f3c0a08989759bbb5c9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.453668,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Glide__GLIDE_1000_200_09_983_glide_00035__q95",
+                  "source_id": "Glide/GLIDE_1000_200_09_983_glide_00035",
+                  "source_sha256": "a0eab444010e9646e3f3dc617cbafc46b9d129f76a666459afee82ab8a140159",
+                  "sha256": "e9a02d05d0d1495d70a6399cddfaf3eef46c3a71584ddb83149720738dc63e08",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.331232,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "Midjourney": {
+          "n_fake_inputs": 134,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 227,
+              "n_measured": 227,
+              "n_fake": 134,
+              "n_real": 93,
+              "n_sources": 227,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9984,
+                "ci95": [
+                  0.9955,
+                  0.9999
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.970149,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.974322,
+              "threshold_accuracy": 0.973568,
+              "score_distribution": {
+                "fake": {
+                  "n": 134,
+                  "mean": 0.971456,
+                  "std": 0.112367,
+                  "min": 0.288418,
+                  "p05": 0.924151,
+                  "p25": 0.994563,
+                  "p50": 0.999464,
+                  "p75": 0.999861,
+                  "p95": 0.999965,
+                  "max": 0.999979
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Midjourney__281_midjourney_169__q95",
+                  "source_id": "Midjourney/281_midjourney_169",
+                  "source_sha256": "7c2a92257016845133a11e957a1b8f7c99b4e0ae198fb36427614771f3398f45",
+                  "sha256": "c1b3af5d54878135c90492fd74f77258af9e01a0a06d5d16dcc58510a8652e99",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.34784,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Midjourney__845_midjourney_88__q95",
+                  "source_id": "Midjourney/845_midjourney_88",
+                  "source_sha256": "6ced43d2510b1e27480d265dea6b95feafd86dc1bce487322a6c8a114645fb68",
+                  "sha256": "0a584322cfa9f582b01e258815f7616cbcdd02d601bb8b0e6bc687319b30244f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.447352,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Midjourney__897_midjourney_198__q95",
+                  "source_id": "Midjourney/897_midjourney_198",
+                  "source_sha256": "9f77e342d059cfa770957d2ca2f47e400e633381bdbf67b50b636c9c02300147",
+                  "sha256": "93730cc1082cb7e777c8d4cd092f58c69451db06fc91702bb9e038d1eff7adb9",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.288418,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Midjourney__928_midjourney_169__q95",
+                  "source_id": "Midjourney/928_midjourney_169",
+                  "source_sha256": "b7c7cafb9670b91a509e048e5de67465d9e20c7bd7dbc10e059c26286d109557",
+                  "sha256": "ac4fb7ef25a347720e6ea8ad9416e6b362d7fbbb6888fb7abc13e24197cf58f2",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.327879,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "SD14": {
+          "n_fake_inputs": 139,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 232,
+              "n_measured": 232,
+              "n_fake": 139,
+              "n_real": 93,
+              "n_sources": 232,
+              "failures": 0,
+              "auroc": {
+                "auroc": 1.0,
+                "ci95": [
+                  1.0,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 1.0,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.989247,
+              "threshold_accuracy": 0.991379,
+              "score_distribution": {
+                "fake": {
+                  "n": 139,
+                  "mean": 0.999934,
+                  "std": 0.000134,
+                  "min": 0.998498,
+                  "p05": 0.999852,
+                  "p25": 0.999942,
+                  "p50": 0.999963,
+                  "p75": 0.999971,
+                  "p95": 0.999979,
+                  "max": 0.999985
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "SD15": {
+          "n_fake_inputs": 137,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 230,
+              "n_measured": 230,
+              "n_fake": 137,
+              "n_real": 93,
+              "n_sources": 230,
+              "failures": 0,
+              "auroc": {
+                "auroc": 1.0,
+                "ci95": [
+                  1.0,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 1.0,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.989247,
+              "threshold_accuracy": 0.991304,
+              "score_distribution": {
+                "fake": {
+                  "n": 137,
+                  "mean": 0.999852,
+                  "std": 0.00059,
+                  "min": 0.994668,
+                  "p05": 0.999751,
+                  "p25": 0.999939,
+                  "p50": 0.999961,
+                  "p75": 0.999972,
+                  "p95": 0.999978,
+                  "max": 0.999984
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "VQDM": {
+          "n_fake_inputs": 136,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 229,
+              "n_measured": 229,
+              "n_fake": 136,
+              "n_real": 93,
+              "n_sources": 229,
+              "failures": 0,
+              "auroc": {
+                "auroc": 0.9996,
+                "ci95": [
+                  0.9983,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 0.992647,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.985571,
+              "threshold_accuracy": 0.9869,
+              "score_distribution": {
+                "fake": {
+                  "n": 136,
+                  "mean": 0.981858,
+                  "std": 0.061114,
+                  "min": 0.399372,
+                  "p05": 0.906717,
+                  "p25": 0.991728,
+                  "p50": 0.998805,
+                  "p75": 0.999661,
+                  "p95": 0.999917,
+                  "max": 0.999953
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__VQDM__VQDM_1000_200_02_285_vqdm_00020__q95",
+                  "source_id": "VQDM/VQDM_1000_200_02_285_vqdm_00020",
+                  "source_sha256": "483ee32978ec15f73fab051993be2b093e4d7d368d2d82bf269f92e947c2cb2c",
+                  "sha256": "5ccd2fcac3758667c48ea040b1ab1f57fabf1c81bbe5603a113a170151b53a5f",
+                  "label": "Fake",
+                  "predicted": "Real",
+                  "score": 0.399372,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        },
+        "Wukong": {
+          "n_fake_inputs": 140,
+          "n_real_inputs": 93,
+          "real_pool_shared": true,
+          "real_pool_sha256": "7890c68fee377786066279543df731b07f52ae869ad6d7b7793b311665340ee5",
+          "experts": {
+            "probe": {
+              "n": 233,
+              "n_measured": 233,
+              "n_fake": 140,
+              "n_real": 93,
+              "n_sources": 233,
+              "failures": 0,
+              "auroc": {
+                "auroc": 1.0,
+                "ci95": [
+                  1.0,
+                  1.0
+                ],
+                "bootstrap": 1000
+              },
+              "threshold": {
+                "value": 0.5,
+                "direction": "higher_is_fake",
+                "chosen_on": "registered fixed threshold; not fitted here"
+              },
+              "tpr": 1.0,
+              "tnr": 0.978495,
+              "balanced_accuracy": 0.989247,
+              "threshold_accuracy": 0.991416,
+              "score_distribution": {
+                "fake": {
+                  "n": 140,
+                  "mean": 0.999928,
+                  "std": 0.000138,
+                  "min": 0.998947,
+                  "p05": 0.999733,
+                  "p25": 0.999944,
+                  "p50": 0.999963,
+                  "p75": 0.999975,
+                  "p95": 0.999981,
+                  "max": 0.999984
+                },
+                "real": {
+                  "n": 93,
+                  "mean": 0.052551,
+                  "std": 0.114396,
+                  "min": 6.9e-05,
+                  "p05": 9.4e-05,
+                  "p25": 0.000539,
+                  "p50": 0.00334,
+                  "p75": 0.041559,
+                  "p95": 0.346178,
+                  "max": 0.519092
+                }
+              },
+              "errors": [
+                {
+                  "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+                  "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+                  "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+                  "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.519092,
+                  "no_known_use": true
+                },
+                {
+                  "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+                  "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+                  "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+                  "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+                  "label": "Real",
+                  "predicted": "Fake",
+                  "score": 0.518188,
+                  "no_known_use": true
+                }
+              ]
+            }
+          }
+        }
+      },
+      "real_only": {
+        "probe": {
+          "n": 93,
+          "n_measured": 93,
+          "n_fake": 0,
+          "n_real": 93,
+          "n_sources": 93,
+          "failures": 0,
+          "auroc": null,
+          "threshold": {
+            "value": 0.5,
+            "direction": "higher_is_fake",
+            "chosen_on": "registered fixed threshold; not fitted here"
+          },
+          "tpr": null,
+          "tnr": 0.978495,
+          "balanced_accuracy": null,
+          "threshold_accuracy": 0.978495,
+          "score_distribution": {
+            "fake": null,
+            "real": {
+              "n": 93,
+              "mean": 0.052551,
+              "std": 0.114396,
+              "min": 6.9e-05,
+              "p05": 9.4e-05,
+              "p25": 0.000539,
+              "p50": 0.00334,
+              "p75": 0.041559,
+              "p95": 0.346178,
+              "max": 0.519092
+            }
+          },
+          "errors": [
+            {
+              "variant_id": "genimage__Real__e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23__q95",
+              "source_id": "Real/e600bf74-7f4c-45b8-a3a2-dbcdb47dfc23",
+              "source_sha256": "db865589f1183fb127e2132e8afc60bb5adc7eebf56747f46b01abfe0024af9e",
+              "sha256": "949157d18358420e0d4c806e9a3707732ec516f17adc3fda69305fa5f8cddc01",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.519092,
+              "no_known_use": true
+            },
+            {
+              "variant_id": "genimage__Real__f45d5949-bab2-4bec-bcad-cb10237578d2__q95",
+              "source_id": "Real/f45d5949-bab2-4bec-bcad-cb10237578d2",
+              "source_sha256": "155df23e59ae0d2263f460d654fab015f251af8dd92187d7ef90c838353020bf",
+              "sha256": "ad45e6685333019b12333a8fcc8e4568815ddb2137f965cab891faf2999cad60",
+              "label": "Real",
+              "predicted": "Fake",
+              "score": 0.518188,
+              "no_known_use": true
+            }
+          ]
+        }
+      },
+      "caveat": "Real inputs are shared across all eight generator groups; group metrics are not independent and no pooled AUROC is reported."
+    }
+  },
+  "alignment": {
+    "manifest_inputs": 1350,
+    "score_variants": 1350,
+    "extra_score_variants": [],
+    "missing_score_variants": []
+  },
+  "run": {
+    "started_at": "2026-11-05T08:29:32",
+    "elapsed_s": 123.4,
+    "device": "cuda",
+    "experts": [
+      "probe"
+    ],
+    "inputs_this_run": 1350,
+    "written_this_run": 1350,
+    "scores_file": "sft_data/g8_external_eval/genimage_val_20261105/scores.jsonl",
+    "scores_sha256": "5cca85f373dd4127eee45d9d3eb9cd5edc63fdecbd551ae1e70f8abec7934f34",
+    "load_s": {
+      "probe": 24.727
+    },
+    "load_errors": {},
+    "gpu_peak_allocated_gb": 1.66,
+    "gpu_peak_reserved_gb": 1.926,
+    "host_maxrss_kb": 3146584,
+    "cgroup_current_start": 3677073408,
+    "cgroup_current_end": 7038001152,
+    "cgroup_peak": null
+  }
+}

@@ -1,0 +1,1093 @@
+{
+  "schema": "genimage_global_comparison/1",
+  "created_at": "2026-11-05T08:29:12",
+  "inputs": {
+    "manifest": "dataset/GenImage_q95/eval_dev_manifest_20261102.json",
+    "dev_all": 6299,
+    "dev_no_known_use": 5619,
+    "real_shared": "700 Real shared across eight generator groups; no pooled AUROC."
+  },
+  "experts": {
+    "probe": {
+      "weights": {
+        "file": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+        "sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+        "bytes": 1217679947
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "is_calibrated_probability": false,
+        "note": "上游判别器的 sigmoid 输出；本项目只用其排序，概率映射由本地校准层另记"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "外部默认",
+        "note": "本项目不据此下结论，只作对照"
+      }
+    },
+    "spai": {
+      "weights": {
+        "path": "/root/autodl-tmp/third_party/spai/weights/spai.pth",
+        "sha256": "24159f27d7c8c2cd0cb6c4019189eb89ad0874a0d9d15f8dc9afd39ca9648a55",
+        "bytes": 934865338
+      },
+      "raw_score": {
+        "field": "raw_metric",
+        "range": [
+          0.0,
+          1.0
+        ],
+        "direction": "higher_is_fake",
+        "meaning": "官方 sigmoid 输出；越高越像 AI 生成"
+      },
+      "threshold": {
+        "value": 0.5,
+        "chosen_on": "官方代码 validate() 的默认决策边界（accuracy/AP/AUC 默认 threshold=0.5）",
+        "note": "不在外部集上调整"
+      }
+    }
+  },
+  "primary_set": "dev_no_known_use",
+  "groups": {
+    "dev_no_known_use": {
+      "ADM": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.973,
+            "ci95": [
+              0.9652,
+              0.9802
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.905864,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.918449,
+          "fake_median": 0.990983,
+          "real_median": 0.004808,
+          "fake_errors": 61,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.6533,
+            "ci95": [
+              0.6199,
+              0.6872
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.658951,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.596142,
+          "fake_median": 0.930749,
+          "real_median": 0.338497,
+          "fake_errors": 221,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1083,
+          "both_correct": 617,
+          "probe_only": 375,
+          "spai_only": 42,
+          "both_wrong": 49
+        }
+      },
+      "BigGAN": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9725,
+            "ci95": [
+              0.9633,
+              0.9803
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.876147,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.903591,
+          "fake_median": 0.940591,
+          "real_median": 0.004808,
+          "fake_errors": 81,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.3411,
+            "ci95": [
+              0.3062,
+              0.3714
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.261468,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.397401,
+          "fake_median": 2.2e-05,
+          "real_median": 0.338497,
+          "fake_errors": 483,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1089,
+          "both_correct": 379,
+          "probe_only": 599,
+          "spai_only": 24,
+          "both_wrong": 87
+        }
+      },
+      "Glide": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9721,
+            "ci95": [
+              0.9636,
+              0.9796
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.882171,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.906603,
+          "fake_median": 0.966789,
+          "real_median": 0.004808,
+          "fake_errors": 76,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.7946,
+            "ci95": [
+              0.767,
+              0.8177
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.829457,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.681395,
+          "fake_median": 0.999956,
+          "real_median": 0.338497,
+          "fake_errors": 110,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1080,
+          "both_correct": 700,
+          "probe_only": 274,
+          "spai_only": 67,
+          "both_wrong": 39
+        }
+      },
+      "Midjourney": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9954,
+            "ci95": [
+              0.9929,
+              0.9975
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.983155,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.957095,
+          "fake_median": 0.998982,
+          "real_median": 0.004808,
+          "fake_errors": 11,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.8106,
+            "ci95": [
+              0.7843,
+              0.837
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.866769,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.700051,
+          "fake_median": 0.999815,
+          "real_median": 0.338497,
+          "fake_errors": 87,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1088,
+          "both_correct": 779,
+          "probe_only": 268,
+          "spai_only": 19,
+          "both_wrong": 22
+        }
+      },
+      "SD14": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.965517,
+          "fake_median": 0.999958,
+          "real_median": 0.004808,
+          "fake_errors": 0,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9787,
+            "ci95": [
+              0.9691,
+              0.9873
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.998452,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.765893,
+          "fake_median": 1.0,
+          "real_median": 0.338497,
+          "fake_errors": 1,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1081,
+          "both_correct": 865,
+          "probe_only": 186,
+          "spai_only": 12,
+          "both_wrong": 18
+        }
+      },
+      "SD15": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9999,
+            "ci95": [
+              0.9997,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.965517,
+          "fake_median": 0.999958,
+          "real_median": 0.004808,
+          "fake_errors": 0,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9769,
+            "ci95": [
+              0.9666,
+              0.9858
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.996904,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.765119,
+          "fake_median": 1.0,
+          "real_median": 0.338497,
+          "fake_errors": 2,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1081,
+          "both_correct": 864,
+          "probe_only": 187,
+          "spai_only": 12,
+          "both_wrong": 18
+        }
+      },
+      "VQDM": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9954,
+            "ci95": [
+              0.9923,
+              0.9977
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.989181,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.960108,
+          "fake_median": 0.998462,
+          "real_median": 0.004808,
+          "fake_errors": 7,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.8451,
+            "ci95": [
+              0.8219,
+              0.8683
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.879444,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.706388,
+          "fake_median": 1.0,
+          "real_median": 0.338497,
+          "fake_errors": 78,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1082,
+          "both_correct": 784,
+          "probe_only": 261,
+          "spai_only": 17,
+          "both_wrong": 20
+        }
+      },
+      "Wukong": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              0.9999,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.931034,
+          "balanced_accuracy": 0.965517,
+          "fake_median": 0.999963,
+          "real_median": 0.004808,
+          "fake_errors": 0,
+          "real_errors": 30,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9568,
+            "ci95": [
+              0.9452,
+              0.9685
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.978295,
+          "tnr": 0.533333,
+          "balanced_accuracy": 0.755814,
+          "fake_median": 1.0,
+          "real_median": 0.338497,
+          "fake_errors": 14,
+          "real_errors": 203,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1080,
+          "both_correct": 851,
+          "probe_only": 199,
+          "spai_only": 12,
+          "both_wrong": 18
+        }
+      }
+    },
+    "dev_all": {
+      "ADM": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9685,
+            "ci95": [
+              0.9608,
+              0.9763
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.902857,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.910714,
+          "fake_median": 0.990601,
+          "real_median": 0.005474,
+          "fake_errors": 68,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.6458,
+            "ci95": [
+              0.6167,
+              0.6735
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.66,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.594286,
+          "fake_median": 0.930749,
+          "real_median": 0.394836,
+          "fake_errors": 238,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 776,
+          "probe_only": 499,
+          "spai_only": 56,
+          "both_wrong": 69
+        }
+      },
+      "BigGAN": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9673,
+            "ci95": [
+              0.9591,
+              0.9755
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.878571,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.898571,
+          "fake_median": 0.942234,
+          "real_median": 0.005474,
+          "fake_errors": 85,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.3358,
+            "ci95": [
+              0.3085,
+              0.3638
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.261429,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.395,
+          "fake_median": 3.5e-05,
+          "real_median": 0.394836,
+          "fake_errors": 517,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 520,
+          "probe_only": 738,
+          "spai_only": 33,
+          "both_wrong": 109
+        }
+      },
+      "Glide": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9657,
+            "ci95": [
+              0.9575,
+              0.9733
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.871429,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.895,
+          "fake_median": 0.963316,
+          "real_median": 0.005474,
+          "fake_errors": 90,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.7877,
+            "ci95": [
+              0.7637,
+              0.8107
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.831429,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.68,
+          "fake_median": 0.999955,
+          "real_median": 0.394836,
+          "fake_errors": 118,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 866,
+          "probe_only": 387,
+          "spai_only": 86,
+          "both_wrong": 61
+        }
+      },
+      "Midjourney": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9941,
+            "ci95": [
+              0.9917,
+              0.9963
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.984286,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.951429,
+          "fake_median": 0.999,
+          "real_median": 0.005474,
+          "fake_errors": 11,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.805,
+            "ci95": [
+              0.7829,
+              0.8278
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.871429,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.7,
+          "fake_median": 0.999827,
+          "real_median": 0.394836,
+          "fake_errors": 90,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 953,
+          "probe_only": 379,
+          "spai_only": 27,
+          "both_wrong": 41
+        }
+      },
+      "SD14": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              0.9999,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.959286,
+          "fake_median": 0.999958,
+          "real_median": 0.005474,
+          "fake_errors": 0,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9726,
+            "ci95": [
+              0.9641,
+              0.9808
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.998571,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.763571,
+          "fake_median": 1.0,
+          "real_median": 0.394836,
+          "fake_errors": 1,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 1049,
+          "probe_only": 294,
+          "spai_only": 20,
+          "both_wrong": 37
+        }
+      },
+      "SD15": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9999,
+            "ci95": [
+              0.9997,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.959286,
+          "fake_median": 0.999958,
+          "real_median": 0.005474,
+          "fake_errors": 0,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9711,
+            "ci95": [
+              0.9622,
+              0.9796
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.997139,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.762855,
+          "fake_median": 1.0,
+          "real_median": 0.394836,
+          "fake_errors": 2,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1399,
+          "both_correct": 1047,
+          "probe_only": 295,
+          "spai_only": 20,
+          "both_wrong": 37
+        }
+      },
+      "VQDM": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9937,
+            "ci95": [
+              0.9908,
+              0.9962
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.987143,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.952857,
+          "fake_median": 0.998423,
+          "real_median": 0.005474,
+          "fake_errors": 9,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.8343,
+            "ci95": [
+              0.8134,
+              0.8566
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.874286,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.701429,
+          "fake_median": 1.0,
+          "real_median": 0.394836,
+          "fake_errors": 88,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 955,
+          "probe_only": 379,
+          "spai_only": 27,
+          "both_wrong": 39
+        }
+      },
+      "Wukong": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              0.9999,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.918571,
+          "balanced_accuracy": 0.959286,
+          "fake_median": 0.999963,
+          "real_median": 0.005474,
+          "fake_errors": 0,
+          "real_errors": 57,
+          "failures": 0
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9512,
+            "ci95": [
+              0.9399,
+              0.9623
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.98,
+          "tnr": 0.528571,
+          "balanced_accuracy": 0.754286,
+          "fake_median": 1.0,
+          "real_median": 0.394836,
+          "fake_errors": 14,
+          "real_errors": 330,
+          "failures": 0
+        },
+        "error_overlap": {
+          "n": 1400,
+          "both_correct": 1036,
+          "probe_only": 307,
+          "spai_only": 20,
+          "both_wrong": 37
+        }
+      }
+    }
+  },
+  "runs": [
+    {
+      "started_at": "2026-11-02T23:35:33",
+      "elapsed_s": 426.8,
+      "device": "cuda",
+      "experts": [
+        "probe"
+      ],
+      "inputs_this_run": 6299,
+      "written_this_run": 6299,
+      "scores_file": "sft_data/g8_external_eval/genimage_dev_20261102/scores.jsonl",
+      "scores_sha256": "d4ab97f1e9d199ea10eda8f0667c7994f9c36a8fd74c62f95e87716beaa73d11",
+      "load_s": {
+        "probe": 4.436
+      },
+      "load_errors": {},
+      "gpu_peak_allocated_gb": 1.66,
+      "gpu_peak_reserved_gb": 1.926,
+      "host_maxrss_kb": 3154128,
+      "cgroup_current_start": 19145682944,
+      "cgroup_current_end": 19668721664,
+      "cgroup_peak": null
+    },
+    {
+      "started_at": "2026-11-05T08:13:55",
+      "elapsed_s": 284.7,
+      "device": "cuda",
+      "experts": [
+        "spai"
+      ],
+      "inputs_this_run": 6299,
+      "written_this_run": 6299,
+      "scores_file": "sft_data/g8_external_eval/genimage_dev_20261102/scores.jsonl",
+      "scores_sha256": "bb4bc12165d2bad98f7ea9b773af4ee96ea9b86783cd9c1eb323e39059115974",
+      "load_s": {
+        "spai": 3.418
+      },
+      "load_errors": {},
+      "gpu_peak_allocated_gb": 1.751,
+      "gpu_peak_reserved_gb": 2.258,
+      "host_maxrss_kb": 1300792,
+      "cgroup_current_start": 1430036480,
+      "cgroup_current_end": 3110305792,
+      "cgroup_peak": null
+    }
+  ],
+  "validation": {
+    "report": "sft_data/g8_external_eval/genimage_val_20261105/report.json",
+    "inputs": {
+      "val_all": 1350,
+      "val_no_known_use": 1192
+    },
+    "groups": {
+      "ADM": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9783,
+            "ci95": [
+              0.9611,
+              0.9913
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.901408,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.939952,
+          "fake_errors": 14,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.7047,
+            "ci95": [
+              0.6359,
+              0.775
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.697183,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.64429,
+          "fake_errors": 43,
+          "real_errors": 38
+        }
+      },
+      "BigGAN": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9888,
+            "ci95": [
+              0.979,
+              0.9962
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.909774,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.944135,
+          "fake_errors": 12,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.3675,
+            "ci95": [
+              0.2965,
+              0.4377
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.263158,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.427278,
+          "fake_errors": 98,
+          "real_errors": 38
+        }
+      },
+      "Glide": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.992,
+            "ci95": [
+              0.9843,
+              0.9976
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.869565,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.92403,
+          "fake_errors": 18,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.7747,
+            "ci95": [
+              0.7154,
+              0.8376
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.753623,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.672511,
+          "fake_errors": 34,
+          "real_errors": 38
+        }
+      },
+      "Midjourney": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9984,
+            "ci95": [
+              0.9955,
+              0.9999
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.970149,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.974322,
+          "fake_errors": 4,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.8154,
+            "ci95": [
+              0.755,
+              0.8681
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.835821,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.713609,
+          "fake_errors": 22,
+          "real_errors": 38
+        }
+      },
+      "SD14": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.989247,
+          "fake_errors": 0,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9738,
+            "ci95": [
+              0.9494,
+              0.9926
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.992806,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.792102,
+          "fake_errors": 1,
+          "real_errors": 38
+        }
+      },
+      "SD15": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.989247,
+          "fake_errors": 0,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9701,
+            "ci95": [
+              0.9441,
+              0.9904
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.992701,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.792049,
+          "fake_errors": 1,
+          "real_errors": 38
+        }
+      },
+      "VQDM": {
+        "probe": {
+          "auroc": {
+            "auroc": 0.9996,
+            "ci95": [
+              0.9983,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.992647,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.985571,
+          "fake_errors": 1,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9041,
+            "ci95": [
+              0.8634,
+              0.9411
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.941176,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.766287,
+          "fake_errors": 8,
+          "real_errors": 38
+        }
+      },
+      "Wukong": {
+        "probe": {
+          "auroc": {
+            "auroc": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 1.0,
+          "tnr": 0.978495,
+          "balanced_accuracy": 0.989247,
+          "fake_errors": 0,
+          "real_errors": 2
+        },
+        "spai": {
+          "auroc": {
+            "auroc": 0.9572,
+            "ci95": [
+              0.9281,
+              0.9816
+            ],
+            "bootstrap": 1000
+          },
+          "tpr": 0.978571,
+          "tnr": 0.591398,
+          "balanced_accuracy": 0.784985,
+          "fake_errors": 3,
+          "real_errors": 38
+        }
+      }
+    }
+  }
+}

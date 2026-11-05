@@ -66,8 +66,8 @@ def _sha256(path: str) -> str:
 def _load_manifest(path: str) -> dict:
     with open(path, encoding="utf-8") as handle:
         payload = json.load(handle)
-    if payload.get("split") != "dev":
-        raise SystemExit(f"expected a dev manifest, got {payload.get('split')!r}")
+    if payload.get("split") not in {"dev", "val"}:
+        raise SystemExit(f"expected a dev/val manifest, got {payload.get('split')!r}")
     return payload
 
 
@@ -217,7 +217,8 @@ def run(manifest_path: str, out_dir: str, experts: list[str], device: str,
                 written += 1
             handle.flush()
 
-    report = build_report(scores_path, manifest, manifest_path, experts)
+    report = build_report(scores_path, manifest, manifest_path, experts,
+                          manifest["split"])
     gpu_peak = gpu_reserved = None
     if device.startswith("cuda") and torch.cuda.is_available():
         gpu_peak = round(torch.cuda.max_memory_allocated() / 1024 ** 3, 3)
@@ -337,7 +338,7 @@ def _metrics(rows, expert):
 
 
 def build_report(scores_path: str, manifest: dict, manifest_path: str,
-                 experts: list[str]) -> dict:
+                 experts: list[str], split: str) -> dict:
     rows = [json.loads(line) for line in open(scores_path, encoding="utf-8")]
     by_variant = collections.defaultdict(dict)
     for row in rows:
@@ -348,8 +349,9 @@ def build_report(scores_path: str, manifest: dict, manifest_path: str,
     extras = sorted(set(by_variant) - manifest_ids)
     missing = sorted(manifest_ids - set(by_variant))
 
+    set_names = (f"{split}_all", f"{split}_no_known_use")
     sets = {}
-    for set_name in SET_NAMES:
+    for set_name in set_names:
         set_rows = [row for row in manifest["inputs"]
                     if set_name in row["eval_sets"]]
         real_rows = [row for row in set_rows if row["label"] == "Real"]
@@ -393,7 +395,7 @@ def build_report(scores_path: str, manifest: dict, manifest_path: str,
         }
 
     usage = {}
-    for set_name in SET_NAMES:
+    for set_name in set_names:
         subset = [row for row in manifest["inputs"] if set_name in row["eval_sets"]]
         usage[set_name] = {
             "inputs": len(subset),
@@ -472,22 +474,30 @@ def write_markdown(report: dict, path: str):
                       f"real {real_errors}；Real-only n={real['n_measured']}。"
                       "完整错误样本见 JSON。", ""]
     run = report.get("run", {})
-    lines += ["## 运行与资源", "",
-              f"- device: `{run.get('device')}`；elapsed: {run.get('elapsed_s')} s；"
-              f"written: {run.get('written_this_run')}",
-              f"- load_s: `{run.get('load_s')}`；GPU peak allocated/reserved: "
-              f"{run.get('gpu_peak_allocated_gb')} / {run.get('gpu_peak_reserved_gb')} GB",
-              f"- host maxrss: {run.get('host_maxrss_kb')} KB；cgroup "
-              f"{run.get('cgroup_current_start')} → {run.get('cgroup_current_end')}",
-              "",
-              "完整分数、错误样本、分位数和失败列表见同目录 `report.json` 与 "
+    runs = run.get("runs") or [run]
+    lines += ["## 运行与资源", ""]
+    for index, item in enumerate(runs, 1):
+        if not item:
+            continue
+        lines += [
+            f"### run {index}: {item.get('experts')}",
+            f"- device: `{item.get('device')}`；elapsed: {item.get('elapsed_s')} s；"
+            f"written: {item.get('written_this_run')}",
+            f"- load_s: `{item.get('load_s')}`；GPU peak allocated/reserved: "
+            f"{item.get('gpu_peak_allocated_gb')} / {item.get('gpu_peak_reserved_gb')} GB",
+            f"- host maxrss: {item.get('host_maxrss_kb')} KB；cgroup "
+            f"{item.get('cgroup_current_start')} → {item.get('cgroup_current_end')}",
+            "",
+        ]
+    lines += ["完整分数、错误样本、分位数和失败列表见同目录 `report.json` 与 "
               "`scores.jsonl`。"]
     open(path, "w", encoding="utf-8").write("\n".join(lines) + "\n")
 
 
 def rebuild(scores_path: str, manifest_path: str, experts: list[str]) -> dict:
     manifest = _load_manifest(manifest_path)
-    report = build_report(scores_path, manifest, manifest_path, experts)
+    report = build_report(scores_path, manifest, manifest_path, experts,
+                          manifest["split"])
     report["run"] = {
         "rebuilt_from": os.path.relpath(scores_path, PROJECT_ROOT),
         "scores_sha256": _sha256(scores_path),
