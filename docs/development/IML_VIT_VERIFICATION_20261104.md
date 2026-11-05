@@ -8,10 +8,11 @@
 - 本地目录：
   `/root/autodl-tmp/third_party/IML-ViT/IML-ViT-07dd2be0f4ea27a5c97c9fa5ffbe236733833eac`
   （仓库外，不随项目分发；MIT）。
-- **权重：仍缺失**。官方 Google Drive 直链在 20 s 内连接超时；Baidu 需要登录；
-  HuggingFace 镜像 `HJYOGC/IML-ViT` 只有 README，没有权重。没有使用非官方权重。
-- 当前环境 **2 GiB cgroup、GPU 不可见**：只做了不加载权重的代码/预处理检查，
-  没有构建或运行模型。
+- **权重：2026-11-05 已由用户上传**：`/root/autodl-tmp/third_party/IML-ViT/weights/iml-vit_checkpoint_trufor_20231104.pth`，
+  367,195,954 B，sha256 `9fa9ae88cafeb6eab28c2afd5bef74679416cf0a790b2370fa6a6fb4c122c58c`；
+  212 tensors / 91,778,242 params，`strict=True` 加载成功。
+- 2026-11-04 当时的 2 GiB cgroup/GPU 不可见只允许代码/预处理检查；2026-11-05 GPU 开启、
+  权重到位后已另行完成 checkpoint 加载和 220 输入前向（见下文）。
 - 代码目录内的关键文件哈希：
   - `iml_vit_model.py` `6d3b4ba1749bbf6b188e68f9657fff961f8a42bce818042fc1ba064fd64b7048`
   - `utils/datasets.py` `2710c246c39e19007ba6367d8dcd8b5b278c19c472afd759c35eaa477c146dd9`
@@ -67,18 +68,42 @@
 3. 当前官方 requirements 要求 `albumentations==1.3.0`；本机为 **1.4.14**（为 SPAI
    固定）。上面的 pad/normalize 路径在 1.4.14 下通过，但这不是完整的版本兼容性
    验证；真正加载权重前应固定独立环境或做逐项对照。
-4. 没有构建模型、没有 `torch.load` 权重、没有跑前向。
+4. 以上是 2026-11-04 的 CPU 检查；当时没有构建模型、没有加载权重、没有跑前向。
+   2026-11-05 的 checkpoint 加载/前向结果见下一节。
 
-## 权重获取状态
+## 权重状态（2026-11-05 更新）
 
-官方入口：
+用户已上传官方 CAT-Net/TruFor 协议 checkpoint：
 
-- Google Drive 文件 id `1xXJGJPW1i5j9Pc1JKd7fJmIAQkvt9jY7`；
-- Baidu `https://pan.baidu.com/s/1IqyJdFLUo9bXEhvqOJkvvg?pwd=2k0o`；
-- 期望落盘：`.../checkpoints/iml-vit_checkpoint.pth`。
+- 路径：`/root/autodl-tmp/third_party/IML-ViT/weights/iml-vit_checkpoint_trufor_20231104.pth`
+- bytes：367,195,954；sha256：`9fa9ae88cafeb6eab28c2afd5bef74679416cf0a790b2370fa6a6fb4c122c58c`
+- 212 tensors / 91,778,242 params；与官方模型 state dict **missing 0 / unexpected 0 /
+  shape mismatch 0**，`strict=True` 加载成功。
+- 权重不随项目分发；只在本机研究使用。
 
-实测：Google Drive `curl` 连接超时；Baidu 需要登录；HF 镜像 `HJYOGC/IML-ViT`
-没有权重文件。**因此权重未核实、未下载、未使用。**
+## 2026-11-05 同输入评测结果
+
+固定子集 100 base / 220 输入（100 Real + 120 Fake），GPU，阈值固定 0.5：
+
+| 指标 | IML-ViT | TruFor（同输入） |
+| --- | ---: | ---: |
+| forged variant IoU mean | **0.161** | **0.537** |
+| forged variant F1 mean | **0.239** | **0.645** |
+| forged variant recall mean | **0.176** | **0.570** |
+| forged source IoU mean | **0.160** | **0.523** |
+| real high-area mean | 0.047 | 0.062 |
+| real >1% sources | 58/100 | 68/100 |
+| image-level score | **无** | AUROC 0.878 [0.824, 0.925] |
+
+- IML-ViT 的 map 常集中在边缘/局部高响应，precision 0.770、recall 0.176；
+  TruFor 覆盖明显更完整。
+- 70 个 forged base 中，TruFor 的 source IoU 更高 61 个，IML 更高 9 个；
+  Δ(TruFor−IML) 均值 0.363。
+- 16 张目视对照：`sft_data/g8_localization/localization_compare16_20261105/contact_sheet.png`。
+- 运行：IML 220 输入 23.64 s（load 3.817 s，0.107 s/张，GPU peak 9.9/10.94 GB）；
+  TruFor 冷跑 107.67 s（0.489 s/张）。
+- **初步结论**：TruFor 作为当前定位专家候选；IML-ViT 在单子集上明显欠覆盖，
+  不作为当前定位专家候选。仍受单子集/共享 mask/无未见 test 限制；不改 Agent。
 
 ## 下一步（需要环境/资产）
 

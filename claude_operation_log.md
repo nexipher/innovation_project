@@ -852,3 +852,31 @@
 * **涉及/修改的文件清单**：`plan.md (Modified)`、`claude_operation_log.md`
 * **执行结果与验证状态**：仅文档；未加载模型、未跑 GPU、未改代码。
 * **置信度或遗留待办（TODO）**：命令中的环境变量需在 GPU 授权后按实际 cgroup/设备复核。
+
+### 2026-11-05 - 阶段四 4.44：SPAI 全量 dev/val 与全局线比较
+
+* **当前操作动作**：GPU 恢复后，在既有 PROBE 分数上补跑 SPAI GenImage q95 全量 dev 和 val，重建双专家报告并生成并排比较。
+* **对应计划锚点**：`plan.md` §11.4；`docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md`
+* **核心变更说明**：
+  1. SPAI dev 6,299/6,299 完成（284.7 s，load 3.4 s，GPU peak 1.75/2.26 GB，失败 0）；val 1,350/1,350 完成。
+  2. 合并报告：`sft_data/g8_external_eval/genimage_dev_20261102/report.json`；val 报告：`genimage_val_20261105/report.json`。
+  3. `dev_no_known_use` 上 PROBE AUROC 0.972–1.000、BA 0.904–0.966；SPAI AUROC 0.341–0.979、BA 0.397–0.766。SPAI 在 BigGAN AUROC 0.341 低于随机。
+  4. 错误重叠：PROBE-only 正确数远大于 SPAI-only；验证集方向一致（BigGAN SPAI 0.367）。
+  5. **全局线保留 PROBE，SPAI 不接入**；不报告合并 AUROC，test 未使用。
+* **涉及/修改的文件清单**：`scripts/g8_genimage_eval.py (Modified — val split)`、`sft_data/g8_external_eval/genimage_dev_20261102/{scores.jsonl,report.json,report.md,comparison_20261105.json,report_*_only.json}`、`sft_data/g8_external_eval/genimage_val_20261105/`、`docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md`、`tests/test_genimage_global_comparison.py`、`claude_operation_log.md`
+* **执行结果与验证状态**：dev/val 均 6,299/1,350 measured，失败 0；新比较测试 2 passed；GPU 释放；未使用 test；未改 Agent/SFT。
+* **置信度或遗留待办（TODO）**：①test 仍无未见性；②SPAI 不接入全局，保留离线候选；③共享 Real 组间不独立。
+
+### 2026-11-05 - 阶段四 4.45：TruFor/IML-ViT 220 输入定位对照与初步选择
+
+* **当前操作动作**：GPU 恢复、用户上传 IML-ViT 权重后，跑 TruFor 220 输入和 IML-ViT 16/220 输入；核对官方 checkpoint、预处理、输出语义，生成目视与统计对照。
+* **对应计划锚点**：`plan.md` §11.5；`docs/development/LOCALIZATION_COMPARISON_20261105.md`、`IML_VIT_VERIFICATION_20261104.md`
+* **核心变更说明**：
+  1. IML-ViT checkpoint `iml-vit_checkpoint_trufor_20231104.pth`（367,195,954 B，sha256 `9fa9ae88…`）212/212 tensors、91,778,242 params，strict load 通过；官方 pad/ImageNet-norm/mask 预处理在 220/220 通过。
+  2. TruFor 220：冷跑 107.67 s/0.489 s 每张；forged variant IoU 0.537、F1 0.645、recall 0.570；real high-area 0.062、68/100 >1%；source score AUROC 0.878 [0.824,0.925]。
+  3. IML-ViT 220：23.64 s/0.107 s 每张；IoU 0.161、F1 0.239、recall 0.176、precision 0.770；real high-area 0.047、58/100 >1%；**无 image-level score**。
+  4. 70 个 forged base 中 TruFor source IoU 更高 61 个、IML 9 个；Δ 均值 0.363；16 张目视对照显示 IML 集中在边缘/局部高响应。
+  5. **初步定位专家：TruFor**；IML-ViT 不作为当前候选。未改 Agent 区域观察/证据回传/结案流程。
+* **涉及/修改的文件清单**：`scripts/iml_vit_autosplice_eval.py`、`scripts/check_iml_vit_checkpoint.py`、`scripts/trufor_autosplice_eval.py (Modified — real-source aggregation/None)`、`scripts/render_localization_comparison.py`、`sft_data/g8_localization/{iml_vit_16_inputs_20261102.json,iml_vit_autosplice_dev_20261102/,iml_vit_autosplice_smoke16_20261105/,trufor_autosplice_dev_20261102/,localization_compare16_20261105/,localization_comparison_20261105.json}`、`docs/development/{IML_VIT_VERIFICATION_20261104,IML_VIT_PREP_20261102,LOCALIZATION_COMPARISON_20261105}.md`、`tests/test_localization_comparison.py`、`claude_operation_log.md`
+* **执行结果与验证状态**：TruFor/IML 均 220/220、失败 0；checkpoint strict load；比较测试 1 passed；GPU 释放；未使用 test；未改 Agent/SFT。
+* **置信度或遗留待办（TODO）**：①单子集/共享 mask/无逐变体 mask；②test 无未见性，不能做最终确认；③Agent 修整需用户明确授权；④TruFor GPU peak 未由 subprocess 暴露，只记录 wall/host/cgroup。

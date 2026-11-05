@@ -34,13 +34,14 @@
     }
   },
   "weights": {
-    "present": false,
-    "expected_path": "/root/autodl-tmp/third_party/IML-ViT/IML-ViT-07dd2be0f4ea27a5c97c9fa5ffbe236733833eac/checkpoints/iml-vit_checkpoint.pth",
-    "official_links": {
-      "google_drive_file_id": "1xXJGJPW1i5j9Pc1JKd7fJmIAQkvt9jY7",
-      "baidu": "https://pan.baidu.com/s/1IqyJdFLUo9bXEhvqOJkvvg?pwd=2k0o"
-    },
-    "probe": "Google Drive connection timed out; Baidu requires login; HF mirror HJYOGC/IML-ViT has README only"
+    "present": true,
+    "path": "/root/autodl-tmp/third_party/IML-ViT/weights/iml-vit_checkpoint_trufor_20231104.pth",
+    "sha256": "9fa9ae88cafeb6eab28c2afd5bef74679416cf0a790b2370fa6a6fb4c122c58c",
+    "bytes": 367195954,
+    "tensors": 212,
+    "params": 91778242,
+    "strict_load": true,
+    "note": "Uploaded by user on 2026-11-05; not redistributed with the project."
   },
   "preprocess": {
     "padding": "PadIfNeeded(min_height=1024,min_width=1024,border_mode=0,value=0,position=top_left,mask_value=0)",
@@ -71,9 +72,9 @@
       ],
       "mask_binary": true
     },
-    "model_build": false,
-    "weights_loaded": false,
-    "forward_run": false,
+    "model_build": true,
+    "weights_loaded": true,
+    "forward_run": true,
     "environment": "2 GiB cgroup, GPU invisible",
     "preprocess_subset": {
       "subset": "sft_data/g8_localization/autosplice_dev_subset_20261102.json",
@@ -95,10 +96,25 @@
       "tensor_min": -2.1179039478302,
       "tensor_max": 2.6399998664855957,
       "note": "All 220 subset inputs passed official pad/normalize/mask transform; no model loaded."
+    },
+    "subset_forward": {
+      "inputs": 220,
+      "checked": 220,
+      "failures": 0,
+      "forged_variant_iou_mean": 0.160538,
+      "forged_variant_f1_mean": 0.238837,
+      "wall_s": 23.64,
+      "gpu_peak_allocated_gb": 9.9,
+      "gpu_peak_reserved_gb": 10.941
     }
   },
   "notes": [
     "Official requirements pin albumentations==1.3.0; current env is 1.4.14 and the pad path passed, but full version compatibility remains to verify.",
     "Do not use unofficial checkpoints; no image-level score should be fabricated."
-  ]
+  ],
+  "reports": {
+    "verification": "docs/development/IML_VIT_VERIFICATION_20261104.md",
+    "comparison": "docs/development/LOCALIZATION_COMPARISON_20261105.md",
+    "evaluation": "sft_data/g8_localization/iml_vit_autosplice_dev_20261102/report.json"
+  }
 }

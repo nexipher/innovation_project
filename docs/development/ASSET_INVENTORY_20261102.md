@@ -22,7 +22,7 @@
 | MNW 开发清单 | `inputs_manifest.json` **200 条 = 100 源 × (original + q95)**；`inputs/` 下 q95 100 张 | q95-only 子集为 100 条；旧 original 仅历史参考 |
 | MNW 分区 | 每组 `dev_current 20 / dev_extension 20 / final 20`；final 未使用 | 最终留出继续封存 |
 | AutoSplice | **已解压并派生 q95**：原数据 16,558 文件/494 MB；Authentic 2273、Forged_JPEG100/90/75 各 3621、Mask/Caption 各 1710；q95 输入 **5894（2273 Real + 3621 Fake，227 MB）**；配对清单、审计和划分已生成 | 1710 个 base 对应 1–3 个 forged 变体；每个 base 一份 mask/caption（shared-by-base）；30 个 base/60 个变体抽查 mask 内差异均大于外，mask 与 fake 尺寸 3621/3621 一致；逐变体独立 mask 不存在；`Forged_JPEG90/75` 未用；学术非商业 |
-| IML-ViT | **代码已到位，权重仍缺**；固定 commit `07dd2be0…`、MIT；代码 archive sha256 `de140401…`；官方 Google Drive/Baidu 权重不可达 | 局部定位对照仍无法开始；代码/预处理/输出语义核实见 `IML_VIT_VERIFICATION_20261104.md`；TruFor CPU 16 张小批已完成（见 §4.3），但不足以选专家 |
+| IML-ViT | **代码与权重均已到位**；固定 commit `07dd2be0…`、MIT；权重 `iml-vit_checkpoint_trufor_20231104.pth` sha256 `9fa9ae88…`，strict load 通过 | 已在固定 220 输入上与 TruFor 同输入对照：IML IoU/F1 0.161/0.239，低于 TruFor 0.537/0.645；无图像级 score。见 `LOCALIZATION_COMPARISON_20261105.md` |
 
 ## 3. 可复用测量
 
@@ -37,12 +37,12 @@
 | 资产 | 现场结果 |
 | --- | --- |
 | Qwen3-VL-8B | `Qwen/Qwen3-VL-8B-Instruct`，snapshot `0c351dd0…`；**已迁移至数据盘** `dataset` 同级 `/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`；旧缓存路径为符号链接；约 **17.5 GB**；已做实际加载检查（7.1 s，峰值 17.53 GB，未推理） |
-| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；**CPU 16 张 AutoSplice 小批已完成**（冷跑 14.61 s；IoU 0.307/F1 0.434；真图 4/8 高响应 >1%）；扩大脚本 `trufor_autosplice_eval.py` 已准备，2026-11-04 因 2 GiB/GPU 不可见未跑 |
+| TruFor | 官方 repo commit `ae54475d…`；`trufor.pth.tar` 281,496,429 B，sha256 `ac1d90e3…`；16 张小批和 **220 输入扩展**均已完成；220 输入 forged variant IoU **0.537**/F1 **0.645**，真实图高响应 68/100；冷跑 107.67 s |
 | PROBE / SPAI / AIDE / DRCT | PROBE、SPAI 权重保留；**AIDE 三份与 DRCT 权重已于 2026-11-02 删除**；代码、注册表和历史结果保留 |
-| 磁盘 | `/root/autodl-tmp` 可用约 **7.6 GiB**（85% 已用）；overlay 可用约 **17 GB**（44% 已用；2026-11-04） |
-| cgroup | **2026-11-04 回到 2 GiB**；`memory.current` 约 1.85 GB，events 全 0（无 OOM kill） |
-| GPU | **2026-11-04 不可见**（`nvidia-smi` 无设备）；2026-11-02 曾恢复 RTX 4090 24 GB |
-| 测试 | 4.31 时 `core` 732 passed, 1 skipped；2026-11-04 新增审计/子集/MNW/TruFor 聚合测试共 **10 passed**；2 GiB 下未重跑完整 core |
+| 磁盘 | `/root/autodl-tmp` 可用约 **7 GiB**（87% 已用）；overlay 可用约 **18 GB**（42% 已用；2026-11-05） |
+| cgroup | **2026-11-05 GPU 形态为 120 GiB**；events 全 0；无卡模式仍可能回到 2 GiB |
+| GPU | **2026-11-05 可用**：RTX 4090 24 GB，评测后 0 MiB |
+| 测试 | 4.31 时 `core` 732 passed, 1 skipped；2026-11-05 新增/更新审计、子集、MNW、全局比较、定位比较测试共 **13 passed**；完整 core 仍待单独重跑 |
 
 ## 4.1 旧专家资产删除（2026-11-02）
 
@@ -107,14 +107,14 @@
 1. **TruFor CPU 小批已完成**：16 张 map/conf/score 有限；IoU 0.307、F1 0.434，
    真图 4/8 高响应 >1%。管线可用，但定位 recall 低、真图误报明显；16 张不足以选
    定位专家，下一步扩大 dev 评估，并等 IML-ViT 做同输入对照。
-2. **IML-ViT 代码已到位，权重仍缺**：官方 Google Drive 连接超时、Baidu 需登录、
-   HF 镜像无权重；代码/预处理/输出语义已核实，但没有 checkpoint，不能做同输入对照。
-3. **GPU/内存恢复前不能跑模型**：2026-11-04 为 2 GiB cgroup、GPU 不可见；
-   SPAI 全量 dev、TruFor 220 输入扩展和 IML-ViT 前向都等待环境恢复。
+2. **IML-ViT 已可用但未选为定位专家**：代码与官方 checkpoint 均已核实并完成 220 输入
+   对照；其 IoU/F1 明显低于 TruFor，且无图像级 score。
+3. **模型评测已完成**：2026-11-05 GPU 开启后已跑 SPAI dev/val、TruFor 220 和 IML-ViT
+   220；当前 GPU 可用，仍需注意实例 cgroup 可能在无卡模式变化。
 4. **AutoSplice mask 语义**：mask 是 base 级 shared-by-base，30/60 抽查支持
    mask 内差异大于外；没有逐变体独立 mask，报告需保留这一限制。
 5. **GenImage 配对/去重**：无本地逐源真假配对 manifest；共享 Real 1000 跨八组复用，
    组间不独立；SD15 `680_sdv5_00100` 固定排除，canonical `459_sdv5_00039`。
 6. **划分已完成**：AutoSplice dev/val/test = 1591/340/342 源；GenImage 各生成器
    ~700/150/150（SD15 699），共享 Real 700/150/150；test 封存。
-7. **磁盘**：2026-11-04 数据盘可用约 **7.6 GiB**、overlay 约 **17 GB**；Qwen3 迁移已完成（见 4.2）。
+7. **磁盘**：2026-11-05 数据盘可用约 **7 GiB**、overlay 约 **18 GB**；Qwen3 迁移已完成（见 4.2）。

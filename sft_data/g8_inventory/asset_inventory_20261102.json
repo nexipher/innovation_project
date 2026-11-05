@@ -7,18 +7,18 @@
     "status_note": "b2 export was committed as e0e794b before inventory; this file and the GenImage manifest are the only new artifacts"
   },
   "disk": {
-    "data_disk_avail_gib": 7.6,
-    "overlay_avail_gib": 15.8,
-    "note": "2026-11-04 df -h: /root/autodl-tmp 7.6 GiB avail; overlay 17 GB block display"
+    "data_disk_avail_gib": 7.0,
+    "overlay_avail_gib": 18.0,
+    "note": "2026-11-05 df -BG: /root/autodl-tmp 7G avail; overlay 18G"
   },
   "cgroup": {
-    "max": "2147483648",
+    "max": "128849018880",
     "high": "max",
-    "current": "1852616704",
+    "current": "~3.7 GB",
     "events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0",
-    "checked_at": "2026-11-04"
+    "checked_at": "2026-11-05"
   },
-  "gpu": "No devices found on 2026-11-04; RTX 4090 24 GB was visible on 2026-11-02",
+  "gpu": "NVIDIA GeForce RTX 4090 24 GB, 0 MiB idle (2026-11-05)",
   "genimage": {
     "root": "dataset/GenImage_Test",
     "real_root": "dataset/Real",
@@ -433,7 +433,7 @@
     },
     "iml_vit": {
       "code_present": true,
-      "weights_present": false,
+      "weights_present": true,
       "commit": "07dd2be0f4ea27a5c97c9fa5ffbe236733833eac",
       "licence": "MIT",
       "archive_sha256": "de140401ff941cd9c722b2b42d37cdece0ad310d6a66522cff9b2473579784fb",
@@ -458,7 +458,25 @@
         "subset_checked": 220,
         "subset_failures": 0
       },
-      "blocker": "Official weights not available: Google Drive timeout, Baidu login, HF mirror has README only; current cgroup 2 GiB/GPU invisible."
+      "blocker": "none for code/weights; single-subset limitation and no unseen test remain",
+      "checkpoint": "/root/autodl-tmp/third_party/IML-ViT/weights/iml-vit_checkpoint_trufor_20231104.pth",
+      "checkpoint_sha256": "9fa9ae88cafeb6eab28c2afd5bef74679416cf0a790b2370fa6a6fb4c122c58c",
+      "checkpoint_bytes": 367195954,
+      "checkpoint_tensors": 212,
+      "model_tensors": 212,
+      "strict_load": true,
+      "checkpoint_params": 91778242,
+      "evaluation_report": "sft_data/g8_localization/iml_vit_autosplice_dev_20261102/report.json",
+      "comparison_report": "sft_data/g8_localization/localization_comparison_20261105.json",
+      "aggregate": {
+        "forged_variant_iou_mean": 0.160538,
+        "forged_variant_f1_mean": 0.238837,
+        "forged_variant_recall_mean": 0.175714,
+        "forged_variant_precision_mean": 0.770376,
+        "real_high_fraction_mean": 0.046971,
+        "real_false_positive_sources": 58,
+        "score_available": false
+      }
     }
   },
   "qwen3vl": {
@@ -541,7 +559,7 @@
     "AutoSplice mask is shared per base; no per-variant mask",
     "GenImage has no per-source fake/real pairing manifest; shared Real reused across generators"
   ],
-  "updated_at": "2026-11-04T21:59:07",
+  "updated_at": "2026-11-05T08:35:13",
   "trufor_smoke": {
     "status": "completed_cpu_smoke",
     "report": "sft_data/g8_localization/trufor_autosplice_smoke_20261102_cpu.json",
@@ -580,7 +598,9 @@
       "global TruFor score direction on GenImage/MNW was reversed; this local-manipulation sample is not a direction calibration"
     ],
     "expanded_script": "scripts/trufor_autosplice_eval.py",
-    "expanded_status": "prepared; not run under 2 GiB cgroup / GPU unavailable"
+    "expanded_status": "completed_gpu_220_inputs",
+    "expanded_report": "sft_data/g8_localization/trufor_autosplice_dev_20261102/report.json",
+    "localization_comparison": "sft_data/g8_localization/localization_comparison_20261105.json"
   },
   "retired_assets": {
     "deleted_at": "2026-11-02T22:38:50",

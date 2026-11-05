@@ -1578,6 +1578,20 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
 - **Agent 边界**：定位专家未定前，不改 Agent 的区域观察、证据回传、结案流程；
   不启动 SFT/训练。
 
+**2026-11-05 完成结果（GPU）**：
+
+- TruFor 220 输入冷跑 107.67 s，0.489 s/张；forged variant IoU **0.537**、
+  F1 **0.645**、recall **0.570**，real high-area 0.062、68/100 源 >1%；
+  source score AUROC **0.878 [0.824, 0.925]**。
+- IML-ViT 官方 checkpoint（`9fa9ae88…`，367,195,954 B，strict load）220 输入
+  23.64 s，0.107 s/张；IoU **0.161**、F1 **0.239**、recall **0.176**、
+  precision 0.770，real high-area 0.047、58/100 源 >1%；**无图像级 score**。
+- 70 个 forged base 中，TruFor 的 source IoU 更高 61 个，IML 更高 9 个；
+  Δ(TruFor−IML) 均值 0.363。16 张目视对照显示 IML 集中在边缘/局部高响应。
+- **初步定位专家：TruFor**；IML-ViT 不作为当前候选。仍受单子集、shared mask、
+  无未见 test 限制；**不改 Agent**。对照报告：
+  `docs/development/LOCALIZATION_COMPARISON_20261105.md`。
+
 ### 11.6 产物与验收
 
 - `sft_data/g8_audit/genimage_usage_history_20261102.json`（逐源 flags/roles/证据/
@@ -1638,3 +1652,6 @@ NO_ALBUMENTATIONS_UPDATE=1 python scripts/trufor_autosplice_eval.py \
 
 # IML-ViT 仅在官方权重到位后运行；当前仍缺 checkpoint
 ```
+
+**2026-11-05 更新**：GPU 已开启，SPAI dev/val、TruFor 220、IML-ViT 220 均已完成，
+结果见 §11.4/§11.5；§11.7 的“等待 GPU”条件已解除。测试集仍未使用，Agent 未改。
