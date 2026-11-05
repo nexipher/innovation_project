@@ -1557,6 +1557,12 @@ AIDE 三份哈希于 2026-11-02 复算一致；DRCT/SSP 使用既有记录且删
   合并，不进入训练或阈值拟合。
 - **GPU**：只运行 PROBE/SPAI，不加载 Qwen；分进程顺序执行，记录显存/cgroup。
 
+**2026-11-05 全局线结果**：PROBE/SPAI 均完成 dev 6,299 与 val 1,350；在
+`dev_no_known_use` 上 PROBE AUROC 0.972–1.000、BA 0.904–0.966，SPAI 0.341–0.979、
+BA 0.397–0.766；验证集方向一致。SPAI 在 BigGAN 的 AUROC 仅 0.341（dev）/0.367
+（val），低于随机；错误重叠中 PROBE-only 远多于 SPAI-only。**全局线保留 PROBE，
+SPAI 不接入**。报告：`docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md`。
+
 ### 11.5 局部线：TruFor 与 IML-ViT
 
 - **16 张对照面板**：从已完成的 16 张 TruFor 结果生成“原图 / GT mask / map / conf”
