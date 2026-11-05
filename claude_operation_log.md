@@ -880,3 +880,12 @@
 * **涉及/修改的文件清单**：`scripts/iml_vit_autosplice_eval.py`、`scripts/check_iml_vit_checkpoint.py`、`scripts/trufor_autosplice_eval.py (Modified — real-source aggregation/None)`、`scripts/render_localization_comparison.py`、`sft_data/g8_localization/{iml_vit_16_inputs_20261102.json,iml_vit_autosplice_dev_20261102/,iml_vit_autosplice_smoke16_20261105/,trufor_autosplice_dev_20261102/,localization_compare16_20261105/,localization_comparison_20261105.json}`、`docs/development/{IML_VIT_VERIFICATION_20261104,IML_VIT_PREP_20261102,LOCALIZATION_COMPARISON_20261105}.md`、`tests/test_localization_comparison.py`、`claude_operation_log.md`
 * **执行结果与验证状态**：TruFor/IML 均 220/220、失败 0；checkpoint strict load；比较测试 1 passed；GPU 释放；未使用 test；未改 Agent/SFT。
 * **置信度或遗留待办（TODO）**：①单子集/共享 mask/无逐变体 mask；②test 无未见性，不能做最终确认；③Agent 修整需用户明确授权；④TruFor GPU peak 未由 subprocess 暴露，只记录 wall/host/cgroup。
+
+### 2026-11-05 - 阶段四 4.47：全量 core 回归
+
+* **当前操作动作**：在 GPU/120 GiB 环境恢复后运行 `bash scripts/run_tests.sh core`，验证新增审计、子集、MNW、全局/定位比较测试没有回归。
+* **对应计划锚点**：`plan.md` §11.6；`docs/development/ASSET_INVENTORY_20261102.md` §4
+* **核心变更说明**：core 结果 **745 passed, 1 skipped, 845 deselected**（skip 仍是已删除 AIDE/DRCT 权重的存在性检查）；无失败。
+* **涉及/修改的文件清单**：`sft_data/g8_inventory/asset_inventory_20261102.json (Modified)`、`docs/development/ASSET_INVENTORY_20261102.md (Modified)`、`claude_operation_log.md`
+* **执行结果与验证状态**：rc=0；16.52 s；未加载模型权重；未改 test/Agent/SFT。
+* **置信度或遗留待办（TODO）**：GPU/模型评测已另记 4.44/4.45；test 仍未使用。

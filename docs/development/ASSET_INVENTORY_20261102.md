@@ -42,7 +42,7 @@
 | 磁盘 | `/root/autodl-tmp` 可用约 **7 GiB**（87% 已用）；overlay 可用约 **18 GB**（42% 已用；2026-11-05） |
 | cgroup | **2026-11-05 GPU 形态为 120 GiB**；events 全 0；无卡模式仍可能回到 2 GiB |
 | GPU | **2026-11-05 可用**：RTX 4090 24 GB，评测后 0 MiB |
-| 测试 | 4.31 时 `core` 732 passed, 1 skipped；2026-11-05 新增/更新审计、子集、MNW、全局比较、定位比较测试共 **13 passed**；完整 core 仍待单独重跑 |
+| 测试 | 2026-11-05 `bash scripts/run_tests.sh core`：**745 passed, 1 skipped, 845 deselected**（新增审计/子集/MNW/全局比较/定位比较测试共 13 项） |
 
 ## 4.1 旧专家资产删除（2026-11-02）
 
