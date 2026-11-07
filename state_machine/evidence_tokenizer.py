@@ -132,6 +132,10 @@ class EvidenceTokenizer:
             "evidence_name": expert_result.evidence_name,
             "region": region_str,
             "region_pixels": region_pixels,
+            # The full image's (height, width).  The diagnostic bbox above is
+            # not the image size when the model proposed a region; map/conf
+            # artifacts are aligned to this shape, so it travels with them.
+            "image_shape": [int(image_shape[0]), int(image_shape[1])],
             "region_normalized_1000": (
                 [int(v) for v in region_normalized]
                 if region_normalized is not None else None
@@ -208,7 +212,8 @@ class EvidenceTokenizer:
 
     # 模型可见字段：固定集合，测试锁定。多一个字段就是多一层要解释的数值。
     MODEL_VISIBLE_KEYS = ("evidence_id", "expert", "measurement", "status", "scope",
-                          "score", "reading", "visual_artifacts", "artifact_meaning")
+                          "score", "reading", "visual_artifacts", "artifact_meaning",
+                          "map_coordinates")
 
     @classmethod
     def model_visible(cls, token: dict) -> dict:
@@ -250,6 +255,76 @@ class EvidenceTokenizer:
             if reason:
                 failed["reason"] = str(reason)
             return failed
+        if source == "trufor_expert":
+            # TruFor is a LOCAL manipulation/localisation model.  Its score and
+            # maps must not be converted into a whole-image AI-generation
+            # direction: the joint verdict keeps the two questions apart.
+            raw = token.get("raw_metric")
+            threshold = 0.5
+            if isinstance(raw, (int, float)):
+                if float(raw) >= threshold:
+                    value_direction = (
+                        "above the expert's diagnostic threshold — a local "
+                        "manipulation candidate; NOT proof and NOT a whole-image "
+                        "AI-generation judgment")
+                else:
+                    value_direction = (
+                        "below the expert's diagnostic threshold — no strong local "
+                        "response; NOT proof that the image is untampered and NOT a "
+                        "whole-image AI-generation judgment")
+            else:
+                value_direction = (
+                    "no numeric score — the local question is unmeasured; NOT a "
+                    "whole-image AI-generation judgment")
+            visible = {
+                "evidence_id": token.get("evidence_id"),
+                "expert": source,
+                "measurement": token.get("evidence_name"),
+                "status": token.get("status", "measured"),
+                "scope": token.get("measurement_scope"),
+                "score": {
+                    "name": token.get("evidence_name"),
+                    "value": raw,
+                    "range": [0.0, 1.0],
+                    "direction": "higher_is_local_manipulation",
+                    "direction_for_this_value": value_direction,
+                    "is_calibrated_probability": False,
+                    "threshold": threshold,
+                    "threshold_chosen_on": (
+                        "official TruFor sigmoid; fixed for diagnostics, not fitted"),
+                },
+                "reading": (
+                    (token.get("phenomenon") or "").strip()
+                    + " TruFor returns a LOCAL manipulation score plus anomaly/conf "
+                    "maps aligned to the original image. A high score or bright map "
+                    "is a local candidate, not proof; the confidence map says where "
+                    "the map is reliable. This is not a whole-image AI-generation "
+                    "score; use PROBE for that question."
+                ).strip(),
+            }
+            image_size = token.get("image_shape")
+            if not image_size:
+                image_size = (token.get("condition_metadata") or {}).get("image_size")
+            if image_size:
+                visible["map_coordinates"] = {
+                    "space": "original_image",
+                    "image_size": list(image_size),
+                    "bbox_format": "[ymin, xmin, ymax, xmax] in [0,1000]",
+                }
+            artifacts = token.get("visual_artifacts")
+            if artifacts:
+                visible["visual_artifacts"] = list(artifacts)
+                visible["artifact_meaning"] = (
+                    "TruFor anomaly_map (per-pixel local manipulation response) and "
+                    "confidence_map (where the map is reliable), both aligned to the "
+                    "original image and the [0,1000] bbox. The images attached with "
+                    "this token, in order, are: diagnostic region crop, anomaly_map, "
+                    "confidence_map. A bright anomaly region is a local candidate, not "
+                    "proof; low confidence means do not rely on that region. The score "
+                    "above is not a whole-image generation probability."
+                )
+            return visible
+
         record = None
         try:
             record = entry(source)
@@ -311,7 +386,9 @@ class EvidenceTokenizer:
         if artifacts:
             visible["visual_artifacts"] = list(artifacts)
             visible["artifact_meaning"] = (
-                "诊断用可视化产物（供人核对，不是模型的判据；数值以上面的 score 为准）")
+                "专家生成的可视化证据图（随该 token 一起投送给模型）。用它们检查"
+                "局部证据，例如 map/conf；高响应是候选而非证明，低 conf 表示该区域"
+                "不可靠。产物图不替代 score，也不是校准概率；坐标用原图 [0,1000]。")
         return visible
 
     @classmethod

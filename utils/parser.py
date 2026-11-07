@@ -86,11 +86,17 @@ class Parser:
         re.DOTALL | re.IGNORECASE,
     )
 
+    _RE_CALL_TRUFOR = re.compile(
+        r"<call_trufor>\s*\[?\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]?\s*</call_trufor>",
+        re.DOTALL | re.IGNORECASE,
+    )
+
     _CALL_PATTERNS = {
         # 当前工具箱（阶段 4.4）
         "probe": _RE_CALL_PROBE,
         "npr": _RE_CALL_NPR,
         "univfd": _RE_CALL_UNIVFD,
+        "trufor": _RE_CALL_TRUFOR,
         "noise": _RE_CALL_NOISE,
         # 退役工具：旧 trace 的解析与 v2 复算仍要认
         "freq": _RE_CALL_FREQ,
@@ -184,6 +190,9 @@ class Parser:
         "dino": "probe",
         "aigi": "probe",
         "call_probe_dino": "probe",
+        "call_trufor": "trufor",
+        "trufor_expert": "trufor",
+        "tru for": "trufor",
     }
 
     @classmethod
@@ -286,8 +295,14 @@ class Parser:
 
     @classmethod
     def has_call(cls, text: str) -> bool:
-        """Check if the text contains any <call_*> tag."""
-        return bool(cls._RE_CALL.search(text))
+        """Check if the text contains any <call_*> tag.
+
+        The bbox is optional (§4.17 R9): `<call_probe></call_probe>` is a
+        legal request to measure the whole image.  Using the bbox-requiring
+        regex here made those calls look malformed, so every no-bbox call
+        burned the client's retries before the controller could execute it.
+        """
+        return bool(cls._RE_CALL_ANY.search(text))
 
     @classmethod
     def validate_tag_structure(cls, text: str) -> Tuple[bool, str]:

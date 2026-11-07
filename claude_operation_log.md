@@ -902,3 +902,33 @@
 * **涉及/修改的文件清单**：`README.md (Modified)`、`plan.md (Modified)`、`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md (Modified)`、`KNOWN_ISSUES.md (Modified)`、`claude_operation_log.md`
 * **执行结果与验证状态**：`git diff --check` 通过；文档-only，未改代码/模型/数据；此前 core 745 passed；未使用 test；未改 Agent/SFT。
 * **置信度或遗留待办（TODO）**：①历史段落仍保留当时快照，但顶部入口已声明以当前状态/§11 为准；②后续如专家接入 Agent，需再同步 README/plan/架构文档。
+
+### 2026-11-07 - 阶段四 4.50：联合结案字段与 PROBE+TruFor 最小双专家闭环
+
+* **当前操作动作**：按用户五项要求，新增整图生成/局部篡改分离的结案 schema；把 PROBE、TruFor 接入同一条真实调用流程；修复首轮视觉观察、转换器遗漏最终报告、工作台展示三项问题；准备 24 会话人工验收材料。未启动 SFT 或调用策略对照。
+* **对应计划锚点**：`plan.md` §12；`KNOWN_ISSUES.md` A5 补充（2026-11-07 修复）。
+* **核心变更说明**：
+  1. `utils/joint_verdict.py`：规范化/校验 `whole_image_generation`、`local_manipulation`、`suspicious_regions`；`Not applicable` 仅当整图 `AI-generated`，否则记联合字段问题并推导为 `Uncertain`；缺失字段不补写；总体标签与两维推导不一致记 `joint_overall_mismatch`。
+  2. 提示词新增联合任务段：两个问题分开回答；`verdict` 只在整图 Real 且局部 Not tampered 时为 Real；整图 Real 且无 TruFor 测量时局部写 Uncertain，或先调用 TruFor；亮区是候选不是证明。
+  3. `state_machine/controller.py`：`trufor` 映射、联合字段原样保留、缺 TruFor 的局部结论标记、状态行在 TruFor 未测量时提示局部证据缺失；`utils/parser.py` 识别 `<call_trufor>`；`main.py` 新增显式 `--tools probe,trufor`（默认工具箱不变，显式策略不静默降级）。
+  4. TruFor 模型可见 token：`higher_is_local_manipulation`、按阈值给出该值的局部方向、`map_coordinates`（原图尺寸与 `[0,1000]` bbox 约定）、三张图的顺序说明；`phenomenon` 由“整图判别分数”改为“局部篡改检测分数”。确认 region + anomaly_map + confidence_map 三张图进入 Qwen 图片输入（实测 `pil_images_attached=4`，原图 + 三张产物）。
+  5. `utils/final_v2.py`：从 adopted closing turn 原样保留 `report`、`primary_evidence`、联合字段与可疑区域；缺失字段不代写；`validate_sample` 校验联合字段/证据 id。
+  6. 工作台：联合结案 pill、可疑区域、每轮实际投送图片缩略图（区域/异常图/置信图）、停止原因、调用计数；补充联合维度推导行。
+  7. 修复无 bbox 调用被格式校验误判的问题：`Parser.has_call` 改用允许 bbox 可选的通用正则；否则每个 `<call_probe></call_probe>` 都会浪费客户端重试。
+* **涉及/修改的文件清单**：`utils/joint_verdict.py`、`utils/final_v2.py`、`utils/parser.py`、`utils/evidence_ledger.py`、`mllm/message_builder.py`、`mllm/mock_client.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`experts/external_base.py`、`experts/trufor.py`、`main.py`、`scripts/g8_review_workstation.py`、`tests/test_joint_verdict.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_tokenizer.py`、`tests/test_final_v2.py`、`tests/test_message_builder.py`、`tests/test_g8_review_workstation.py`、`tests/test_evidence_pack.py`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md`
+* **执行结果与验证状态**：`core` 回归 **757 passed, 1 skipped, 845 deselected**；转换器在真实双专家 trace 上逐字保留 `report`、`primary_evidence`、联合字段；未使用 test；未改冻结批次；未启动 SFT。
+* **置信度或遗留待办（TODO）**：①人工验收尚未完成，工作台状态必须是 pending human review；②已观察到模型总体标签与两维推导不一致、以及把 TruFor 高响应当作局部篡改/整图生成互相印证的情况，需人工判读并在验收后决定是否调提示词；③未做单专家/固定双专家/自主调用对照，未训练。
+
+### 2026-11-07 - 阶段四 4.51：PROBE+TruFor 24 会话人工验收材料（pending）
+
+* **当前操作动作**：按固定 manifest 运行 Qwen3-VL-8B-Instruct + `probe,trufor` 24 会话（贪心、non-thinking、text+image），生成逐会话 trace、审核页、`records.json` 与自动描述统计；**不进行人工验收签字，不启动 SFT**。
+* **对应计划锚点**：`plan.md` §12.4；`sft_data/g8_acceptance/dual_20261107/`。
+* **核心变更说明**：
+  1. manifest：GenImage_q95 12（4 Real + 8 生成器各一）/ AutoSplice_q95 12（4 真图高 TruFor 响应 + 8 局部篡改）；只用 dev/val，test 未使用。
+  2. 24/24 会话 `model_concluded`，全部调用两个专家（2 calls）；23/24 的 TruFor 轮实际投送 4 张图（原图 + region + anomaly_map + confidence_map），`input_stats.pil_images_attached=4`。
+  3. 1 例（Midjourney 1024）TruFor 子进程失败（显存不足，未产出 npz），控制器在 `failed_tool_calls` 记录，模型按“缺失局部测量”处理；未伪造成中性结果。
+  4. 自动统计：4/24 `joint_overall_mismatch`；10 个可疑区域，其中 3 个 bbox 覆盖全图；0 个区域缺 evidence。高 TruFor 真图 4 例中，1 例被模型判为 local Tampered（PROBE/TruFor 双高），其余 3 例 local Uncertain；局部篡改 8 例中 5 例 local Tampered、3 例 Uncertain。
+  5. 页面展示原始对话、实际投送图片缩略图、联合字段、可疑区域、调用/失败/停止信息；新增 `REVIEW_GUIDE.md`、`SUMMARY.md`，页面补充 `joint_overall_mismatch` 行。
+* **涉及/修改的文件清单**：`scripts/build_dual_acceptance_manifest.py (Created)`、`scripts/g8_dual_acceptance.py (Created)`、`sft_data/g8_acceptance/dual_20261107/{manifest.json,index.html,records.json,traces/,REVIEW_GUIDE.md,SUMMARY.md,REVIEW_STATUS.md}`、`claude_operation_log.md`、`plan.md`、`README.md`、`KNOWN_ISSUES.md`
+* **执行结果与验证状态**：批次 24/24 完成，wall 731.2 s；输出状态 **pending human review**；自动检查只作描述，不是验收；未训练、未做调用策略对照、未使用 test。
+* **置信度或遗留待办（TODO）**：①人工逐会话审核（重点：高 TruFor 真图是否被当篡改、整图误报如何被解释、局部篡改漏判、跨任务“互相印证”）；②若人工验收不通过，再决定提示词/工具语义修正并重跑；③TruFor 1024 显存失败需在后续资源策略中处理；④验收通过前不进入 SFT。

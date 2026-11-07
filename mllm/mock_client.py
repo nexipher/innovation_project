@@ -35,7 +35,7 @@ class MockMLLMClient(BaseMLLMClient):
     # All valid modes ("probe_then_corroborate" is the G7 protocol: the primary
     # detector first, then one optional corroborating clue)
     MODES = ("fast_verdict", "two_calls", "explore_all", "conflict",
-             "probe_then_corroborate")
+             "probe_then_corroborate", "probe_then_trufor")
 
     def __init__(self, mode: str = "two_calls", seed: int = MOCK_MLLM_SEED):
         if mode not in self.MODES:
@@ -104,7 +104,10 @@ class MockMLLMClient(BaseMLLMClient):
     def _detect_label(self, image_path: str) -> None:
         """Infer ground-truth label from directory structure."""
         norm = image_path.replace("\\", "/")
-        if "/Real/" in norm or "dataset/Real" in norm:
+        if "AutoSplice" in norm:
+            self._image_label = "Fake"
+            self._source_model = "AutoSplice"
+        elif "/Real/" in norm or "dataset/Real" in norm:
             self._image_label = "Real"
             self._source_model = "Real"
         else:
@@ -189,6 +192,8 @@ class MockMLLMClient(BaseMLLMClient):
             return self._handle_conflict(evidence)
         elif self._mode == "probe_then_corroborate":
             return self._handle_probe_then_corroborate(evidence)
+        elif self._mode == "probe_then_trufor":
+            return self._handle_probe_then_trufor(evidence)
         return self._handle_two_calls(evidence)  # fallback
 
     # ------------------------------------------------------------------
@@ -265,6 +270,15 @@ class MockMLLMClient(BaseMLLMClient):
                          if e not in self._called_experts]
             return self._reasoning(evidence) + self._call(remaining[0] if remaining else "noise")
         return self._reasoning(evidence) + self._verdict()
+
+    def _handle_probe_then_trufor(self, evidence: Optional[dict]) -> str:
+        """Minimal joint loop: PROBE whole-image, then TruFor local, then joint verdict."""
+        if evidence is None:
+            return self._planning("whole-image generation and local edit check") + self._call("probe")
+        if "trufor" not in self._called_experts:
+            return (self._planning("local manipulation check in a candidate region")
+                    + self._call("trufor"))
+        return self._reasoning(evidence) + self._joint_verdict()
 
     def _handle_conflict(self, evidence: Optional[dict]) -> str:
         """Create contradictory evidence → Uncertain verdict."""
@@ -367,6 +381,39 @@ class MockMLLMClient(BaseMLLMClient):
             "report": report,
         }, ensure_ascii=False)
 
+        return f"<verdict>\n{verdict_json}\n</verdict>\n"
+
+    def _joint_verdict(self) -> str:
+        """Joint verdict for the dual-expert mock (fields are explicit)."""
+        if self._source_model == "AutoSplice":
+            whole, local = "Real", "Tampered"
+            regions = [{
+                "bbox": [120, 80, 420, 360],
+                "reason": "local manipulation candidate inside the tampered object",
+                "evidence": [e for e in self._called_experts if e],
+            }]
+            verdict = "Fake"
+            report = ("整图来源未见 AI 生成证据，但局部区域存在篡改候选；"
+                      "将整图生成与局部篡改分开记录。")
+        elif self._image_label == "Fake":
+            whole, local = "AI-generated", "Not applicable"
+            regions = []
+            verdict = "Fake"
+            report = "整图呈现 AI 生成特征；局部篡改判断不适用。"
+        else:
+            whole, local = "Real", "Not tampered"
+            regions = []
+            verdict = "Real"
+            report = "整图与局部均未见明确生成或篡改证据。"
+        verdict_json = json.dumps({
+            "verdict": verdict,
+            "whole_image_generation": whole,
+            "local_manipulation": local,
+            "suspicious_regions": regions,
+            "confidence": 0.8,
+            "primary_evidence": self._called_experts,
+            "report": report,
+        }, ensure_ascii=False)
         return f"<verdict>\n{verdict_json}\n</verdict>\n"
 
     def _uncertain_verdict(self) -> str:

@@ -1,12 +1,13 @@
 # 计划（当前代次 g8）
 
-> **2026-11-05 当前状态（入口；覆盖历史段落中的过时表述）**：运行时工具箱是
+> **2026-11-07 当前状态（入口；覆盖历史段落中的过时表述）**：默认运行时工具箱是
 > **`probe` / `npr` / `univfd`**；`freq` / `jpeg` / `noise` 已退役、仅 replay；`ela` /
-> `frequency` v1 不注册。全局线 **PROBE 保留、SPAI 不接入**；定位线 **TruFor 为初步候选、
-> 尚未接入 Agent**，**IML-ViT 代码与官方权重均已到位并完成 220 输入对照，但未选中**。
+> `frequency` v1 不注册。可选联合任务 `--tools probe,trufor` 已接入同一真实调用流程，
+> 分别输出整图生成与局部篡改判断；**人工验收 pending**。全局线 **PROBE 保留、SPAI 不接入**；
+> **IML-ViT 代码与官方权重均已到位并完成 220 输入对照，但未选中**。
 > GenImage test 有使用历史且无未见性，继续隔离；选择只用 dev/val。最新结果见 §11.4/§11.5/
-> §11.7 与 `docs/development/{GENIMAGE_GLOBAL_COMPARISON_20261105,LOCALIZATION_COMPARISON_20261105,IML_VIT_VERIFICATION_20261104}.md`。
-> 历史段落保留当时记录；凡与本条冲突，以本条和 §11 为准。
+> §11.7、§12 与 `docs/development/{GENIMAGE_GLOBAL_COMPARISON_20261105,LOCALIZATION_COMPARISON_20261105,IML_VIT_VERIFICATION_20261104}.md`。
+> 历史段落保留当时记录；凡与本条冲突，以本条、§11 和 §12 为准。
 
 > **本文件从 2026-10-15 起只记当前代次的工作，只追加、不改写已写下的条目。**
 > v1 计划（Qwen2.5-VL + PROBE/noise/jpeg/frequency_v2 时代，含其全部阶段与决策记录）已归档：
@@ -20,14 +21,14 @@
 > `KNOWN_ISSUES.md`（问题清单）、`docs/development/TESTING.md`（测试分层与运行方式）。
 > 文档布局见 §1b：**根目录只保留四份日常文档**，其余在 `docs/{design,development,archive}/`。
 
-## 0. 当前状态（2026-11-05 更新）
+## 0. 当前状态（2026-11-07 更新）
 
 | 事实 | 值 |
 |------|-----|
 | 当前代次 | `g8`（`sft_data/g8/`，Qwen3-VL-8B-Instruct 固定 revision `0c351dd0…`；`g7` 及更早已冻结） |
-| 运行时工具箱 | `probe`（主检测器）/ `npr` / `univfd`；`freq` / `jpeg` / `noise` 仅旧 trace replay |
+| 运行时工具箱 | 默认 `probe`（主检测器）/ `npr` / `univfd`；可选 `probe+trufor` 联合任务；`freq` / `jpeg` / `noise` 仅旧 trace replay |
 | 全局线 | GenImage q95 dev/val：**PROBE 保留，SPAI 不接入**（见 §11.4） |
-| 定位线 | **TruFor 初步候选、未接入 Agent**；IML-ViT 已核实但未选中（见 §11.5） |
+| 定位线 | **TruFor 已接入可选双专家闭环，人工验收 pending**；IML-ViT 已核实但未选中（见 §11.5/§12） |
 | test | 无可靠未见性：新 test 旧划分为 train 1,258/val 37/test 42/holdout 13，旧 test 30/286 先验使用；test 隔离 |
 | 默认策略 | `v3`（Qwen 主导；`config.HALTING_POLICY`，可用 `FORENSIC_HALTING_POLICY` 选择 v1/v2 复算） |
 | 数据布局 | 代次是目录、批次名是纯名字：`sft_data/<generation>/{trajectories,variants,review,train/batches}/<batch>/`；三个写入入口的 `--generation` **必填** |
@@ -1287,7 +1288,7 @@ b2 仍未通过验收、未冻结；5 条 pass 不代表整批通过。详见同
 | MNW/DIV2K | 4×250 假图 +100 真图，1.1 GB；现有 manifest 1100 条；q95 输入 100 条；final 分区未使用 |
 | AutoSplice | **已解压并派生 q95**：原数据 16,558 文件/494 MB；Authentic 2273、Forged 三版本各 3621、Mask/Caption 各 1710；q95 输入 5894（227 MB），配对/审计/划分清单已生成 |
 | IML-ViT | **代码与官方权重均已到位**（2026-11-05，strict load）；220 输入 IoU/F1 **0.161/0.239**，未选中 |
-| TruFor | 代码/权重已有；220 输入 IoU/F1 **0.537/0.645**、source score AUROC 0.878；**初步定位候选、未接入 Agent** |
+| TruFor | 代码/权重已有；220 输入 IoU/F1 **0.537/0.645**、source score AUROC 0.878；**2026-11-07 已接入可选 `probe+trufor` 联合闭环，人工验收 pending** |
 | Qwen3-VL | snapshot `0c351dd0…`，已迁移到数据盘（`/root/autodl-tmp/models/Qwen3-VL-8B-Instruct`）；实际加载检查 7.1 s/17.53 GB，未推理（见 §10.7） |
 | 资源（2026-11-05） | 数据盘可用约 7 GiB、overlay 约 18 GB；cgroup 120 GiB/events 0；RTX 4090 24 GB 空闲（0 MiB） |
 
@@ -1676,3 +1677,85 @@ NO_ALBUMENTATIONS_UPDATE=1 python scripts/trufor_autosplice_eval.py \
 
 **2026-11-05 更新**：GPU 已开启，SPAI dev/val、TruFor 220、IML-ViT 220 均已完成，
 结果见 §11.4/§11.5；§11.7 的“等待 GPU”条件已解除。测试集仍未使用，Agent 未改。
+
+## 12. 联合任务与 PROBE+TruFor 最小闭环（2026-11-07）
+
+用户要求把“整图生成判断”和“局部篡改判断”分开表达，并把一个全局专家（PROBE）和
+一个局部专家（TruFor）接入同一条真实调用流程；同时修三项与新数据直接相关的已知问题，
+再做约 24–32 会话人工验收。**本轮不启动 SFT，不训练，不改写旧 trace。**
+
+### 12.1 联合结案字段（新增，保持旧字段兼容）
+
+`<verdict>` JSON 增加：
+
+- `whole_image_generation`: `Real` / `AI-generated` / `Uncertain`
+- `local_manipulation`: `Tampered` / `Not tampered` / `Uncertain` / `Not applicable`
+- `suspicious_regions`: `[{"bbox": [ymin,xmin,ymax,xmax], "reason": "...", "evidence": ["E-..."]}]`
+  （bbox 为原图 `[0,1000]` 归一化坐标；没有局部怀疑时为空数组）
+- 保留 `verdict`（总体 Real/Fake/Uncertain，供旧账本/停止策略兼容）、`confidence`、
+  `primary_evidence`、`report`。
+- 语义：总体 `Fake` 当且仅当整图 `AI-generated` 或局部 `Tampered`；只有整图 `Real`
+  且局部 `Not tampered` 才为总体 `Real`；其余为 `Uncertain`。
+  `Not applicable` 只用于整图 `AI-generated`（局部问题不适用）；若整图不是
+  `AI-generated` 却写 `Not applicable`，记为联合字段问题，推导为 `Uncertain`。
+  两个维度分别保留，不能用一个分数互相覆盖；模型总体标签与推导不一致时记
+  `joint_overall_mismatch`，不覆盖模型标签。
+
+控制器原样保留模型写出的合法新字段与 `primary_evidence`；转换器同样保留，不重建、
+不补写。工作台分别展示两个维度、可疑区域、map/conf 和停止/调用记录。
+
+### 12.2 双专家闭环
+
+- 新增可选工具策略 `probe+trufor`（不改默认 `probe/npr/univfd` 的历史行为）。
+- PROBE 回传原始分数、方向、适用范围；TruFor 回传检测 score、`anomaly_map`、
+  `confidence_map`（原图坐标）和局部候选区域；TruFor 的 score **不是**整图
+  AI-generation 分数，不能用于整图判断。
+- MLLM 先写可见观察，可提怀疑框，再自主调用；每次调用后真实 token + 图回灌；
+  由模型决定继续或结案；控制器记录请求/执行/重复/失败/停止原因。
+- 更新 `visual_artifacts` 旧契约：产物图进入 Qwen 图片输入，作为局部定位证据；
+  仍明确 map/conf 不是校准概率。验证消息构建/处理器确实收到图 token。
+
+### 12.3 三项已知问题
+
+1. **首轮视觉描述**：保留 `observation`/`Visual Observation`，区分“看见的”与
+   “怀疑的”；不把模板句当观察。
+2. **转换器保留合法最终回答**：`report`、`primary_evidence` 及联合字段原样进入
+   监督文本；补 A5 的回归测试。缺失字段不代写。
+3. **工作台**：展示原始对话、每轮实际投送图片（含 map/conf 缩略图）、调用日志、
+   联合结案字段、可疑区域和明确停止原因。
+
+实现状态（2026-11-07）：三项均已落到代码与回归测试；TruFor 的 region + anomaly map
++ confidence map 三张图同时进入 Qwen 图片输入（`MAX_REGION_IMAGES_PER_TURN=3`，
+真实调用的 `input_stats.pil_images_attached=4`：原图 + 三张产物）；无 bbox 的
+`<call_x></call_x>` 不再被格式校验误判。`core` 回归 **757 passed, 1 skipped**。
+人工验收仍在进行，不能据此声称验收通过。
+
+### 12.4 人工验收批次
+
+固定 **24** 个会话（用户要求 24–32）：8 Real（其中 4 条 AutoSplice 真图为 TruFor
+高响应误报案例）、8 整图生成（GenImage 八个生成器各一）、8 局部篡改（AutoSplice
+q95，含同源多变体）；只用 dev/val，不碰 test。24 条中已内嵌 4 条
+`trufor_real_high_response` 弱/易误报案例，未再单独增加第 28 条。
+用 `probe+trufor`、Qwen3-VL 贪心、joint prompt；生成 trace 与审核页，**由人审核**
+模型是否理解工具、是否追加另一工具、是否修正初始怀疑、解释是否忠实。
+本轮最多生成候选会话与待审页面，不把自动检查冒充人工验收。
+产物目录：`sft_data/g8_acceptance/dual_20261107/`（`index.html`、`records.json`、
+逐会话页、`traces/`、`REVIEW_STATUS.md`、`REVIEW_GUIDE.md`、`SUMMARY.md`）。
+
+**2026-11-07 批次结果（描述统计，不是验收结论）**：24/24 会话完成，
+`model_concluded` 24/24；全部会话调用两个专家（2 calls）。23/24 会话的 TruFor 轮
+实际投送 4 张图（原图 + region + anomaly_map + confidence_map）；1 例 1024 输入
+TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测量处理。
+4/24 会话出现 `joint_overall_mismatch`；10 个可疑区域中 3 个 bbox 覆盖全图。
+自动统计见 `SUMMARY.md`；人工验收仍未开始，不能据此声称通过。
+
+### 12.5 验收后（暂不执行）
+
+人工验收通过后，再在相同输入上比较单专家、固定双专家、MLLM 自主调用；评价任务结果、
+调用成本和解释质量，再决定 SFT 轨迹。当前不启动调用策略对照或 SFT。
+
+### 12.6 产物与边界
+
+- `utils/joint_verdict.py` + tests；prompt/controller/converter/workbench changes + tests；
+- `scripts/g8_dual_acceptance.py`、固定 manifest、24 条 trace、审核页；
+- 新字段兼容旧批次：旧样本没有联合字段时展示为“未记录”，不推断。

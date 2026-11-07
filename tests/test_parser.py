@@ -49,6 +49,14 @@ class TestCallExtraction:
         assert Parser.has_call("<call_freq>[1,2,3,4]</call_freq>")
         assert not Parser.has_call("nothing")
 
+    def test_has_call_without_bbox(self):
+        # The bbox is optional (R9); this must count as a call, not a format
+        # failure that burns the client's retry budget.
+        assert Parser.has_call("<call_probe></call_probe>")
+        valid, _ = Parser.validate_tag_structure(
+            "<planning>x</planning><call_probe></call_probe>")
+        assert valid
+
     def test_call_without_brackets(self):
         text = "<call_freq>100, 200, 300, 400</call_freq>"
         calls = Parser.parse_call("freq", text)

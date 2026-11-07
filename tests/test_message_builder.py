@@ -124,9 +124,12 @@ class TestBuildMessages:
         messages = build_messages(original, history)
         assert not _has_image(messages[-1])  # text-only, no crash
 
-    def test_at_most_two_region_images_per_turn(self, tmp_path):
+    def test_at_most_three_region_images_per_turn(self, tmp_path):
+        # TruFor legitimately sends region + anomaly map + confidence map;
+        # the old cap of two dropped the confidence map.  The cap still
+        # bounds context growth.
         original = _make_png(tmp_path / "orig.png")
-        regions = [_make_png(tmp_path / f"r{i}.png") for i in range(3)]
+        regions = [_make_png(tmp_path / f"r{i}.png") for i in range(4)]
         history = [
             {"from": "user", "value": "<image>\n请分析。"},
             {"from": "user", "value": "{}", "image_paths": regions},
@@ -136,7 +139,7 @@ class TestBuildMessages:
             1 for block in messages[-1]["content"]
             if isinstance(block, dict) and block.get("type") == "image"
         )
-        assert attached == 2
+        assert attached == 3
 
     def test_assistant_turns_are_text_only(self, tmp_path):
         original = _make_png(tmp_path / "orig.png")
@@ -303,8 +306,11 @@ class TestToolPolicies:
         forcing a verdict after two evidence tokens: "after 2+ tokens you MUST
         conclude" was G1/v2-era text that takes the decision away exactly when two
         measurements disagree, contradicts the new evidence-scope rule, and rewards
-        not making a second call — db111b1eb1ecb03d → 259069a1ddb66348.  Anything that moves it
-        again has to say so in a commit.
+        not making a second call — db111b1eb1ecb03d → 259069a1ddb66348.  The
+        joint-task work then changed rule 6 to treat expert map/conf images as
+        model-visible local evidence (while keeping them non-calibrated), and
+        the default prompt is now 0b1c5f4031e9ea7b.  Anything that moves it again
+        has to say so in a commit.
         """
         import hashlib
 
@@ -313,7 +319,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "259069a1ddb66348"
+            "0b1c5f4031e9ea7b"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

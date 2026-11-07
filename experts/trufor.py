@@ -69,10 +69,13 @@ DEFAULT_RESULTS_DIR = os.path.join(PROJECT_ROOT, "calibration", "trufor_raw")
 
 
 class TruForExpert(ExternalScoreExpert):
-    """Whole-image manipulation score + diagnostic maps, run as a subprocess."""
+    """Local manipulation score + diagnostic maps, run as a subprocess."""
 
     source_name = "trufor_expert"
     evidence_name = "manipulation_anomaly_score"
+    # Not "整图判别分数": this head answers local manipulation, and the
+    # Chinese label in the token is what the model reads first.
+    phenomenon_label = "局部篡改检测分数"
     weights_env = "TRUFOR_HOME"
     weights_filename = "pretrained_models/trufor.pth.tar"
     weight_source = "GRIP-UNINA TruFor (CVPR 2023) · TruFor_weights.zip"
@@ -436,14 +439,20 @@ class TruForExpert(ExternalScoreExpert):
         self._last = arrays
         score = float(stats.get("score", 0.0))
         size = arrays.get("imgsize")
+        extra = {"high_response_threshold": HIGH_RESPONSE_THRESHOLD,
+                 "has_noiseprint": "np++" in arrays,
+                 "stats": stats}
         preprocess = "原图直接前向（TruFor 自行缩放），输出 map/conf/score"
         if size is not None:
-            preprocess += f"，imgsize={tuple(int(v) for v in np.asarray(size).reshape(-1))}"
+            height, width = (int(v) for v in np.asarray(size).reshape(-1)[:2])
+            preprocess += f"，imgsize={(height, width)}"
+            # The map/conf arrays are aligned to this size.  Carrying it in the
+            # token lets the model reason about original-image coordinates
+            # without parsing the prose in `preprocess`.
+            extra["image_size"] = [height, width]
         return self._result(
             score, preprocess=preprocess,
-            extra={"high_response_threshold": HIGH_RESPONSE_THRESHOLD,
-                   "has_noiseprint": "np++" in arrays,
-                   "stats": stats},
+            extra=extra,
         )
 
     def render_artifacts(self, img_patch: np.ndarray) -> Dict[str, np.ndarray]:

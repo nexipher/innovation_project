@@ -31,6 +31,8 @@ import re
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from config import PROJECT_ROOT
+from utils.joint_verdict import extract as extract_joint_verdict
+from utils.joint_verdict import legal_model_fields
 
 SECTIONS = ("observation", "forensic_evidence", "reasoning", "verdict")
 SCHEMA_VERSION = "final_v2"
@@ -295,9 +297,18 @@ def render_answer(record: dict, observation_text: str = "",
     # 模型自己写的那段 `report` 原文带上：推理提示词要求它出现在判决 JSON 里，
     # 而转换曾经把它整段丢掉——训练出来的模型于是被教成写一个不含 report 的判决，
     # 与它手上的说明相反。没有 trace（或那一轮没写）时不含此字段，绝不代写。
-    model_report = adopted_report(record.get("_trace"))
-    if model_report:
-        verdict["report"] = model_report
+    adopted = adopted_verdict(record.get("_trace"))
+    evidence_ids = [token.get("evidence_id") for token in tokens
+                    if token.get("evidence_id")]
+    preserved = legal_model_fields(adopted, evidence_ids=evidence_ids)
+    if preserved.get("report"):
+        verdict["report"] = preserved["report"]
+    if "primary_evidence" in preserved:
+        verdict["primary_evidence"] = preserved["primary_evidence"]
+    for field in ("whole_image_generation", "local_manipulation",
+                  "suspicious_regions"):
+        if field in preserved:
+            verdict[field] = preserved[field]
     if tokens:
         # The reference lives apart from the label under v3.
         verdict["reference_posterior"] = record.get("posterior")
@@ -356,26 +367,25 @@ def adopted_reasoning(trace: Optional[dict]) -> str:
     return block.group(1).strip() if block else ""
 
 
-def adopted_report(trace: Optional[dict]) -> str:
-    """
-    The model's own `report`, from the same adopted turn the reasoning comes from.
-
-    推理提示词要求判决 JSON 里带 `report`，而渲染出的答案里**没有这个字段**——训练
-    出来的模型因此被教成"写一个不含 report 的判决"，与它自己的说明相反。这里把它
-    原样取回来（同一个被采纳的轮次，绝不用别的轮次补齐）。
-    """
+def adopted_verdict(trace: Optional[dict]) -> dict:
+    """The model's own verdict JSON from the adopted closing turn, unmodified."""
     trace_turns = (trace or {}).get("conversations", [])
     index = _closing_index(trace_turns)
     if index < 0:
-        return ""
+        return {}
     block = _VERDICT_JSON.search(trace_turns[index].get("value") or "")
     if not block:
-        return ""
+        return {}
     try:
         parsed = json.loads(block.group(1))
     except ValueError:
-        return ""
-    report = parsed.get("report") if isinstance(parsed, dict) else None
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def adopted_report(trace: Optional[dict]) -> str:
+    """The model's own `report`, from the same adopted turn (legacy helper)."""
+    report = adopted_verdict(trace).get("report")
     return str(report).strip() if isinstance(report, str) else ""
 
 
@@ -483,8 +493,10 @@ def render_conversation(record: dict, trace: Optional[dict] = None,
                      ([token.get("diagnostic_region_image")]
                       + list(token.get("visual_artifacts") or [])) if path]
             if paths:
-                # Inference attaches at most two images per turn; mirror it.
-                entry["image_paths"] = paths[:2]
+                # Inference attaches up to three images per turn (region +
+                # anomaly map + confidence map); mirror it exactly.
+                from mllm.message_builder import MAX_REGION_IMAGES_PER_TURN
+                entry["image_paths"] = paths[:MAX_REGION_IMAGES_PER_TURN]
             turns.append(entry)
             continue
         turns.append({"from": "user", "value": value})   # question or correction
@@ -734,6 +746,19 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         confidence = verdict.get("confidence")
         if not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
             problems.append(f"structure: confidence out of range: {confidence}")
+        if "primary_evidence" in verdict and not (
+                isinstance(verdict["primary_evidence"], list)
+                and all(isinstance(item, str) for item in verdict["primary_evidence"])):
+            problems.append("structure: primary_evidence must be a list of strings")
+        if any(field in verdict for field in
+               ("whole_image_generation", "local_manipulation", "suspicious_regions")):
+            _fields, joint_issues = extract_joint_verdict(
+                verdict,
+                evidence_ids=[token.get("evidence_id")
+                              for token in (record.get("evidence") or [])
+                              if token.get("evidence_id")])
+            for issue in joint_issues:
+                problems.append(f"joint: {issue}")
 
     # 3. referenced evidence ids exist
     referenced = re.findall(r"evidence_id:\s*(\S+)", sections.get("forensic_evidence", ""))

@@ -49,6 +49,42 @@ class TestTokenize:
         assert '"evidence_name"' in json_str
         assert '"test"' in json_str
 
+class TestTruForVisiblePack:
+    """TruFor answers the local question, not the whole-image question."""
+
+    @staticmethod
+    def _token(score):
+        return {
+            "evidence_id": "E-test",
+            "evidence_name": "manipulation_anomaly_score",
+            "source": "trufor_expert",
+            "status": "measured",
+            "measurement_scope": "global",
+            "raw_metric": score,
+            "phenomenon": "local score",
+            "image_shape": [333, 500],
+            "visual_artifacts": ["anomaly.png", "conf.png"],
+        }
+
+    def test_score_direction_is_value_specific_and_local_only(self):
+        high = EvidenceTokenizer.model_visible(self._token(0.72))["score"]
+        low = EvidenceTokenizer.model_visible(self._token(0.23))["score"]
+        assert high["direction"] == "higher_is_local_manipulation"
+        assert "above" in high["direction_for_this_value"]
+        assert "below" in low["direction_for_this_value"]
+        for score in (high, low):
+            assert "NOT a whole-image AI-generation judgment" in \
+                score["direction_for_this_value"]
+
+    def test_map_coordinates_carry_original_image_size(self):
+        visible = EvidenceTokenizer.model_visible(self._token(0.72))
+        assert visible["map_coordinates"] == {
+            "space": "original_image",
+            "image_size": [333, 500],
+            "bbox_format": "[ymin, xmin, ymax, xmax] in [0,1000]",
+        }
+
+
 class TestEvidenceId:
     """G1 (§4.8): deterministic evidence ids for deduplication."""
 

@@ -1,15 +1,19 @@
 # 当前程序架构（只描述实际代码）
 
 > 本文只写**现在能运行什么、由谁决定什么**。历史方案、被否掉的路线、实验记录在
-> `plan.md` 与 `claude_operation_log.md` 里，不再是当前指令。最后核对时间：2026-10-13。
+> `plan.md` 与 `claude_operation_log.md` 里，不再是当前指令。最后核对时间：2026-11-07。
 
 ## 1. 当前任务
 
-**全局生成检测**：判断一张图是相机拍摄（Real）还是扩散/生成模型产出（Fake）。
+**默认任务：全局生成检测**——判断一张图是相机拍摄（Real）还是扩散/生成模型产出（Fake）。
+默认工具箱仍是 `probe/npr/univfd`。
 
-- **不做**局部篡改定位、不做伪造区域分割——现有专家的测量范围都是
-  `measurement_scope="global"`（整图），bbox 只是诊断关注点，不限定测量。
-- 专家给出的是**统计证据**；结论由模型综合（见下）。
+**可选联合任务：`probe+trufor`**——同时输出整图生成判断与局部篡改判断，并给出可疑区域
+（原图 `[0,1000]` bbox）及证据依据。TruFor 回传局部 score、`anomaly_map`、`confidence_map`，
+图与原图对齐；其分数不是整图 AI-generation 分数。联合任务不把两个问题合并成一个标签。
+
+- 专家给出的是**统计证据**；结论由模型综合（见下）。默认任务不做局部定位；
+  联合任务只给局部候选区域，不做像素级分割，也不把 map 高响应当作已证明的篡改。
 
 ## 2. 谁决定什么
 
@@ -28,6 +32,10 @@ v3 的停止原因各自独立记录：`model_concluded`（模型自主结案，
 ```bash
 # 当前任务（全局生成检测，Qwen 主导）——单张图像，人在回路外
 FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image>
+
+# 可选联合任务：整图生成 + 局部篡改（PROBE + TruFor）
+FORENSIC_HALTING_POLICY=v3 python main.py --image <path/to/image> \
+  --tools probe,trufor
 ```
 
 **默认配置就是当前版本 v3**（`config.HALTING_POLICY`）；历史复算才需要显式
@@ -49,9 +57,11 @@ python scripts/batch_inventory.py                                               
 
 ## 4. 实际可用的专家（2026-11-05）
 
-当前运行时只注册 `probe` / `npr` / `univfd`（`state_machine/controller.py::CURRENT_TOOL_TAGS`）。
-旧 `freq` / `jpeg` / `noise` 已退役，源码只保留旧 trace 的派发/解析映射；`frequency` v1、`ela`
-不注册。全局/定位评测结论见 `docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md` 与
+默认运行时工具箱是 `probe` / `npr` / `univfd`（`state_machine/controller.py::CURRENT_TOOL_TAGS`）。
+显式策略 `--tools probe,trufor` 会构造最小双专家闭环（`DUAL_TOOL_TAGS`），只注册这两个工具，
+不会静默缩减。旧 `freq` / `jpeg` / `noise` 已退役，源码只保留旧 trace 的派发/解析映射；
+`frequency` v1、`ela` 不注册。全局/定位评测结论见
+`docs/development/GENIMAGE_GLOBAL_COMPARISON_20261105.md` 与
 `LOCALIZATION_COMPARISON_20261105.md`。
 
 | 工具键 | 代码 | 权重 | 当前角色 | 备注 |
@@ -60,7 +70,7 @@ python scripts/batch_inventory.py                                               
 | `npr` | `experts/npr.py` | 外部 | 运行时辅助专家 | PNG 条件补充；按会话工具箱注册 |
 | `univfd` | `experts/univfd.py` | 外部 | 运行时小批对照 | 真实会话不静默降级，不可用时显式报错 |
 | — | `experts/frequency*.py`、`noise.py`、`jpeg.py` | — | **已退役**；仅 replay 旧 trace | 不再进入新提示词 |
-| — | `experts/trufor.py` | 外部 | **不在全局主链**；局部定位初步候选、未接入 Agent | 2026-11-05 220 输入 IoU/F1 0.537/0.645；不重分发 |
+| `trufor`（仅显式 `probe+trufor`） | `experts/trufor.py` | 外部 | **可选联合任务的局部专家**；不在默认全局主链 | 2026-11-05 220 输入 IoU/F1 0.537/0.645；投送 map/conf；不重分发；验收 pending |
 | — | `scripts/iml_vit_autosplice_eval.py`（官方代码在本机） | 外部；2026-11-05 已核实 | **未选中**定位候选 | 220 输入 IoU/F1 0.161/0.239；无 image-level score |
 | — | `experts/spai.py` | 外部 | **仅离线评测**，不接入 | GenImage dev/val 低于 PROBE；见全局比较 |
 | — | `experts/aide.py`、`drct.py` | 权重已删除 | 已退出 | 代码/历史保留 |
@@ -75,11 +85,15 @@ python scripts/batch_inventory.py                                               
 模型输出 → Parser.protocol_action（论述块内的标签不计为请求）
    ├ 违规（调用+结案 / 两个调用）→ 不执行任何动作，发协议纠正
    ├ 合法调用 → 已测量过则跳过并说明（重复请求计为无进展）；
-   │            否则测量 → 注入完整 token → 追加“本会话状态”行
+   │            否则测量 → 注入精简 token +（联合任务）区域/异常图/置信图
+   │            → 追加“本会话状态”行；TruFor 未测量时明确提示局部证据缺失
    └ 合法结案 → 进入结案流程
 结案流程（所有路径共用）：
   账本检查（专家/字段/数值/方向）→ 有缺陷则一次纠正 → 仍不合格记 failed
   → 落 final_verdict：标签、verdict_status、证据检查、参考后验（单列）
+  → 联合任务另存 whole_image_generation / local_manipulation /
+    suspicious_regions / overall_from_dimensions；不一致记
+    joint_verdict_issues / joint_overall_mismatch，不覆盖模型标签
 ```
 
 ## 6. 版本记录与门禁

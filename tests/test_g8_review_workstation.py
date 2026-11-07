@@ -95,6 +95,24 @@ def _page(**overrides):
         meta={"schema": "s", "generation": "g8", "batch": "b1", "samples": {}, "repo_decisions": {}})
 
 
+class TestJointVerdictAndArtifacts:
+    def test_two_judgements_and_attached_images_are_visible(self):
+        record = {**RECORD,
+                  "whole_image_generation": "Real",
+                  "local_manipulation": "Tampered",
+                  "suspicious_regions": [{
+                      "bbox": [10, 20, 300, 400], "reason": "seam",
+                      "evidence": ["E-1"]}]}
+        trace = json.loads(json.dumps(TRACE))
+        trace["conversations"][2]["image_paths"] = [
+            "dataset/GenImage_Test/Midjourney/0_midjourney_169.png"]
+        page = _page(record=record, trace=trace)
+        assert "整图生成 Real" in page
+        assert "局部篡改 Tampered" in page
+        assert "bbox=[10, 20, 300, 400]" in page
+        assert "随附图像（实际投送）" in page
+        assert "<img" in page
+
 class TestTurnProvenance:
     """控制器提示不许伪装成人类输入。"""
 

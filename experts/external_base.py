@@ -125,9 +125,14 @@ def tile_positions(height: int, width: int, tile: int,
     return [(x, y, tile, tile) for y in ys for x in xs]
 
 
-def score_phenomenon(score: float, preprocess: str) -> str:
-    """Layer 1 of the three: what was measured, on what input."""
-    return (f"整图判别分数 {score:.4f}（外部判别器的原始输出，未经本地校准）。"
+def score_phenomenon(score: float, preprocess: str,
+                     label: str = "整图判别分数") -> str:
+    """Layer 1 of the three: what was measured, on what input.
+
+    ``label`` lets a localisation expert say what its score actually is;
+    TruFor's detection head is not a whole-image generation score.
+    """
+    return (f"{label} {score:.4f}（外部判别器的原始输出，未经本地校准）。"
             f"输入预处理：{preprocess}。")
 
 
@@ -283,7 +288,9 @@ class ExternalScoreExpert(BaseExpert):
         self.counter_explanation = score_counter_explanation()
         return self._build_result(
             evidence_name=self.evidence_name,
-            phenomenon=score_phenomenon(score, preprocess),
+            phenomenon=score_phenomenon(
+                score, preprocess,
+                getattr(self, "phenomenon_label", "整图判别分数")),
             reasoning=score_reasoning(score, self.score_reference),
             strength=float(np.clip(score, 0.0, 1.0)),
             support=UNCALIBRATED_SUPPORT,

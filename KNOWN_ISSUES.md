@@ -4,9 +4,15 @@
 > **归档不等于修复，已实现不等于真实效果已验证。**noise/jpeg/frequency_v2 已退出运行时工具箱
 > （2026-11-05），但代码仍保留旧 trace 的 replay 映射，尚未删除。
 >
-> **2026-11-05 状态更正**：运行时只注册 `probe` / `npr` / `univfd`；全局线保留 PROBE、SPAI
+> **2026-11-05 状态更正**：默认运行时只注册 `probe` / `npr` / `univfd`；全局线保留 PROBE、SPAI
 > 不接入；定位线 TruFor 为初步候选、未接入 Agent，IML-ViT 已核实但未选中。以 `plan.md` §11
 > 与 `docs/development/{GENIMAGE_GLOBAL_COMPARISON_20261105,LOCALIZATION_COMPARISON_20261105}.md` 为准。
+>
+> **2026-11-07 状态更新**：可选联合任务 `--tools probe,trufor` 已接入真实调用流程，
+> 整图生成与局部篡改分别输出；TruFor 的 map/conf 进入模型图片输入，联合字段与
+> `primary_evidence` 原样保留。24 会话人工验收材料已生成于
+> `sft_data/g8_acceptance/dual_20261107/`，**待人工审阅**；不把自动检查当验收。
+> 默认工具箱仍为 `probe/npr/univfd`；SFT 未启动。
 
 ## 1. 当前必须解决（与具体专家无关）
 
@@ -18,7 +24,7 @@
 | A2 | 一次纠正及failed拒收 | 已实现、部分验证；新版失败样本须在准入与转换拒收，人工核实纠正过程；不以必须低于旧批次2/56作为单独验收标准 |
 | A4 | 客观描述与疑似异常分离 | 提示词已改、效果待验证；抽查20条（不足全查），目标至少15条有具体可见描述；不得强迫编造噪声、压缩块等异常 |
 | A5 | 忠实转换及逐轮证据时间约束 | 时间顺序已修、真实效果待验证；核对最终实际监督文本与模型原文，所有插入/替换可追溯，不能用后来证据给早期输出背书 |
-| A5补充（2026-10-14） | 转换器重建最终verdict，遗漏原始report与primary_evidence | **尚未修复**：`utils/final_v2.py::render_answer`重新构造verdict，未保留模型原始JSON中的`report`、`primary_evidence`；例如g7_b2的`f2_probe+noise__BigGAN_964_biggan_00035_png`。原始trace仍在，但训练候选对话丢失最终报告与主证据引用；保留reasoning不等于保留完整回答。验收：新版最小转换原样保留合法的模型reasoning与verdict（含report、primary_evidence及其他合法字段），审计/来源/参考后验另存metadata；不静默删除、补写或替换模型结论，错误应标记、拒收或重新生成；用该真实案例加回归测试，对照原始trace与最终监督文本，工作台明确展示任何差异。历史冻结批次仅作留证，不为此重生成。 |
+| A5补充（2026-10-14；2026-11-07 修复） | 转换器重建最终verdict，遗漏原始report与primary_evidence | **已修复（2026-11-07）**：`utils/final_v2.py::render_answer` 现在从 adopted closing turn 读取模型原始 JSON，原样保留合法的 `report`、`primary_evidence`、`whole_image_generation`、`local_manipulation`、`suspicious_regions`；缺失字段不补写，非法字段由 `utils/joint_verdict.py` 标记后进入审计/拒收路径。已在真实双专家 trace（`dual_check3_20261107` 及最终 24 会话批次 `dual_20261107`）上对照原始 trace 与最终监督文本，确认 report 与 primary_evidence 逐字保留；新增回归 `tests/test_final_v2.py::test_joint_fields_and_primary_evidence_are_preserved_verbatim`。历史 g7_b2 案例与冻结批次仅留证，不重生成。 |
 | B2、B3 | 状态摘要、重复请求及防循环 | 已实现、效果待验证；新专家组内做同源对照，分别统计请求/执行/重复；重复轮须明确排除或掩码，不能仅有徽章就声称不训练 |
 | B4 | 单动作协议和格式纠错 | 已实现、真实效果待验证；调用与结案二选一，论述块内标签不执行，纠错指出正确位置；人工核查格式失败与协议违规 |
 | D1 | 审核工作台批次隔离 | 已实现、浏览器验收待完成；用新版或临时批次查进度/导入/导出及指纹，不需要继续审核冻结b2 |
@@ -120,7 +126,7 @@
 | # | 项 | 状态 | 验收条件 |
 |---|----|------|----------|
 | C1 | 冻结旧版本（v2 策略、旧校准表、b1/b2 批次、提示词哈希链） | **已完成**（2026-10-13）：`VERSIONS.json` + 台账 + 归档批次 + `reliability_table_v1.json`；全部历史批次标记「冻结 · 历史实验」 | 台账可读、旧批次复算命令可用 —— 已满足 |
-| C2 | 新神经网络专家接入评测 | **离线评测已完成（2026-11-05）**：全局 PROBE 保留、SPAI 不接入；定位 TruFor 初步候选、IML 未选中；尚未接入 Agent | 在 A 组拟合、B/C 组评估：分离度、跨生成器、跨格式；与 PROBE 单独对照；**替换后的默认工具箱能跑通一次完整会话** |
+| C2 | 新神经网络专家接入评测 | **离线评测已完成（2026-11-05）**：全局 PROBE 保留、SPAI 不接入；定位 TruFor 初步候选、IML 未选中。**2026-11-07**：TruFor 已接入可选双专家闭环 `probe+trufor`，人工验收 pending | 在 A 组拟合、B/C 组评估：分离度、跨生成器、跨格式；与 PROBE 单独对照；**替换后的默认工具箱能跑通一次完整会话** |
 | C3 | jpeg/noise/frequency 退出工具箱 | **运行时已完成（2026-11-05）**：默认 `probe/npr/univfd`；旧三专家仅 replay；代码与旧测试未删除 | 退出前后同源配对对照：准确率不下降且成本下降；退出有书面理由；旧专家的测试组按 `docs/development/TESTING.md` 退役 |
 | C4 | 每次专家/权重更换后的**重新校准** | 尚未修复（流程缺失） | 校准表身份（`schema`/`fitting_group`/`digest`）随新表更新；`VERSIONS.json` 记录；旧表归档 |
 | C5 | **概率映射仍是池化分位分箱**（只有权重按格式） | **尚未修复**（如实标注为 `mapping_scope=pooled_quantile_bins`） | 逐格式概率映射在 A 组拟合、B 组评估，Brier/可靠性不劣于池化；否则明确不做并写原因 |

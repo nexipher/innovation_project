@@ -33,6 +33,7 @@ from utils.reliability import ReliabilityTable
 from utils.logger import SessionLogger, log_operation
 from state_machine.evidence_rectifier import EvidenceRectifier
 from utils.evidence_ledger import Ledger as EvidenceLedger, correction_note
+from utils.joint_verdict import extract as extract_joint_verdict
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 from state_machine.halting_v2 import HaltingPolicyV2
@@ -116,6 +117,7 @@ class ForensicStateMachine:
         "probe": "probe_dino_expert",
         "npr": "npr_expert",
         "univfd": "univfd_expert",
+        "trufor": "trufor_expert",
         # retired (replay only)
         "freq": "frequency_expert_v2",
         "noise": "noise_expert",
@@ -127,6 +129,7 @@ class ForensicStateMachine:
         "probe_dino_expert": "probe",
         "npr_expert": "npr",
         "univfd_expert": "univfd",
+        "trufor_expert": "trufor",
         # retired (replay only)
         "frequency_expert_v2": "freq",
         "frequency_expert": "freq",      # deprecated v1 (old traces only)
@@ -136,6 +139,9 @@ class ForensicStateMachine:
 
     # 新提示词只描述这些工具（退役的三个仍可派发、不再被宣传）
     CURRENT_TOOL_TAGS = ("probe", "npr", "univfd")
+    # 联合任务最小闭环：一个整图专家 + 一个局部专家；通过 main.build_pipeline
+    # 的显式 tools 参数启用，不改变上面的默认工具箱。
+    DUAL_TOOL_TAGS = ("probe", "trufor")
 
     def __init__(
         self,
@@ -800,6 +806,26 @@ class ForensicStateMachine:
                     final_label = decision.verdict
                     final_confidence = decision.confidence
                     verdict_status = "policy_label"
+                joint_fields, joint_issues = extract_joint_verdict(
+                    model_candidate,
+                    evidence_ids=[token.get("evidence_id")
+                                  for token in evidence_chain
+                                  if token.get("evidence_id")],
+                )
+                if "trufor_expert" in self._experts and not joint_fields:
+                    joint_issues.append(
+                        "joint verdict fields missing from the adopted conclusion")
+                if ("trufor_expert" in self._experts
+                        and joint_fields.get("local_manipulation")
+                        in ("Tampered", "Not tampered")
+                        and not any(token.get("source") == "trufor_expert"
+                                    for token in evidence_chain)):
+                    joint_issues.append(
+                        "local manipulation judgment without a TruFor measurement")
+                model_primary = model_candidate.get("primary_evidence")
+                if (isinstance(model_primary, list)
+                        and all(isinstance(item, str) for item in model_primary)):
+                    joint_fields["primary_evidence"] = list(model_primary)
                 final_verdict = {
                     "verdict": final_label,
                     # Was this label the model's own conclusion, or the
@@ -812,6 +838,7 @@ class ForensicStateMachine:
                         if verdict_status == "no_parseable_conclusion"
                         else "基于校准后验与已获取证据的判定。"
                     ),
+                    **joint_fields,
                     # 参考后验与预计收益只属于 v1/v2 复算；v3 里这些字段**不出现**，
                     # 而不是写成 0.5/0.0 那种"看起来像算过"的缺省值。
                     **({
@@ -838,6 +865,15 @@ class ForensicStateMachine:
                         },
                     } if self._uses_reference else {}),
                 }
+                if joint_issues:
+                    final_verdict["joint_verdict_issues"] = joint_issues
+                if ("trufor_expert" in self._experts
+                        and final_verdict.get("overall_from_dimensions")
+                        and final_verdict["overall_from_dimensions"] != final_label):
+                    final_verdict["joint_overall_mismatch"] = {
+                        "model_verdict": final_label,
+                        "from_dimensions": final_verdict["overall_from_dimensions"],
+                    }
                 break
 
             should_halt, reason = HaltingChecker.check(
@@ -864,6 +900,7 @@ class ForensicStateMachine:
                         "confidence": 0.5,
                         "report": "取证资源耗尽，无法做出确定结论。",
                     }
+                    final_verdict = self._attach_joint_fields(final_verdict, evidence_chain)
 
                 # Conflict: force reflection + uncertain verdict
                 elif reason == HaltingChecker.EVIDENCE_CONFLICT:
@@ -880,6 +917,7 @@ class ForensicStateMachine:
                         "confidence": 0.45,
                         "report": "证据冲突，疑罪从无。",
                     }
+                    final_verdict = self._attach_joint_fields(final_verdict, evidence_chain)
 
                 break
 
@@ -955,6 +993,27 @@ class ForensicStateMachine:
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
+
+    def _attach_joint_fields(self, verdict: dict, evidence_chain=None) -> dict:
+        """Carry the model's two-dimensional verdict through fallback paths.
+
+        A budget/conflict conclusion still has to keep whole-image and local
+        answers apart; the fields are copied only when the model wrote them.
+        """
+        if "trufor_expert" not in self._experts or not isinstance(verdict, dict):
+            return verdict
+        fields, issues = extract_joint_verdict(
+            verdict,
+            evidence_ids=[token.get("evidence_id")
+                          for token in (evidence_chain or [])
+                          if token.get("evidence_id")],
+        )
+        if not fields:
+            issues.append("joint verdict fields missing from the conclusion")
+        verdict.update(fields)
+        if issues:
+            verdict["joint_verdict_issues"] = issues
+        return verdict
 
     def _save_artifact(self, image, evidence_id: str, name: str) -> Optional[str]:
         """
@@ -1088,11 +1147,20 @@ class ForensicStateMachine:
         """
         lines = [_state_line(token) for token in evidence_chain]
         remaining = [source for source in (served or []) if source not in measured_sources]
+        joint_hint = ""
+        if ("trufor_expert" in (served or [])
+                and "trufor_expert" not in measured_sources):
+            joint_hint = (
+                "\n本会话同时要求局部判断，而 TruFor 尚未测量：如果整图不是 "
+                "AI-generated，结案时不得把 local_manipulation 写成 Not applicable；"
+                "也尚不能写 Not tampered。请先调用 trufor_expert，或把局部判断写成 "
+                "Uncertain 并在报告中说明缺少局部测量。")
         return (
             "[System: 本会话状态 —— 已执行的专家：\n" + "\n".join(lines) +
             f"\n尚可调用：{', '.join(remaining) if remaining else '（无）'}。"
             "每个专家每会话只对整图测量一次：重复请求的返回值与上面已有的 token 相同，"
-            "系统会跳过执行并白费一轮。请基于上面已给出的结论继续，或直接给出结案。]"
+            "系统会跳过执行并白费一轮。请基于上面已给出的结论继续，或直接给出结案。"
+            + joint_hint + "]"
         )
 
     @staticmethod

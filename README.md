@@ -3,10 +3,13 @@
 **主动探索型双分支图像取证系统**
 MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的法证报告。
 
-> **先读这里（2026-11-05 当前状态）**：当前代次 **g8**（Qwen3-VL-8B-Instruct）；运行时
+> **先读这里（2026-11-07 当前状态）**：当前代次 **g8**（Qwen3-VL-8B-Instruct）；运行时
 > 工具箱是 **`probe` / `npr` / `univfd`**，`freq` / `jpeg` / `noise` 已退役、仅保留旧 trace
 > 的 replay 映射。全局评测结论是 **PROBE 单独作为主检测器**，SPAI 保留离线候选、不接入；
-> 定位线 **TruFor 为初步候选但尚未接入 Agent**，IML-ViT 代码/权重已核实但未选中。
+> 定位线 **TruFor 已接入可选双专家策略 `probe+trufor`（最小闭环）**，默认运行时工具箱
+> 仍是 `probe/npr/univfd`；IML-ViT 代码/权重已核实但未选中。联合任务把整图生成判断与
+> 局部篡改判断分开输出；24 会话人工验收材料已生成于
+> `sft_data/g8_acceptance/dual_20261107/`，**状态仍是 pending human review**。
 > GenImage test 已被使用历史污染、旧 test 也有先验使用，**没有可靠未见测试**，test 继续隔离；
 > 专家选择使用 dev/val。Qwen3 已迁移到数据盘；未训练/SFT。
 >
@@ -18,11 +21,11 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-745%20core%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-757%20core%20passed-brightgreen)](./tests/)
 
 ---
 
-## 0. 当前版本与代次（2026-11-05 更新）
+## 0. 当前版本与代次（2026-11-07 更新）
 
 **当前代次是 g8**：Qwen3-VL-8B-Instruct + 运行时工具箱 `probe` / `npr` / `univfd`；
 旧 `freq` / `jpeg` / `noise` 已退役，只保留旧 trace replay 映射。**g7 及更早全部冻结并归档**。
@@ -31,6 +34,8 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 ```bash
 python main.py --image <path/to/image> --mllm mock        # 单张（CPU：显式选 Mock）
 python main.py --image <path/to/image> --mllm qwen        # 单张（GPU：Qwen3-VL-8B）
+python main.py --image <path/to/image> --mllm qwen \
+  --tools probe,trufor                                    # 可选联合任务（整图+局部）
 FORENSIC_HALTING_POLICY=v2 python main.py --image <path>  # 仅用于历史复算（v2 已冻结）
 ```
 
@@ -39,8 +44,10 @@ FORENSIC_HALTING_POLICY=v2 python main.py --image <path>  # 仅用于历史复�
 （假会话产出的 trace 与真实会话无异，验收会把它当成真结果）。要跑 CPU 就显式写 `--mllm mock`。
 
 **当前任务**：全局 AI 生成检测（Real / Fake）是主交付；AutoSplice 局部定位是并行研究线，
-TruFor 仅为初步候选、尚未接入 Agent。**Qwen 主导调用与结案，控制器负责执行与安全约束**；
-参考后验只作对照、不覆盖标签。默认策略是 **v3**（`config.HALTING_POLICY`）。
+TruFor 已接入可选双专家闭环（`--tools probe,trufor`），默认工具箱保持不变。
+**Qwen 主导调用与结案，控制器负责执行与安全约束**；联合结案分别输出整图生成、
+局部篡改、可疑区域与证据依据；参考后验只作对照、不覆盖标签。默认策略是 **v3**
+（`config.HALTING_POLICY`）。
 
 ### 0.1 数据布局：代次是目录，批次名是纯名字
 
@@ -78,7 +85,8 @@ sft_data/g8/{trajectories,variants,review,train/batches}/b1/
 **当前运行时工具箱**（`main.py` / `state_machine/controller.py::CURRENT_TOOL_TAGS`）：
 `probe`（外部权重，主检测器）、`npr`、`univfd`。旧 `freq`(frequency_v2) / `jpeg` / `noise`
 已退役，源码仍保留派发/解析映射以 replay 旧 trace；`frequency`(v1)、`ela` 不再注册。
-`trufor` 不在全局主链，只作局部定位研究；`spai` 只在离线评测中，不接入 Agent；AIDE/DRCT/SSP
+`trufor` 不在默认全局主链，但可通过显式策略 `--tools probe,trufor` 接入同一真实调用流程，
+回答局部篡改问题并投送 map/conf；`spai` 只在离线评测中，不接入 Agent；AIDE/DRCT/SSP
 已退出并删除权重；IML-ViT 代码/权重已核实但未选中（见上方当前状态与 §7.3）。
 
 ### 0.3 v1 归档（2026-10-15）
@@ -238,7 +246,7 @@ dataset/
 | 专家 | 本项目中的路径 | 来源 | sha256 | 许可 |
 |------|---------------|------|--------|------|
 | **PROBE-DINOv2**（主检测器） | `/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth`（1217.7 MB）；主干 `facebook/dinov2-with-registers-large` 经 `hf-mirror.com` | ModelScope `shuinishaojiu/PROBE-AIGI-Detection` | `c8caa9ba…a450156` | ⚠️ **上游未声明**（仓库无 LICENSE）。**用户授权**（2026-10-11，本地研究）≠ **上游许可**：仅本地研究可运行，不得再分发 |
-| **TruFor**（L1 研究对照，不接线） | `/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar`（281.5 MB） | GRIP-UNINA `TruFor_weights.zip`（MD5 `7bee48f3476c75616c3c5721ab256ff8`） | `ac1d90e3…578c7844` | ⚠️ **仅限信息性与非营利用途**；本项目不再分发 |
+| **TruFor**（可选联合任务局部专家） | `/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar`（281.5 MB） | GRIP-UNINA `TruFor_weights.zip`（MD5 `7bee48f3476c75616c3c5721ab256ff8`） | `ac1d90e3…578c7844` | ⚠️ **仅限信息性与非营利用途**；本项目不再分发 |
 
 - 运行时每个 Evidence Token 都会带上**来源 URL、权重的 sha256（带副文件缓存）、输入预处理描述**，见 `experts/external_base.py` 的 `WeightProvenance`。
 - 网络：本机 `raw.githubusercontent.com` 与 `huggingface.co` **不通**，获取走替代源（`ghfast.top` / `cdn.jsdelivr.net` / `hf-mirror.com` / ModelScope）。
@@ -624,11 +632,11 @@ G2-b 在格式配平校准集上测得每个专家的**真实方向**，与最�
 | 专家 | 方法 | 方向 | 实测判别力（按源 CI） | 处置 |
 |------|------|------|----------------------|------|
 | **PROBE-DINOv2** | DINOv2-L + 线性头；336 滑窗 → 均值 logit → sigmoid = P(AI-generated) | **正向**（无需校正） | A 组 0.960 [0.924, 0.986]：native 0.967 / png 0.973 / q95 0.977 / q85 0.987 / **q70 0.995**；**未见生成器 0.952**；C 组独立验证 **0.986** | **准入，主检测器**（入口 3 接线） |
-| **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | 全局 score **系统性反向**（历史 A 0.426 / D 0.384） | 2026-11-05 AutoSplice 220 输入：forged variant IoU **0.537** / F1 **0.645**，source score AUROC 0.878 | **不接入全局链**（方向反向）；**局部定位初步候选**，尚未接入 Agent |
+| **TruFor** | SegFormer-B2 + Noiseprint++；输出 `map`/`conf`/`score` | 局部 score **不等于整图生成判断**；历史整图方向反向（A 0.426 / D 0.384），不得用于整图 | 2026-11-05 AutoSplice 220 输入：forged variant IoU **0.537** / F1 **0.645**，source score AUROC 0.878 | **不接入默认全局链**；**已接入可选双专家局部闭环**（`probe+trufor`），验收 pending |
 | **IML-ViT** | ViT + IML head；仅输出 `map`，无 image-level score | 未提供全局 score | 2026-11-05 同一 220 输入：IoU **0.161** / F1 **0.239**，明显低于 TruFor | **不作为当前定位候选**；代码/官方权重已核实 |
 
 
-- TruFor 的全局分数方向仍为反向，**未准入全局链**；其局部定位能力已扩大到固定 220 输入（2026-11-05：IoU 0.537/F1 0.645，真图 68/100 高响应 >1%），作为**初步定位候选**但尚未接入 Agent；IML-ViT 同一批 220 输入的 IoU/F1 为 0.161/0.239，且无 image-level score，不选。详见 `LOCALIZATION_COMPARISON_20261105.md`。
+- TruFor 的整图分数方向仍为反向，**未准入默认全局链**；其局部定位能力已扩大到固定 220 输入（2026-11-05：IoU 0.537/F1 0.645，真图 68/100 高响应 >1%），现已通过显式 `probe+trufor` 策略接入联合任务，局部判断由模型结合 score/map/conf 给出，验收 pending；IML-ViT 同一批 220 输入的 IoU/F1 为 0.161/0.239，且无 image-level score，不选。详见 `LOCALIZATION_COMPARISON_20261105.md`。
 - PROBE 与现有专家的 Spearman 相关 |ρ| ≤ 0.23（不冗余，但融合后增益在 C 组仍落进噪声：见 §7.3）。
 - **候选专家 SPAI / AIDE / DRCT 只在离线适配器中做过独立评测，均未注册进 Agent 工具箱或证据链**；官方代码/预处理/前向/输出与适配器的同图逐项核验见 `plan.md` §4.17e/§4.17g/§4.17h。两轮结果为：PROBE 阈值错误 13/200，SPAI −24（10 纠正/34 损害），DRCT −77（7/84），AIDE `progan_train`/`sd14_train`/`GenImage_train` 为 −148/−145/−122（三份全部展示）。**当前证据只支持 PROBE 单独作为专家组；SPAI 保留离线候选；DRCT/AIDE 不接入。** 2026-11-02 已删除 AIDE 三份权重、DRCT 压缩包/已解压权重和 SSP 压缩包；AIDE/DRCT 代码与历史记录保留；Qwen3 已迁移至数据盘，旧系统盘 Qwen 目录已删除（旧缓存路径仅保留符号链接）。DIRE 未下载。
 - **2026-11-05 GenImage dev/val 复核**：PROBE 在每个生成器的 AUROC/平衡准确率都高于 SPAI，SPAI 在 BigGAN 的 AUROC 仅 0.341（dev）/0.367（val）；错误重叠中 PROBE-only 远多于 SPAI-only。**全局线保留 PROBE，SPAI 不接入**；详见 `GENIMAGE_GLOBAL_COMPARISON_20261105.md`。

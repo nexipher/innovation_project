@@ -145,6 +145,32 @@ class TestRendering:
         verdict = json.loads(parse_sections(render_answer(record))["verdict"])
         assert verdict["verdict_status"] == "no_parseable_conclusion"
 
+
+    def test_joint_fields_and_primary_evidence_are_preserved_verbatim(self):
+        model_verdict = {
+            "verdict": "Fake",
+            "whole_image_generation": "Real",
+            "local_manipulation": "Tampered",
+            "suspicious_regions": [
+                {"bbox": [2, 2, 40, 40], "reason": "seam", "evidence": ["E-1"]},
+            ],
+            "confidence": 0.8,
+            "primary_evidence": ["manipulation_anomaly_score"],
+            "report": "整图真实，局部被篡改。",
+        }
+        trace = {"conversations": [
+            {"from": "gpt", "value": "<reasoning>x</reasoning><verdict>"
+             + json.dumps(model_verdict, ensure_ascii=False) + "</verdict>"},
+        ]}
+        record = _record(policy_version="v3", verdict_status="model_concluded",
+                         _trace=trace)
+        verdict = json.loads(parse_sections(render_answer(record))["verdict"])
+        assert verdict["report"] == "整图真实，局部被篡改。"
+        assert verdict["primary_evidence"] == ["manipulation_anomaly_score"]
+        assert verdict["whole_image_generation"] == "Real"
+        assert verdict["local_manipulation"] == "Tampered"
+        assert verdict["suspicious_regions"][0]["bbox"] == [2, 2, 40, 40]
+
     def test_sample_shape_matches_the_frozen_format(self):
         sample = _sample()
         assert set(sample) >= {"id", "image_path", "ground_truth", "source_model",

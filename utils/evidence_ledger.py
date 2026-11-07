@@ -96,6 +96,7 @@ SOURCE_WORDS: Dict[str, tuple] = {
     # 不查编造。名字按提示词给模型的写法收（display_name 里的那些词）。
     "npr_expert": ("npr", "邻域", "上采样", "upsampling", "neighboring pixel"),
     "univfd_expert": ("univfd", "univ-fd", "clip", "线性头"),
+    "trufor_expert": ("trufor", "tru for", "局部定位", "定位专家"),
     # 退役专家的**物证词**（压缩/噪声/频域）不算"点名专家"：RULES 6/8 明确
     # 让模型描述可见的块状、模糊与噪点，把"未发现压缩块"读成"引用 jpeg 专家"
     # 就会惩罚遵守提示词的行为（b2 实测发生）。工具原名与"××专家"仍算点名。

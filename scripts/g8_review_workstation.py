@@ -519,6 +519,58 @@ def _json_block(value: str, limit: int = 1500) -> str:
     return "".join(parts)
 
 
+def _format_regions(regions) -> str:
+    if not regions:
+        return "未记录/空"
+    rows = []
+    for region in regions:
+        if not isinstance(region, dict):
+            continue
+        rows.append(
+            f"bbox={region.get('bbox')}；reason={region.get('reason')}；"
+            f"evidence={region.get('evidence')}")
+    return " ｜ ".join(rows) if rows else "未记录/空"
+
+
+def _joint_pills(record: dict) -> str:
+    """Whole-image and local answers are separate pills, never one merged label."""
+    if not isinstance(record, dict):
+        return ""
+    whole = record.get("whole_image_generation")
+    local = record.get("local_manipulation")
+    parts = []
+    if whole:
+        parts.append(f'<span class="pill">整图生成 {html.escape(str(whole))}</span>')
+    if local:
+        parts.append(f'<span class="pill">局部篡改 {html.escape(str(local))}</span>')
+    return "".join(parts)
+
+
+def _artifact_gallery(paths, page_dir: str) -> str:
+    """Thumbnails for the images actually attached to a turn (map/conf/region)."""
+    figures = []
+    for path in paths or []:
+        absolute = os.path.join(PROJECT_ROOT, path)
+        if not os.path.exists(absolute):
+            figures.append(f'<p class="muted">随附图像不存在：{html.escape(str(path))}</p>')
+            continue
+        label = os.path.basename(str(path))
+        if "anomaly_map" in label:
+            label = "TruFor anomaly map"
+        elif "confidence_map" in label:
+            label = "TruFor confidence map"
+        elif label.startswith("region_"):
+            label = "diagnostic region crop"
+        figures.append(
+            f'<figure style="display:inline-block;margin:4px 10px 4px 0;'
+            f'max-width:340px;vertical-align:top">'
+            f'<img src="{html.escape(_rel(str(path), page_dir))}" '
+            f'style="max-width:330px;max-height:330px" alt="{html.escape(label)}">'
+            f'<figcaption class="muted">{html.escape(label)}<br>'
+            f'{html.escape(str(path))}</figcaption></figure>')
+    return '<div>' + "".join(figures) + "</div>" if figures else ""
+
+
 def session_page(sample: dict, page_dir: str, index_name: str,
                  batch_meta: Optional[dict] = None,
                  neighbors: Optional[Dict[str, str]] = None,
@@ -551,7 +603,8 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         f'<span class="pill">结案来源 {html.escape(str(record.get("verdict_status")))}</span>'
         f'<span class="pill">停止原因 {html.escape(str(record.get("halting_reason")))}</span>'
         f'<span class="pill">{html.escape(str(record.get("treatment")))}</span>'
-        "</div>"
+        + _joint_pills(record)
+        + "</div>"
         + _review_controls(trajectory_id)
         + "</header>")
 
@@ -597,6 +650,11 @@ def session_page(sample: dict, page_dir: str, index_name: str,
          "也不是专家分数；专家原始分数见下方证据表"),
         ("停止原因（控制端）", f'{record.get("halting_reason")}｜policy_reasons='
                               f'{record.get("policy_reasons")}'),
+        ("整图生成判断", record.get("whole_image_generation") or "未记录"),
+        ("局部篡改判断", record.get("local_manipulation") or "未记录"),
+        ("可疑区域", _format_regions(record.get("suspicious_regions"))),
+        ("联合字段问题", record.get("joint_verdict_issues") or "无记录"),
+        ("联合维度推导", record.get("joint_overall_mismatch") or "一致/无记录"),
         ("请求 / 执行 / 重复", f'执行 {counters.get("expert_calls")}｜跳过重复请求 '
                                f'{metadata.get("skipped_duplicate_calls", "未记录")}｜'
                                f'重复动作轮 {metadata.get("repeated_action_turns", "未记录")}｜'
@@ -710,8 +768,8 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         parts.append(f'<div class="turn {kind}">'
                      f'<div class="role">#{index} {html.escape(label)}</div>')
         if images:
-            parts.append('<p class="muted">随附图像：'
-                         + "、".join(html.escape(path) for path in images) + "</p>")
+            parts.append('<p class="muted">随附图像（实际投送）：</p>')
+            parts.append(_artifact_gallery(images, page_dir))
         parts.append(_json_block(value) if value.lstrip().startswith("{") else _pre(value))
         parts.append("</div>")
 

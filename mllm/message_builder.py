@@ -51,6 +51,7 @@ TOOL_ACTIONS: Dict[str, str] = {
     "freq": "- <call_freq>[ymin, xmin, ymax, xmax]</call_freq>  → call frequency-domain expert",
     "noise": "- <call_noise>[ymin, xmin, ymax, xmax]</call_noise> → call noise residual expert",
     "jpeg": "- <call_jpeg>[ymin, xmin, ymax, xmax]</call_jpeg>   → call JPEG compression expert",
+    "trufor": "- <call_trufor>[ymin, xmin, ymax, xmax]</call_trufor> → call local manipulation/localization expert",
 }
 
 TOOL_MEASURES: Dict[str, str] = {
@@ -58,11 +59,14 @@ TOOL_MEASURES: Dict[str, str] = {
     "freq": "- <call_freq>  multi-scale frequency analysis. WEAK evidence (separation 0.56-0.63,\n  barely above chance). Use it to corroborate, never as the deciding signal.",
     "noise": "- <call_noise> residual micro-noise LEVEL. COUNTER-INTUITIVE: a HIGH level points to\n  Real (camera sensor micro-noise) and a LOW level points to Fake (smooth generator\n  output). This is stable across image formats. Do NOT read a high value as forgery.",
     "jpeg": "- <call_jpeg>  JPEG compression history (blockiness / DCT structure). A HIGH level\n  points to Real (a camera JPEG that was saved or re-saved), NOT to forgery. After\n  heavy re-compression (quality <= 70) this measurement is near chance and must be\n  ignored.",
+    "trufor": "- <call_trufor>  local manipulation/localization. It returns a detector score plus\n  an anomaly map and a confidence map aligned to the ORIGINAL image, and its bbox\n  is a diagnostic region in [0,1000]. A high score/high anomaly map is evidence of\n  LOCAL manipulation, NOT a whole-image AI-generation score; the confidence map\n  says where the map is reliable. Do not use it to answer the whole-image question,\n  and do not treat a bright region as proof without checking its confidence and\n  the original image.",
 }
 
 # 登记表支持的工具有序表；freq/jpeg/noise 是待退役的旧工具，保留其手写文本供
 # 历史复算与 v2 对照装配提示词（阶段 4.4：提示词由登记表生成，不再手写新工具）。
 TOOL_ORDER = ("probe", "npr", "univfd", "noise", "freq", "jpeg")
+EXTRA_TOOLS = ("trufor",)
+ALL_TOOL_TAGS = TOOL_ORDER + EXTRA_TOOLS
 REGISTRY_TAGS = ("probe", "npr", "univfd", "noise")
 
 
@@ -152,6 +156,51 @@ PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe
     "(confidence = your own uncalibrated certainty in THIS verdict, not P(Real/Fake): RULES 9)\n"
     "</verdict>\n\n")
 
+# Legacy example line kept separate so the joint mode can replace exactly this
+# schema without rewriting the rest of the protocol.
+LEGACY_VERDICT_JSON = (
+    '{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, '
+    '\"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic '
+    'report in Chinese\"}')
+JOINT_VERDICT_JSON = (
+    '{"verdict": "Real"|"Fake"|"Uncertain", '
+    '"whole_image_generation": "Real"|"AI-generated"|"Uncertain", '
+    '"local_manipulation": "Tampered"|"Not tampered"|"Uncertain"|"Not applicable", '
+    '"suspicious_regions": [{"bbox": [ymin,xmin,ymax,xmax], "reason": "what local '
+    'evidence supports this region", "evidence": ["evidence_id1"]}], '
+    '"confidence": 0.0-1.0, "primary_evidence": ["evidence_name1"], '
+    '"report": "concise forensic report in Chinese"}')
+JOINT_GUIDANCE = (
+    "\nJOINT TASK (this session serves the localisation expert): keep TWO answers "
+    "separate. `whole_image_generation` answers whether the image as a whole is "
+    "Real / AI-generated / Uncertain; PROBE is the whole-image witness. "
+    "`local_manipulation` answers whether there is local editing (Tampered / Not "
+    "tampered / Uncertain / Not applicable); TruFor's score and maps are the local "
+    "witness. Overall `verdict` is Fake if either whole_image_generation is "
+    "AI-generated or local_manipulation is Tampered; Real only when the whole image "
+    "is Real AND local_manipulation is Not tampered; otherwise "
+    "Uncertain. Put local suspicions in `suspicious_regions` with original-image "
+    "[0,1000] bbox, a concrete reason, and the evidence_id(s) that support them; use "
+    "an empty list when there is no local suspicion. A bright map region is a "
+    "candidate, not proof; a low whole-image PROBE score does not clear a local "
+    "map, and a high local map does not prove whole-image AI generation. "
+    "Use local_manipulation = Not applicable ONLY when whole_image_generation is "
+    "AI-generated. For a Real whole image, do not declare Not tampered without a "
+    "TruFor map/conf measurement; if TruFor has not been called, use Uncertain and "
+    "say the local evidence is missing (or call TruFor first). NEVER choose Not "
+    "applicable as a way to make the overall verdict Real: a Real whole image with "
+    "no local measurement is local_manipulation = Uncertain, and the overall "
+    "verdict is then Uncertain. The local question cannot be answered without a "
+    "local measurement: if TruFor is served, has not measured this image yet, and "
+    "your closing verdict depends on the local answer, call TruFor before "
+    "concluding.\n")
+JOINT_RULE_10 = (
+    "\n10. When both PROBE and TruFor are served, do not merge their questions: "
+    "PROBE speaks to whole-image generation; TruFor speaks to local manipulation "
+    "and returns map/conf images in original-image coordinates. A map bright spot "
+    "is a local candidate, not proof; check the confidence map and the original "
+    "image, state the region in [0,1000], and cite the evidence_id.\n")
+
 PROMPT_TAIL_BASE = (
     "\nEach evidence token you receive has EXACTLY these fields:\n"
     "  `evidence_id`, `expert`, `measurement`, `status`, `scope`,\n"
@@ -175,8 +224,13 @@ PROMPT_TAIL_BASE = (
     "   `center_crop` = it never saw the edges. Do not restate a crop-based measurement\n"
     "   as a whole-image finding, and do not restate a whole-image score as describing\n"
     "   an area.\n"
-    "6. `visual_artifacts` are diagnostic products for human review, not your evidence:\n"
-    "   the number above is.\n"
+    "6. `visual_artifacts` are expert-produced images delivered with this token.\n"
+    "   Use them to inspect localisation (for example a map/conf pair): a high\n"
+    "   response marks a LOCAL candidate, not proof, and a bright region does not\n"
+    "   establish whole-image generation. The confidence map says where the map is\n"
+    "   reliable; low confidence means do not lean on that area. Artifacts do not\n"
+    "   replace the score and are not calibrated probabilities; cite their\n"
+    "   coordinates in the original-image [0,1000] system.\n"
 )
 
 # Reading rules that only make sense when the tool is served.  A session
@@ -206,7 +260,8 @@ def build_forensic_prompt(allowed_tools: Optional[Iterable[str]] = None) -> str:
     if allowed_tools is None:
         tools = list(TOOL_ORDER)
     else:
-        tools = [t for t in TOOL_ORDER if t in set(allowed_tools)]
+        requested = set(allowed_tools)
+        tools = [t for t in ALL_TOOL_TAGS if t in requested]
     if not tools:
         raise ValueError("a forensic prompt needs at least one tool; use the "
                          "baseline prompt for a no-tool session")
@@ -220,7 +275,11 @@ def build_forensic_prompt(allowed_tools: Optional[Iterable[str]] = None) -> str:
         else:
             actions_list.append(TOOL_ACTIONS[tag])
     actions = "\n".join(actions_list)
-    if len(tools) < len(TOOL_ORDER):
+    # The legacy default (probe/npr/univfd/noise/freq/jpeg) is the full
+    # historical prompt and must not carry a "subset" banner.  Any policy that
+    # omits one of those tools is a subset and says so; a dual policy that adds
+    # trufor but omits npr/univfd is also a subset.
+    if allowed_tools is not None and not set(TOOL_ORDER).issubset(set(tools)):
         actions = actions + "\n" + SUBSET_NOTE
     # 登记表已把"测什么、怎么读、什么条件"写进了 action 段，故旧的两段仅用于
     # 没有登记条目的旧工具（freq/jpeg），且只在被允许时才出现。
@@ -236,16 +295,24 @@ def build_forensic_prompt(allowed_tools: Optional[Iterable[str]] = None) -> str:
     read_notes = "".join(TOOL_READ_NOTES[t] for t in tools
                          if t in TOOL_READ_NOTES and t not in REGISTRY_TAGS)
 
+    mid = PROMPT_MID
+    rules = PROMPT_TAIL_RULES
+    if "trufor" in tools:
+        mid = mid.replace(LEGACY_VERDICT_JSON, JOINT_VERDICT_JSON) + JOINT_GUIDANCE
+        rules = rules + JOINT_RULE_10
     return (PROMPT_HEAD
             + "AVAILABLE ACTIONS (use EXACTLY these tag names — do NOT invent variations):\n"
-            + actions + "\n\nFORBIDDEN:" + PROMPT_MID
+            + actions + "\n\nFORBIDDEN:" + mid
             + measures + "HOW TO READ AN EVIDENCE TOKEN:"
-            + PROMPT_TAIL_BASE + read_notes + PROMPT_TAIL_RULES)
+            + PROMPT_TAIL_BASE + read_notes + rules)
 
 
 FORENSIC_SYSTEM_PROMPT = build_forensic_prompt()
 
-MAX_REGION_IMAGES_PER_TURN = 2
+# A TruFor turn carries three images: the diagnostic region crop, the anomaly
+# map and the confidence map.  Capping at two silently dropped the confidence
+# map — the model then saw a bright anomaly map with no reliability signal.
+MAX_REGION_IMAGES_PER_TURN = 3
 
 # No-tool variant (G2-d condition 1): the RGB baseline must answer from the
 # image alone, so tool calls are forbidden instead of merely unavailable.

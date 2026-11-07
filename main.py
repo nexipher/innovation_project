@@ -79,79 +79,104 @@ def require_cuda_for_real_sessions(mllm_type: str) -> None:
 
 def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE,
                    greedy: bool = False, inference_mode: str = "non-thinking",
-                   local_files_only: bool = False) -> ForensicStateMachine:
+                   local_files_only: bool = False,
+                   tools=None) -> ForensicStateMachine:
     """
-    Construct the forensic pipeline with the **g8 toolbox** (stage 4.4).
+    Construct the forensic pipeline with an explicit tool policy.
 
-    probe / npr / univfd — the three the val evaluation selected.  freq, jpeg and
-    noise are retired from the default toolbox (their code and results stay, for
-    replay); a session that still wants them registers them explicitly.
+    Default remains the stage-4.4 toolbox (probe / npr / univfd; freq/jpeg/noise
+    are replay-only).  Passing ``tools=("probe", "trufor")`` builds the minimal
+    joint-task loop: one whole-image expert and one localisation expert, with no
+    silent substitution.  A real session never drops a requested tool.
 
     解码条件（`greedy`/`inference_mode`/`local_files_only`）走这里传入，而不是让
     调用方自己造一个等价客户端：验收、冒烟与批次生成必须是**同一条构造路径**——
     否则"我看的那批"与"跑出来的那批"会在没人注意的地方分叉（默认是采样解码，
     温度 0.1；批次与冒烟都用贪心，便于复现）。
     """
+    desired = (list(tools) if tools is not None
+               else list(ForensicStateMachine.CURRENT_TOOL_TAGS))
+    known = set(ForensicStateMachine.EXPERT_KEY_MAP)
+    unknown = [tag for tag in desired if tag not in known]
+    if unknown:
+        raise RuntimeError(f"未知工具：{unknown}")
+    if not desired:
+        raise RuntimeError("工具箱为空：至少指定一个工具")
     if mllm_type in ("qwen", "qwen25"):
         require_cuda_for_real_sessions(mllm_type)   # 先拒，再加载任何权重
-    if mllm_type == "mock":
-        from experts.npr import MockNPRExpert
-        from experts.univfd import MockUnivFDExpert
 
-        npr_expert, univfd_expert = MockNPRExpert(), MockUnivFDExpert()
-    else:
-        # 真实会话里，工具箱少一个专家就是**另一种工具箱**：不是"少一次调用"，
-        # 而是这批数据的口径变了。所以缺权重/设备不满足时直接拒绝并说明，
-        # 不静默降级（阶段 4.5 真机就是这么发现 UnivFD 在 CPU 上必崩的）。
-        from experts.npr import NPRExpert
-        from experts.univfd import UnivFDExpert
+    experts = {}
+    if "probe" in desired:
+        probe = build_probe_expert(mllm_type)
+        if probe is not None:
+            experts["probe_dino_expert"] = probe
 
-        npr_expert, univfd_expert = NPRExpert(), UnivFDExpert()
-        for expert in (npr_expert, univfd_expert):
+    for name in ("npr", "univfd"):
+        if name not in desired:
+            continue
+        if mllm_type == "mock":
+            if name == "npr":
+                from experts.npr import MockNPRExpert
+                experts["npr_expert"] = MockNPRExpert()
+            else:
+                from experts.univfd import MockUnivFDExpert
+                experts["univfd_expert"] = MockUnivFDExpert()
+        else:
+            if name == "npr":
+                from experts.npr import NPRExpert
+                expert = NPRExpert()
+            else:
+                from experts.univfd import UnivFDExpert
+                expert = UnivFDExpert()
             reason = expert.unavailable_reason()
             if reason:
                 raise RuntimeError(f"{expert.source_name} 不可用：{reason}\n"
                                    "真实会话不缩减工具箱——请修好它，或用显式的其他策略跑。")
-        print("专家设备：" + "，".join(
-            f"{expert.source_name}={expert.device}"
-            for expert in (npr_expert, univfd_expert)))
-    experts = {
-        "probe_dino_expert": build_probe_expert(mllm_type),
-        "npr_expert": npr_expert,
-        "univfd_expert": univfd_expert,
-    }
-    experts = {name: expert for name, expert in experts.items() if expert is not None}
+            experts[expert.source_name] = expert
+            print(f"专家设备：{expert.source_name}={expert.device}")
 
-    # The prompt may only promise what the session can serve: a model told
-    # about a tool that is not registered spends turns on calls that are
-    # dropped silently.  Tool order follows the current toolbox (probe first).
+    if "trufor" in desired:
+        if mllm_type == "mock":
+            from experts.trufor import MockTruForExpert
+            experts["trufor_expert"] = MockTruForExpert(device="cpu")
+        else:
+            from experts.trufor import TruForExpert
+            expert = TruForExpert(device="cuda")
+            reason = expert.unavailable_reason()
+            if reason:
+                raise RuntimeError(f"{expert.source_name} 不可用：{reason}\n"
+                                   "双专家会话必须有局部定位器，不能静默缩减工具箱。")
+            experts[expert.source_name] = expert
+            print(f"专家设备：{expert.source_name}={expert.device}")
+
     available = {ForensicStateMachine.EXPERT_SOURCE_MAP[name]
                  for name in experts if name in ForensicStateMachine.EXPERT_SOURCE_MAP}
-    tags = [tag for tag in ForensicStateMachine.CURRENT_TOOL_TAGS if tag in available]
+    missing = [tag for tag in desired if tag not in available]
+    # The historical default (tools=None) kept running when PROBE weights were
+    # absent and warned; only an EXPLICIT policy is refused, because a caller
+    # that named its tools must not receive a silently smaller toolbox.
+    if missing and tools is not None:
+        raise RuntimeError(
+            f"请求的工具没有注册成功：{missing}。真实/显式工具箱不做静默降级；"
+            "请修复权重或改用显式的其他策略。")
+    tags = [tag for tag in desired if tag in available]
     system_prompt = build_forensic_prompt(tags)
 
     if mllm_type in ("qwen", "qwen25"):
         if mllm_type == "qwen":
-            # 当前版本：Qwen3-VL-8B-Instruct（固定 revision，见 mllm/qwen3_client.py）
             from mllm.qwen3_client import Qwen3VLClient
-
             mllm = Qwen3VLClient(system_prompt=system_prompt,
                                  inference_mode=inference_mode,
                                  do_sample=not greedy,
                                  temperature=0.0 if greedy else 0.1,
                                  local_files_only=local_files_only)
-            # 身份可得就写出来（批次版本绑定要用）；客户端没这个接口也不该崩在启动路径上。
             revision = getattr(mllm, "revision", None)
             print(f"Using {mllm.name}" + (f" @ {revision[:8]}" if revision else "") + " (GPU)")
             if callable(getattr(mllm, "identity", None)):
                 print(f"  model identity: {mllm.identity()}")
         else:
-            # 历史复算专用：与 FORENSIC_HALTING_POLICY=v2 同一性质，不用于新会话
             from mllm.qwen_client import QwenVLClient
             from config import QWEN_MODEL_PATH
-
-            # 旧模型若已下架，**在加载专家与权重之前**就说清楚：懒加载会让它
-            # "构造成功"，直到第一次推理才抛一句与真实原因无关的 hub 报错。
             if not os.path.exists(QWEN_MODEL_PATH):
                 raise RuntimeError(
                     f"--mllm qwen25 需要 Qwen2.5-VL 权重，但 {QWEN_MODEL_PATH} 不存在。\n"
@@ -161,10 +186,11 @@ def build_pipeline(mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE,
     else:
         mllm = MockMLLMClient(mode=mode)
 
+    print(f"工具策略：{tags}")
     return ForensicStateMachine(mllm, experts)
 
-
-def run_single(image_path: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE):
+def run_single(image_path: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE,
+               tools=None):
     """Run forensic analysis on a single image and print the result."""
     if not os.path.exists(image_path):
         print(f"Error: image not found — {image_path}")
@@ -180,7 +206,7 @@ def run_single(image_path: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_M
     print(f"Mode:    {mode}")
     print(f"{'='*60}")
 
-    fsm = build_pipeline(mllm_type, mode)
+    fsm = build_pipeline(mllm_type, mode, tools=tools)
     result = fsm.run(image_path, ground_truth=gt)
 
     verdict = result["final_verdict"]
@@ -197,7 +223,8 @@ def run_single(image_path: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_M
     return result
 
 
-def run_batch(category: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE, max_images: int = None):
+def run_batch(category: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE,
+              max_images: int = None, tools=None):
     """Run forensic analysis on a batch of images."""
     if category == "Real":
         image_dir = REAL_DIR
@@ -208,10 +235,10 @@ def run_batch(category: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE
     elif category == "all":
         results = []
         # Real
-        results.extend(run_batch("Real", mllm_type, mode, max_images))
+        results.extend(run_batch("Real", mllm_type, mode, max_images, tools))
         # Each GenImage subdir
         for sub in GENIMAGE_SUBDIRS:
-            results.extend(run_batch(sub, mllm_type, mode, max_images))
+            results.extend(run_batch(sub, mllm_type, mode, max_images, tools))
         return results
     else:
         print(f"Unknown category: {category}")
@@ -237,7 +264,7 @@ def run_batch(category: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_MODE
         path = os.path.join(image_dir, fname)
         print(f"[{i+1}/{len(images)}] {fname} ... ", end="", flush=True)
         try:
-            result = run_single(path, mllm_type, mode)
+            result = run_single(path, mllm_type, mode, tools=tools)
             results.append(result)
             v = result["final_verdict"].get("verdict", "")
             if (gt == "Real" and v == "Real") or (gt == "Fake" and v == "Fake"):
@@ -279,13 +306,20 @@ def main():
         "--max", "-n", type=int, default=None,
         help="Max images per batch category.",
     )
+    parser.add_argument(
+        "--tools", type=str, default=None,
+        help=("Comma-separated tool policy, e.g. 'probe,trufor' for the minimal "
+              "joint-task loop. Omit for the default probe,npr,univfd toolbox."),
+    )
 
     args = parser.parse_args()
+    tools = ([name.strip() for name in args.tools.split(",") if name.strip()]
+             if args.tools else None)
 
     if args.image:
-        run_single(args.image, args.mllm, args.mode)
+        run_single(args.image, args.mllm, args.mode, tools=tools)
     elif args.batch:
-        run_batch(args.batch, args.mllm, args.mode, args.max)
+        run_batch(args.batch, args.mllm, args.mode, args.max, tools=tools)
     else:
         parser.print_help()
         print("\nExample: python main.py --image dataset/Real/xxx.jpg")

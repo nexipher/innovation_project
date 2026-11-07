@@ -201,4 +201,4 @@ class TestArtifactsComeWithTheirMeaning:
         token["visual_artifacts"] = ["traces/evidence/x/region_E-1.png"]
         pack = EvidenceTokenizer.model_visible(token)
         assert pack["visual_artifacts"] == ["traces/evidence/x/region_E-1.png"]
-        assert "不是模型的判据" in pack["artifact_meaning"]
+        assert "高响应是候选而非证明" in pack["artifact_meaning"]
