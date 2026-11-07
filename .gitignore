@@ -90,6 +90,15 @@ archive/**/variants*/*.jpg
 # G8 评测产物的变体图像同样不入库（报告与分数入库，图像可重建）
 sft_data/g8_eval/*/variants/*.png
 sft_data/g8_eval/*/variants/*.jpg
+
+# G8 双专家验收：最终批次的页面/records/trace 入库；原始 TruFor cache、
+# 冒烟/对照/中断重跑只留本地，避免把临时产物和重复 npz 混进验收记录。
+sft_data/g8_acceptance/*/trufor_raw/
+sft_data/g8_acceptance/*_smoke/
+sft_data/g8_acceptance/dual_*_check*/
+sft_data/g8_acceptance/dual_check*/
+sft_data/g8_acceptance/dual_*_partial_*/
+sft_data/g8_acceptance/dual_*_orphan_*/
 dataset/mnw_div2k/Fake/
 dataset/mnw_div2k/Real/
 dataset/mnw_div2k/downloads/
