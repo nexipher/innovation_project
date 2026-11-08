@@ -477,8 +477,15 @@ class TruForExpert(ExternalScoreExpert):
         canvas[top:top + height, :width] = content
         cv2.rectangle(canvas, (0, top), (width - 1, top + height - 1),
                       (70, 70, 70), 1)
+        # Keep the title inside the canvas even for small source images.
+        title_scale = 0.62
+        (title_w, _), _ = cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX,
+                                         title_scale, 1)
+        max_title_w = canvas.shape[1] - 20
+        if title_w > max_title_w:
+            title_scale *= max_title_w / float(title_w)
         cv2.putText(canvas, title, (10, 26), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.62, (25, 25, 25), 1, cv2.LINE_AA)
+                    title_scale, (25, 25, 25), 1, cv2.LINE_AA)
 
         bar_x = width + 28
         bar_y = top + 20
