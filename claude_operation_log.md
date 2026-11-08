@@ -966,3 +966,18 @@
 * **涉及/修改的文件清单**：`scripts/compare_dual_acceptance.py (Created)`、`scripts/g8_dual_acceptance.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_tokenizer.py`、`tests/test_message_builder.py`、`sft_data/g8_acceptance/dual_20261108/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
 * **执行结果与验证状态**：新批次 24/24 完成、wall 732.3 s；`core` **770 passed, 1 skipped, 845 deselected**；比较产物 `comparison/comparison.md`、`comparison.json`；未训练、未扩样、未使用 test。
 * **置信度或遗留待办（TODO）**：①人工逐会话审核新 24 条；②下一轮修单专家停结与局部 Tampered 语义；③修 planning 内重复 call 标签；④TruFor 1024 显存失败仍待资源方案；⑤验收通过前不训练、不扩新源图。
+
+### 2026-11-08 - 阶段四 4.54：结案前补测检查（单专家停结修复）
+
+* **当前操作动作**：先核对实际提示词、状态提示和控制器执行路径，再修改“模型发现缺少测量但仍提前结案”的行为；以 `dual_20261108` 的 BigGAN、VQDM、58610、41187_0、Midjourney 真实报告做 CPU 回归。未重跑 GPU 批次。
+* **对应计划锚点**：`plan.md` §12.9；`KNOWN_ISSUES.md` A10。
+* **检查到的旧逻辑**：规则 1“Call at most one more expert than you need”、规则 5“Conclude once the measurements you called for have arrived”把已调用测量当结案边界；`JOINT_GUIDANCE` 无结案前检查；`_state_note` 结尾是“继续或直接给出结案”，失败工具混在“尚可调用”；失败/不可用提示保留“改用其他工具或如实 Uncertain/直接结论”的出口；v3 对合法 verdict 立即接受，账本只查伪造/数值，不检查未调用可用专家。
+* **核心变更**：
+  1. **提示词**：规则 1 改为结案前检查（已测量/未解决/未尝试；影响结论且工具适用、预算允许则补测；单专家结案须解释第二个测量为何不改变结论）。规则 5 改为 `Uncertain` 不是默认，完成可行调查后才弃权；不得把“未调用 X”当作 X 仍可调用时的理由；保留“honest Uncertain 优于自信错误”。`JOINT_GUIDANCE` 增加整图/局部对称结案检查和失败缺口处理；规则 4 增加“另一可用工具仍可测量时先调用”。
+  2. **状态提示**：`_state_note` 对称显示整图生成（PROBE）/局部编辑（TruFor）的已测量、尚未测量、执行失败；把“尚可调用（尚未尝试）”与“已尝试但失败”分开；删除“继续或直接结案”，改为按未解决问题补测或说明无法继续。失败分支也追加同一状态提示。
+  3. **失败/重复/不可用提示**：失败时要求先检查其他工具能否回答同一问题或另一问题；不可用/重复/去重提示不再提供“直接结案”出口；强制结案提示要求说明“经过当前可行调查后”仍缺什么、为什么无法继续。
+  4. **控制器**：新增 `failed_sources` 与 `untried_experts` 分离；计数器新增 `untried_experts`、`failed_experts`、`preclose_checks`、`abstention_cited_untried_expert`；工作台和比较脚本展示。控制器不强制两个专家、不按分数/条数/分项标签改判、不静默修改标签。
+  5. **一次结案前反馈**：仅 v3；候选 `verdict == "Uncertain"`、存在 served 且未测量未失败的专家、结案文本在专家名附近明确写“未调用/未测量/未执行/未评估/缺少”、未被“无需/不必要/不适用”否定、预算允许、每会话一次。反馈只要求补测或说明，不执行调用、不改标签；补测记 `after_check="called"`，仍结案记 `concluded_without_new_measurement`，并记录 `abstention_cited_untried_expert`。误触发风险是模型列举限制时多花一轮；因此触发限定为“明确把未调用工具写成缺口”，不覆盖所有单专家结案。
+* **涉及/修改的文件清单**：`mllm/message_builder.py`、`state_machine/controller.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/compare_dual_acceptance.py`、`tests/test_dual_expert_loop.py`、`tests/test_message_builder.py`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
+* **执行结果与验证状态**：默认提示词哈希 `6e3b8b8273e3034c`，联合模式 `f1b2309a9dbd7dfa`；`core` **775 passed, 1 skipped, 845 deselected**；真实报告回归 5 例（BigGAN/VQDM/58610/41187_0/Midjourney）全部命中，正当单专家结案不触发，反馈后补测/仍结案两条路径均有测试。
+* **置信度或遗留待办（TODO）**：①`dual_20261108` 是旧提示词产物，不能用于判断本轮效果；需用同一 24 输入重跑新批次后再比较；②AI 生成图局部 Tampered、全图 bbox、planning 内重复 call 标签、TruFor 1024 显存失败仍未解决；③验收通过前不训练、不扩新源图。

@@ -11,6 +11,7 @@ Pure Python while-loop; no external agent framework dependency.
 import json
 import math
 import os
+import re
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -94,6 +95,84 @@ def _state_line(token: dict) -> str:
     return (f"  - {token.get('source')}（{token.get('evidence_id')}）："
             f"P(Fake)={p_fake}（方向 {direction}），raw_metric={token.get('raw_metric')}，"
             f"适用 {token.get('applicability')}")
+
+
+# Human-readable expert names used by the closing-gap check.  The model writes
+# "PROBE"/"TruFor" far more often than the internal source names.
+_EXPERT_LABELS = {
+    "probe_dino_expert": "PROBE",
+    "trufor_expert": "TruFor",
+}
+_EXPERT_ALIASES = {
+    "probe_dino_expert": ("probe_dino_expert", "probe", "PROBE"),
+    "trufor_expert": ("trufor_expert", "trufor", "TruFor"),
+}
+
+
+def _expert_label(source: str) -> str:
+    return _EXPERT_LABELS.get(source, source)
+
+
+def _cited_untried_experts(output: str, untried: List[str]) -> List[str]:
+    """
+    Which still-callable experts does the closing text name as *not called*?
+
+    This is deliberately narrow: it looks for a missing-call phrase around one
+    of the expert's names, and skips mentions that themselves say the expert is
+    unnecessary, unavailable, failed or unaffordable.  It is a review and
+    feedback trigger, never a verdict rule.
+    """
+    if not output or not untried:
+        return []
+    called = (
+        r"(?:调用|执行|使用|测量|评估|检测|"
+        r"call(?:ed|ing)?|run|use[ds]?|measur(?:e|ed|ing)|"
+        r"evaluat(?:e|ed|ing)|assess(?:ed|ing)?)")
+    uncalled = (
+        r"(?:未|没有|尚未|并未|未能|没能|not|never|without|"
+        r"did\s+not|didn't|has\s+not|have\s+not|is\s+not|was\s+not)")
+    justified = re.compile(
+        r"(?:无需|无须|不必|不需要|不必要|没有必要|不适用|"
+        r"no\s+need|not\s+necessary|not\s+applicable)", re.I)
+    found: List[str] = []
+    for source in untried:
+        aliases = _EXPERT_ALIASES.get(source, (source,))
+        alias = "(?:" + "|".join(re.escape(name) for name in aliases) + ")"
+        patterns = (
+            re.compile(rf"{uncalled}.{{0,24}}{called}.{{0,24}}{alias}", re.I),
+            re.compile(rf"{alias}.{{0,24}}{uncalled}.{{0,12}}{called}", re.I),
+            # "整图生成性未被 PROBE 评估": the negating word sits before the
+            # expert name and the measurement verb after it.
+            re.compile(rf"{uncalled}.{{0,24}}{alias}.{{0,12}}{called}", re.I),
+            re.compile(rf"(?:缺少|缺乏|缺失|缺|missing|lack(?:s|ing)?).{{0,16}}{alias}",
+                       re.I),
+            # English "PROBE measurement is required ... but it has not been
+            # called yet" puts the name and the missing-call phrase apart.
+            re.compile(rf"{alias}.{{0,80}}{uncalled}\s+(?:been\s+)?{called}", re.I),
+        )
+        for pattern in patterns:
+            for match in pattern.finditer(output):
+                window = output[max(0, match.start() - 40):match.end() + 40]
+                if justified.search(window):
+                    continue
+                found.append(source)
+                break
+            if source in found:
+                break
+    return found
+
+
+def _closing_gap(output: str, candidate_verdict: Optional[dict], served,
+                 measured_sources: Dict[str, str], failed_sources) -> Optional[dict]:
+    """A legal Uncertain that names an untried, still-callable expert as the gap."""
+    if (candidate_verdict or {}).get("verdict") != "Uncertain":
+        return None
+    untried = [source for source in (served or [])
+               if source not in measured_sources and source not in failed_sources]
+    cited = _cited_untried_experts(output, untried)
+    if not cited:
+        return None
+    return {"cited_experts": cited, "untried_experts": untried}
 
 
 class ForensicStateMachine:
@@ -267,6 +346,17 @@ class ForensicStateMachine:
         advisory_sent = False
         # §4.17 R9: turns refused for carrying more than one action.
         protocol_violations = 0
+        # Experts that were served but whose execution failed (not the same as
+        # an expert that was never tried).  Kept separately so the state note
+        # and the review counters can distinguish "still callable" from
+        # "attempted and failed".
+        failed_sources: set = set()
+        # One closing-gap correction per session, with its audit record.
+        preclose_checks: List[dict] = []
+        preclose_check_sent = False
+        untried_experts: List[str] = []
+        failed_experts: List[str] = []
+        abstention_cited_untried_expert: List[str] = []
 
         # Outer safety net: the halting budget fires first; the +1 allows the
         # forced-conclusion turn that budget halting triggers.
@@ -370,7 +460,8 @@ class ForensicStateMachine:
                         available = ", ".join(sorted(self._expert_by_call)) or "（无）"
                         notice = (
                             f"[System: 本次会话不提供 {expert_name}。可用工具：{available}。"
-                            "请从可用工具中选择，或直接给出结论。]"
+                            "请从可用工具中选择仍能回答当前问题的工具；若确实没有适用"
+                            "工具，再说明限制并结案。]"
                         )
                         self._logger.add_system_message(notice)
                         conversation.append({"from": "user", "value": notice})
@@ -399,7 +490,8 @@ class ForensicStateMachine:
                         notice = (
                             f"[System: {source_name} 已在本会话对整图测量过"
                             f"（{measured_sources[source_name]}），整图测量与区域无关，"
-                            f"重复调用不会产生新的测量，已跳过执行。请基于现有证据继续。]"
+                            f"重复调用不会产生新的测量，已跳过执行。请转向尚未解决的"
+                            f"问题；若现有证据已足够，再说明结案依据。]"
                         )
                         self._logger.add_conversation_turn("user", notice)
                         conversation.append({"from": "user", "value": notice})
@@ -422,6 +514,7 @@ class ForensicStateMachine:
                         # 会话继续（提案：不得伪装成正常返回，也不该让整个会话崩掉）。
                         failed_tool_calls.append(f"{source_name}: "
                                                  f"{type(exc).__name__}: {exc}")
+                        failed_sources.add(source_name)
                         turn_calls_executed = False
                         turn_signature_parts.append(("failed", source_name))
                         evidence_chain.append({
@@ -437,11 +530,21 @@ class ForensicStateMachine:
                         notice = (
                             f"[System: {source_name} 执行失败（{type(exc).__name__}）。"
                             "**这不是中性测量，也不是证据**：不要把它当作已获得的测量。"
-                            "这是一项缺失的测量；请说明它是否影响你的结论、限制了哪一问，"
-                            "再决定改用其他工具还是如实给出 Uncertain。]"
+                            "这是一项缺失的测量；请说明它限制了哪一问。"
+                            "先检查其他仍可调用的工具能否回答同一问题或另一个问题；"
+                            "若有这样的工具且预算允许，先继续调查。只有当前条件确实无法"
+                            "继续调查时，才在 Uncertain 中说明该失败缺口和无法继续的原因。]"
                         )
                         self._logger.add_system_message(notice)
                         conversation.append({"from": "user", "value": notice})
+                        # The failure is a measurement gap, not a neutral
+                        # result.  Restate both question statuses so the model
+                        # sees what failed and what is still callable in one
+                        # place — the same state note used after a success.
+                        state_note = self._state_note(
+                            evidence_chain, list(self._experts), measured_sources)
+                        self._logger.add_system_message(state_note)
+                        conversation.append({"from": "user", "value": state_note})
                         continue
 
                     # G2 §4.9: attach empirical reliability / calibrated
@@ -497,8 +600,9 @@ class ForensicStateMachine:
                         # (29 samples in the 2026-10-11 review).
                         notice = (
                             f"[System: 本次调用返回的证据与已有的 {evidence_id} 完全"
-                            f"相同，已按去重规则忽略，未产生新的测量。请基于现有证据"
-                            f"继续，不要重复调用同一工具与同一区域。]"
+                            f"相同，已按去重规则忽略，未产生新的测量。请转向尚未解决的"
+                            f"问题，不要重复调用同一工具与同一区域；若现有证据已足够，"
+                            f"再说明结案依据。]"
                         )
                         self._logger.add_conversation_turn("user", notice)
                         conversation.append({"from": "user", "value": notice})
@@ -506,6 +610,11 @@ class ForensicStateMachine:
                     seen_evidence_ids.add(evidence_id)
                     called_experts.add(expert_result.source)
                     measured_sources[expert_result.source] = evidence_id
+                    failed_sources.discard(expert_result.source)
+                    if (preclose_checks
+                            and preclose_checks[-1].get("after_check") == "awaiting"):
+                        preclose_checks[-1]["after_check"] = "called"
+                        preclose_checks[-1]["called_expert"] = expert_result.source
                     turns_without_new_evidence = -1  # counted at the turn's end
 
                     # Persist the diagnostic region crop (G1) and the expert's
@@ -691,7 +800,8 @@ class ForensicStateMachine:
                             note = (
                                 "[System: 策略的参考估计认为继续调用收益有限，"
                                 "但这只是参考，不影响你也无权阻止你的取证判断；"
-                                "你可以继续调用未用过的工具，或给出结案。]"
+                                "若仍有未解决的问题和未用过的工具，优先补测；"
+                                "若没有，再说明结案依据。]"
                             )
                             self._logger.add_system_message(note)
                             conversation.append({"from": "user", "value": note})
@@ -721,6 +831,43 @@ class ForensicStateMachine:
                         HaltingPolicyV2.CANDIDATE_ACCEPTED,
                         HaltingPolicyV2.CANDIDATE_WITHOUT_TOOLS,
                     )
+                # One closing-gap correction.  It fires only when the model's
+                # own Uncertain verdict names an expert that is served, still
+                # untried, applicable in this session, and inside budget.  A
+                # justified single-expert conclusion does not match: the text
+                # must actually cite the uncalled expert as the gap.
+                if (HALTING_POLICY == "v3" and accepted
+                        and not preclose_check_sent
+                        and model_turn_count < MAX_MODEL_TURNS
+                        and expert_call_count < MAX_EXPERT_CALLS):
+                    gap = _closing_gap(
+                        raw_output, candidate_verdict, list(self._experts),
+                        measured_sources, failed_sources)
+                    if gap:
+                        preclose_check_sent = True
+                        labels = "、".join(_expert_label(source)
+                                           for source in gap["cited_experts"])
+                        preclose_checks.append({
+                            "turn": model_turn_count,
+                            "verdict": "Uncertain",
+                            "cited_experts": gap["cited_experts"],
+                            "untried_experts": gap["untried_experts"],
+                            "after_check": "awaiting",
+                        })
+                        note = (
+                            "[System: 结案前检查：你的结案以“"
+                            f"{labels} 尚未调用/未测量”作为 Uncertain 的主要原因，"
+                            "但该工具仍在本次会话中可用，预算也允许。"
+                            "若你认为它能补足这个缺口，请先做一次补测；"
+                            "若你认为它不适用或补测不会实质改变结论，请明确说明理由。"
+                            "若要补测：只输出一个对应的 <call_x>，不要同时给 verdict。"
+                            "若仍要结案：不要只写“未调用”；说明该测量为何不会改变结论，"
+                            "或它为何不能回答当前问题。最终结论仍由你决定。]"
+                        )
+                        self._logger.add_system_message(note)
+                        conversation.append({"from": "user", "value": note})
+                        previous_action = None
+                        continue
                 # §4.17 R3/R4: the ledger is the only authority on what was
                 # measured, and **every** conclusion this pipeline adopts goes
                 # through it — the accepted-candidate shortcut used to skip the
@@ -818,6 +965,22 @@ class ForensicStateMachine:
                     final_label = decision.verdict
                     final_confidence = decision.confidence
                     verdict_status = "policy_label"
+                # Review counters: what stayed untried, what failed, and
+                # whether the adopted Uncertain still cites an untried expert.
+                # These are records only; none of them changes the label.
+                untried_experts = [
+                    source for source in self._experts
+                    if source not in measured_sources and source not in failed_sources
+                ]
+                failed_experts = [
+                    source for source in self._experts if source in failed_sources
+                ]
+                for check in preclose_checks:
+                    if check.get("after_check") == "awaiting":
+                        check["after_check"] = "concluded_without_new_measurement"
+                abstention_cited_untried_expert = (
+                    _cited_untried_experts(final_output, untried_experts)
+                    if final_label == "Uncertain" else [])
                 joint_fields, joint_issues = extract_joint_verdict(
                     model_candidate,
                     evidence_ids=[token.get("evidence_id")
@@ -964,6 +1127,10 @@ class ForensicStateMachine:
             protocol_violations=protocol_violations,
             unavailable_tool_calls=list(unavailable_tool_calls),
             failed_tool_calls=list(failed_tool_calls),
+            preclose_checks=list(preclose_checks),
+            untried_experts=list(untried_experts),
+            failed_experts=list(failed_experts),
+            abstention_cited_untried_expert=list(abstention_cited_untried_expert),
             condition=self._condition,
             verdict_status=(final_verdict or {}).get("verdict_status"),
             verdict_label=(final_verdict or {}).get("verdict"),
@@ -1151,21 +1318,63 @@ class ForensicStateMachine:
         fields the pack just withheld.
         """
         lines = [_state_line(token) for token in evidence_chain]
-        remaining = [source for source in (served or []) if source not in measured_sources]
-        joint_hint = ""
-        if ("trufor_expert" in (served or [])
-                and "trufor_expert" not in measured_sources):
-            joint_hint = (
-                "\n本会话同时要求局部判断，而 TruFor 尚未测量。调用顺序由你决定；"
-                "若结论依赖局部判断，可调用 TruFor，也可在结案时说明缺失。若结案时"
-                "仍缺局部测量，必须说明这项证据缺失及其对结论的限制，不要把未测量写成 "
-                "Not tampered 或 Not applicable。")
+        # "Failed" means executed and failed; "untried" means served and never
+        # executed.  They are different gaps and the note keeps them apart.
+        failed_sources = {
+            token.get("source") for token in evidence_chain
+            if token.get("status") == "failed" and token.get("source")
+            and token.get("source") not in measured_sources
+        }
+        remaining = [source for source in (served or [])
+                     if source not in measured_sources
+                     and source not in failed_sources]
+
+        def question_status(source: str) -> str:
+            if source not in (served or []):
+                return "本次会话不提供"
+            if source in measured_sources:
+                return f"已测量（{measured_sources[source]}）"
+            failed_token = next(
+                (token for token in evidence_chain
+                 if token.get("source") == source
+                 and token.get("status") == "failed"),
+                None,
+            )
+            if failed_token is None:
+                return "尚未测量"
+            detail = re.sub(r"\s+", " ", str(failed_token.get("reason") or ""))[:160]
+            return (f"执行失败（{detail}）；这是缺失的测量" if detail
+                    else "执行失败；这是缺失的测量")
+
+        question_lines = []
+        if "probe_dino_expert" in (served or []):
+            question_lines.append(
+                f"- 整图生成（PROBE）：{question_status('probe_dino_expert')}")
+        if "trufor_expert" in (served or []):
+            question_lines.append(
+                f"- 局部编辑（TruFor）：{question_status('trufor_expert')}")
+        status_block = ("\n问题状态：\n" + "\n".join(question_lines)
+                        if question_lines else "")
+        remaining_text = "、".join(remaining) if remaining else "（无）"
+        failed_text = "、".join(sorted(failed_sources)) if failed_sources else "（无）"
+        local_note = ""
+        if "trufor_expert" in (served or []):
+            local_note = (
+                "\n局部问题只能用 TruFor 的测量回答；尚未测量时不要写成 "
+                "Not tampered 或 Not applicable。若 TruFor 尚未尝试且预算允许，"
+                "先补测；若已失败，说明缺失测量，并检查其他工具能否回答部分问题。")
         return (
             "[System: 本会话状态 —— 已执行的专家：\n" + "\n".join(lines) +
-            f"\n尚可调用：{', '.join(remaining) if remaining else '（无）'}。"
+            status_block +
+            f"\n尚可调用（尚未尝试）：{remaining_text}。"
+            f"已尝试但失败：{failed_text}。"
             "每个专家每会话只对整图测量一次：重复请求的返回值与上面已有的 token 相同，"
-            "系统会跳过执行并白费一轮。请基于上面已给出的结论继续，或直接给出结案。"
-            + joint_hint + "]"
+            "系统会跳过执行并白费一轮。"
+            "\n结案前检查：先看哪些问题已有有效测量、哪些仍未解决；"
+            "若未解决的问题可由尚未尝试的工具回答，且预算允许，先补测；"
+            "若只用一个专家结案，说明为什么第二个测量不会实质改变结论；"
+            "若无法继续调查，说明是工具失败、无适用工具还是预算限制。"
+            + local_note + "]"
         )
 
     @staticmethod
@@ -1201,7 +1410,8 @@ class ForensicStateMachine:
         """
         summary = ledger.summary() if ledger is not None else ""
         tail = ("请只使用已执行的专家返回过的数值给出结论；若这些测量不足以判定，"
-                "如实说明还缺哪种测量。")
+                "说明经过当前可行调查后还缺哪种测量，以及为什么无法继续调查"
+                "（工具失败、没有适用工具或预算限制）。")
         if decision.primary_reason == HaltingPolicyV2.BUDGET_EXHAUSTED:
             head = "[System: 取证预算已耗尽，本次会话到此结束。"
         elif HaltingPolicyV2.CONFLICT_UNRESOLVED in decision.all_reasons:
@@ -1252,6 +1462,10 @@ class ForensicStateMachine:
         protocol_violations: int = 0,
         unavailable_tool_calls: Optional[List[str]] = None,
         failed_tool_calls: Optional[List[str]] = None,
+        preclose_checks: Optional[List[dict]] = None,
+        untried_experts: Optional[List[str]] = None,
+        failed_experts: Optional[List[str]] = None,
+        abstention_cited_untried_expert: Optional[List[str]] = None,
         condition: Optional[str] = None,
         reference_fields: bool = True,
         verdict_status: Optional[str] = None,
@@ -1286,6 +1500,14 @@ class ForensicStateMachine:
             # 阶段 4.4：工具缺席与执行失败各自留痕——缺字段会读成"没发生"。
             "unavailable_tool_calls": list(unavailable_tool_calls or []),
             "failed_tool_calls": list(failed_tool_calls or []),
+            # Closing-gap audit.  "untried" means served and never executed;
+            # "failed" means executed and failed.  They are different facts
+            # and the review must not merge them.
+            "untried_experts": sorted(untried_experts or []),
+            "failed_experts": sorted(failed_experts or []),
+            "preclose_checks": list(preclose_checks or []),
+            "abstention_cited_untried_expert": sorted(
+                abstention_cited_untried_expert or []),
         }
         if policy_decision is not None:
             # A replay must be able to explain the stop from the trace alone.

@@ -48,13 +48,15 @@ def test_state_note_says_local_evidence_is_missing_before_trufor():
     note = ForensicStateMachine._state_note(
         [], ["probe_dino_expert", "trufor_expert"],
         {"probe_dino_expert": "E-probe"})
-    assert "TruFor 尚未测量" in note
+    assert "局部编辑（TruFor）：尚未测量" in note
+    assert "整图生成（PROBE）：已测量" in note
     assert "Not applicable" in note
     # Once TruFor has measured, the hint must be gone.
     note = ForensicStateMachine._state_note(
         [], ["probe_dino_expert", "trufor_expert"],
         {"probe_dino_expert": "E-probe", "trufor_expert": "E-trufor"})
-    assert "TruFor 尚未测量" not in note
+    assert "局部编辑（TruFor）：已测量" in note
+    assert "局部编辑（TruFor）：尚未测量" not in note
 
 
 def test_dual_mock_executes_both_experts_and_keeps_maps(tmp_path):
@@ -128,3 +130,146 @@ def test_local_tamper_keeps_regions_separate_from_whole_image(tmp_path):
     assert "joint_overall_mismatch" not in verdict
     assert verdict["suspicious_regions"]
     assert verdict["suspicious_regions"][0]["bbox"] == [120, 80, 420, 360]
+
+
+def test_closing_gap_matches_the_real_single_expert_abstentions():
+    """Real 2026-11-08 traces: the model named an untried expert as its gap."""
+    from pathlib import Path
+
+    from config import PROJECT_ROOT
+    from state_machine.controller import _closing_gap
+
+    batch = Path(PROJECT_ROOT) / "sft_data/g8_acceptance/dual_20261108"
+    records = {
+        record["variant_id"]: record
+        for record in json.loads((batch / "records.json").read_text(encoding="utf-8"))
+    }
+    cases = {
+        # TruFor measured, PROBE never tried.
+        "genimage__BigGAN__051_biggan_00020__q95": (
+            "未调用 PROBE 无法判断整体是否为 AI 生成。", {"trufor_expert": "E-t"}, set()),
+        "genimage__VQDM__VQDM_1000_200_00_055_vqdm_00039__q95": (
+            "由于 PROBE 专家未调用，无法判断整图生成状态。", {"trufor_expert": "E-t"}, set()),
+        "autosplice__58610__authentic__q95": (
+            "PROBE measurement is required ... but it has not been called yet.",
+            {"trufor_expert": "E-t"}, set()),
+        "autosplice__41187__0__q95": (
+            "整图生成性未被 PROBE 评估。", {"trufor_expert": "E-t"}, set()),
+        # TruFor failed; PROBE is still untried and callable.
+        "genimage__Midjourney__144_midjourney_34__q95": (
+            "TruFor 专家因 RuntimeError 未能返回有效测量。PROBE 未被调用。",
+            set(), {"trufor_expert"}),
+    }
+    for variant_id, (report, measured, failed) in cases.items():
+        assert records[variant_id]["report"]
+        gap = _closing_gap(
+            report, {"verdict": "Uncertain"},
+            ["probe_dino_expert", "trufor_expert"], measured, failed)
+        assert gap is not None, variant_id
+        assert gap["cited_experts"] == ["probe_dino_expert"], variant_id
+
+
+def test_closing_gap_does_not_fire_on_a_justified_single_expert_verdict():
+    from state_machine.controller import _closing_gap
+
+    served = ["probe_dino_expert", "trufor_expert"]
+    measured = {"trufor_expert": "E-t"}
+    # A Real/Fake verdict is not an abstention, even if the report mentions PROBE.
+    assert _closing_gap("未调用 PROBE，但 TruFor 已足够。",
+                        {"verdict": "Real"}, served, measured, set()) is None
+    # An Uncertain that explains why the untried tool does not apply is not the
+    # "I did not call it" pattern this check exists for.
+    assert _closing_gap("PROBE 未调用，但该工具不适用于当前局部问题。",
+                        {"verdict": "Uncertain"}, served, measured, set()) is None
+    # No remaining callable expert: nothing to ask the model to reconsider.
+    assert _closing_gap("PROBE 未调用。", {"verdict": "Uncertain"},
+                        served, {"probe_dino_expert": "E-p",
+                                 "trufor_expert": "E-t"}, set()) is None
+
+
+def test_preclose_check_can_lead_to_the_uncalled_expert(tmp_path):
+    from main import build_pipeline
+    from tests.test_controller import ScriptedMLLM
+
+    image = tmp_path / "preclose-call.png"
+    Image.new("RGB", (64, 64), (90, 120, 60)).save(image)
+    fsm = build_pipeline("mock", mode="probe_then_trufor",
+                         tools=["probe", "trufor"])
+    fsm._mllm = ScriptedMLLM([
+        "<planning>\nSuspected Region: none\n</planning>\n<call_trufor>",
+        ('<reasoning>局部有候选，但整图未测。</reasoning>\n<verdict>'
+         '{"verdict": "Uncertain", "whole_image_generation": "Uncertain",'
+         ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
+         ' "confidence": 0.6, "primary_evidence": ["trufor_expert"],'
+         ' "report": "未调用 PROBE，无法判断整图生成性。"}</verdict>'),
+        "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
+        ('<reasoning>两项测量都已返回。</reasoning>\n<verdict>'
+         '{"verdict": "Uncertain", "whole_image_generation": "Uncertain",'
+         ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
+         ' "confidence": 0.6, "primary_evidence": ["probe_dino_expert", "trufor_expert"],'
+         ' "report": "PROBE 和 TruFor 均已测量；证据仍不足，但已无未尝试的适用工具。"}'
+         '</verdict>'),
+    ])
+    fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
+    result = fsm.run(str(image), "Fake")
+    notes = [turn["value"] for turn in result["conversation"]
+             if turn["from"] == "user"]
+    assert any("你的结案以" in note for note in notes)
+    feedback = next(note for note in notes if "你的结案以" in note)
+    assert "补测" in feedback and "最终结论仍由你决定" in feedback
+    assert result["expert_call_count"] == 2
+    assert result["final_verdict"]["verdict"] == "Uncertain"
+    metadata = json.loads(
+        open(result["sft_data_path"], encoding="utf-8").read())["metadata"]
+    assert metadata["preclose_checks"][0]["after_check"] == "called"
+    assert metadata["untried_experts"] == []
+    assert metadata["abstention_cited_untried_expert"] == []
+
+
+def test_preclose_check_keeps_the_models_verdict_when_it_does_not_call(tmp_path):
+    from main import build_pipeline
+    from tests.test_controller import ScriptedMLLM
+
+    image = tmp_path / "preclose-keep.png"
+    Image.new("RGB", (64, 64), (90, 120, 60)).save(image)
+    fsm = build_pipeline("mock", mode="probe_then_trufor",
+                         tools=["probe", "trufor"])
+    abstain = ('<reasoning>仍缺少 PROBE。</reasoning>\n<verdict>'
+               '{"verdict": "Uncertain", "whole_image_generation": "Uncertain",'
+               ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
+               ' "confidence": 0.6, "primary_evidence": ["trufor_expert"],'
+               ' "report": "未调用 PROBE，无法判断整图生成性。"}</verdict>')
+    fsm._mllm = ScriptedMLLM([
+        "<planning>\nSuspected Region: none\n</planning>\n<call_trufor>",
+        abstain,
+        abstain,
+    ])
+    fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
+    result = fsm.run(str(image), "Fake")
+    notes = [turn["value"] for turn in result["conversation"]
+             if turn["from"] == "user"]
+    assert sum("你的结案以" in note for note in notes) == 1
+    assert result["final_verdict"]["verdict"] == "Uncertain"
+    metadata = json.loads(
+        open(result["sft_data_path"], encoding="utf-8").read())["metadata"]
+    assert metadata["preclose_checks"][0]["after_check"] == \
+        "concluded_without_new_measurement"
+    assert metadata["abstention_cited_untried_expert"] == ["probe_dino_expert"]
+
+
+def test_state_note_separates_failed_from_never_tried():
+    failed = {
+        "source": "trufor_expert",
+        "evidence_id": "E-failed-trufor_expert",
+        "evidence_name": "manipulation_anomaly_score",
+        "status": "failed",
+        "reason": "RuntimeError: no npz",
+        "measurement_scope": "global",
+        "model_delivered": "slim",
+    }
+    note = ForensicStateMachine._state_note(
+        [failed], ["probe_dino_expert", "trufor_expert"], {})
+    assert "整图生成（PROBE）：尚未测量" in note
+    assert "局部编辑（TruFor）：执行失败" in note
+    assert "尚可调用（尚未尝试）：probe_dino_expert" in note
+    assert "已尝试但失败：trufor_expert" in note

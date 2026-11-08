@@ -102,6 +102,7 @@ def main():
         elapsed = round(time.perf_counter() - t0, 2)
         trace_path = Path(result["sft_data_path"])
         trace = json.load(open(trace_path, encoding="utf-8")) if trace_path.exists() else {}
+        trace_meta = trace.get("metadata") or {}
         verdict = result.get("final_verdict") or {}
         record = {
             "trajectory_id": result["session_id"],
@@ -133,6 +134,14 @@ def main():
                 "skipped_duplicate_calls": result.get("skipped_duplicate_calls"),
                 "suppressed_duplicate_count": result.get("suppressed_duplicate_count"),
                 "weighted_cost": result.get("weighted_cost"),
+                # Closing-gap audit (2026-11-08 follow-up).  These are read
+                # from the trace metadata because run() returns only the
+                # legacy counters above.
+                "untried_experts": trace_meta.get("untried_experts") or [],
+                "failed_experts": trace_meta.get("failed_experts") or [],
+                "preclose_checks": trace_meta.get("preclose_checks") or [],
+                "abstention_cited_untried_expert":
+                    trace_meta.get("abstention_cited_untried_expert") or [],
             },
             "elapsed_s": elapsed,
             "image_path": sample["path"],

@@ -4,6 +4,11 @@ This is a *descriptive* comparison, not an acceptance verdict.  The heuristics
 are deliberately narrow and their matched sentences are printed beside every
 count so a person can check them.  Box/text mismatch is a candidate list only:
 the overlay images are the authoritative view.
+
+Batches produced after the 2026-11-08 closing-gap change also expose
+`untried_experts`, `failed_experts`, `preclose_checks` and
+`abstention_cited_untried_expert` in trace metadata; older batches report zero
+for those columns because the fields did not exist.
 """
 
 from __future__ import annotations
@@ -141,6 +146,12 @@ def measure(batch: Path):
     local_false_positive = 0
     joint_issues = 0
     local_without_trufor = 0
+    untried_sessions = 0
+    failed_expert_sessions = 0
+    preclose_sessions = 0
+    preclose_total = 0
+    abstention_cited_untried_sessions = 0
+    gap_counters_recorded = False
     call_counts = Counter()
     first_tool = Counter()
     session_rows = []
@@ -220,6 +231,19 @@ def measure(batch: Path):
         joint_issues += bool(issues)
         if any("without a TruFor measurement" in str(item) for item in issues):
             local_without_trufor += 1
+        trace_meta = trace.get("metadata") or {}
+        if "untried_experts" in trace_meta:
+            gap_counters_recorded = True
+        if trace_meta.get("untried_experts"):
+            untried_sessions += 1
+        if trace_meta.get("failed_experts"):
+            failed_expert_sessions += 1
+        checks = trace_meta.get("preclose_checks") or []
+        if checks:
+            preclose_sessions += 1
+            preclose_total += len(checks)
+        if trace_meta.get("abstention_cited_untried_expert"):
+            abstention_cited_untried_sessions += 1
         sources = [str(e.get("source")) for e in trace.get("evidence_chain", [])
                    if e.get("source") and e.get("status") != "failed"]
         call_counts[len(sources)] += 1
@@ -270,14 +294,28 @@ def measure(batch: Path):
         "local_false_positive": local_false_positive,
         "joint_issues": joint_issues,
         "local_without_trufor": local_without_trufor,
+        "untried_sessions": untried_sessions,
+        "failed_expert_sessions": failed_expert_sessions,
+        "preclose_sessions": preclose_sessions,
+        "preclose_total": preclose_total,
+        "abstention_cited_untried_sessions": abstention_cited_untried_sessions,
+        "gap_counters_recorded": gap_counters_recorded,
         "session_rows": session_rows,
     }
 
 
 def _markdown(control, new):
+    gap_keys = {
+        "untried_sessions", "failed_expert_sessions", "preclose_sessions",
+        "preclose_total", "abstention_cited_untried_sessions",
+    }
+
     def row(label, key, extract):
         c = extract(control[key])
         n = extract(new[key])
+        if key in gap_keys:
+            c = c if control.get("gap_counters_recorded") else "未记录"
+            n = n if new.get("gap_counters_recorded") else "未记录"
         if isinstance(c, (int, float)) and isinstance(n, (int, float)):
             delta = f"{n - c:+g}"
         else:
@@ -301,6 +339,11 @@ def _markdown(control, new):
         row("Real/Not-tampered 被误判 Tampered", "local_false_positive", lambda x: x),
         row("joint_verdict_issues 会话", "joint_issues", lambda x: x),
         row("局部结论缺 TruFor 测量", "local_without_trufor", lambda x: x),
+        row("仍有未尝试专家", "untried_sessions", lambda x: x),
+        row("有执行失败专家", "failed_expert_sessions", lambda x: x),
+        row("触发结案前检查的会话", "preclose_sessions", lambda x: x),
+        row("结案前检查次数", "preclose_total", lambda x: x),
+        row("弃权仍引用未尝试专家", "abstention_cited_untried_sessions", lambda x: x),
         row("expert call 数为 2 的会话", "call_counts", lambda x: x.get(2, 0)),
         row("TruFor 先调用的会话", "first_tool", lambda x: x.get("trufor_expert", 0)),
         row("图片误读候选（有图却称未提供/看不到）", "image_missing", len),
@@ -383,6 +426,11 @@ def main():
         "generic_uncertain": [len(control["generic_uncertain"]), len(new["generic_uncertain"])],
         "box_candidates": [len(control["box_text_candidates"]), len(new["box_text_candidates"])],
         "confidence_095": [control["confidence"]["n_095"], new["confidence"]["n_095"]],
+        "untried_sessions": [control["untried_sessions"], new["untried_sessions"]],
+        "preclose_sessions": [control["preclose_sessions"], new["preclose_sessions"]],
+        "abstention_cited_untried_sessions": [
+            control["abstention_cited_untried_sessions"],
+            new["abstention_cited_untried_sessions"]],
         "out": str(out),
     }, ensure_ascii=False, indent=2))
     return 0

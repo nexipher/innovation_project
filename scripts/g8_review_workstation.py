@@ -654,6 +654,14 @@ def session_page(sample: dict, page_dir: str, index_name: str,
          "也不是专家分数；专家原始分数见下方证据表"),
         ("停止原因（控制端）", f'{record.get("halting_reason")}｜policy_reasons='
                               f'{record.get("policy_reasons")}'),
+        # Closing-gap audit: distinguishes "never tried" from "tried and
+        # failed", and shows whether the adopted abstention still cites an
+        # untried expert.  Records only; the label remains the model's.
+        ("未尝试的专家", counters.get("untried_experts") or "未记录"),
+        ("执行失败的专家", counters.get("failed_experts")
+         or metadata.get("failed_tool_calls") or "无"),
+        ("结案前检查", counters.get("preclose_checks") or "未触发/未记录"),
+        ("弃权引用未尝试专家", counters.get("abstention_cited_untried_expert") or "无"),
         ("整图生成判断", record.get("whole_image_generation") or "未记录"),
         ("局部篡改判断", record.get("local_manipulation") or "未记录"),
         ("可疑区域", _format_regions(record.get("suspicious_regions"))),

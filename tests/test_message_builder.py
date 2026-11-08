@@ -249,9 +249,11 @@ class TestThePromptContractAfterB1:
         flat = self._flat(FORENSIC_SYSTEM_PROMPT)
         assert "2+ evidence tokens" not in flat
         assert "You decide when the evidence is sufficient to conclude" in flat
-        assert "not a count of tokens" in flat
-        # 弃权原则保留，且不再绑定在"证据条数"上
+        assert "budget" in flat
+        assert "single-expert conclusion" in flat
+        # 弃权原则保留，但只在完成可行调查之后
         assert "an honest Uncertain is preferred over a confident mistake" in flat
+        assert "Do not write \"I did not call X\"" in flat
 
 
 class TestToolPolicies:
@@ -311,7 +313,7 @@ class TestToolPolicies:
         model-visible local evidence (while keeping them non-calibrated); the
         2026-11-08 revision added PROBE class semantics, five raw-score bands,
         explicit Uncertain conditions and final-verdict confidence wording.
-        The default prompt is now 5ccac6727c9c216f.  Anything that moves it again
+        The default prompt is now 6e3b8b8273e3034c.  Anything that moves it again
         has to say so in a commit.
         """
         import hashlib
@@ -321,7 +323,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "5ccac6727c9c216f"
+            "6e3b8b8273e3034c"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER
