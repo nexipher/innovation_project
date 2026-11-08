@@ -981,3 +981,16 @@
 * **涉及/修改的文件清单**：`mllm/message_builder.py`、`state_machine/controller.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/compare_dual_acceptance.py`、`tests/test_dual_expert_loop.py`、`tests/test_message_builder.py`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
 * **执行结果与验证状态**：默认提示词哈希 `6e3b8b8273e3034c`，联合模式 `f1b2309a9dbd7dfa`；`core` **775 passed, 1 skipped, 845 deselected**；真实报告回归 5 例（BigGAN/VQDM/58610/41187_0/Midjourney）全部命中，正当单专家结案不触发，反馈后补测/仍结案两条路径均有测试。
 * **置信度或遗留待办（TODO）**：①`dual_20261108` 是旧提示词产物，不能用于判断本轮效果；需用同一 24 输入重跑新批次后再比较；②AI 生成图局部 Tampered、全图 bbox、planning 内重复 call 标签、TruFor 1024 显存失败仍未解决；③验收通过前不训练、不扩新源图。
+
+### 2026-11-08 - 阶段四 4.55：结案前检查复验批次
+
+* **当前操作动作**：GPU 开启后，用与 `dual_20261107` 相同的 24 个 manifest 输入运行结案前检查版本，写入 `sft_data/g8_acceptance/dual_20261108_closing/`，并与 `dual_20261108`（旧规则）及原始控制批次分别比较。
+* **对应计划锚点**：`plan.md` §12.10；`KNOWN_ISSUES.md` A10/A11。
+* **批次信息**：24/24 完成；Qwen3-VL-8B-Instruct / greedy / `probe+trufor`；联合模式 prompt digest `f1b2309a9dbd7dfa`；wall **847.1 s**；状态 pending human review；产物含 records/traces/index/review_overlays/SUMMARY/REVIEW_GUIDE、`comparison_vs_dual_20261108/`、`comparison_vs_control/`。
+* **自动结果（相对 `dual_20261108`）**：整图正确 11→16、局部正确 7→12、两维 3→7、call2 9→18、总体 Uncertain 10→1；confidence=0.95 10→18、局部误报 3→5、`joint_verdict_issues` 0→1；仍有 5 条只调一个专家；结案前检查触发 3 次（ADM/SD15/72399_2），3/3 在反馈后补测；`abstention_cited_untried_expert=0`。
+* **原始五个停结案例**：BigGAN `Uncertain/Uncertain 0.6 → AI-generated/Uncertain 0.95`（只调 PROBE）；VQDM `Uncertain/Uncertain 0.3 → AI-generated/Not tampered 0.95`（TruFor→PROBE）；58610 `Uncertain/Uncertain 0.5 → Real/Tampered 0.95`（TruFor→PROBE）；Midjourney `Uncertain/Uncertain 0.8 → AI-generated/Uncertain 0.95`（TruFor 失败→PROBE）；41187_0 `Uncertain/Tampered 0.7 → Real/Tampered 0.95`（TruFor→PROBE）。精确的“未调用 PROBE 所以 Uncertain”模式消失。
+* **复验暴露的新问题**：①confidence 机械回升（18 条 0.95，13 条至少一维错误）；②局部误报 3→5（`51136`/`53059`/`58610` 把真实图高 TruFor 响应当篡改，`ADM`/`SD14` 仍把 AI 生成图判局部 Tampered）；③5 条仍有未尝试专家但给出确定结论（`339e8fae`/`35b3b70e`/`42165`/`BigGAN`/`39890_0`），其中 `35b3b70e` 无 TruFor 测量却写 local `Not tampered`；④`58610`/`SD14`/`57501` 仍写“相互支持”，`39890_0` 用 TruFor 局部证据推出整图 AI-generated；⑤全图 bbox 3 条，`ADM` bbox 在左上而文字说“下方”。
+* **结论/决策**：结案前检查解决了“明确以未调用专家为由 Uncertain”的直接症状，但没有解决“单专家直接定论”和“confidence 过高”；本批不作为验收通过，不扩新源图、不训练。下一轮先人工审阅，再针对单专家定论、confidence 校准、TruFor 假阳性和跨任务措辞做一次修订。
+* **涉及/修改的文件清单**：`sft_data/g8_acceptance/dual_20261108_closing/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
+* **执行结果与验证状态**：24/24 完成，wall 847.1 s；自动比较已生成；未训练、未扩样、未使用 test。
+* **置信度或遗留待办（TODO）**：①人工审阅 24 条；②下一轮修单专家定论/高 confidence/局部误报/跨任务措辞；③TruFor 1024 显存失败仍在；④验收通过前不训练、不扩新源图。

@@ -21,7 +21,8 @@
 > 自动统计与人工复核见其 `comparison/comparison.md` 与 `plan.md` §12.8。新批次暴露的
 > 单专家停结、AI 生成图被判局部 Tampered、全图 bbox、planning 内重复 call 标签等
 > 行为问题记为 A10；单专家停结已按 plan §12.9 改提示词/状态提示并加一次结案前
-> 补测检查，其余问题待新批次验证。
+> 补测检查。复验批次 `dual_20261108_closing` 显示精确的“未调用专家所以 Uncertain”
+> 模式消失，但 confidence、局部误报、单专家定论和跨任务措辞仍有问题（A11、plan §12.10）。
 
 ## 1. 当前必须解决（与具体专家无关）
 
@@ -36,7 +37,8 @@
 | A5补充（2026-10-14；2026-11-07 修复） | 转换器重建最终verdict，遗漏原始report与primary_evidence | **已修复（2026-11-07）**：`utils/final_v2.py::render_answer` 现在从 adopted closing turn 读取模型原始 JSON，原样保留合法的 `report`、`primary_evidence`、`whole_image_generation`、`local_manipulation`、`suspicious_regions`；缺失字段不补写，非法字段由 `utils/joint_verdict.py` 标记后进入审计/拒收路径。已在真实双专家 trace（`dual_check3_20261107` 及最终 24 会话批次 `dual_20261107`）上对照原始 trace 与最终监督文本，确认 report 与 primary_evidence 逐字保留；新增回归 `tests/test_final_v2.py::test_joint_fields_and_primary_evidence_are_preserved_verbatim`。历史 g7_b2 案例与冻结批次仅留证，不重生成。 |
 | A8 | 证据检查器对专家称谓与阈值的误判 | **已修复（2026-11-08）**：`utils/evidence_ledger.py` 补充“局部篡改检测器/局部篡改检测/局部编辑检测”等中文称谓；TruFor token 记录 `threshold=0.5`，旧控制批次由 ledger 的固定阈值回退兼容。原 `dual_20261107` 的 5 条真实误纠正（0.655/0.382+阈值0.5/0.1989/0.904188/0.94143）已加入回归，5/5 不再触发缺陷；原 trace 不改。 |
 | A9 | 联合字段机械推导 | **已取消（2026-11-08）**：不再从 `whole_image_generation`/`local_manipulation` 推 `overall_from_dimensions`，不再记 `joint_overall_mismatch`；总体 `verdict` 采用 MLLM 综合输出，分项结论与证据保留供审核。原 24 条作为旧规则对照，不重生成。 |
-| A10 | 新批次暴露的调用/结案行为 | **部分修复（2026-11-08 后续；见 plan §12.9）**：①单专家停结：已改提示词规则 1/5 和 `JOINT_GUIDANCE`，状态提示对称显示整图/局部测量状态、把“尚未尝试”与“已尝试失败”分开；失败/重复/不可用提示不再给“直接结案”出口。②新增一次结案前补测检查：仅当模型以“某个仍可调用、未尝试专家未调用”作为 Uncertain 理由且预算允许时触发；只提醒补测或说明，不强制调用、不修改标签；每会话一次。③新增审计计数 `untried_experts`/`failed_experts`/`preclose_checks`/`abstention_cited_untried_expert`，工作台和比较脚本展示。④真实报告回归覆盖 `BigGAN`/`VQDM`/`58610`/`41187_0`/`Midjourney`，并测正当单专家结案不触发、反馈后补测、反馈后仍结案留痕、失败与未尝试分离。**尚未 GPU 重跑**，`dual_20261108` 仍是旧提示词产物；②AI 生成图局部 Tampered（`ADM`/`SD14`）、③全图 bbox、④planning 内重复 `<call_x>`、⑤仍偏高的 confidence 仍待新批次验证/修复。不据此扩新源图、不训练。 |
+| A10 | 新批次暴露的调用/结案行为 | **部分修复（2026-11-08 后续；见 plan §12.9）**：①单专家停结：已改提示词规则 1/5 和 `JOINT_GUIDANCE`，状态提示对称显示整图/局部测量状态、把“尚未尝试”与“已尝试失败”分开；失败/重复/不可用提示不再给“直接结案”出口。②新增一次结案前补测检查：仅当模型以“某个仍可调用、未尝试专家未调用”作为 Uncertain 理由且预算允许时触发；只提醒补测或说明，不强制调用、不修改标签；每会话一次。③新增审计计数 `untried_experts`/`failed_experts`/`preclose_checks`/`abstention_cited_untried_expert`，工作台和比较脚本展示。④真实报告回归覆盖 `BigGAN`/`VQDM`/`58610`/`41187_0`/`Midjourney`，并测正当单专家结案不触发、反馈后补测、反馈后仍结案留痕、失败与未尝试分离。**复验批次 `dual_20261108_closing`（2026-11-08）**：call2 9→18、总体 Uncertain 10→1、结案前检查 3/3 后补测、`abstention_cited_untried_expert=0`，精确的“未调用专家所以 Uncertain”模式消失；但仍有 5 条单专家定论，且 confidence/局部误报/跨任务措辞出现新问题（见 A11）。不据此扩新源图、不训练。 |
+| A11 | 结案前检查复验暴露的新问题 | **未修复（2026-11-08 记录；plan §12.10）**：①confidence 机械回升：0.95 从 10→18，其中 13 条至少一维错误；②局部误报 3→5：`51136`/`53059`/`58610` 把真实图高 TruFor 响应当篡改，`ADM`/`SD14` 仍把 AI 生成图判局部 Tampered；③5 条仍有未尝试专家但给出确定结论（`339e8fae`/`35b3b70e`/`42165`/`BigGAN`/`39890_0`），其中 `35b3b70e` 无 TruFor 测量却写 local `Not tampered`（`joint_verdict_issues=1`）；④`58610`/`SD14`/`57501` 仍写“相互支持”，`39890_0` 用 TruFor 局部证据推出整图 AI-generated；⑤全图 bbox 3 条，`ADM` bbox 在左上而文字说“下方”。下一轮先人工审阅，再处理单专家定论、confidence 校准、TruFor 假阳性与跨任务措辞。 |
 | B2、B3 | 状态摘要、重复请求及防循环 | 已实现、效果待验证；新专家组内做同源对照，分别统计请求/执行/重复；重复轮须明确排除或掩码，不能仅有徽章就声称不训练 |
 | B4 | 单动作协议和格式纠错 | 已实现、真实效果待验证；调用与结案二选一，论述块内标签不执行，纠错指出正确位置；人工核查格式失败与协议违规 |
 | D1 | 审核工作台批次隔离 | 已实现、浏览器验收待完成；用新版或临时批次查进度/导入/导出及指纹，不需要继续审核冻结b2 |

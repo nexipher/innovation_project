@@ -1926,3 +1926,44 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 `f1b2309a9dbd7dfa`；`core` **775 passed, 1 skipped, 845 deselected**。`dual_20261108`
 是旧提示词产物，不能用它判断本轮效果；需用同一 24 输入重跑新批次后再比较。SFT
 继续不启动。
+
+### 12.10 2026-11-08 结案前检查复验批次（dual_20261108_closing）
+
+- **批次**：`sft_data/g8_acceptance/dual_20261108_closing/`；同一 24 输入；
+  Qwen3-VL-8B-Instruct / greedy / `probe+trufor`；联合模式 prompt digest
+  `f1b2309a9dbd7dfa`；wall **847.1 s**；状态 **pending human review**。产物含
+  `comparison_vs_dual_20261108/`、`comparison_vs_control/`、`review_overlays/`、
+  `SUMMARY.md`、`REVIEW_GUIDE.md`。
+- **相对上一批 `dual_20261108`（旧规则）的自动统计**：整图正确 **11→16**、
+  局部正确 **7→12**、两维 **3→7**、call2 **9→18**、总体 Uncertain **10→1**；
+  但 confidence=0.95 **10→18**、局部误报 **3→5**、`joint_verdict_issues` **0→1**；
+  仍有 5 条只调一个专家，3 次结案前检查全部在反馈后补测。
+- **相对原始控制 `dual_20261107`**：整图正确 16→16、局部 6→12、两维 2→7、
+  call2 23→18、总体 Uncertain 4→1、confidence=0.95 17→18、局部误报 2→5。
+- **原始五个停结案例**：
+  - `BigGAN`：Uncertain/Uncertain 0.6 → AI-generated/Uncertain 0.95；只调 PROBE；
+  - `VQDM`：Uncertain/Uncertain 0.3 → AI-generated/Not tampered 0.95；TruFor→PROBE；
+  - `58610`：Uncertain/Uncertain 0.5 → Real/Tampered 0.95；TruFor→PROBE；
+  - `Midjourney`：Uncertain/Uncertain 0.8 → AI-generated/Uncertain 0.95；TruFor 失败后调 PROBE；
+  - `41187_0`：Uncertain/Tampered 0.7 → Real/Tampered 0.95；TruFor→PROBE。
+  精确的“PROBE 未调用所以 Uncertain”模式消失（`abstention_cited_untried_expert=0`），
+  但 BigGAN 仍是单专家定论，局部问题未测。
+- **结案前检查**：只触发 3 次（`ADM`、`SD15`、`72399_2`），3/3 在反馈后补测；
+  未出现“反馈后仍以未尝试专家为由结案”。触发条件没有误伤这 3 条之外的会话。
+- **新暴露/未解决问题**：
+  1. **confidence 又变机械**：18 条 0.95，其中 13 条至少一维错误；报告依据不足以
+     支撑如此高的把握。
+  2. **局部误报 3→5**：`51136`、`53059`、`58610` 把真实图的高 TruFor 响应当篡改；
+     `ADM`/`SD14` 仍把 AI 生成图的局部判 Tampered。
+  3. **单专家定论**：5 条仍有未尝试专家（`339e8fae`、`35b3b70e`、`42165`、
+     `BigGAN`、`39890_0`）；其中 `35b3b70e` 在无 TruFor 测量时写 local
+     `Not tampered`，`joint_verdict_issues=1`。
+  4. **跨任务措辞**：`58610`/`SD14`/`57501` 写“相互支持”；`39890_0` 用 TruFor
+     局部证据推出整图 AI-generated。
+  5. **框**：全图 bbox 仍 3 条（`SD14`、`42005_0`、`42005_2`）；`ADM` 的 bbox
+     在左上而文字说“下方”。
+- **结论/决策**：结案前检查解决了“明确以未调用专家为由 Uncertain”的直接症状，
+  但没有解决“单专家直接定论”和“confidence 过高”；本批**不作为验收通过**，
+  不扩新源图、不训练。下一轮先人工审阅，再针对性处理：单专家定论必须补测或给出
+  充分理由；局部 Tampered/Not tampered 缺 TruFor 时进入缺陷纠正/拒收；TruFor 高
+  响应不等于篡改；confidence 不得机械 0.95。
