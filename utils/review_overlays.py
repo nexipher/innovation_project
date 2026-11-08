@@ -19,8 +19,8 @@ from config import PROJECT_ROOT
 RED = (0, 0, 255)
 
 
-def _pixels(bbox, width: int, height: int):
-    """[ymin,xmin,ymax,xmax] in [0,1000] → pixel [x0,y0,x1,y1]."""
+def bbox_normalized_to_pixels(bbox, width: int, height: int):
+    """[ymin,xmin,ymax,xmax] in normalized [0,1000] → pixel [x0,y0,x1,y1]."""
     ymin, xmin, ymax, xmax = [int(round(float(v))) for v in bbox]
     ymin = max(0, min(1000, ymin))
     xmin = max(0, min(1000, xmin))
@@ -55,7 +55,7 @@ def _draw_regions(image: np.ndarray, regions: Iterable[dict],
         bbox = region.get("bbox")
         if not isinstance(bbox, (list, tuple)) or len(bbox) != 4:
             continue
-        x0, y0, x1, y1 = _pixels(bbox, content_width, content_height)
+        x0, y0, x1, y1 = bbox_normalized_to_pixels(bbox, content_width, content_height)
         x0 += x_offset
         x1 += x_offset
         y0 += y_offset
@@ -111,6 +111,13 @@ def _first_trufor_token(record: dict) -> Optional[dict]:
 def _anomaly_path(token: Optional[dict]) -> Optional[str]:
     if not token:
         return None
+    # Prefer the full anomaly map kept for review.  `visual_artifacts` may now
+    # point at the same-region crop delivered to the model; drawing original-
+    # image coordinates on that crop without its transform would be wrong.
+    layout = token.get("artifact_layout") or {}
+    full = (layout.get("anomaly_map") or {}).get("path")
+    if full:
+        return str(full)
     for path in token.get("visual_artifacts") or []:
         if "anomaly" in os.path.basename(str(path)):
             return str(path)

@@ -35,6 +35,12 @@ from utils.logger import SessionLogger, log_operation
 from state_machine.evidence_rectifier import EvidenceRectifier
 from utils.evidence_ledger import Ledger as EvidenceLedger, correction_note
 from utils.joint_verdict import extract as extract_joint_verdict
+from utils.bbox_review import review_flags as review_region_flags
+from utils.coverage import (
+    actionable as actionable_coverage,
+    coverage_issues,
+    coverage_note,
+)
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 from state_machine.halting_v2 import HaltingPolicyV2
@@ -357,6 +363,13 @@ class ForensicStateMachine:
         untried_experts: List[str] = []
         failed_experts: List[str] = []
         abstention_cited_untried_expert: List[str] = []
+        # One evidence-coverage correction per session, with both sides kept.
+        coverage_check_sent = False
+        coverage_original_output: Optional[str] = None
+        coverage_feedback: Optional[str] = None
+        coverage_original_issues: List[dict] = []
+        coverage_corrected_output: Optional[str] = None
+        coverage_check: Optional[dict] = None
 
         # Outer safety net: the halting budget fires first; the +1 allows the
         # forced-conclusion turn that budget halting triggers.
@@ -646,12 +659,46 @@ class ForensicStateMachine:
                                         **dict(layout[artifact_name]),
                                         "path": rel,
                                     }
-                        if len(artifact_rels) > 1:
-                            evidence_token["visual_artifacts"] = artifact_rels[1:]
                         if artifact_layout:
-                            # Title/legend are outside content_box; review
-                            # overlays use content_box, never canvas pixels.
+                            # Full maps stay in the token for review overlays.
+                            # The model may instead receive the same-region
+                            # trio built below.
                             evidence_token["artifact_layout"] = artifact_layout
+                        # A same-region trio (original / anomaly / confidence)
+                        # makes the three delivered images share one content
+                        # size.  It is rendered from the arrays of this
+                        # measurement; no second TruFor call is made.
+                        model_rels = []
+                        try:
+                            render_region = getattr(
+                                expert, "render_region_artifacts", None)
+                            if callable(render_region):
+                                panels, model_layout = render_region(
+                                    img, abs_bbox,
+                                    transform.get("region_normalized_1000"))
+                                for panel_name, panel_image in panels.items():
+                                    rel = self._save_artifact(
+                                        panel_image, evidence_id,
+                                        f"model_{panel_name}")
+                                    if rel:
+                                        model_rels.append(rel)
+                                        model_layout[panel_name]["path"] = rel
+                                if model_rels and len(model_rels) == len(panels):
+                                    evidence_token["model_image_layout"] = model_layout
+                                    evidence_token["diagnostic_region_image"] = model_rels[0]
+                                    artifact_rels = model_rels
+                                else:
+                                    model_rels = []
+                        except Exception:
+                            model_rels = []
+                        if model_rels:
+                            if len(model_rels) > 1:
+                                evidence_token["visual_artifacts"] = model_rels[1:]
+                            else:
+                                evidence_token.pop("visual_artifacts", None)
+                        elif len(artifact_rels) > 1:
+                            # Fallback for experts without a region renderer.
+                            evidence_token["visual_artifacts"] = artifact_rels[1:]
 
                     # 这次投递给模型的是什么形状（阶段 4.3）：token 自己记住，
                     # 账本、转换与审计都据此判断"模型当时能引用哪些字段"，
@@ -868,6 +915,29 @@ class ForensicStateMachine:
                         conversation.append({"from": "user", "value": note})
                         previous_action = None
                         continue
+                # One evidence-coverage correction.  It fires only when the
+                # model wrote a definite joint dimension without the expert
+                # that measures it (PROBE for the whole image, TruFor for the
+                # local question), or used cross-task mutual-validation
+                # wording.  It never supplies a label; the model re-answers.
+                coverage_now = (
+                    coverage_issues(
+                        candidate_verdict or {}, raw_output, evidence_chain,
+                        list(self._experts))
+                    if HALTING_POLICY == "v3" and accepted else []
+                )
+                if (HALTING_POLICY == "v3" and accepted
+                        and actionable_coverage(coverage_now)
+                        and not coverage_check_sent
+                        and model_turn_count < MAX_MODEL_TURNS):
+                    coverage_check_sent = True
+                    coverage_original_output = raw_output
+                    coverage_original_issues = coverage_now
+                    coverage_feedback = coverage_note(coverage_now)
+                    self._logger.add_system_message(coverage_feedback)
+                    conversation.append({"from": "user", "value": coverage_feedback})
+                    previous_action = None
+                    continue
                 # §4.17 R3/R4: the ledger is the only authority on what was
                 # measured, and **every** conclusion this pipeline adopts goes
                 # through it — the accepted-candidate shortcut used to skip the
@@ -987,6 +1057,50 @@ class ForensicStateMachine:
                                   for token in evidence_chain
                                   if token.get("evidence_id")],
                 )
+                # Review flags only; the model's bbox is preserved verbatim.
+                map_stats = next(
+                    (token.get("map_stats") for token in evidence_chain
+                     if token.get("source") == "trufor_expert"
+                     and token.get("map_stats")),
+                    None,
+                )
+                region_flags = review_region_flags(
+                    joint_fields.get("suspicious_regions") or [],
+                    (h, w), model_candidate.get("report") or "", map_stats)
+                if region_flags:
+                    joint_fields["suspicious_region_review_flags"] = region_flags
+                if HALTING_POLICY == "v3":
+                    final_coverage_issues = coverage_issues(
+                        model_candidate, final_output, evidence_chain,
+                        list(self._experts))
+                    remaining_actionable = actionable_coverage(
+                        final_coverage_issues)
+                    if coverage_check_sent:
+                        coverage_status = (
+                            "pass_after_correction" if not remaining_actionable
+                            else "failed")
+                        coverage_corrected_output = final_output
+                    elif not final_coverage_issues:
+                        coverage_status = "pass"
+                    elif not remaining_actionable:
+                        coverage_status = "pass_with_candidates"
+                    else:
+                        coverage_status = "not_corrected"
+                    coverage_check = {
+                        "status": coverage_status,
+                        "issues": (coverage_original_issues
+                                   if coverage_check_sent
+                                   else final_coverage_issues),
+                        "feedback": coverage_feedback,
+                        "original_output": coverage_original_output,
+                        "corrected_output": coverage_corrected_output,
+                        "remaining_issues": final_coverage_issues,
+                    }
+                    if remaining_actionable:
+                        joint_issues.extend(
+                            f"coverage: {issue.get('code')}: "
+                            f"{issue.get('message')}"
+                            for issue in remaining_actionable)
                 if "trufor_expert" in self._experts and not joint_fields:
                     joint_issues.append(
                         "joint verdict fields missing from the adopted conclusion")
@@ -1026,6 +1140,7 @@ class ForensicStateMachine:
                     "policy_reasons": list(decision.all_reasons),
                     "model_candidate": model_candidate.get("verdict"),
                     "evidence_check": evidence_check,
+                    **({"coverage_check": coverage_check} if coverage_check else {}),
                     # §4.17 R4: check-pass / format-valid / conclusion-faithful
                     # / trainable are four different things.  This block is the
                     # first three; `trainable` is the conversion gate's call.

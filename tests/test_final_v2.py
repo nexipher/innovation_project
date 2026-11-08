@@ -756,3 +756,13 @@ class TestTheObservationSectionKeepsWhatIsKnown:
         path = tmp_path / "trace.json"
         path.write_text(json.dumps(trace), encoding="utf-8")
         assert "眼睛周围纹理不一致" in extract_observation({"trace_path": str(path)})
+
+
+def test_a_failed_coverage_check_blocks_the_sample():
+    sample = _sample()
+    sample["final_verdict"]["coverage_check"] = {"status": "failed"}
+    sample["final_verdict"]["joint_verdict_issues"] = [
+        "coverage: local_manipulation_without_trufor: local Not tampered"]
+    problems = _validate(sample)
+    assert any("coverage: failed" in problem for problem in problems)
+    assert any("joint: coverage:" in problem for problem in problems)

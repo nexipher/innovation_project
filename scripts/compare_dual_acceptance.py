@@ -152,6 +152,10 @@ def measure(batch: Path):
     preclose_total = 0
     abstention_cited_untried_sessions = 0
     gap_counters_recorded = False
+    region_flag_sessions = 0
+    coverage_correction_sessions = 0
+    coverage_failed_sessions = 0
+    coverage_fields_recorded = False
     call_counts = Counter()
     first_tool = Counter()
     session_rows = []
@@ -244,6 +248,16 @@ def measure(batch: Path):
             preclose_total += len(checks)
         if trace_meta.get("abstention_cited_untried_expert"):
             abstention_cited_untried_sessions += 1
+        if ("coverage_check" in record
+                or "suspicious_region_review_flags" in record):
+            coverage_fields_recorded = True
+        if record.get("suspicious_region_review_flags"):
+            region_flag_sessions += 1
+        coverage = record.get("coverage_check") or {}
+        if coverage.get("status") == "pass_after_correction":
+            coverage_correction_sessions += 1
+        if coverage.get("status") in ("failed", "not_corrected"):
+            coverage_failed_sessions += 1
         sources = [str(e.get("source")) for e in trace.get("evidence_chain", [])
                    if e.get("source") and e.get("status") != "failed"]
         call_counts[len(sources)] += 1
@@ -300,6 +314,10 @@ def measure(batch: Path):
         "preclose_total": preclose_total,
         "abstention_cited_untried_sessions": abstention_cited_untried_sessions,
         "gap_counters_recorded": gap_counters_recorded,
+        "region_flag_sessions": region_flag_sessions,
+        "coverage_correction_sessions": coverage_correction_sessions,
+        "coverage_failed_sessions": coverage_failed_sessions,
+        "coverage_fields_recorded": coverage_fields_recorded,
         "session_rows": session_rows,
     }
 
@@ -309,6 +327,10 @@ def _markdown(control, new):
         "untried_sessions", "failed_expert_sessions", "preclose_sessions",
         "preclose_total", "abstention_cited_untried_sessions",
     }
+    review_keys = {
+        "region_flag_sessions", "coverage_correction_sessions",
+        "coverage_failed_sessions",
+    }
 
     def row(label, key, extract):
         c = extract(control[key])
@@ -316,6 +338,9 @@ def _markdown(control, new):
         if key in gap_keys:
             c = c if control.get("gap_counters_recorded") else "未记录"
             n = n if new.get("gap_counters_recorded") else "未记录"
+        if key in review_keys:
+            c = c if control.get("coverage_fields_recorded") else "未记录"
+            n = n if new.get("coverage_fields_recorded") else "未记录"
         if isinstance(c, (int, float)) and isinstance(n, (int, float)):
             delta = f"{n - c:+g}"
         else:
@@ -344,6 +369,9 @@ def _markdown(control, new):
         row("触发结案前检查的会话", "preclose_sessions", lambda x: x),
         row("结案前检查次数", "preclose_total", lambda x: x),
         row("弃权仍引用未尝试专家", "abstention_cited_untried_sessions", lambda x: x),
+        row("有框核验标记的会话", "region_flag_sessions", lambda x: x),
+        row("覆盖检查后重答的会话", "coverage_correction_sessions", lambda x: x),
+        row("覆盖检查失败/未纠正的会话", "coverage_failed_sessions", lambda x: x),
         row("expert call 数为 2 的会话", "call_counts", lambda x: x.get(2, 0)),
         row("TruFor 先调用的会话", "first_tool", lambda x: x.get("trufor_expert", 0)),
         row("图片误读候选（有图却称未提供/看不到）", "image_missing", len),
@@ -431,6 +459,10 @@ def main():
         "abstention_cited_untried_sessions": [
             control["abstention_cited_untried_sessions"],
             new["abstention_cited_untried_sessions"]],
+        "region_flag_sessions": [control["region_flag_sessions"],
+                                 new["region_flag_sessions"]],
+        "coverage_correction_sessions": [control["coverage_correction_sessions"],
+                                         new["coverage_correction_sessions"]],
         "out": str(out),
     }, ensure_ascii=False, indent=2))
     return 0

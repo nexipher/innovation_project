@@ -494,3 +494,16 @@ class TestTruForCommand:
         weights.write_bytes(b"w")
         reason = TruForExpert(weights_path=str(weights)).unavailable_reason()
         assert "TruFor_train_test/test.py" in reason
+
+
+def test_trufor_summary_records_peak_in_normalized_coordinates():
+    from experts.trufor import TruForExpert
+    anomaly = np.zeros((10, 20), dtype=np.float32)
+    anomaly[7, 3] = 1.0
+    stats = TruForExpert.summarise({
+        "score": np.array(0.4),
+        "map": anomaly,
+        "conf": np.ones((10, 20), dtype=np.float32),
+    })
+    assert stats["anomaly_peak_normalized_1000"] == [
+        round(7 / 9 * 1000), round(3 / 19 * 1000)]

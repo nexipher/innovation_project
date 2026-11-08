@@ -1967,3 +1967,60 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   不扩新源图、不训练。下一轮先人工审阅，再针对性处理：单专家定论必须补测或给出
   充分理由；局部 Tampered/Not tampered 缺 TruFor 时进入缺陷纠正/拒收；TruFor 高
   响应不等于篡改；confidence 不得机械 0.95。
+
+### 12.11 2026-11-08 三图同位置对照、坐标核验与证据覆盖检查
+
+**顺序**：先统一坐标/图像布局，再做三图同位置展示，最后补充分项证据覆盖检查。
+
+1. **统一坐标与布局**：
+   - `TruForExpert.render_region_artifacts()` 用同一次 `analyze()` 保存的 `map`/`conf`
+     生成三张同内容区域、同内容尺寸的面板：原图裁剪、异常图裁剪、可靠性图裁剪；
+     标题/图例/色条在内容区外。map/conf 若与源图尺寸不同，先 resize 到源图再裁剪，
+     并把 `region_pixels`、`region_normalized_1000`、`source_size`、`map_size`、
+     `crop_size`、`scale_map_to_source` 写入 `model_image_layout`。bbox 边缘按源图宽高归一化，
+     像素中心（异常峰值）才用宽高-1；全图归一化必须正好是 [0,0,1000,1000]。不重复运行 TruFor。
+   - 控制器把三张裁剪图作为模型投递图；完整 map/conf 仍保存在 `artifact_layout`
+     供审核叠加图使用。`utils/review_overlays.py` 的异常图叠加优先使用完整 map，
+     避免把原图归一化框画到裁剪图上。
+   - 模型可见 `map_coordinates` 只保留 `space`、`bbox_format`、`bbox_units=
+     normalized_0_1000` 和“像素尺寸不是 bbox”的说明；删除 `image_size` 像素值。
+     TruFor 的 `reading`/图片 footer 不再写 `imgsize`/像素裁剪尺寸，避免
+     `41187` 的 `[0,0,341,256]` 式照抄。
+   - `model_visible.artifact_layout` 只给标题/颜色/归一化 inspection region；
+     不暴露 pixel content_box/canvas size。图片 footer 只写“same original-image
+     crop；三图同尺寸”，不写像素数。
+2. **三图同位置呈现/提示词**：
+   - 提示词要求按同一区域分别说明（a）原图里是什么、（b）异常响应如何、
+     （c）可靠性如何、（d）组合对结论的贡献；禁止把可靠性图背景红色套到物体上；
+     禁止从异常图断言具体编辑过程（如“后期添加文字”）。
+   - `JOINT_GUIDANCE`、`PROMPT_TAIL_BASE` 规则 6、`JOINT_RULE_10` 同步更新；
+     最终预测框叠加图仍是回答后的审核产物，不进入模型当前轮。
+3. **坐标核验**：
+   - 新增 `utils/bbox_review.py::review_flags`：只标记、不改写模型框。标记
+     `global_range`、`pixel_dimension_bbox`（bbox 恰好等于原图宽高）、
+     `anomaly_peak_outside_bbox`（用 `map_stats.anomaly_peak_normalized_1000`）、
+     `location_text_mismatch`（如 ADM “下方”却框在左上）。
+   - 控制器把标记写入 `suspicious_region_review_flags`；runner/工作台展示；
+     原始 bbox/reason 原样保留，供 overlay 人工核对。
+4. **分项证据覆盖**：
+   - 新增 `utils/coverage.py`：确定 `whole_image_generation` 必须有 PROBE 测量；
+     确定 `local_manipulation` 必须有 TruFor 测量；`Uncertain` 各维始终合法，
+     因此“TruFor 局部证据支持总体 Fake + whole Uncertain”仍可结案。
+   - 跨任务“相互支持/相互验证”措辞（排除否定句）记为 wording issue；
+     “后期添加/合成/抠图”等具体编辑过程记为 actionable wording（否定句除外）。
+   - 控制器在结案前做一次覆盖纠正：只对 actionable issues 触发，要求模型补测或
+     修正分项/措辞；不执行调用、不改标签。`coverage_check` 保存 status、原有
+     issues、反馈、原回答、重答、remaining issues；重答后仍失败则写入
+     `joint_verdict_issues`，`final_v2.validate_sample` 拒绝该类样本。
+5. **真实冒烟（2 会话）**：真实 TruFor 三面板 content_box 一致，`model_image_layout`
+   记录 `[0,0,1000,1000]`、源图/地图/裁剪尺寸和缩放；`map_stats` 含归一化异常峰值；
+   模型可见 reading 无 `imgsize`，每轮投送 3 张同区域面板。冒烟中发现并修复：
+   ①全图 bbox 归一化误用 size-1，曾得 `[0,0,1003,1002]`；②`stats` 嵌套使
+   `map_stats` 为空；③“两者结果一致，但不构成相互验证”被误判为相互验证，
+   已改为按短句上下文识别否定。
+6. **验证**：新增 `tests/test_bbox_review.py`、`tests/test_coverage.py`、
+   三图 transform/覆盖纠正测试；真实 `dual_20261108_closing` 的
+   `35b3b70e`（无 TruFor 却 Not tampered）和 `39890_0`（无 PROBE 却 AI-generated）
+   作为覆盖回归。默认提示词哈希 `4b64825d4c3c4599`，联合模式 `6c2b7586da5b7629`；
+   `core` **793 passed, 1 skipped, 846 deselected**。
+   `dual_20261108_closing` 是这些改动前的批次，需再跑同一 24 输入验证。

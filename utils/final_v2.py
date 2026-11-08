@@ -695,9 +695,23 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         "posterior": (sample.get("final_verdict") or {}).get("posterior"),
         "confidence": (sample.get("final_verdict") or {}).get("confidence"),
         "final_verdict": (sample.get("final_verdict") or {}).get("verdict"),
+        "coverage_check": (sample.get("final_verdict") or {}).get("coverage_check"),
+        "joint_verdict_issues": (sample.get("final_verdict") or {}).get(
+            "joint_verdict_issues") or [],
         "resolution": (metadata.get("source_resolution")
                        or [(sample.get("evidence_chain") or [{}])[0].get("image_height")]),
     }
+
+    # 1a. unsupported joint dimensions are a training gate, not a style note.
+    coverage = record.get("coverage_check") or {}
+    if coverage.get("status") in ("failed", "not_corrected"):
+        problems.append(
+            f"coverage: {coverage.get('status')} — an unsupported definite "
+            "joint dimension survived the correction")
+    for issue in record.get("joint_verdict_issues") or []:
+        text = str(issue)
+        if text.startswith("coverage:") or "without a TruFor measurement" in text:
+            problems.append(f"joint: {text}")
 
     # 1. source/partition leakage
     if split is not None:

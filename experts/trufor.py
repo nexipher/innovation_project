@@ -415,9 +415,19 @@ class TruForExpert(ExternalScoreExpert):
         if anomaly is not None:
             anomaly = np.asarray(anomaly, dtype=np.float64)
             high = anomaly >= HIGH_RESPONSE_THRESHOLD
+            peak_y, peak_x = np.unravel_index(int(np.argmax(anomaly)), anomaly.shape)
+            height, width = anomaly.shape[:2]
             stats.update({
                 "anomaly_peak": float(anomaly.max()),
                 "anomaly_mean": float(anomaly.mean()),
+                # The peak in the same normalized system as the model's bboxes.
+                # Review uses it to flag a predicted box that does not contain
+                # the response the report describes; it is not shown to the
+                # model as a location to copy.
+                "anomaly_peak_normalized_1000": [
+                    int(round(peak_y / max(1, height - 1) * 1000)),
+                    int(round(peak_x / max(1, width - 1) * 1000)),
+                ],
                 "high_response_fraction": float(high.mean()),
                 "anomaly_entropy": _entropy(anomaly),
             })
@@ -445,13 +455,16 @@ class TruForExpert(ExternalScoreExpert):
                  "high_response_threshold": HIGH_RESPONSE_THRESHOLD,
                  "has_noiseprint": "np++" in arrays,
                  "stats": stats}
+        for key, label in (("map", "map_size"), ("conf", "confidence_map_size")):
+            array = arrays.get(key)
+            if array is not None:
+                extra[label] = [int(array.shape[0]), int(array.shape[1])]
         preprocess = "原图直接前向（TruFor 自行缩放），输出 map/conf/score"
         if size is not None:
             height, width = (int(v) for v in np.asarray(size).reshape(-1)[:2])
-            preprocess += f"，imgsize={(height, width)}"
-            # The map/conf arrays are aligned to this size.  Carrying it in the
-            # token lets the model reason about original-image coordinates
-            # without parsing the prose in `preprocess`.
+            # Audit-only.  The concrete pixel size is deliberately not placed
+            # in the model-visible prose: models copied it into the normalized
+            # bbox field ([0,0,341,256]).
             extra["image_size"] = [height, width]
         return self._result(
             score, preprocess=preprocess,
@@ -460,13 +473,19 @@ class TruForExpert(ExternalScoreExpert):
 
     @staticmethod
     def _compose_artifact(content: np.ndarray, title: str,
-                          high_label: str, low_label: str):
+                          high_label: str, low_label: str, *,
+                          colour_bar: bool = True,
+                          footer: Optional[str] = None):
         """
         Put title and a fixed JET colour bar OUTSIDE the image content.
 
         The returned content box is ``[x0, y0, x1, y1]`` with exclusive
         ``x1``/``y1``.  Review overlays must map original-image coordinates
         into this box only; the title and legend are not image pixels.
+
+        The right margin is the same whether or not a colour bar is drawn, so
+        the original and the two maps can share one canvas size as well as one
+        content size.
         """
         import cv2
 
@@ -490,24 +509,170 @@ class TruForExpert(ExternalScoreExpert):
         bar_x = width + 28
         bar_y = top + 20
         bar_w, bar_h = 28, max(40, height - 40)
-        for row in range(bar_h):
-            # JET: index 0 is blue (low), 255 is red (high).  Rows run
-            # top=high to bottom=low.
-            frac = 1.0 - row / max(1, bar_h - 1)
-            colour = cv2.applyColorMap(
-                np.array([[int(round(255 * frac))]], dtype=np.uint8),
-                cv2.COLORMAP_JET)[0, 0]
-            canvas[bar_y + row, bar_x:bar_x + bar_w] = colour
-        cv2.rectangle(canvas, (bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h),
-                      (70, 70, 70), 1)
-        cv2.putText(canvas, high_label, (bar_x + bar_w + 10, bar_y + 14),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (25, 25, 25), 1, cv2.LINE_AA)
-        cv2.putText(canvas, low_label, (bar_x + bar_w + 10, bar_y + bar_h),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (25, 25, 25), 1, cv2.LINE_AA)
-        cv2.putText(canvas, "title and colour bar are outside the content area",
-                    (10, top + height + 28), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.43, (90, 90, 90), 1, cv2.LINE_AA)
+        if colour_bar:
+            for row in range(bar_h):
+                # JET: index 0 is blue (low), 255 is red (high).  Rows run
+                # top=high to bottom=low.
+                frac = 1.0 - row / max(1, bar_h - 1)
+                colour = cv2.applyColorMap(
+                    np.array([[int(round(255 * frac))]], dtype=np.uint8),
+                    cv2.COLORMAP_JET)[0, 0]
+                canvas[bar_y + row, bar_x:bar_x + bar_w] = colour
+            cv2.rectangle(canvas, (bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h),
+                          (70, 70, 70), 1)
+            cv2.putText(canvas, high_label, (bar_x + bar_w + 10, bar_y + 14),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (25, 25, 25), 1, cv2.LINE_AA)
+            cv2.putText(canvas, low_label, (bar_x + bar_w + 10, bar_y + bar_h),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (25, 25, 25), 1, cv2.LINE_AA)
+        else:
+            # No colour bar on the original panel: the same right margin keeps
+            # the three canvases the same size while the labels say plainly
+            # that this panel is the reference image, not a response map.
+            cv2.putText(canvas, high_label, (bar_x, top + 24),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (25, 25, 25), 1, cv2.LINE_AA)
+            cv2.putText(canvas, low_label, (bar_x, top + 52),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (90, 90, 90), 1, cv2.LINE_AA)
+        footer_text = footer or "title and colour bar are outside the content area"
+        footer_scale = 0.43
+        (footer_w, _), _ = cv2.getTextSize(footer_text, cv2.FONT_HERSHEY_SIMPLEX,
+                                          footer_scale, 1)
+        max_footer_w = canvas.shape[1] - 20
+        if footer_w > max_footer_w:
+            footer_scale *= max_footer_w / float(footer_w)
+        cv2.putText(canvas, footer_text, (10, top + height + 28),
+                    cv2.FONT_HERSHEY_SIMPLEX, footer_scale, (90, 90, 90), 1,
+                    cv2.LINE_AA)
         return canvas, [0, top, width, top + height], [canvas.shape[1], canvas.shape[0]]
+
+    def render_region_artifacts(self, img_bgr: np.ndarray,
+                                region_pixels: List[int],
+                                region_normalized: Optional[List[int]] = None):
+        """
+        Render one same-content trio from the *last* measurement.
+
+        Original crop, anomaly crop and confidence crop all show the same
+        original-image region, at the same pixel size, with a title and legend
+        outside the content.  Maps are resized to the original image frame
+        before cropping if TruFor returned a different map size.  No model
+        call is made here: this is a view of `self._last`.
+
+        Returns ``(artifacts, layout)``.  ``layout`` records the region in
+        both coordinate systems and the map→source scale, so a reviewer can
+        audit the transform instead of inferring it from the canvas.
+        """
+        if not self._last:
+            return {}, {}
+        import cv2
+
+        source_h, source_w = img_bgr.shape[:2]
+        try:
+            ymin, xmin, ymax, xmax = [int(round(float(v)))
+                                      for v in region_pixels]
+        except (TypeError, ValueError):
+            ymin, xmin, ymax, xmax = 0, 0, source_w, source_h
+        ymin = max(0, min(source_h - 1, ymin))
+        xmin = max(0, min(source_w - 1, xmin))
+        ymax = max(ymin + 1, min(source_h, ymax))
+        xmax = max(xmin + 1, min(source_w, xmax))
+        if ymax <= ymin or xmax <= xmin:
+            ymin, xmin, ymax, xmax = 0, 0, source_h, source_w
+        full = (ymin, xmin, ymax, xmax) == (0, 0, source_h, source_w)
+        if region_normalized is None:
+            # Bbox edges divide by the image size; only a pixel *centre*
+            # (the anomaly peak) uses size-1.  Using size-1 here made a full
+            # 333x500 frame read as [0,0,1003,1002].
+            region_normalized = [
+                int(round(ymin / max(1, source_h) * 1000)),
+                int(round(xmin / max(1, source_w) * 1000)),
+                int(round(ymax / max(1, source_h) * 1000)),
+                int(round(xmax / max(1, source_w) * 1000)),
+            ]
+        else:
+            region_normalized = [
+                max(0, min(1000, int(v))) for v in region_normalized]
+
+        map_array = self._last.get("map")
+        conf_array = self._last.get("conf")
+        map_size = ([int(map_array.shape[0]), int(map_array.shape[1])]
+                    if map_array is not None else None)
+
+        def _resize_to_source(array):
+            if array is None:
+                return None
+            array = np.asarray(array, dtype=np.float64)
+            if array.shape[:2] == (source_h, source_w):
+                return array
+            return cv2.resize(array, (source_w, source_h),
+                              interpolation=cv2.INTER_LINEAR)
+
+        map_array = _resize_to_source(map_array)
+        conf_array = _resize_to_source(conf_array)
+        original_crop = img_bgr[ymin:ymax, xmin:xmax].copy()
+        anomaly_crop = (map_array[ymin:ymax, xmin:xmax]
+                        if map_array is not None else None)
+        conf_crop = (conf_array[ymin:ymax, xmin:xmax]
+                     if conf_array is not None else None)
+        crop_h, crop_w = original_crop.shape[:2]
+        if full:
+            area_label = "full original-image frame"
+            title_suffix = "full frame"
+            footer = ("full original-image frame; all three panels share the "
+                      "same content size")
+        else:
+            # Pixel bounds stay in the audit layout, not in the picture text:
+            # a footer with [w,h] is another value the model can copy into a
+            # normalized bbox.  The panels already show the same crop.
+            area_label = "same original-image crop"
+            title_suffix = "same region"
+            footer = ("same original-image crop; all three panels share the "
+                      "same content size")
+
+        artifacts: Dict[str, np.ndarray] = {}
+        layout: Dict[str, dict] = {}
+        panels = (
+            ("original_crop", original_crop,
+             f"Original image — {title_suffix}", "ORIGINAL", "SAME CROP",
+             False),
+        )
+        if anomaly_crop is not None:
+            panels += (("anomaly_map",
+                        cv2.applyColorMap(
+                            np.clip(anomaly_crop * 255.0, 0, 255).astype(np.uint8),
+                            cv2.COLORMAP_JET),
+                        f"TruFor anomaly map — {title_suffix}",
+                        "HIGH response (red)", "LOW response (blue)", True),)
+        if conf_crop is not None:
+            panels += (("confidence_map",
+                        cv2.applyColorMap(
+                            np.clip(conf_crop * 255.0, 0, 255).astype(np.uint8),
+                            cv2.COLORMAP_JET),
+                        f"TruFor confidence map — {title_suffix}",
+                        "HIGH reliability (red)", "LOW reliability (blue)", True),)
+        for name, content, title, high_label, low_label, colour_bar in panels:
+            canvas, content_box, canvas_size = self._compose_artifact(
+                content, title, high_label, low_label,
+                colour_bar=colour_bar, footer=footer)
+            artifacts[name] = canvas
+            layout[name] = {
+                "title": title,
+                "content_box": content_box,
+                "canvas_size": canvas_size,
+                "low_colour": "blue" if colour_bar else None,
+                "high_colour": "red" if colour_bar else None,
+                "low_label": low_label,
+                "high_label": high_label,
+                "content_area": area_label,
+                "region_pixels": [ymin, xmin, ymax, xmax],
+                "region_normalized_1000": region_normalized,
+                "source_size": [source_h, source_w],
+                "map_size": map_size,
+                "crop_size": [crop_h, crop_w],
+                "scale_map_to_source": (
+                    [round(source_w / map_size[1], 6),
+                     round(source_h / map_size[0], 6)]
+                    if map_size else None),
+            }
+        return artifacts, layout
 
     def render_artifacts(self, img_patch: np.ndarray) -> Dict[str, np.ndarray]:
         """

@@ -123,6 +123,8 @@ def main():
             "whole_image_generation": verdict.get("whole_image_generation"),
             "local_manipulation": verdict.get("local_manipulation"),
             "suspicious_regions": verdict.get("suspicious_regions"),
+            "suspicious_region_review_flags":
+                verdict.get("suspicious_region_review_flags"),
             "joint_verdict_issues": verdict.get("joint_verdict_issues"),
             "model_candidate": verdict.get("model_candidate"),
             "halting_reason": result.get("halting_reason"),
@@ -149,6 +151,7 @@ def main():
             "trace_path": _rel(trace_path, out),
             "evidence": result.get("evidence_chain") or [],
             "evidence_check": verdict.get("evidence_check"),
+            "coverage_check": verdict.get("coverage_check"),
             "tools_served": list(fsm._experts),
         }
         page_name = f"{index:02d}__{sample['sample_id']}.html"

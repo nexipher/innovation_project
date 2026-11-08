@@ -23,7 +23,12 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 总体 Uncertain 10→1、整图正确 11→16、局部正确 7→12，结案前检查 3/3 后补测；
 > 但 confidence=0.95 10→18、局部误报 3→5、`joint_verdict_issues` 0→1，仍有 5 条
 > 单专家定论。**仍不扩新源图、不训练**；先人工审阅并处理单专家定论/高 confidence
-> （plan §12.10）。原 24 条控制记录的预测框核验见
+> （plan §12.10）。2026-11-08 后续（plan §12.11）已把 TruFor 三图改成同一原图裁剪、
+> 同内容尺寸，模型可见坐标删除像素尺寸；新增框核验标记和分项证据覆盖检查
+> （无 PROBE 不得定整图生成、无 TruFor 不得定局部；一次纠正保留原文/反馈/重答）。
+> `dual_20261108_closing` 是这些改动前的批次，需再跑同一 24 输入验证；2 会话真实
+> 冒烟已确认三图同尺寸、全图归一化 `[0,0,1000,1000]`、`map_stats` 和框核验字段
+> 正常。原 24 条控制记录的预测框核验见
 > `sft_data/g8_acceptance/dual_20261107_prediction_overlays_20261108/index.html`。
 > GenImage test 已被使用历史污染、旧 test 也有先验使用，**没有可靠未见测试**，test 继续隔离；
 > 专家选择使用 dev/val。Qwen3 已迁移到数据盘；未训练/SFT。
@@ -36,7 +41,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-770%20core%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-793%20core%20passed-brightgreen)](./tests/)
 
 ---
 

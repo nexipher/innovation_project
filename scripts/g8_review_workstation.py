@@ -532,6 +532,32 @@ def _format_regions(regions) -> str:
     return " ｜ ".join(rows) if rows else "未记录/空"
 
 
+def _format_region_flags(flags) -> str:
+    if not flags:
+        return "无记录/无标记"
+    rows = []
+    for item in flags or []:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            f"region[{item.get('region_index')}] bbox={item.get('bbox')}；"
+            f"flags={item.get('flags')}；{item.get('detail')}")
+    return " ｜ ".join(rows) if rows else "无记录/无标记"
+
+
+def _format_coverage(check) -> str:
+    if not isinstance(check, dict):
+        return "无记录"
+    issues = [item.get("code") for item in check.get("issues") or []
+              if isinstance(item, dict)]
+    remaining = [item.get("code") for item in check.get("remaining_issues") or []
+                 if isinstance(item, dict)]
+    feedback = check.get("feedback")
+    return (f"status={check.get('status')}；issues={issues}；"
+            f"remaining={remaining}；feedback={'有' if feedback else '无'}"
+            "（原文/反馈/重答见 trace 的 coverage_check）")
+
+
 def _joint_pills(record: dict) -> str:
     """Whole-image and local answers are separate pills, never one merged label."""
     if not isinstance(record, dict):
@@ -665,6 +691,9 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         ("整图生成判断", record.get("whole_image_generation") or "未记录"),
         ("局部篡改判断", record.get("local_manipulation") or "未记录"),
         ("可疑区域", _format_regions(record.get("suspicious_regions"))),
+        ("框核验标记", _format_region_flags(
+            record.get("suspicious_region_review_flags"))),
+        ("证据覆盖检查", _format_coverage(record.get("coverage_check"))),
         ("联合字段问题", record.get("joint_verdict_issues") or "无记录"),
         ("请求 / 执行 / 重复", f'执行 {counters.get("expert_calls")}｜跳过重复请求 '
                                f'{metadata.get("skipped_duplicate_calls", "未记录")}｜'

@@ -39,7 +39,12 @@ def test_dual_prompt_declares_joint_fields_and_local_only_trufor():
     assert "which question is uncertain" in prompt
     assert "missing measurement" in prompt
     assert "raw_band" in prompt
-    assert "blue = low response" in prompt
+    flat = " ".join(prompt.split())
+    assert "blue = low response" in flat
+    assert "red = high response" in flat
+    assert "SAME content" in prompt
+    assert "pixel width/height" in flat
+    assert "added later" in flat
     assert "low reliability" in prompt and "high reliability" in prompt
     assert "Strongest available evidence" not in prompt
 
@@ -73,26 +78,39 @@ def test_dual_mock_executes_both_experts_and_keeps_maps(tmp_path):
     assert any("confidence_map" in path for path in artifacts)
     from state_machine.evidence_tokenizer import EvidenceTokenizer
     visible = EvidenceTokenizer.model_visible(trufor)
-    assert visible["map_coordinates"]["image_size"] == [64, 64]
     assert visible["map_coordinates"]["space"] == "original_image"
-    assert "diagnostic region crop, anomaly_map, confidence_map" in \
+    assert visible["map_coordinates"]["bbox_units"] == "normalized_0_1000"
+    assert "image_size" not in visible["map_coordinates"]
+    assert "Pixel width/height" in visible["map_coordinates"]["note"]
+    assert "imgsize" not in visible["reading"]
+    assert "SAME original-image region" in visible["artifact_meaning"]
+    assert "original crop, anomaly-map crop, confidence-map crop" in \
         visible["artifact_meaning"]
-    layout = trufor["artifact_layout"]
-    assert layout["anomaly_map"]["content_box"][1] > 0
-    assert layout["anomaly_map"]["canvas_size"][1] > layout["anomaly_map"]["content_box"][2]
-    assert visible["artifact_layout"]["anomaly_map"]["content_area"] == \
-        "full original-image frame"
-    assert "content_box" not in visible["artifact_layout"]["anomaly_map"]
-    assert "content_box_normalized_1000" not in visible["artifact_layout"]["anomaly_map"]
+    # The delivered trio is one content region at one content size.
+    full_layout = trufor["artifact_layout"]
+    model_layout = trufor["model_image_layout"]
+    assert set(model_layout) == {"original_crop", "anomaly_map", "confidence_map"}
+    boxes = {tuple(item["content_box"]) for item in model_layout.values()}
+    sizes = {tuple(item["crop_size"]) for item in model_layout.values()}
+    assert len(boxes) == 1 and len(sizes) == 1
+    assert full_layout["anomaly_map"]["content_box"][1] > 0
+    assert full_layout["anomaly_map"]["canvas_size"][1] > \
+        full_layout["anomaly_map"]["content_box"][2]
+    for name in ("original_crop", "anomaly_map", "confidence_map"):
+        assert "content_box" not in visible["artifact_layout"][name]
+        assert "pixels" not in visible["artifact_layout"][name]["content_area"]
+        assert visible["artifact_layout"][name]["region_normalized_1000"]
+    assert trufor["model_image_layout"]["anomaly_map"]["map_size"] == [64, 64]
+    assert trufor["model_image_layout"]["anomaly_map"]["source_size"] == [64, 64]
     import cv2
     from config import PROJECT_ROOT
     assert all(os.path.exists(os.path.join(PROJECT_ROOT, path))
                for path in artifacts)
     anomaly = cv2.imread(os.path.join(
         PROJECT_ROOT, next(path for path in artifacts if "anomaly_map" in path)))
-    box = layout["anomaly_map"]["content_box"]
-    assert anomaly.shape[0] == layout["anomaly_map"]["canvas_size"][1]
-    assert anomaly.shape[1] == layout["anomaly_map"]["canvas_size"][0]
+    box = model_layout["anomaly_map"]["content_box"]
+    assert anomaly.shape[0] == model_layout["anomaly_map"]["canvas_size"][1]
+    assert anomaly.shape[1] == model_layout["anomaly_map"]["canvas_size"][0]
     # Colour bar runs outside the content width: blue at the bottom, red at top.
     bar_x = box[2] + 28 + 10
     bar_top = box[1] + 25
@@ -273,3 +291,105 @@ def test_state_note_separates_failed_from_never_tried():
     assert "局部编辑（TruFor）：执行失败" in note
     assert "尚可调用（尚未尝试）：probe_dino_expert" in note
     assert "已尝试但失败：trufor_expert" in note
+
+
+def test_region_triptych_resizes_maps_and_records_the_transform():
+    import numpy as np
+
+    from experts.trufor import MockTruForExpert
+
+    expert = MockTruForExpert(shape=(32, 48))
+    expert._last = expert._arrays()
+    image = np.zeros((64, 80, 3), dtype=np.uint8)
+    panels, layout = expert.render_region_artifacts(
+        image, [10, 20, 50, 60], [125, 250, 625, 750])
+    assert set(panels) == {"original_crop", "anomaly_map", "confidence_map"}
+    assert len({tuple(item["content_box"]) for item in layout.values()}) == 1
+    assert {tuple(item["crop_size"]) for item in layout.values()} == {(40, 40)}
+    anomaly = layout["anomaly_map"]
+    assert anomaly["map_size"] == [32, 48]
+    assert anomaly["source_size"] == [64, 80]
+    assert anomaly["crop_size"] == [40, 40]
+    assert anomaly["region_pixels"] == [10, 20, 50, 60]
+    assert anomaly["region_normalized_1000"] == [125, 250, 625, 750]
+    assert anomaly["scale_map_to_source"] == [round(80 / 48, 6),
+                                               round(64 / 32, 6)]
+
+
+def test_coverage_correction_keeps_original_feedback_and_reanswer(tmp_path):
+    from main import build_pipeline
+    from tests.test_controller import ScriptedMLLM
+
+    image = tmp_path / "coverage.png"
+    Image.new("RGB", (64, 64), (90, 120, 60)).save(image)
+    fsm = build_pipeline("mock", mode="probe_then_trufor",
+                         tools=["probe", "trufor"])
+    bad = ('<reasoning>整图由 PROBE 支持；局部没有 TruFor。</reasoning>\n'
+           '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
+           ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
+           ' "confidence": 0.8, "primary_evidence": ["probe_dino_expert"],'
+           ' "report": "整图 AI 生成；局部未发现篡改。"}</verdict>')
+    corrected = ('<reasoning>局部问题未测量。</reasoning>\n'
+                 '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
+                 ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
+                 ' "confidence": 0.8, "primary_evidence": ["probe_dino_expert"],'
+                 ' "report": "整图 AI 生成；TruFor 未测量，局部不确定。"}</verdict>')
+    fsm._mllm = ScriptedMLLM([
+        "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
+        bad,
+        corrected,
+    ])
+    fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
+    result = fsm.run(str(image), "Fake")
+    notes = [turn["value"] for turn in result["conversation"]
+             if turn["from"] == "user"]
+    assert any("证据覆盖检查" in note for note in notes)
+    assert result["final_verdict"]["local_manipulation"] == "Uncertain"
+    check = result["final_verdict"]["coverage_check"]
+    assert check["status"] == "pass_after_correction"
+    assert "Not tampered" in check["original_output"]
+    assert "局部问题未测" in check["feedback"]
+    assert "Uncertain" in check["corrected_output"]
+    assert check["remaining_issues"] == []
+
+
+def test_coverage_correction_records_a_failed_reanswer_without_changing_label(tmp_path):
+    from main import build_pipeline
+    from tests.test_controller import ScriptedMLLM
+
+    image = tmp_path / "coverage-fail.png"
+    Image.new("RGB", (64, 64), (90, 120, 60)).save(image)
+    fsm = build_pipeline("mock", mode="probe_then_trufor",
+                         tools=["probe", "trufor"])
+    bad = ('<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
+           ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
+           ' "confidence": 0.8, "primary_evidence": ["probe_dino_expert"],'
+           ' "report": "整图 AI 生成；局部未发现篡改。"}</verdict>')
+    fsm._mllm = ScriptedMLLM([
+        "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
+        bad,
+        bad,
+    ])
+    fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
+    result = fsm.run(str(image), "Fake")
+    check = result["final_verdict"]["coverage_check"]
+    assert check["status"] == "failed"
+    assert check["remaining_issues"]
+    assert result["final_verdict"]["local_manipulation"] == "Not tampered"
+    assert any("coverage: local_manipulation_without_trufor"
+               in issue for issue in
+               result["final_verdict"].get("joint_verdict_issues") or [])
+    assert check["original_output"] and check["corrected_output"]
+
+
+def test_region_triptych_full_frame_uses_closed_normalized_edges():
+    import numpy as np
+
+    from experts.trufor import MockTruForExpert
+
+    expert = MockTruForExpert(shape=(32, 48))
+    expert._last = expert._arrays()
+    image = np.zeros((64, 80, 3), dtype=np.uint8)
+    _panels, layout = expert.render_region_artifacts(image, [0, 0, 64, 80], None)
+    assert layout["anomaly_map"]["region_normalized_1000"] == [0, 0, 1000, 1000]
+    assert layout["anomaly_map"]["source_size"] == [64, 80]

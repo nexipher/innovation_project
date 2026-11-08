@@ -185,9 +185,29 @@ class EvidenceTokenizer:
         # ledger does not read "below the diagnostic threshold 0.5" as a
         # fabricated measurement (the registry fallback only covers registered
         # experts; TruFor is deliberately not in that registry).
-        threshold = (getattr(expert_result, "metadata", {}) or {}).get("threshold")
+        metadata = getattr(expert_result, "metadata", {}) or {}
+        threshold = metadata.get("threshold")
         if isinstance(threshold, (int, float)):
             token["threshold"] = float(threshold)
+        # Full-token audit fields.  The peak is used by review flags (does the
+        # predicted box contain the response the report describes?); it is not
+        # put in the model-visible pack, where it would invite copying.
+        map_stats_keys = (
+            "anomaly_peak", "anomaly_peak_normalized_1000",
+            "high_response_fraction", "confidence_mean",
+            "low_confidence_fraction",
+        )
+        stats_block = metadata.get("stats") or {}
+        map_stats = {
+            key: metadata[key] if key in metadata else stats_block[key]
+            for key in map_stats_keys
+            if key in metadata or key in stats_block
+        }
+        if map_stats:
+            token["map_stats"] = map_stats
+        for key in ("map_size", "confidence_map_size"):
+            if metadata.get(key):
+                token[key] = list(metadata[key])
 
         return token
 
@@ -312,55 +332,71 @@ class EvidenceTokenizer:
                     "score; use PROBE for that question."
                 ).strip(),
             }
-            image_size = token.get("image_shape")
-            if not image_size:
-                image_size = (token.get("condition_metadata") or {}).get("image_size")
-            if image_size:
-                visible["map_coordinates"] = {
-                    "space": "original_image",
-                    "image_size": list(image_size),
-                    "bbox_format": "[ymin, xmin, ymax, xmax] in [0,1000]",
-                }
-            if token.get("artifact_layout"):
-                # The full token keeps the pixel content box for review
-                # overlays.  The model gets only a non-numeric content-area
-                # label: exposing either pixel or normalized numbers made it
-                # copy a layout value (e.g. [0,38,369,294] or [0,0,1000,1000])
-                # into a suspicious_regions bbox, which belongs to the
-                # original-image [0,1000] system, not the artifact canvas.
+            visible["map_coordinates"] = {
+                "space": "original_image",
+                "bbox_format": "[ymin, xmin, ymax, xmax]",
+                # Pixel sizes are deliberately NOT in the model-visible pack.
+                # A model that saw [width,height] copied them as a bbox
+                # ([0,0,341,256]) although the field is normalized [0,1000].
+                "bbox_units": "normalized_0_1000",
+                "note": ("Bbox values are normalized to [0,1000]. Pixel width/"
+                         "height, canvas size and content-box values are not bbox "
+                         "values; never copy them into suspicious_regions."),
+            }
+            layout_source = (token.get("model_image_layout")
+                             or token.get("artifact_layout") or {})
+            if layout_source:
+                # The full token keeps pixel boxes for review overlays.  The
+                # model gets titles/legends and the normalized inspection
+                # region only; a numeric canvas box is an invitation to copy a
+                # layout value into suspicious_regions.
                 visible["artifact_layout"] = {}
-                for name, item in (token.get("artifact_layout") or {}).items():
+                for name, item in layout_source.items():
                     if not isinstance(item, dict):
                         continue
+                    region = item.get("region_normalized_1000")
+                    if not region or list(region) == [0, 0, 1000, 1000]:
+                        content_area = "full original-image frame"
+                    else:
+                        content_area = (
+                            "same original-image crop — all three panels share "
+                            "this content region and content size")
                     visible["artifact_layout"][name] = {
                         "title": item.get("title"),
                         "low_colour": item.get("low_colour"),
                         "high_colour": item.get("high_colour"),
                         "low_label": item.get("low_label"),
                         "high_label": item.get("high_label"),
-                        "content_area": "full original-image frame",
-                        "note": ("Title and colour bar are outside the content. "
-                                 "Predicted boxes are your own localisation in "
-                                 "original-image [0,1000] coordinates; do not use "
-                                 "a layout value as a bbox."),
+                        "content_area": content_area,
+                        "region_normalized_1000": (
+                            list(region) if region else None),
+                        "note": ("The original, anomaly and confidence panels "
+                                 "show the SAME content region at the same "
+                                 "content size. Titles and legends are outside "
+                                 "the content. Never use a pixel size or layout "
+                                 "value as a bbox."),
                     }
             artifacts = token.get("visual_artifacts")
             if artifacts:
                 visible["visual_artifacts"] = list(artifacts)
                 visible["artifact_meaning"] = (
-                    "TruFor artifact images have a title and a fixed colour bar "
-                    "OUTSIDE the content area; the content area is the full "
-                    "original-image frame. Attached order: diagnostic region crop, "
-                    "anomaly_map, confidence_map. In the anomaly map, blue = low "
-                    "response and red = high response. In the confidence map, blue = "
-                    "low reliability and red = high reliability. Inspect the SAME "
-                    "content coordinates across the original crop, anomaly map and "
-                    "confidence map: state where the anomaly is, how reliable that "
-                    "location is, and how that supports or limits the local "
-                    "conclusion. Predicted boxes must use original-image [0,1000] "
-                    "coordinates; do not copy the layout's pixel values into a "
-                    "bbox. A red/bright anomaly region is a local candidate, not "
-                    "proof; low confidence means do not rely on it. The score is "
+                    "Attached order: original crop, anomaly-map crop, "
+                    "confidence-map crop. All three panels show the SAME "
+                    "original-image region at the same content size; titles and "
+                    "legends are outside the content. In the anomaly map, blue = "
+                    "low response and red = high response. In the confidence "
+                    "map, blue = low reliability and red = high reliability. "
+                    "For the SAME region, first say what is visible in the "
+                    "original, then what the anomaly response is there, then "
+                    "what the reliability is there, then how that combination "
+                    "supports or limits the local conclusion. Do not transfer a "
+                    "red background from the reliability map onto the object; "
+                    "check the object's own location. A bright anomaly is a "
+                    "candidate, not proof; low reliability means do not rely on "
+                    "it. Do not assert a specific edit process (for example "
+                    "'text was added later') from an anomaly map. Predicted "
+                    "boxes use original-image normalized [0,1000]; pixel "
+                    "dimensions and layout values are not bboxes. The score is "
                     "not a whole-image generation probability."
                 )
             return visible

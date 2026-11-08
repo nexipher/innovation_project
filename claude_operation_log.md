@@ -994,3 +994,18 @@
 * **涉及/修改的文件清单**：`sft_data/g8_acceptance/dual_20261108_closing/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
 * **执行结果与验证状态**：24/24 完成，wall 847.1 s；自动比较已生成；未训练、未扩样、未使用 test。
 * **置信度或遗留待办（TODO）**：①人工审阅 24 条；②下一轮修单专家定论/高 confidence/局部误报/跨任务措辞；③TruFor 1024 显存失败仍在；④验收通过前不训练、不扩新源图。
+
+### 2026-11-08 - 阶段四 4.56：三图同位置对照、坐标核验与证据覆盖
+
+* **当前操作动作**：按用户顺序先统一 TruFor 原图/异常图/可靠性图的坐标与布局，再补三图同位置展示，最后增加分项证据覆盖检查；以 `dual_20261108_closing` 的 35b3b70e、39890_0、ADM、57501、41187_0/1 真实问题做回归。未启动新的 GPU 批次。
+* **对应计划锚点**：`plan.md` §12.11；`KNOWN_ISSUES.md` A12。
+* **核心变更**：
+  1. **三图布局**：`TruForExpert.render_region_artifacts()` 从同一次 `analyze()` 的数组生成原图裁剪、异常图裁剪、可靠性图裁剪；三者同内容区域、同内容尺寸，标题/图例/色条在内容外。map/conf 与源图尺寸不同时先 resize 到源图，再裁剪；`model_image_layout` 记录 `region_pixels`/`region_normalized_1000`/`source_size`/`map_size`/`crop_size`/`scale_map_to_source`。不重跑 TruFor。完整 map/conf 仍保存在 `artifact_layout` 供审核叠加，`review_overlays` 优先用完整异常图。
+  2. **坐标命名**：模型可见 `map_coordinates` 删除 pixel `image_size`，改为 `bbox_units=normalized_0_1000` 和“像素尺寸/canvas/content_box 不是 bbox”；TruFor `reading`/图片 footer 不再写 `imgsize`/像素裁剪尺寸。`utils/review_overlays.py` 增加 `bbox_normalized_to_pixels` 明确命名。
+  3. **框核验**：新增 `utils/bbox_review.py`，只标记不改框：`global_range`、`pixel_dimension_bbox`（41187 的 `[0,0,341,256]`）、`anomaly_peak_outside_bbox`（57501 的峰值/框偏离）、`location_text_mismatch`（ADM 的“下方”/左上框）。控制器写入 `suspicious_region_review_flags`；工作台展示；原始 bbox/reason 保留。
+  4. **证据覆盖**：新增 `utils/coverage.py`。确定 `whole_image_generation` 必须有 PROBE 测量；确定 `local_manipulation` 必须有 TruFor 测量；各维 `Uncertain` 合法，单专家总体结案（如 TruFor 局部证据支持总体 Fake + whole Uncertain）保留。跨任务“相互支持/相互验证”措辞（排除否定句）记为 wording；“后期添加/合成/抠图”等过程断言记为 actionable wording（否定句除外）。控制器在结案前做一次覆盖纠正，保留原回答/反馈/重答；重答仍失败则写入 `joint_verdict_issues`，`final_v2.validate_sample` 拒收。提示词同步要求三图逐项描述、禁止把可靠性图背景红套到物体、禁止凭异常图断言编辑过程。
+  5. **回归**：`35b3b70e`（无 TruFor 却 local Not tampered）、`39890_0`（无 PROBE 却 whole AI-generated）真实报告覆盖检查命中；41187/ADM/57501 式框标记有单测；三图 resize/transform、提示词、覆盖纠正（通过/失败）均有测试。
+* **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`utils/bbox_review.py (Created)`、`utils/coverage.py (Created)`、`utils/review_overlays.py`、`utils/final_v2.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/compare_dual_acceptance.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_tokenizer.py`、`tests/test_external_experts.py`、`tests/test_bbox_review.py (Created)`、`tests/test_coverage.py (Created)`、`tests/test_review_overlays.py`、`tests/test_message_builder.py`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md`、`claude_operation_log.md`
+* **真实冒烟（2 个会话，/tmp/g8_triptych_smoke2_20261108）**：真实 TruFor token 的三张面板 content_box 一致，`model_image_layout` 记录 `region_normalized_1000=[0,0,1000,1000]`、`source_size`/`map_size`/`crop_size`/`scale_map_to_source`；`map_stats.anomaly_peak_normalized_1000` 已进入完整 token，模型可见 `reading` 不再含 `imgsize`，每轮投送 3 张同区域面板。冒烟中发现并修复两处：①全图 bbox 归一化误用 size-1，曾得到 `[0,0,1003,1002]`；②`stats` 嵌套导致 `map_stats` 为空。另用真实冒烟文本发现并修复“两者结果一致，但不构成相互验证”被误判为相互验证的否定句问题。
+* **执行结果与验证状态**：默认提示词哈希 `4b64825d4c3c4599`，联合模式 `6c2b7586da5b7629`；`core` **793 passed, 1 skipped, 846 deselected**（否定句修复后最后一次全量见提交）。
+* **置信度或遗留待办（TODO）**：①未跑 GPU 复验；`dual_20261108_closing` 是改动前批次，需同 24 输入再跑；②confidence 机械偏高、TruFor 真图假阳性仍未解决；③全图框仍会记录但不改框；④验收通过前不训练、不扩新源图。

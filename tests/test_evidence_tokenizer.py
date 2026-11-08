@@ -76,13 +76,14 @@ class TestTruForVisiblePack:
             assert "NOT a whole-image AI-generation judgment" in \
                 score["direction_for_this_value"]
 
-    def test_map_coordinates_carry_original_image_size(self):
+    def test_map_coordinates_are_named_and_contain_no_pixel_size(self):
         visible = EvidenceTokenizer.model_visible(self._token(0.72))
-        assert visible["map_coordinates"] == {
-            "space": "original_image",
-            "image_size": [333, 500],
-            "bbox_format": "[ymin, xmin, ymax, xmax] in [0,1000]",
-        }
+        assert visible["map_coordinates"]["space"] == "original_image"
+        assert visible["map_coordinates"]["bbox_format"] == \
+            "[ymin, xmin, ymax, xmax]"
+        assert visible["map_coordinates"]["bbox_units"] == "normalized_0_1000"
+        assert "image_size" not in visible["map_coordinates"]
+        assert "not bbox" in visible["map_coordinates"]["note"]
 
 
 class TestEvidenceId:
@@ -193,3 +194,23 @@ def test_trufor_visible_pack_carries_raw_band_and_artifact_layout():
         "full original-image frame"
     assert "content_box" not in pack["artifact_layout"]["anomaly_map"]
     assert "content_box_normalized_1000" not in pack["artifact_layout"]["anomaly_map"]
+
+
+def test_trufor_token_carries_map_stats_from_nested_stats():
+    class FakeResult:
+        evidence_name = "manipulation_anomaly_score"
+        phenomenon = "局部篡改检测分数"
+        reasoning = "reasoning"
+        strength = 0.7
+        raw_metric = 0.7
+        source = "trufor_expert"
+        support = "Uncertain"
+        interpretation_text = "text"
+        metadata = {
+            "stats": {"anomaly_peak_normalized_1000": [10, 20],
+                      "high_response_fraction": 0.1},
+            "map_size": [32, 48],
+        }
+    token = EvidenceTokenizer.tokenize(FakeResult(), [0, 0, 10, 10], (64, 80))
+    assert token["map_stats"]["anomaly_peak_normalized_1000"] == [10, 20]
+    assert token["map_size"] == [32, 48]
