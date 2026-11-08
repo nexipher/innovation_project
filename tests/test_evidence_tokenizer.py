@@ -214,3 +214,31 @@ def test_trufor_token_carries_map_stats_from_nested_stats():
     token = EvidenceTokenizer.tokenize(FakeResult(), [0, 0, 10, 10], (64, 80))
     assert token["map_stats"]["anomaly_peak_normalized_1000"] == [10, 20]
     assert token["map_size"] == [32, 48]
+
+
+def test_visible_layout_does_not_offer_full_frame_as_a_bbox():
+    token = {
+        "evidence_id": "E-full", "evidence_name": "manipulation_anomaly_score",
+        "source": "trufor_expert", "status": "measured",
+        "measurement_scope": "global", "raw_metric": 0.7,
+        "phenomenon": "局部篡改检测分数", "image_shape": [64, 80],
+        "condition_metadata": {"stats": {}},
+        "visual_artifacts": ["traces/evidence/x/model_anomaly_map.png"],
+        "model_image_layout": {"anomaly_map": {
+            "title": "TruFor anomaly map — full frame",
+            "content_box": [0, 38, 80, 102], "canvas_size": [285, 164],
+            "low_colour": "blue", "high_colour": "red",
+            "low_label": "LOW response (blue)",
+            "high_label": "HIGH response (red)",
+            "content_area": "full original-image frame",
+            "region_source": "full_frame",
+            "region_pixels": [0, 0, 64, 80],
+            "region_normalized_1000": [0, 0, 1000, 1000],
+        }},
+    }
+    from state_machine.evidence_tokenizer import EvidenceTokenizer as Tokenizer
+    visible = Tokenizer.model_visible(token)
+    item = visible["artifact_layout"]["anomaly_map"]
+    assert item["inspection_region_source"] == "full_frame"
+    assert item["region_normalized_1000"] is None
+    assert "context view" in item["note"]

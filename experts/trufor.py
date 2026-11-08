@@ -545,7 +545,7 @@ class TruForExpert(ExternalScoreExpert):
         return canvas, [0, top, width, top + height], [canvas.shape[1], canvas.shape[0]]
 
     def render_region_artifacts(self, img_bgr: np.ndarray,
-                                region_pixels: List[int],
+                                region_pixels: Optional[List[int]] = None,
                                 region_normalized: Optional[List[int]] = None):
         """
         Render one same-content trio from the *last* measurement.
@@ -556,8 +556,13 @@ class TruForExpert(ExternalScoreExpert):
         before cropping if TruFor returned a different map size.  No model
         call is made here: this is a view of `self._last`.
 
+        If `region_pixels` is None the trio is an anomaly-peak inspection crop
+        chosen from the existing map (source recorded as `anomaly_peak`), not
+        a second measurement and not a predicted bbox.  If there is no map it
+        falls back to the full frame (`full_frame`).
+
         Returns ``(artifacts, layout)``.  ``layout`` records the region in
-        both coordinate systems and the map→source scale, so a reviewer can
+        both coordinate systems and the map->source scale, so a reviewer can
         audit the transform instead of inferring it from the canvas.
         """
         if not self._last:
@@ -565,32 +570,6 @@ class TruForExpert(ExternalScoreExpert):
         import cv2
 
         source_h, source_w = img_bgr.shape[:2]
-        try:
-            ymin, xmin, ymax, xmax = [int(round(float(v)))
-                                      for v in region_pixels]
-        except (TypeError, ValueError):
-            ymin, xmin, ymax, xmax = 0, 0, source_w, source_h
-        ymin = max(0, min(source_h - 1, ymin))
-        xmin = max(0, min(source_w - 1, xmin))
-        ymax = max(ymin + 1, min(source_h, ymax))
-        xmax = max(xmin + 1, min(source_w, xmax))
-        if ymax <= ymin or xmax <= xmin:
-            ymin, xmin, ymax, xmax = 0, 0, source_h, source_w
-        full = (ymin, xmin, ymax, xmax) == (0, 0, source_h, source_w)
-        if region_normalized is None:
-            # Bbox edges divide by the image size; only a pixel *centre*
-            # (the anomaly peak) uses size-1.  Using size-1 here made a full
-            # 333x500 frame read as [0,0,1003,1002].
-            region_normalized = [
-                int(round(ymin / max(1, source_h) * 1000)),
-                int(round(xmin / max(1, source_w) * 1000)),
-                int(round(ymax / max(1, source_h) * 1000)),
-                int(round(xmax / max(1, source_w) * 1000)),
-            ]
-        else:
-            region_normalized = [
-                max(0, min(1000, int(v))) for v in region_normalized]
-
         map_array = self._last.get("map")
         conf_array = self._last.get("conf")
         map_size = ([int(map_array.shape[0]), int(map_array.shape[1])]
@@ -607,6 +586,56 @@ class TruForExpert(ExternalScoreExpert):
 
         map_array = _resize_to_source(map_array)
         conf_array = _resize_to_source(conf_array)
+
+        if region_pixels is None:
+            if map_array is not None:
+                peak_y, peak_x = np.unravel_index(
+                    int(np.argmax(map_array)), map_array.shape)
+                # A local inspection window around the existing peak: half
+                # the shorter side, at least 128 px, clamped to the image.
+                side = max(128, int(round(min(source_h, source_w) * 0.5)))
+                side = max(1, min(side, source_h, source_w))
+                ymin = max(0, min(source_h - side,
+                                  int(round(peak_y - side / 2))))
+                xmin = max(0, min(source_w - side,
+                                  int(round(peak_x - side / 2))))
+                ymax, xmax = ymin + side, xmin + side
+                region_source = "anomaly_peak"
+            else:
+                ymin, xmin, ymax, xmax = 0, 0, source_h, source_w
+                region_source = "full_frame"
+        else:
+            try:
+                ymin, xmin, ymax, xmax = [int(round(float(v)))
+                                          for v in region_pixels]
+            except (TypeError, ValueError):
+                ymin, xmin, ymax, xmax = 0, 0, source_w, source_h
+            ymin = max(0, min(source_h - 1, ymin))
+            xmin = max(0, min(source_w - 1, xmin))
+            ymax = max(ymin + 1, min(source_h, ymax))
+            xmax = max(xmin + 1, min(source_w, xmax))
+            if ymax <= ymin or xmax <= xmin:
+                ymin, xmin, ymax, xmax = 0, 0, source_h, source_w
+            full = (ymin, xmin, ymax, xmax) == (0, 0, source_h, source_w)
+            region_source = "full_frame" if full else "model_bbox"
+
+        full = (ymin, xmin, ymax, xmax) == (0, 0, source_h, source_w)
+        if full:
+            region_source = "full_frame"
+        if region_normalized is None or region_source == "anomaly_peak":
+            # Bbox edges divide by the image size; only a pixel *centre*
+            # (the anomaly peak) uses size-1.  Using size-1 here made a full
+            # 333x500 frame read as [0,0,1003,1002].
+            region_normalized = [
+                int(round(ymin / max(1, source_h) * 1000)),
+                int(round(xmin / max(1, source_w) * 1000)),
+                int(round(ymax / max(1, source_h) * 1000)),
+                int(round(xmax / max(1, source_w) * 1000)),
+            ]
+        else:
+            region_normalized = [
+                max(0, min(1000, int(v))) for v in region_normalized]
+
         original_crop = img_bgr[ymin:ymax, xmin:xmax].copy()
         anomaly_crop = (map_array[ymin:ymax, xmin:xmax]
                         if map_array is not None else None)
@@ -617,14 +646,19 @@ class TruForExpert(ExternalScoreExpert):
             area_label = "full original-image frame"
             title_suffix = "full frame"
             footer = ("full original-image frame; all three panels share the "
-                      "same content size")
+                      "same content size; do not use the frame as a local bbox")
+        elif region_source == "anomaly_peak":
+            area_label = "anomaly-peak inspection crop"
+            title_suffix = "anomaly-peak crop"
+            footer = ("anomaly-peak inspection crop from the existing map; "
+                      "not a second measurement and not a predicted bbox")
         else:
             # Pixel bounds stay in the audit layout, not in the picture text:
             # a footer with [w,h] is another value the model can copy into a
             # normalized bbox.  The panels already show the same crop.
-            area_label = "same original-image crop"
+            area_label = "requested inspection crop"
             title_suffix = "same region"
-            footer = ("same original-image crop; all three panels share the "
+            footer = ("requested inspection crop; all three panels share the "
                       "same content size")
 
         artifacts: Dict[str, np.ndarray] = {}
@@ -662,6 +696,7 @@ class TruForExpert(ExternalScoreExpert):
                 "low_label": low_label,
                 "high_label": high_label,
                 "content_area": area_label,
+                "region_source": region_source,
                 "region_pixels": [ymin, xmin, ymax, xmax],
                 "region_normalized_1000": region_normalized,
                 "source_size": [source_h, source_w],

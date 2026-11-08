@@ -393,3 +393,20 @@ def test_region_triptych_full_frame_uses_closed_normalized_edges():
     _panels, layout = expert.render_region_artifacts(image, [0, 0, 64, 80], None)
     assert layout["anomaly_map"]["region_normalized_1000"] == [0, 0, 1000, 1000]
     assert layout["anomaly_map"]["source_size"] == [64, 80]
+
+
+def test_region_triptych_without_bbox_uses_anomaly_peak_crop():
+    import numpy as np
+
+    from experts.trufor import MockTruForExpert
+
+    expert = MockTruForExpert(shape=(64, 80))
+    expert._last = expert._arrays()
+    image = np.zeros((64, 80, 3), dtype=np.uint8)
+    panels, layout = expert.render_region_artifacts(image, None, None)
+    anomaly = layout["anomaly_map"]
+    assert anomaly["region_source"] == "anomaly_peak"
+    assert anomaly["region_normalized_1000"] != [0, 0, 1000, 1000]
+    assert anomaly["region_pixels"] != [0, 0, 64, 80]
+    assert len({tuple(item["content_box"]) for item in layout.values()}) == 1
+    assert set(panels) == {"original_crop", "anomaly_map", "confidence_map"}

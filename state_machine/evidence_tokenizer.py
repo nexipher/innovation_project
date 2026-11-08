@@ -355,12 +355,33 @@ class EvidenceTokenizer:
                     if not isinstance(item, dict):
                         continue
                     region = item.get("region_normalized_1000")
-                    if not region or list(region) == [0, 0, 1000, 1000]:
+                    source = item.get("region_source")
+                    full = (not region
+                            or list(region) == [0, 0, 1000, 1000]
+                            or source == "full_frame")
+                    if full:
                         content_area = "full original-image frame"
+                        visible_region = None
+                        inspection_note = (
+                            "This is a context view, not a localisation. Do "
+                            "not use [0,0,1000,1000] as a suspicious_regions "
+                            "bbox; if you cannot localise, leave the list empty "
+                            "and say so.")
+                    elif source == "anomaly_peak":
+                        content_area = "anomaly-peak inspection crop"
+                        visible_region = list(region)
+                        inspection_note = (
+                            "This crop was suggested by the existing anomaly "
+                            "map's peak; it is a candidate, not proof and not a "
+                            "second measurement. It may be used as a starting "
+                            "local region, but keep it distinct from the "
+                            "original-image content you describe.")
                     else:
-                        content_area = (
-                            "same original-image crop — all three panels share "
-                            "this content region and content size")
+                        content_area = "requested inspection crop"
+                        visible_region = list(region)
+                        inspection_note = (
+                            "This is the inspection crop requested by your own "
+                            "call; the three panels share it.")
                     visible["artifact_layout"][name] = {
                         "title": item.get("title"),
                         "low_colour": item.get("low_colour"),
@@ -368,13 +389,13 @@ class EvidenceTokenizer:
                         "low_label": item.get("low_label"),
                         "high_label": item.get("high_label"),
                         "content_area": content_area,
-                        "region_normalized_1000": (
-                            list(region) if region else None),
+                        "inspection_region_source": source,
+                        "region_normalized_1000": visible_region,
                         "note": ("The original, anomaly and confidence panels "
                                  "show the SAME content region at the same "
                                  "content size. Titles and legends are outside "
                                  "the content. Never use a pixel size or layout "
-                                 "value as a bbox."),
+                                 "value as a bbox. " + inspection_note),
                     }
             artifacts = token.get("visual_artifacts")
             if artifacts:
@@ -383,7 +404,10 @@ class EvidenceTokenizer:
                     "Attached order: original crop, anomaly-map crop, "
                     "confidence-map crop. All three panels show the SAME "
                     "original-image region at the same content size; titles and "
-                    "legends are outside the content. In the anomaly map, blue = "
+                    "legends are outside the content. If the layout says the "
+                    "inspection source is `anomaly_peak`, the crop was suggested "
+                    "by the existing anomaly map's peak; it is not a new "
+                    "measurement and not a predicted bbox. In the anomaly map, blue = "
                     "low response and red = high response. In the confidence "
                     "map, blue = low reliability and red = high reliability. "
                     "For the SAME region, first say what is visible in the "

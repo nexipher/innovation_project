@@ -41,7 +41,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-793%20core%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-795%20core%20passed-brightgreen)](./tests/)
 
 ---
 

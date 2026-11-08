@@ -1975,6 +1975,10 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 1. **统一坐标与布局**：
    - `TruForExpert.render_region_artifacts()` 用同一次 `analyze()` 保存的 `map`/`conf`
      生成三张同内容区域、同内容尺寸的面板：原图裁剪、异常图裁剪、可靠性图裁剪；
+     若模型没有给 bbox，则从**已有异常图峰值**自动取一个局部 inspection crop
+     （`region_source=anomaly_peak`，不是第二次测量、不是预测框）；没有 map 时才
+     回退全图（`full_frame`）。全图 inspection view 不向模型暴露 bbox 字段，
+     避免模型把 `[0,0,1000,1000]` 抄成局部框；
      标题/图例/色条在内容区外。map/conf 若与源图尺寸不同，先 resize 到源图再裁剪，
      并把 `region_pixels`、`region_normalized_1000`、`source_size`、`map_size`、
      `crop_size`、`scale_map_to_source` 写入 `model_image_layout`。bbox 边缘按源图宽高归一化，
@@ -2021,6 +2025,6 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 6. **验证**：新增 `tests/test_bbox_review.py`、`tests/test_coverage.py`、
    三图 transform/覆盖纠正测试；真实 `dual_20261108_closing` 的
    `35b3b70e`（无 TruFor 却 Not tampered）和 `39890_0`（无 PROBE 却 AI-generated）
-   作为覆盖回归。默认提示词哈希 `4b64825d4c3c4599`，联合模式 `6c2b7586da5b7629`；
-   `core` **793 passed, 1 skipped, 846 deselected**。
+   作为覆盖回归。默认提示词哈希 `3c885349fbea05e2`，联合模式 `d179aa70a1f4cf91`；
+   `core` **795 passed, 1 skipped, 846 deselected**。
    `dual_20261108_closing` 是这些改动前的批次，需再跑同一 24 输入验证。

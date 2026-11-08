@@ -673,9 +673,17 @@ class ForensicStateMachine:
                             render_region = getattr(
                                 expert, "render_region_artifacts", None)
                             if callable(render_region):
+                                # No bbox means no model-selected region:
+                                # let TruFor show an anomaly-peak inspection
+                                # crop from the existing map, not the full
+                                # frame (which the model copied as a bbox).
+                                region_arg = (abs_bbox if rel_bbox is not None
+                                              else None)
+                                normalized_arg = (
+                                    transform.get("region_normalized_1000")
+                                    if rel_bbox is not None else None)
                                 panels, model_layout = render_region(
-                                    img, abs_bbox,
-                                    transform.get("region_normalized_1000"))
+                                    img, region_arg, normalized_arg)
                                 for panel_name, panel_image in panels.items():
                                     rel = self._save_artifact(
                                         panel_image, evidence_id,
