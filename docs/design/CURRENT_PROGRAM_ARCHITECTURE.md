@@ -1,7 +1,7 @@
 # 当前程序架构（只描述实际代码）
 
 > 本文只写**现在能运行什么、由谁决定什么**。历史方案、被否掉的路线、实验记录在
-> `plan.md` 与 `claude_operation_log.md` 里，不再是当前指令。最后核对时间：2026-11-07。
+> `plan.md` 与 `claude_operation_log.md` 里，不再是当前指令。最后核对时间：2026-11-08。
 
 ## 1. 当前任务
 
@@ -86,14 +86,16 @@ python scripts/batch_inventory.py                                               
    ├ 违规（调用+结案 / 两个调用）→ 不执行任何动作，发协议纠正
    ├ 合法调用 → 已测量过则跳过并说明（重复请求计为无进展）；
    │            否则测量 → 注入精简 token +（联合任务）区域/异常图/置信图
-   │            → 追加“本会话状态”行；TruFor 未测量时明确提示局部证据缺失
+   │            （TruFor 图标题/色条在 content_box 外；异常蓝低/红高，
+   │             可靠性蓝低/红高）→ 追加“本会话状态”行；
+   │            TruFor 未测量时明确提示局部证据缺失
    └ 合法结案 → 进入结案流程
 结案流程（所有路径共用）：
   账本检查（专家/字段/数值/方向）→ 有缺陷则一次纠正 → 仍不合格记 failed
   → 落 final_verdict：标签、verdict_status、证据检查、参考后验（单列）
   → 联合任务另存 whole_image_generation / local_manipulation /
-    suspicious_regions / overall_from_dimensions；不一致记
-    joint_verdict_issues / joint_overall_mismatch，不覆盖模型标签
+    suspicious_regions；总体 verdict 采用模型综合输出，不做机械推导；
+    schema/证据问题记 joint_verdict_issues
 ```
 
 ## 6. 版本记录与门禁

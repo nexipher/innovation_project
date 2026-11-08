@@ -60,6 +60,10 @@ class ProbeDinoExpert(ExternalScoreExpert):
 
     source_name = "probe_dino_expert"
     evidence_name = "aigi_discriminator_score"
+    # The token's first line must say what the number is: the model's
+    # predicted probability for the AI-generated/fake class, not a calibrated
+    # probability on this project's target data.
+    phenomenon_label = "AI 生成类预测概率"
     weights_env = "PROBE_WEIGHTS"
     weight_source = ("ModelScope shuinishaojiu/PROBE-AIGI-Detection · "
                      "DINOv2_best_model_step_34999.pth（ICML 2026, arXiv 2605.24906）")

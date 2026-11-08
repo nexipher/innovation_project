@@ -112,7 +112,6 @@ def main():
             "local_manipulation": verdict.get("local_manipulation"),
             "suspicious_regions": verdict.get("suspicious_regions"),
             "joint_verdict_issues": verdict.get("joint_verdict_issues"),
-            "joint_overall_mismatch": verdict.get("joint_overall_mismatch"),
             "model_candidate": verdict.get("model_candidate"),
             "halting_reason": result.get("halting_reason"),
             "policy_reasons": verdict.get("policy_reasons"),
@@ -134,6 +133,13 @@ def main():
         }
         page_name = f"{index:02d}__{sample['sample_id']}.html"
         record["trace_path"] = _rel(trace_path, out)
+        try:
+            from utils.review_overlays import render_record_overlays
+            record["review_overlays"] = render_record_overlays(
+                record, str(out / "review_overlays"))
+        except Exception as exc:  # review aid must not abort the batch
+            record["review_overlays"] = []
+            record["review_overlay_error"] = f"{type(exc).__name__}: {exc}"
         sample_for_page = {
             "record": record,
             "trace": trace,

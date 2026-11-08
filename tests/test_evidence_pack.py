@@ -177,9 +177,11 @@ class TestTheProseAndTheScoreAgree:
             # 带小数点的数字：预处理里的 "224" 不是
             numbers = [float(n) for n in re.findall(r"\d+\.\d+", pack["reading"])]
             assert numbers, pack["reading"]
+            allowed = {round(float(pack["score"]["value"]), 6),
+                       round(float(pack["score"]["threshold"]), 6)}
             for number in numbers:
-                assert number == pytest.approx(pack["score"]["value"], abs=1e-6), \
-                    f"{source} 的散文数字 {number} 与 score.value 不一致"
+                assert round(number, 6) in allowed, \
+                    f"{source} 的散文数字 {number} 与 score.value/threshold 不一致"
 
 
 class TestStatusIsExplicit:
@@ -202,3 +204,41 @@ class TestArtifactsComeWithTheirMeaning:
         pack = EvidenceTokenizer.model_visible(token)
         assert pack["visual_artifacts"] == ["traces/evidence/x/region_E-1.png"]
         assert "高响应是候选而非证明" in pack["artifact_meaning"]
+
+
+class TestRawScoreBands:
+    """Five bins are a reading aid, never a label or confidence."""
+
+    def test_boundaries_are_half_open_except_the_last_bin(self):
+        from utils.score_semantics import raw_score_band
+
+        assert raw_score_band(0.0)["label"] == "低"
+        assert raw_score_band(0.199)["label"] == "低"
+        assert raw_score_band(0.2)["label"] == "较低"
+        assert raw_score_band(0.399)["label"] == "较低"
+        assert raw_score_band(0.4)["label"] == "中间区间"
+        assert raw_score_band(0.599)["label"] == "中间区间"
+        assert raw_score_band(0.6)["label"] == "较高"
+        assert raw_score_band(0.799)["label"] == "较高"
+        assert raw_score_band(0.8)["label"] == "高"
+        assert raw_score_band(1.0)["label"] == "高"
+        assert raw_score_band(1.1) is None
+        assert raw_score_band(None) is None
+
+    def test_the_band_says_it_is_not_a_label_or_confidence(self):
+        from utils.score_semantics import raw_score_band
+
+        band = raw_score_band(0.5)
+        assert band["label"] == "中间区间"
+        assert "不是标签" in band["note"]
+        assert "confidence" in band["note"]
+        assert "同一档" in band["note"]
+
+    def test_probe_visible_pack_carries_the_band(self):
+        pack = EvidenceTokenizer.model_visible(
+            _token("probe_dino_expert", "aigi_discriminator_score", 0.5))
+        assert pack["score"]["raw_band"]["label"] == "中间区间"
+        assert pack["score"]["is_calibrated_probability"] is False
+        assert pack["score"]["measured_performance"]["auroc"] == 0.986
+        assert "Strongest available" not in pack["reading"]
+        assert "image-level classifier output" in pack["reading"]

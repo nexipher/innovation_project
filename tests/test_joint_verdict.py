@@ -2,12 +2,12 @@
 
 import pytest
 
-from utils.joint_verdict import extract, legal_model_fields, overall_from_fields
+from utils.joint_verdict import extract, legal_model_fields
 
 pytestmark = pytest.mark.core
 
 
-def test_two_dimensions_are_kept_separate_and_map_to_overall():
+def test_two_dimensions_are_kept_separate_without_a_mechanical_overall():
     fields, issues = extract({
         "whole_image_generation": "AI-generated",
         "local_manipulation": "Not applicable",
@@ -16,14 +16,9 @@ def test_two_dimensions_are_kept_separate_and_map_to_overall():
     assert issues == []
     assert fields["whole_image_generation"] == "AI-generated"
     assert fields["local_manipulation"] == "Not applicable"
-    assert fields["overall_from_dimensions"] == "Fake"
-    assert overall_from_fields("Real", "Not tampered") == "Real"
-    assert overall_from_fields("Real", "Tampered") == "Fake"
-    assert overall_from_fields("Uncertain", "Tampered") == "Fake"
-    assert overall_from_fields("Real", "Uncertain") == "Uncertain"
-    # Not applicable answers the local question only for a generated whole
-    # image; on a Real image it is not a clean local measurement.
-    assert overall_from_fields("Real", "Not applicable") == "Uncertain"
+    # The overall verdict belongs to the model; the schema module must not
+    # derive it mechanically from the two dimensions.
+    assert "overall_from_dimensions" not in fields
     _fields, issues = extract({
         "whole_image_generation": "Real",
         "local_manipulation": "Not applicable",
@@ -42,7 +37,17 @@ def test_regions_require_bounds_reason_and_real_evidence():
     }, evidence_ids=["E-abc"])
     assert issues == []
     assert fields["suspicious_regions"][0]["bbox"] == [100, 200, 300, 400]
-    assert fields["overall_from_dimensions"] == "Fake"
+    assert fields["suspicious_regions"][0]["scope"] == "local_candidate"
+
+    full, _ = extract({
+        "whole_image_generation": "AI-generated",
+        "local_manipulation": "Uncertain",
+        "suspicious_regions": [
+            {"bbox": [0, 0, 1000, 1000], "reason": "whole range",
+             "evidence": ["E-abc"]},
+        ],
+    }, evidence_ids=["E-abc"])
+    assert full["suspicious_regions"][0]["scope"] == "global_range"
 
     _fields, issues = extract({
         "whole_image_generation": "Real",

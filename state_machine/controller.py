@@ -437,7 +437,8 @@ class ForensicStateMachine:
                         notice = (
                             f"[System: {source_name} 执行失败（{type(exc).__name__}）。"
                             "**这不是中性测量，也不是证据**：不要把它当作已获得的测量。"
-                            "可以改用其他工具或直接给出结论。]"
+                            "这是一项缺失的测量；请说明它是否影响你的结论、限制了哪一问，"
+                            "再决定改用其他工具还是如实给出 Uncertain。]"
                         )
                         self._logger.add_system_message(notice)
                         conversation.append({"from": "user", "value": notice})
@@ -525,12 +526,23 @@ class ForensicStateMachine:
                             rendered = expert.render_artifacts(img)
                         except Exception:
                             rendered = {}
+                        layout = getattr(expert, "last_artifact_layout", {}) or {}
+                        artifact_layout = {}
                         for artifact_name, artifact_image in rendered.items():
                             rel = self._save_artifact(artifact_image, evidence_id, artifact_name)
                             if rel:
                                 artifact_rels.append(rel)
+                                if artifact_name in layout:
+                                    artifact_layout[artifact_name] = {
+                                        **dict(layout[artifact_name]),
+                                        "path": rel,
+                                    }
                         if len(artifact_rels) > 1:
                             evidence_token["visual_artifacts"] = artifact_rels[1:]
+                        if artifact_layout:
+                            # Title/legend are outside content_box; review
+                            # overlays use content_box, never canvas pixels.
+                            evidence_token["artifact_layout"] = artifact_layout
 
                     # 这次投递给模型的是什么形状（阶段 4.3）：token 自己记住，
                     # 账本、转换与审计都据此判断"模型当时能引用哪些字段"，
@@ -867,13 +879,6 @@ class ForensicStateMachine:
                 }
                 if joint_issues:
                     final_verdict["joint_verdict_issues"] = joint_issues
-                if ("trufor_expert" in self._experts
-                        and final_verdict.get("overall_from_dimensions")
-                        and final_verdict["overall_from_dimensions"] != final_label):
-                    final_verdict["joint_overall_mismatch"] = {
-                        "model_verdict": final_label,
-                        "from_dimensions": final_verdict["overall_from_dimensions"],
-                    }
                 break
 
             should_halt, reason = HaltingChecker.check(
@@ -1151,10 +1156,10 @@ class ForensicStateMachine:
         if ("trufor_expert" in (served or [])
                 and "trufor_expert" not in measured_sources):
             joint_hint = (
-                "\n本会话同时要求局部判断，而 TruFor 尚未测量：如果整图不是 "
-                "AI-generated，结案时不得把 local_manipulation 写成 Not applicable；"
-                "也尚不能写 Not tampered。请先调用 trufor_expert，或把局部判断写成 "
-                "Uncertain 并在报告中说明缺少局部测量。")
+                "\n本会话同时要求局部判断，而 TruFor 尚未测量。调用顺序由你决定；"
+                "若结论依赖局部判断，可调用 TruFor，也可在结案时说明缺失。若结案时"
+                "仍缺局部测量，必须说明这项证据缺失及其对结论的限制，不要把未测量写成 "
+                "Not tampered 或 Not applicable。")
         return (
             "[System: 本会话状态 —— 已执行的专家：\n" + "\n".join(lines) +
             f"\n尚可调用：{', '.join(remaining) if remaining else '（无）'}。"

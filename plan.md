@@ -1694,12 +1694,12 @@ NO_ALBUMENTATIONS_UPDATE=1 python scripts/trufor_autosplice_eval.py \
   （bbox 为原图 `[0,1000]` 归一化坐标；没有局部怀疑时为空数组）
 - 保留 `verdict`（总体 Real/Fake/Uncertain，供旧账本/停止策略兼容）、`confidence`、
   `primary_evidence`、`report`。
-- 语义：总体 `Fake` 当且仅当整图 `AI-generated` 或局部 `Tampered`；只有整图 `Real`
-  且局部 `Not tampered` 才为总体 `Real`；其余为 `Uncertain`。
-  `Not applicable` 只用于整图 `AI-generated`（局部问题不适用）；若整图不是
-  `AI-generated` 却写 `Not applicable`，记为联合字段问题，推导为 `Uncertain`。
-  两个维度分别保留，不能用一个分数互相覆盖；模型总体标签与推导不一致时记
-  `joint_overall_mismatch`，不覆盖模型标签。
+- 语义：总体 `verdict` 是 **MLLM 对整图生成判断、局部编辑判断及其证据的综合输出**，
+  控制器不做机械推导，也不把“局部 Uncertain”自动推成总体 Uncertain。
+  `Not tampered` 表示本次检查未发现足以支持局部篡改的证据，不等于证明未篡改；
+  `Not applicable` 只用于整图 `AI-generated`（局部问题不适用）。
+  两个维度分别保留，不能用一个分数互相覆盖；分项结论、证据和总体标签都原样记录，
+  供人工审核与对照实验判断。
 
 控制器原样保留模型写出的合法新字段与 `primary_evidence`；转换器同样保留，不重建、
 不补写。工作台分别展示两个维度、可疑区域、map/conf 和停止/调用记录。
@@ -1727,7 +1727,7 @@ NO_ALBUMENTATIONS_UPDATE=1 python scripts/trufor_autosplice_eval.py \
 实现状态（2026-11-07）：三项均已落到代码与回归测试；TruFor 的 region + anomaly map
 + confidence map 三张图同时进入 Qwen 图片输入（`MAX_REGION_IMAGES_PER_TURN=3`，
 真实调用的 `input_stats.pil_images_attached=4`：原图 + 三张产物）；无 bbox 的
-`<call_x></call_x>` 不再被格式校验误判。`core` 回归 **757 passed, 1 skipped**。
+`<call_x></call_x>` 不再被格式校验误判。`core` 回归 **770 passed, 1 skipped**。
 人工验收仍在进行，不能据此声称验收通过。
 
 ### 12.4 人工验收批次
@@ -1746,8 +1746,10 @@ q95，含同源多变体）；只用 dev/val，不碰 test。24 条中已内嵌 
 `model_concluded` 24/24；全部会话调用两个专家（2 calls）。23/24 会话的 TruFor 轮
 实际投送 4 张图（原图 + region + anomaly_map + confidence_map）；1 例 1024 输入
 TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测量处理。
-4/24 会话出现 `joint_overall_mismatch`；10 个可疑区域中 3 个 bbox 覆盖全图。
-自动统计见 `SUMMARY.md`；人工验收仍未开始，不能据此声称通过。
+10 个可疑区域中 3 个 bbox 覆盖全图。该批生成时仍使用旧的机械联合规则，
+`SUMMARY.md` 中的 `joint_overall_mismatch` 是**旧规则对照统计**；2026-11-08
+已取消机械推导，原 24 条不重生成，作为对照保留。自动统计见 `SUMMARY.md`；
+人工验收仍未开始，不能据此声称通过。
 
 ### 12.5 验收后（暂不执行）
 
@@ -1759,3 +1761,41 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 - `utils/joint_verdict.py` + tests；prompt/controller/converter/workbench changes + tests；
 - `scripts/g8_dual_acceptance.py`、固定 manifest、24 条 trace、审核页；
 - 新字段兼容旧批次：旧样本没有联合字段时展示为“未记录”，不推断。
+
+### 12.7 2026-11-08 证据包与联合规则修订（本轮）
+
+用户要求先落实代码与文档，完成 CPU 检查及真实案例回归；GPU 暂未开启，原 24 条
+`dual_20261107` 保留为对照，**真实模型复验另写新批次**。
+
+- **联合规则**：删除 `overall_from_dimensions` / `joint_overall_mismatch` 的机械推导；
+  `verdict` 采用 MLLM 综合输出，分项判断和证据原样记录。`Not tampered` 定义为
+  “本次检查未发现足以支持局部篡改的证据”，不是证明未篡改；`Not applicable` 仍只用于
+  整图 AI-generated。
+- **Uncertain**：提示词要求说明哪一问不确定、证据限制（失败/缺失、适用性、低可靠性、
+  图文不对应）和缺少的信息；不许用“无法证明未篡改”笼统弃权，也不许把缺失测量写成
+  Not tampered。
+- **五分档**：`score.raw_band` 为 `[0,0.2) 低 / [0.2,0.4) 较低 / [0.4,0.6) 中间区间 /
+  [0.6,0.8) 较高 / [0.8,1] 高`；仅帮助阅读，不映射标签/confidence，不表示跨专家同强度。
+- **PROBE**：token/提示词改为“AI 生成类预测概率（官方阈值 0.5，未在本项目目标数据上
+  校准）”；移除无条件 “Strongest available evidence”，保留 `measured_performance`
+  （C 组 AUROC 0.986）及适用范围；图像级分类不定位区域。
+- **TruFor 证据图**：标题和固定 JET 色条放在 content_box 之外；异常图蓝=低/红=高响应，
+  可靠性图蓝=低/红=高可靠；token 记录 `content_box`/`canvas_size`，要求 MLLM 对照同一
+  content 坐标解释位置、可靠性和结论。
+- **坐标/框**：统一原图 `[ymin,xmin,ymax,xmax]`、`[0,1000]`；全图框标为
+  `scope=global_range`，不表述为完成局部定位；新增原图/异常图预测框 overlay
+  （`utils/review_overlays.py`、`scripts/render_dual_prediction_overlays.py`）。
+- **证据检查**：补充“局部篡改检测器/局部编辑检测”等称谓，TruFor token 记录阈值 0.5；
+  用原 24 条中的 5 个真实误纠正做回归（`tests/test_evidence_ledger.py`）。
+- **失败/显存**：失败仍记录 `failed_tool_calls`；失败提示要求 MLLM 说明缺失测量的影响。
+  显存优化本轮暂缓。
+- **confidence**：针对最终总体结论，依据证据质量、专家适用性和未解决问题；报告必须
+  说明依据，避免机械 0.95。
+- **调用自主**：提示词明确调用顺序由模型决定，有局部怀疑可先调 TruFor；状态提示删除
+  “必须先调 TruFor”，不再固定 PROBE→TruFor→结案。
+
+**本轮验证（2026-11-08）**：`core` **770 passed, 1 skipped, 845 deselected**；
+5 条原 batch 真实误纠正回归 5/5 通过；overlay 测试 4 passed；
+控制批次的预测框核验材料在
+`sft_data/g8_acceptance/dual_20261107_prediction_overlays_20261108/`。
+未进行真实模型复验；GPU 开启后写入新批次。

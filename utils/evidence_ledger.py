@@ -96,7 +96,15 @@ SOURCE_WORDS: Dict[str, tuple] = {
     # 不查编造。名字按提示词给模型的写法收（display_name 里的那些词）。
     "npr_expert": ("npr", "邻域", "上采样", "upsampling", "neighboring pixel"),
     "univfd_expert": ("univfd", "univ-fd", "clip", "线性头"),
-    "trufor_expert": ("trufor", "tru for", "局部定位", "定位专家"),
+    # The acceptance batch named this expert "局部篡改检测器" / "局部篡改检测
+    # 分数"; without those aliases the value belonged to no named expert and was
+    # reported as misattributed (5 real false corrections in dual_20261107).
+    "trufor_expert": (
+        "trufor", "tru for", "trufor 专家", "trufor检测器",
+        "局部定位", "定位专家", "局部篡改检测器", "局部篡改检测",
+        "局部篡改检测分数", "局部编辑检测器", "局部编辑检测",
+        "局部篡改", "局部编辑", "局部操纵", "局部操作",
+    ),
     # 退役专家的**物证词**（压缩/噪声/频域）不算"点名专家"：RULES 6/8 明确
     # 让模型描述可见的块状、模糊与噪点，把"未发现压缩块"读成"引用 jpeg 专家"
     # 就会惩罚遵守提示词的行为（b2 实测发生）。工具原名与"××专家"仍算点名。
@@ -322,6 +330,13 @@ def _delivered_fields(token: dict) -> Optional[Dict[str, float]]:
     # 过的东西，不该记成"自由文本里的数字"。只在一个分数真的交付了之后才算——
     # 失败测量什么都没交付。
     threshold = token.get("threshold")
+    if threshold is None and source == "trufor_expert":
+        # TruFor is deliberately not in the score-semantics registry, and the
+        # first dual-expert traces predate the explicit token threshold.
+        # Its official diagnostic threshold is fixed at 0.5; without this the
+        # ledger read the model's correct "below the threshold 0.5" as a
+        # fabricated measurement.
+        threshold = 0.5
     if threshold is None:
         try:
             from utils.score_semantics import entry as _entry

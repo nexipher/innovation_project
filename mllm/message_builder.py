@@ -55,7 +55,7 @@ TOOL_ACTIONS: Dict[str, str] = {
 }
 
 TOOL_MEASURES: Dict[str, str] = {
-    "probe": "- <call_probe>  AI-generation discriminator over the whole image. STRONGEST evidence\n  available (separation ≈0.98 on its fitting group, holds on generators it never saw).\n  Its score IS P(AI-generated): HIGH points to Fake, LOW points to Real. It measures the\n  image as a whole and locates NOTHING — never restate it as a physical artifact or as\n  an area of the image.",
+    "probe": "- <call_probe>  AI-generation discriminator over the whole image. Its score is\n  the model's predicted probability for the AI-generated/fake class (official\n  classification threshold 0.5; HIGH points to Fake, LOW points to Real), but it is\n  NOT calibrated on this project's target data. It measures the image as a whole and\n  locates NOTHING — never restate it as a physical artifact or as an area of the\n  image; use localization evidence for regions and coverage.",
     "freq": "- <call_freq>  multi-scale frequency analysis. WEAK evidence (separation 0.56-0.63,\n  barely above chance). Use it to corroborate, never as the deciding signal.",
     "noise": "- <call_noise> residual micro-noise LEVEL. COUNTER-INTUITIVE: a HIGH level points to\n  Real (camera sensor micro-noise) and a LOW level points to Fake (smooth generator\n  output). This is stable across image formats. Do NOT read a high value as forgery.",
     "jpeg": "- <call_jpeg>  JPEG compression history (blockiness / DCT structure). A HIGH level\n  points to Real (a camera JPEG that was saved or re-saved), NOT to forgery. After\n  heavy re-compression (quality <= 70) this measurement is near chance and must be\n  ignored.",
@@ -153,7 +153,8 @@ PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe
     "</reasoning>\n"
     "<verdict>\n"
     "{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n"
-    "(confidence = your own uncalibrated certainty in THIS verdict, not P(Real/Fake): RULES 9)\n"
+    "(confidence = your own uncalibrated certainty in the FINAL verdict, based on evidence\n"
+    " quality, expert applicability and unresolved questions; not P(Real/Fake): RULES 9)\n"
     "</verdict>\n\n")
 
 # Legacy example line kept separate so the joint mode can replace exactly this
@@ -176,39 +177,53 @@ JOINT_GUIDANCE = (
     "Real / AI-generated / Uncertain; PROBE is the whole-image witness. "
     "`local_manipulation` answers whether there is local editing (Tampered / Not "
     "tampered / Uncertain / Not applicable); TruFor's score and maps are the local "
-    "witness. Overall `verdict` is Fake if either whole_image_generation is "
-    "AI-generated or local_manipulation is Tampered; Real only when the whole image "
-    "is Real AND local_manipulation is Not tampered; otherwise "
-    "Uncertain. Put local suspicions in `suspicious_regions` with original-image "
-    "[0,1000] bbox, a concrete reason, and the evidence_id(s) that support them; use "
-    "an empty list when there is no local suspicion. A bright map region is a "
-    "candidate, not proof; a low whole-image PROBE score does not clear a local "
-    "map, and a high local map does not prove whole-image AI generation. "
-    "Use local_manipulation = Not applicable ONLY when whole_image_generation is "
-    "AI-generated. For a Real whole image, do not declare Not tampered without a "
-    "TruFor map/conf measurement; if TruFor has not been called, use Uncertain and "
-    "say the local evidence is missing (or call TruFor first). NEVER choose Not "
-    "applicable as a way to make the overall verdict Real: a Real whole image with "
-    "no local measurement is local_manipulation = Uncertain, and the overall "
-    "verdict is then Uncertain. The local question cannot be answered without a "
-    "local measurement: if TruFor is served, has not measured this image yet, and "
-    "your closing verdict depends on the local answer, call TruFor before "
-    "concluding.\n")
+    "witness. The overall `verdict` is YOUR synthesis of both answers and both "
+    "evidence bases; do not derive it by a fixed rule from the two dimensions. "
+    "`Not tampered` means this examination found no evidence sufficient to support "
+    "local tampering; it is not proof that nothing was altered. `Not applicable` is "
+    "only for a whole image judged AI-generated, where the local question does not "
+    "apply. `Uncertain` is not a generic abstention: name which question is "
+    "uncertain, what limits the evidence (failed/missing measurement, applicability, "
+    "low reliability, image-text mismatch), and what information is missing. Do not "
+    "use 'cannot prove it was not tampered' as the whole reason, and do not turn a "
+    "missing measurement into Not tampered. Put local suspicions in "
+    "`suspicious_regions` with original-image [0,1000] bbox, a concrete reason, and "
+    "the evidence_id(s) that support them; use an empty list when there is no local "
+    "suspicion. A full-image bbox means the global range, not a localized finding. "
+    "A bright map region is a candidate, not proof; a low whole-image PROBE score "
+    "does not clear a local map, and a high local map does not prove whole-image AI "
+    "generation. When both detectors return high values, explain what each "
+    "measurement contributes; do NOT average them and do NOT treat the coincidence "
+    "as mutual verification. Call order is yours: if your initial observation gives "
+    "a concrete local suspicion, you may call TruFor first, then decide whether "
+    "PROBE is needed for the whole-image question. Do not follow a fixed "
+    "PROBE -> TruFor -> conclude sequence. TruFor artifacts: the title and fixed "
+    "colour bar are outside the content box. In the anomaly map blue is low and "
+    "red is high response; in the confidence map blue is low and red is high "
+    "reliability. Inspect the same content coordinates across the original crop, "
+    "anomaly and confidence images, and state where the anomaly is, how reliable "
+    "that location is, and how this supports or limits the local conclusion. "
+    "`raw_band` is only a five-bin reading aid for the raw score: the middle band "
+    "needs more visual/other-measurement analysis; it is not a label or a "
+    "confidence, and the same band in two experts does not mean equal evidence.\n")
 JOINT_RULE_10 = (
     "\n10. When both PROBE and TruFor are served, do not merge their questions: "
     "PROBE speaks to whole-image generation; TruFor speaks to local manipulation "
     "and returns map/conf images in original-image coordinates. A map bright spot "
-    "is a local candidate, not proof; check the confidence map and the original "
-    "image, state the region in [0,1000], and cite the evidence_id.\n")
+    "is a local candidate, not proof; compare the same content location across the "
+    "original crop, anomaly map and confidence map, state the region in [0,1000], "
+    "and cite the evidence_id. Do not average the two scores or call simultaneous "
+    "high scores mutual verification.\n")
 
 PROMPT_TAIL_BASE = (
     "\nEach evidence token you receive has EXACTLY these fields:\n"
     "  `evidence_id`, `expert`, `measurement`, `status`, `scope`,\n"
     "  `score` = {`name`, `value`, `range`, `direction`, `direction_for_this_value`,\n"
-    "             `threshold`, `threshold_chosen_on`,\n"
+    "             `threshold`, `threshold_chosen_on`, `raw_band`,\n"
     "             `is_calibrated_probability`: always false},\n"
     "  `reading` = a short account of what was measured and the conditions under which\n"
     "              the number may be read,\n"
+    "  `artifact_layout` (when maps are attached) = content boxes and canvas sizes,\n"
     "  and, when the expert rendered one, `visual_artifacts` + `artifact_meaning`.\n"
     "\n1. There is ONE score per token. Its `direction` says which side means what —\n"
     "   follow it, never your own expectation about the expert. Scores from different\n"
@@ -217,20 +232,33 @@ PROMPT_TAIL_BASE = (
     "   is the expert's scale; `direction_for_this_value` is what THIS number means under\n"
     "   those conditions. When it is `Uncertain`, the number carries no direction here:\n"
     "   say so instead of forcing one.\n"
-    "3. The number is not a probability, even when it lies between 0 and 1.\n"
+    "3. PROBE's score is the model's predicted probability for the AI-generated/fake\n"
+    "   class (official classification threshold 0.5; higher = more generated), but it\n"
+    "   is NOT calibrated on this project's target data. Other experts' scores may not\n"
+    "   be probabilities. Never present any raw score as a calibrated probability.\n"
     "4. `status` tells you whether a measurement happened: a `failed` or missing\n"
-    "   measurement is NOT a neutral result, and must never be reported as one.\n"
+    "   measurement is NOT a neutral result, and must never be reported as one. State\n"
+    "   which measurement is missing and how that gap limits the current conclusion.\n"
     "5. `scope` says what the expert could see: `global` = the whole image;\n"
     "   `center_crop` = it never saw the edges. Do not restate a crop-based measurement\n"
     "   as a whole-image finding, and do not restate a whole-image score as describing\n"
     "   an area.\n"
     "6. `visual_artifacts` are expert-produced images delivered with this token.\n"
-    "   Use them to inspect localisation (for example a map/conf pair): a high\n"
-    "   response marks a LOCAL candidate, not proof, and a bright region does not\n"
-    "   establish whole-image generation. The confidence map says where the map is\n"
-    "   reliable; low confidence means do not lean on that area. Artifacts do not\n"
-    "   replace the score and are not calibrated probabilities; cite their\n"
-    "   coordinates in the original-image [0,1000] system.\n"
+    "   TruFor images put title and colour bar outside the content box: use only\n"
+    "   `artifact_layout.content_box` for image coordinates. In the anomaly map,\n"
+    "   blue = low response and red = high response. In the confidence map, blue =\n"
+    "   low reliability and red = high reliability. Inspect the SAME content\n"
+    "   coordinates across the original crop, anomaly map and confidence map: state\n"
+    "   where the anomaly is, how reliable that location is, and how that supports or\n"
+    "   limits the conclusion. A red/bright region is a LOCAL candidate, not proof;\n"
+    "   low confidence means do not lean on that area. Artifacts do not replace the\n"
+    "   score and are not calibrated probabilities; cite coordinates in the\n"
+    "   original-image [0,1000] system.\n"
+    "7. `raw_band` is a five-bin reading aid: [0,0.2) low, [0.2,0.4) lower,\n"
+    "   [0.4,0.6) middle, [0.6,0.8) higher, [0.8,1] high. The middle band needs\n"
+    "   more visual and other-measurement analysis. It does not map directly to a\n"
+    "   label or confidence, and the same band across experts does not mean equal\n"
+    "   evidence strength.\n"
 )
 
 # Reading rules that only make sense when the tool is served.  A session
@@ -243,7 +271,7 @@ PROMPT_TAIL_BASE = (
 # 校准概率）已搬进登记表的 `prompt_note`，那里才是模型真正读到的地方。
 TOOL_READ_NOTES: Dict[str, str] = {}
 
-PROMPT_TAIL_RULES = "\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. You decide when the evidence is sufficient to conclude. Conclude once the measurements\n   you called for have arrived and another call would not change your reading; the system\'s\n   budget — not a count of tokens — is what ends a session that never concludes. If the\n   evidence is weak, conflicting, or mostly `Uncertain`/`disabled`, say \"Uncertain\" rather\n   than guessing: an honest Uncertain is preferred over a confident mistake.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n7. Every conclusion states the scope of the evidence: how many distinct experts returned\n   a VALID measurement, and whether you compared them ACROSS EXPERTS. Call it a cross-expert\n   comparison, never \"independent cross-validation\": two detectors can share training\n   sources or fail together. One measurement is not a comparison, and calling a second\n   expert does not by itself make the verification independent. State what the missing\n   evidence limits only when it bears on the conclusion.\n8. Visible artefacts are observations (blockiness, blur, banding): describe them, do not\n   assert their cause. Never claim that compression, re-encoding or sensor noise has been\n   measured, ruled out or shown not to affect a result — only the expert that measures\n   them may say anything about them, and only within its recorded `scope`. Take image\n   dimensions from the input metadata; never infer \"high resolution\" from appearance.\n9. `confidence` is YOUR OWN subjective, self-reported certainty in the verdict you chose.\n   It is NOT a probability that the image is real or AI-generated, not calibrated, and not\n   an accuracy. Never build it by copying, inverting, averaging or multiplying expert\n   scores. Keep three things apart: the expert\'s raw score, your self-reported confidence,\n   and the project\'s measured performance. When the verdict is \"Uncertain\", `confidence`\n   is your certainty about abstaining — never P(Fake). No per-report disclaimers are\n   needed: this contract, the field definitions and the review view carry the semantics.\n"
+PROMPT_TAIL_RULES = "\nRULES:\n1. Call at most one more expert than you need: prefer the expert whose measurement is\n   most likely to discriminate the specific anomaly you described in <planning>.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. You decide when the evidence is sufficient to conclude. Conclude once the measurements\n   you called for have arrived and another call would not change your reading; the system\'s\n   budget — not a count of tokens — is what ends a session that never concludes. If the\n   evidence is weak, conflicting, or mostly `Uncertain`/`disabled`, say \"Uncertain\" rather\n   than guessing: an honest Uncertain is preferred over a confident mistake. An Uncertain\n   conclusion must say which question is uncertain, what limits the evidence\n   (failed/missing measurement, applicability, low reliability, image-text mismatch), and\n   what is missing. `Not tampered` means this examination found no evidence sufficient to\n   support local tampering; it is not proof of absence, and a missing measurement must not\n   become Not tampered.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n7. Every conclusion states the scope of the evidence: how many distinct experts returned\n   a VALID measurement, and whether you compared them ACROSS EXPERTS. Call it a cross-expert\n   comparison, never \"independent cross-validation\": two detectors can share training\n   sources or fail together. One measurement is not a comparison, and calling a second\n   expert does not by itself make the verification independent. When PROBE and TruFor\n   are both high, explain their separate contributions; do not average them or call the\n   coincidence mutual verification. State what the missing evidence limits only when it\n   bears on the conclusion.\n8. Visible artefacts are observations (blockiness, blur, banding): describe them, do not\n   assert their cause. Never claim that compression, re-encoding or sensor noise has been\n   measured, ruled out or shown not to affect a result — only the expert that measures\n   them may say anything about them, and only within its recorded `scope`. Take image\n   dimensions from the input metadata; never infer \"high resolution\" from appearance.\n9. `confidence` is YOUR OWN uncalibrated certainty in the final overall\n   verdict. It is NOT a probability that the image is real or AI-generated, not calibrated,\n   and not an accuracy. Base it on evidence quality, expert applicability, and unresolved\n   questions; never build it by copying, inverting, averaging or multiplying expert scores, and do not output a\n   fixed high value by habit. When the verdict is \"Uncertain\", `confidence` is your\n   certainty about abstaining — never P(Fake). The report must make the basis of the\n   confidence clear and consistent with the stated conclusion.\n"
 
 SUBSET_NOTE = ("(In this session ONLY the tools listed above exist. Requests for any other "
                "tool will not be served, and spending a turn on one wastes the budget.)")
@@ -357,7 +385,8 @@ no guess about how it was made.]
 <verdict>
 {"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": [], "report": "concise report in Chinese"}
 </verdict>
-(confidence = your own uncalibrated certainty in THIS verdict, not P(Real/Fake).)
+(confidence = your own uncalibrated certainty in THIS verdict, based on evidence
+quality, expert applicability and unresolved questions; not P(Real/Fake).)
 """
 
 

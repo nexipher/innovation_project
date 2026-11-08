@@ -38,6 +38,36 @@ DIRECTIONS = ("higher_is_fake", "higher_is_real", "none")
 _PREPROCESS_KEYS = ("name", "detail", "measurement_scope")
 SCOPES = ("global", "center_crop", "region")
 
+# Raw-score bands are a reading aid, not a label.  The cut points are fixed
+# here (not in the prompt or a model) so every expert's pack uses one table.
+RAW_SCORE_BANDS = (
+    (0.0, 0.2, "低", "low"),
+    (0.2, 0.4, "较低", "lower"),
+    (0.4, 0.6, "中间区间", "middle"),
+    (0.6, 0.8, "较高", "higher"),
+    (0.8, 1.0, "高", "high"),
+)
+
+
+def raw_score_band(value) -> Optional[dict]:
+    """Five-bin reading aid for a raw score in [0, 1], or None if not numeric."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    if not (0.0 <= number <= 1.0):
+        return None
+    for low, high, label, english in RAW_SCORE_BANDS:
+        # The last bin is closed at 1.0; the others are half-open.
+        if low <= number < high or (high == 1.0 and number == 1.0):
+            return {
+                "label": label,
+                "english": english,
+                "range": [low, high],
+                "note": ("仅帮助阅读原始分数；不是标签，不直接映射 verdict 或 "
+                         "confidence；不同专家落在同一档不代表证据强度相同。"),
+            }
+    return None
+
 
 class SemanticsError(ValueError):
     """The registry is malformed — a loud failure, not a default."""

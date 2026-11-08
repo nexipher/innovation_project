@@ -207,7 +207,7 @@ class TestThePromptContractAfterB1:
 
     def test_the_confidence_contract_is_written_down(self):
         flat = self._flat(FORENSIC_SYSTEM_PROMPT)
-        assert "uncalibrated certainty in THIS verdict" in flat
+        assert "uncalibrated certainty in the final overall" in flat
         assert "never P(Fake)" in flat
         assert "averaging or multiplying expert scores" in flat
 
@@ -308,8 +308,10 @@ class TestToolPolicies:
         measurements disagree, contradicts the new evidence-scope rule, and rewards
         not making a second call — db111b1eb1ecb03d → 259069a1ddb66348.  The
         joint-task work then changed rule 6 to treat expert map/conf images as
-        model-visible local evidence (while keeping them non-calibrated), and
-        the default prompt is now 0b1c5f4031e9ea7b.  Anything that moves it again
+        model-visible local evidence (while keeping them non-calibrated); the
+        2026-11-08 revision added PROBE class semantics, five raw-score bands,
+        explicit Uncertain conditions and final-verdict confidence wording.
+        The default prompt is now 412ea4f1731884b1.  Anything that moves it again
         has to say so in a commit.
         """
         import hashlib
@@ -319,7 +321,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "0b1c5f4031e9ea7b"
+            "412ea4f1731884b1"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER
@@ -327,7 +329,8 @@ class TestToolPolicies:
         assert TOOL_ORDER[0] == "probe"
         assert "<call_probe>" in FORENSIC_SYSTEM_PROMPT
         # 主检测器的定位现在写在登记表的 prompt_note 里（同一句话进提示词）
-        assert "Strongest available evidence" in FORENSIC_SYSTEM_PROMPT
+        assert "image-level classifier output" in FORENSIC_SYSTEM_PROMPT
+        assert "not a cross-expert comparison" in FORENSIC_SYSTEM_PROMPT
 
     def test_a_policy_without_probe_never_advertises_it(self):
         """The shared FORBIDDEN sentence names variants, not tools — but nothing

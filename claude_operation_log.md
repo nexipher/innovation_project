@@ -932,3 +932,23 @@
 * **涉及/修改的文件清单**：`scripts/build_dual_acceptance_manifest.py (Created)`、`scripts/g8_dual_acceptance.py (Created)`、`sft_data/g8_acceptance/dual_20261107/{manifest.json,index.html,records.json,traces/,REVIEW_GUIDE.md,SUMMARY.md,REVIEW_STATUS.md}`、`claude_operation_log.md`、`plan.md`、`README.md`、`KNOWN_ISSUES.md`
 * **执行结果与验证状态**：批次 24/24 完成，wall 731.2 s；输出状态 **pending human review**；自动检查只作描述，不是验收；未训练、未做调用策略对照、未使用 test。
 * **置信度或遗留待办（TODO）**：①人工逐会话审核（重点：高 TruFor 真图是否被当篡改、整图误报如何被解释、局部篡改漏判、跨任务“互相印证”）；②若人工验收不通过，再决定提示词/工具语义修正并重跑；③TruFor 1024 显存失败需在后续资源策略中处理；④验收通过前不进入 SFT。
+
+### 2026-11-08 - 阶段四 4.52：证据包、Uncertain 语义、联合规则与预测框核验修订
+
+* **当前操作动作**：按用户 11 项要求修改证据包、提示词、联合字段校验、转换器、控制器和工作台；完成 CPU 全量回归与真实案例回归。GPU 未开启，未重跑真实模型；原 24 条 `dual_20261107` 保留为旧规则对照，复验留待新批次。
+* **对应计划锚点**：`plan.md` §12.7；`KNOWN_ISSUES.md` A8/A9。
+* **核心变更说明**：
+  1. **机械联合规则取消**：`utils/joint_verdict.py` 不再生成 `overall_from_dimensions`；`state_machine/controller.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、转换器/测试删除 `joint_overall_mismatch`。总体 `verdict` 采用 MLLM 综合输出；`whole_image_generation`/`local_manipulation`/证据仍分别保留。`Not tampered` 定义为“本次检查未发现足以支持局部篡改的证据”。
+  2. **Uncertain 条件**：提示词要求写明哪一问不确定、证据限制（失败/缺失、适用性、低可靠性、图文不对应）和缺少的信息；禁止以“无法证明未篡改”笼统弃权，禁止把缺失测量写成 Not tampered。
+  3. **五分档**：`utils/score_semantics.py::raw_score_band` 与 `score.raw_band` 加入 PROBE/TruFor 可见包；五档边界固定，注明仅帮助阅读、不映射 verdict/confidence、不跨专家比较强度；中间档要求结合图片和其他测量。
+  4. **PROBE 语义**：登记表/token/提示词改为“AI-generated/fake 类的模型预测概率，官方阈值 0.5，未在本项目目标数据上校准”；移除无条件 “Strongest available evidence”，新增结构化 `measured_performance`（C 组 AUROC 0.986）和图像级/不定位说明。
+  5. **TruFor 证据包**：`render_artifacts` 在内容区外增加标题和固定 JET 色条；异常图蓝=低响应/红=高响应，可靠性图蓝=低可靠/红=高可靠；token 记录 `artifact_layout`（`content_box`/`canvas_size`/颜色说明）。提示词要求对照同一 content 坐标解释异常位置、可靠性和结论。
+  6. **预测框核验**：新增 `utils/review_overlays.py` 和 `scripts/render_dual_prediction_overlays.py`，把模型 `suspicious_regions` 按原图 [0,1000] 坐标叠加到原图和异常图；全图框标为 `GLOBAL RANGE`，`joint_verdict` 记录 `scope=global_range/local_candidate`。审核页在 `record.review_overlays` 存在时显示。
+  7. **证据检查修复**：`utils/evidence_ledger.py` 增加“局部篡改检测器/局部篡改检测/局部编辑检测”等称谓；TruFor token 记录 `threshold=0.5`，旧 trace 由固定阈值回退。原 24 条中 5 条真实误纠正全部加入回归，5/5 不再触发。
+  8. **失败处理**：失败提示明确“这是缺失的测量”，要求 MLLM 说明缺口对结论的影响；`failed_tool_calls` 仍如实记录。显存优化未做。
+  9. **confidence**：提示词要求针对最终总体结论，综合证据质量、专家适用性和未解决问题；报告须说明依据，禁止机械 0.95。
+  10. **调用自主**：提示词明确调用顺序由模型决定，有局部怀疑可先调 TruFor；状态提示删除“必须先调 TruFor”，不再固定 PROBE→TruFor→结案。
+  11. **审核材料**：用原 24 条控制记录生成 `sft_data/g8_acceptance/dual_20261107_prediction_overlays_20261108/`（index + 10 条有预测框会话的原图/异常图 overlay）；原 24 条 trace/records 未改写。
+* **涉及/修改的文件清单**：`utils/joint_verdict.py`、`utils/score_semantics.py`、`utils/evidence_ledger.py`、`utils/review_overlays.py (Created)`、`experts/probe_dino.py`、`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/render_dual_prediction_overlays.py (Created)`、`tests/test_joint_verdict.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_ledger.py`、`tests/test_evidence_pack.py`、`tests/test_evidence_tokenizer.py`、`tests/test_message_builder.py`、`tests/test_review_overlays.py (Created)`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md`、`sft_data/g8_acceptance/dual_20261107/{SUMMARY.md,REVIEW_STATUS.md}`、`claude_operation_log.md`
+* **执行结果与验证状态**：`core` **770 passed, 1 skipped, 845 deselected**；5 条真实误纠正回归全部通过；CPU overlay 测试 4 passed；未加载 Qwen/TruFor 做新推理；原 24 条未重生成；未启动 SFT、调用策略对照或显存优化。
+* **置信度或遗留待办（TODO）**：①GPU 复验/新批次尚未进行；②原 24 条是旧规则对照，其 `joint_overall_mismatch`/旧 artifact 图不适用于新规则；③新提示词、五分档、图像标题/色条、预测框 overlay 的模型效果需新批次人工审核；④TruFor 1024 显存失败仍待资源方案；⑤验收通过前不训练。

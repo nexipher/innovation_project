@@ -102,6 +102,8 @@ class TruForExpert(ExternalScoreExpert):
         self.cache = cache
         #: arrays from the last analyze(), so render_artifacts costs nothing
         self._last: Optional[Dict[str, np.ndarray]] = None
+        #: title/colour-bar/content-box metadata for the last rendered maps
+        self.last_artifact_layout: Dict[str, dict] = {}
         #: cold start is the first call in this process: it pays for the
         #: interpreter, the imports and the checkpoint.  The batch decision
         #: (one subprocess per image vs. a resident worker) rests on these.
@@ -439,7 +441,8 @@ class TruForExpert(ExternalScoreExpert):
         self._last = arrays
         score = float(stats.get("score", 0.0))
         size = arrays.get("imgsize")
-        extra = {"high_response_threshold": HIGH_RESPONSE_THRESHOLD,
+        extra = {"threshold": HIGH_RESPONSE_THRESHOLD,
+                 "high_response_threshold": HIGH_RESPONSE_THRESHOLD,
                  "has_noiseprint": "np++" in arrays,
                  "stats": stats}
         preprocess = "原图直接前向（TruFor 自行缩放），输出 map/conf/score"
@@ -455,32 +458,110 @@ class TruForExpert(ExternalScoreExpert):
             extra=extra,
         )
 
+    @staticmethod
+    def _compose_artifact(content: np.ndarray, title: str,
+                          high_label: str, low_label: str):
+        """
+        Put title and a fixed JET colour bar OUTSIDE the image content.
+
+        The returned content box is ``[x0, y0, x1, y1]`` with exclusive
+        ``x1``/``y1``.  Review overlays must map original-image coordinates
+        into this box only; the title and legend are not image pixels.
+        """
+        import cv2
+
+        height, width = content.shape[:2]
+        top, right, bottom = 38, 205, 62
+        canvas = np.full((top + height + bottom, width + right, 3), 248,
+                         dtype=np.uint8)
+        canvas[top:top + height, :width] = content
+        cv2.rectangle(canvas, (0, top), (width - 1, top + height - 1),
+                      (70, 70, 70), 1)
+        cv2.putText(canvas, title, (10, 26), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.62, (25, 25, 25), 1, cv2.LINE_AA)
+
+        bar_x = width + 28
+        bar_y = top + 20
+        bar_w, bar_h = 28, max(40, height - 40)
+        for row in range(bar_h):
+            # JET: index 0 is blue (low), 255 is red (high).  Rows run
+            # top=high to bottom=low.
+            frac = 1.0 - row / max(1, bar_h - 1)
+            colour = cv2.applyColorMap(
+                np.array([[int(round(255 * frac))]], dtype=np.uint8),
+                cv2.COLORMAP_JET)[0, 0]
+            canvas[bar_y + row, bar_x:bar_x + bar_w] = colour
+        cv2.rectangle(canvas, (bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h),
+                      (70, 70, 70), 1)
+        cv2.putText(canvas, high_label, (bar_x + bar_w + 10, bar_y + 14),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (25, 25, 25), 1, cv2.LINE_AA)
+        cv2.putText(canvas, low_label, (bar_x + bar_w + 10, bar_y + bar_h),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (25, 25, 25), 1, cv2.LINE_AA)
+        cv2.putText(canvas, "title and colour bar are outside the content area",
+                    (10, top + height + 28), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.43, (90, 90, 90), 1, cv2.LINE_AA)
+        return canvas, [0, top, width, top + height], [canvas.shape[1], canvas.shape[0]]
+
     def render_artifacts(self, img_patch: np.ndarray) -> Dict[str, np.ndarray]:
         """
         Paint the maps from the *last* analysis — no second forward pass.
 
-        Two products, both diagnostic: the anomaly response and the confidence
-        map.  They are colourised (JET) so the composition of the evidence
-        matches the other experts' artifacts, and they carry no claim: the
-        wording rule (G7-4) is enforced on the text, not here.
+        The two products are diagnostic: anomaly response and confidence.
+        Both get a title and a fixed JET colour bar outside the content area,
+        and the content box is recorded so review overlays can map original
+        coordinates correctly.  Their wording rule is enforced in the token,
+        not by the image.
         """
         if not self._last:
             return {}
         import cv2
 
         artifacts: Dict[str, np.ndarray] = {}
-        for key, name in (("map", "anomaly_map"), ("conf", "confidence_map")):
+        self.last_artifact_layout = {}
+        specs = (
+            ("map", "anomaly_map", "TruFor anomaly map (local manipulation response)",
+             "HIGH response (red)", "LOW response (blue)"),
+            ("conf", "confidence_map", "TruFor confidence map (reliability)",
+             "HIGH reliability (red)", "LOW reliability (blue)"),
+        )
+        for key, name, title, high_label, low_label in specs:
             array = self._last.get(key)
             if array is None:
                 continue
-            scaled = np.clip(np.asarray(array, dtype=np.float64) * 255.0, 0, 255).astype(np.uint8)
-            artifacts[name] = cv2.applyColorMap(scaled, cv2.COLORMAP_JET)
+            scaled = np.clip(np.asarray(array, dtype=np.float64) * 255.0,
+                             0, 255).astype(np.uint8)
+            array = cv2.applyColorMap(scaled, cv2.COLORMAP_JET)
+            canvas, content_box, canvas_size = self._compose_artifact(
+                array, title, high_label, low_label)
+            artifacts[name] = canvas
+            self.last_artifact_layout[name] = {
+                "title": title,
+                "content_box": content_box,
+                "canvas_size": canvas_size,
+                "low_colour": "blue",
+                "high_colour": "red",
+                "low_label": low_label,
+                "high_label": high_label,
+            }
         noiseprint = self._last.get("np++")
         if noiseprint is not None:
             magnitude = np.abs(np.asarray(noiseprint, dtype=np.float64))
             peak = magnitude.max() or 1.0
             scaled = np.clip(magnitude / peak * 255.0, 0, 255).astype(np.uint8)
-            artifacts["noiseprint_pp"] = cv2.applyColorMap(scaled, cv2.COLORMAP_JET)
+            array = cv2.applyColorMap(scaled, cv2.COLORMAP_JET)
+            canvas, content_box, canvas_size = self._compose_artifact(
+                array, "TruFor Noiseprint++ (diagnostic)",
+                "HIGH magnitude (red)", "LOW magnitude (blue)")
+            artifacts["noiseprint_pp"] = canvas
+            self.last_artifact_layout["noiseprint_pp"] = {
+                "title": "TruFor Noiseprint++ (diagnostic)",
+                "content_box": content_box,
+                "canvas_size": canvas_size,
+                "low_colour": "blue",
+                "high_colour": "red",
+                "low_label": "LOW magnitude (blue)",
+                "high_label": "HIGH magnitude (red)",
+            }
         return artifacts
 
 

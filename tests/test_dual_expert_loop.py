@@ -32,6 +32,16 @@ def test_dual_prompt_declares_joint_fields_and_local_only_trufor():
     assert "visual_artifacts` are expert-produced images" in prompt
     # The old "human review, not evidence" contract is gone.
     assert "diagnostic products for human review" not in prompt
+    # New joint contract: no mechanical overall, explicit bands/autonomy/colors.
+    assert "Real only when" not in prompt
+    assert "Call order is yours" in prompt
+    assert "Not tampered" in prompt and "not proof of absence" in prompt
+    assert "which question is uncertain" in prompt
+    assert "missing measurement" in prompt
+    assert "raw_band" in prompt
+    assert "blue = low response" in prompt
+    assert "low reliability" in prompt and "high reliability" in prompt
+    assert "Strongest available evidence" not in prompt
 
 
 def test_state_note_says_local_evidence_is_missing_before_trufor():
@@ -65,9 +75,26 @@ def test_dual_mock_executes_both_experts_and_keeps_maps(tmp_path):
     assert visible["map_coordinates"]["space"] == "original_image"
     assert "diagnostic region crop, anomaly_map, confidence_map" in \
         visible["artifact_meaning"]
+    layout = trufor["artifact_layout"]
+    assert layout["anomaly_map"]["content_box"][1] > 0
+    assert layout["anomaly_map"]["canvas_size"][1] > layout["anomaly_map"]["content_box"][2]
+    assert visible["artifact_layout"]["anomaly_map"]["content_box"] == \
+        layout["anomaly_map"]["content_box"]
+    import cv2
     from config import PROJECT_ROOT
     assert all(os.path.exists(os.path.join(PROJECT_ROOT, path))
                for path in artifacts)
+    anomaly = cv2.imread(os.path.join(
+        PROJECT_ROOT, next(path for path in artifacts if "anomaly_map" in path)))
+    box = layout["anomaly_map"]["content_box"]
+    assert anomaly.shape[0] == layout["anomaly_map"]["canvas_size"][1]
+    assert anomaly.shape[1] == layout["anomaly_map"]["canvas_size"][0]
+    # Colour bar runs outside the content width: blue at the bottom, red at top.
+    bar_x = box[2] + 28 + 10
+    bar_top = box[1] + 25
+    bar_bottom = box[1] + 20 + max(40, (box[3] - box[1]) - 40) - 5
+    assert anomaly[bar_top, bar_x][2] > anomaly[bar_top, bar_x][0]   # red
+    assert anomaly[bar_bottom, bar_x][0] > anomaly[bar_bottom, bar_x][2]  # blue
     delivered = [turn for turn in result["conversation"]
                  if turn.get("image_paths")]
     assert any(any("anomaly_map" in path for path in turn["image_paths"])
@@ -95,5 +122,7 @@ def test_local_tamper_keeps_regions_separate_from_whole_image(tmp_path):
     verdict = result["final_verdict"]
     assert verdict["whole_image_generation"] == "Real"
     assert verdict["local_manipulation"] == "Tampered"
+    assert "overall_from_dimensions" not in verdict
+    assert "joint_overall_mismatch" not in verdict
     assert verdict["suspicious_regions"]
     assert verdict["suspicious_regions"][0]["bbox"] == [120, 80, 420, 360]

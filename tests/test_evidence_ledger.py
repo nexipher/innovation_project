@@ -488,3 +488,43 @@ class TestTheDeliveredFieldRule:
         ledger = Ledger.from_session([token])
         assert ledger.measured["probe_dino_expert"].delivered == {}
 
+
+
+class TestRealDualAcceptanceCorrections:
+    """The five false corrections observed in dual_20261107 must not recur.
+
+    The batch is kept as the control (not regenerated); these are the exact
+    model sentences that the old source aliases / threshold handling wrongly
+    flagged.  The aliases include the Chinese name "局部篡改检测器", and
+    TruFor's published threshold 0.5 is a citable number, not a measurement.
+    """
+
+    CASES = [
+        ("autosplice__58610__authentic__q95",
+         "但局部篡改检测分数0.655高于阈值"),
+        ("autosplice__42165__authentic__q95",
+         "TruFor 的局部篡改分数为 0.382（低于其诊断阈值 0.5）"),
+        ("genimage__BigGAN__051_biggan_00020__q95",
+         "局部篡改检测分数0.1989（低于阈值"),
+        ("genimage__SD14__045_sdv4_00039__q95",
+         "局部篡改检测分数0.904188提示局部编辑候选"),
+        ("autosplice__42005__2__q95",
+         "同时局部篡改检测器发现局部篡改候选（分数0.94143）"),
+    ]
+
+    @pytest.mark.parametrize("variant,sentence", CASES)
+    def test_correct_claims_do_not_trigger_a_correction(self, variant, sentence):
+        import os
+
+        from config import PROJECT_ROOT
+
+        base = os.path.join(PROJECT_ROOT, "sft_data/g8_acceptance/dual_20261107")
+        records = json.load(open(os.path.join(base, "records.json"), encoding="utf-8"))
+        record = next(row for row in records if row["variant_id"] == variant)
+        trace = json.load(open(os.path.join(base, record["trace_path"]), encoding="utf-8"))
+        ledger = Ledger.from_session(
+            trace["evidence_chain"],
+            served=[token.get("source") for token in trace["evidence_chain"]
+                    if token.get("source")],
+        )
+        assert ledger.findings(sentence) == [], sentence

@@ -527,8 +527,8 @@ def _format_regions(regions) -> str:
         if not isinstance(region, dict):
             continue
         rows.append(
-            f"bbox={region.get('bbox')}；reason={region.get('reason')}；"
-            f"evidence={region.get('evidence')}")
+            f"bbox={region.get('bbox')}；scope={region.get('scope', '未记录')}；"
+            f"reason={region.get('reason')}；evidence={region.get('evidence')}")
     return " ｜ ".join(rows) if rows else "未记录/空"
 
 
@@ -555,7 +555,11 @@ def _artifact_gallery(paths, page_dir: str) -> str:
             figures.append(f'<p class="muted">随附图像不存在：{html.escape(str(path))}</p>')
             continue
         label = os.path.basename(str(path))
-        if "anomaly_map" in label:
+        if "anomaly_predictions" in label:
+            label = "predicted bbox on TruFor anomaly map"
+        elif "original_predictions" in label:
+            label = "predicted bbox on original image"
+        elif "anomaly_map" in label:
             label = "TruFor anomaly map"
         elif "confidence_map" in label:
             label = "TruFor confidence map"
@@ -654,7 +658,6 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         ("局部篡改判断", record.get("local_manipulation") or "未记录"),
         ("可疑区域", _format_regions(record.get("suspicious_regions"))),
         ("联合字段问题", record.get("joint_verdict_issues") or "无记录"),
-        ("联合维度推导", record.get("joint_overall_mismatch") or "一致/无记录"),
         ("请求 / 执行 / 重复", f'执行 {counters.get("expert_calls")}｜跳过重复请求 '
                                f'{metadata.get("skipped_duplicate_calls", "未记录")}｜'
                                f'重复动作轮 {metadata.get("repeated_action_turns", "未记录")}｜'
@@ -672,6 +675,14 @@ def session_page(sample: dict, page_dir: str, index_name: str,
                      f"<td>{html.escape(str(value))}</td></tr>")
     parts.append("</table>")
     parts.append(_render_call_status(call_status(record, trace)))
+
+    overlays = record.get("review_overlays") or []
+    if overlays:
+        parts.append("<h2>预测框核验</h2>")
+        parts.append('<p class="muted">红框为模型 suspicious_regions；全图框标为 '
+                     'GLOBAL RANGE（不是完成局部定位）。框按原图 [0,1000] 坐标计算；'
+                     '异常图只看 content_box，标题/色条不是图像内容。</p>')
+        parts.append(_artifact_gallery(overlays, page_dir))
 
     # 协议命中：自动候选，供人工复核（用户 2026-10-18：全部命中都要人看）
     from scripts.g8_protocol_audit import PATTERNS, audit_trace, final_answer

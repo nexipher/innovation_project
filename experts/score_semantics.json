@@ -41,7 +41,7 @@
         ],
         "direction": "higher_is_fake",
         "is_calibrated_probability": false,
-        "note": "上游判别器的 sigmoid 输出；本项目只用其排序，概率映射由本地校准层另记"
+        "note": "PROBE 对输入图像属于 AI-generated/fake 类的模型预测概率；官方分类阈值为 0.5，高分表示模型更倾向生成类。该输出尚未在本项目目标数据上做概率校准；本项目只按原始分数与已验证性能使用。"
       },
       "threshold": {
         "value": 0.5,
@@ -54,7 +54,9 @@
       },
       "limits": [
         "权重与代码不可再分发；上游许可未确认",
-        "分数随分辨率与重编码漂移；已按格式分层评测（PNG/q70/q85/q95）"
+        "分数随分辨率与重编码漂移；已按格式分层评测（PNG/q70/q85/q95）",
+        "图像级分类输出，不定位生成区域；生成区域与覆盖范围必须结合定位证据另行分析",
+        "尚未在本项目目标数据上做概率校准，不能当作校准概率引用"
       ],
       "direction_rules": [
         {
@@ -69,7 +71,12 @@
           "prompt_note": "A low score points to Real; this expert holds across formats."
         }
       ],
-      "prompt_note": "Strongest available evidence; measured on the whole image (tiled windows). It locates nothing — never restate its score as a physical artefact or an area. It is the detector's own uncalibrated output — never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison."
+      "prompt_note": "PROBE returns the model's predicted probability for the AI-generated/fake class (official classification threshold 0.5; higher means the model leans generated). It is an image-level classifier output, NOT a probability calibrated on this project's target data. Use it to support the whole-image generation judgment, not the local-editing judgment; it locates nothing, so regions and coverage must come from localization evidence. Its measured performance on this project's validation is recorded in `measured_performance`; treat it as context, not a guarantee for this image, and allow for expert error and limits on when it applies. It is the detector's own uncalibrated output, never a calibrated probability of Real or Fake, and one measurement is not a cross-expert comparison.",
+      "measured_performance": {
+        "validation": "C group independent validation",
+        "auroc": 0.986,
+        "note": "已在本项目验证数据上测得；是历史性能，不保证当前图像或目标数据上的表现。"
+      }
     },
     "noise_expert": {
       "variant": "noise",

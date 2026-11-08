@@ -181,6 +181,13 @@ class EvidenceTokenizer:
             token["applicability_conditions"] = applicability_conditions
         if calibration:
             token["calibration"] = dict(calibration)
+        # The threshold is part of what the model was shown; carry it so the
+        # ledger does not read "below the diagnostic threshold 0.5" as a
+        # fabricated measurement (the registry fallback only covers registered
+        # experts; TruFor is deliberately not in that registry).
+        threshold = (getattr(expert_result, "metadata", {}) or {}).get("threshold")
+        if isinstance(threshold, (int, float)):
+            token["threshold"] = float(threshold)
 
         return token
 
@@ -213,7 +220,7 @@ class EvidenceTokenizer:
     # 模型可见字段：固定集合，测试锁定。多一个字段就是多一层要解释的数值。
     MODEL_VISIBLE_KEYS = ("evidence_id", "expert", "measurement", "status", "scope",
                           "score", "reading", "visual_artifacts", "artifact_meaning",
-                          "map_coordinates")
+                          "map_coordinates", "artifact_layout")
 
     @classmethod
     def model_visible(cls, token: dict) -> dict:
@@ -236,7 +243,9 @@ class EvidenceTokenizer:
         out neutral" are different facts, and a missing field must not read as
         the second one.
         """
-        from utils.score_semantics import SemanticsError, direction_for_value, entry
+        from utils.score_semantics import (
+            SemanticsError, direction_for_value, entry, raw_score_band,
+        )
 
         source = token.get("source") or ""
         if token.get("status") == "failed":
@@ -292,6 +301,7 @@ class EvidenceTokenizer:
                     "threshold": threshold,
                     "threshold_chosen_on": (
                         "official TruFor sigmoid; fixed for diagnostics, not fitted"),
+                    "raw_band": raw_score_band(raw),
                 },
                 "reading": (
                     (token.get("phenomenon") or "").strip()
@@ -311,17 +321,24 @@ class EvidenceTokenizer:
                     "image_size": list(image_size),
                     "bbox_format": "[ymin, xmin, ymax, xmax] in [0,1000]",
                 }
+            if token.get("artifact_layout"):
+                visible["artifact_layout"] = token["artifact_layout"]
             artifacts = token.get("visual_artifacts")
             if artifacts:
                 visible["visual_artifacts"] = list(artifacts)
                 visible["artifact_meaning"] = (
-                    "TruFor anomaly_map (per-pixel local manipulation response) and "
-                    "confidence_map (where the map is reliable), both aligned to the "
-                    "original image and the [0,1000] bbox. The images attached with "
-                    "this token, in order, are: diagnostic region crop, anomaly_map, "
-                    "confidence_map. A bright anomaly region is a local candidate, not "
-                    "proof; low confidence means do not rely on that region. The score "
-                    "above is not a whole-image generation probability."
+                    "TruFor artifact images have a title and a fixed colour bar "
+                    "OUTSIDE the content area; only the content box maps to the "
+                    "original image. Attached order: diagnostic region crop, "
+                    "anomaly_map, confidence_map. In the anomaly map, blue = low "
+                    "response and red = high response. In the confidence map, blue = "
+                    "low reliability and red = high reliability. Inspect the SAME "
+                    "content coordinates across the original crop, anomaly map and "
+                    "confidence map: state where the anomaly is, how reliable that "
+                    "location is, and how that supports or limits the local "
+                    "conclusion. A red/bright anomaly region is a local candidate, "
+                    "not proof; low confidence means do not rely on it. The score is "
+                    "not a whole-image generation probability."
                 )
             return visible
 
@@ -353,6 +370,7 @@ class EvidenceTokenizer:
                 "is_calibrated_probability": False,
                 "threshold": record["threshold"]["value"],
                 "threshold_chosen_on": record["threshold"]["chosen_on"],
+                "raw_band": raw_score_band(raw),
             })
             # 判定**这个值**所用的那条规则的说明排在最前：适用限制要跟着分数走，
             # 而不是躺在一段没人更新的提示词里。
@@ -367,6 +385,11 @@ class EvidenceTokenizer:
             # 只有给模型看的那一句（prompt_note）进包。`usage_conditions` 与
             # `limits` 是**内部**说明（含 bootstrap 数值、写法要求），把它们拼进
             # 模型输入就是把我们写给自己的话当成证据条件——这一处曾经就是这样。
+            if record.get("measured_performance"):
+                # Measured performance travels as a structured field, not as
+                # another number in the prose: it is context for weighing the
+                # expert, not a measurement of this image.
+                score["measured_performance"] = dict(record["measured_performance"])
             if record.get("prompt_note"):
                 reading_parts.append(record["prompt_note"])
 

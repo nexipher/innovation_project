@@ -9,8 +9,10 @@ two answers that must not overwrite each other:
   normalized [0,1000] coordinates.
 
 This module only normalises and validates what the model wrote.  It never
-invents a field or rewrites a label; callers can record the issues and keep the
-model's own text.
+invents a field or rewrites a label.  In particular it does **not** derive the
+overall ``verdict`` from the two dimensions: the overall label is the model's
+synthesis, and the controller/reviewer records the two dimensions beside it
+for audit rather than applying a mechanical rule.
 """
 
 from __future__ import annotations
@@ -49,22 +51,6 @@ def _canonical(value, aliases):
     return aliases.get(value.strip().lower())
 
 
-def overall_from_fields(whole: Optional[str], local: Optional[str]) -> str:
-    """The legacy overall label implied by the two dimensions.
-
-    ``Not applicable`` says local manipulation is not a meaningful question
-    because the whole image is generated; it is not a substitute for a clean
-    local measurement on a Real image.
-    """
-    if whole == "AI-generated" or local == "Tampered":
-        return "Fake"
-    if local == "Not applicable" and whole != "AI-generated":
-        return "Uncertain"
-    if whole == "Real" and local == "Not tampered":
-        return "Real"
-    return "Uncertain"
-
-
 def _normalise_region(region, evidence_ids: Optional[Iterable[str]]):
     issues = []
     if not isinstance(region, dict):
@@ -96,8 +82,13 @@ def _normalise_region(region, evidence_ids: Optional[Iterable[str]]):
         unknown = [item for item in evidence if item not in known]
         if unknown:
             issues.append(f"suspicious_regions cites unknown evidence ids: {unknown}")
+    area = ((ymax - ymin) * (xmax - xmin)) / (1000.0 * 1000.0)
     return {
         "bbox": values,
+        # A full-image box is a global range, not evidence that localisation
+        # was completed.  This annotation is derived from the box only; the
+        # model's coordinates and reason remain unchanged.
+        "scope": "global_range" if area >= 0.98 else "local_candidate",
         "reason": reason.strip(),
         "evidence": list(evidence),
     }, issues
@@ -147,9 +138,6 @@ def extract(candidate: dict, evidence_ids: Optional[Iterable[str]] = None):
         issues.append(
             "local_manipulation = Not applicable requires "
             "whole_image_generation = AI-generated")
-    if fields.get("whole_image_generation") and fields.get("local_manipulation"):
-        fields["overall_from_dimensions"] = overall_from_fields(
-            fields["whole_image_generation"], fields["local_manipulation"])
     return fields, issues
 
 

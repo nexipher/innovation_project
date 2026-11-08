@@ -171,3 +171,22 @@ class TestTokenizeG1Fields:
     def test_legacy_region_string_kept(self):
         token = EvidenceTokenizer.tokenize(self.FakeResult(), [10, 20, 30, 40], (100, 200))
         assert token["region"] == "patch_coordinates_[10, 20, 30, 40]"
+
+
+def test_trufor_visible_pack_carries_raw_band_and_artifact_layout():
+    token = {
+        "evidence_id": "E-band",
+        "evidence_name": "manipulation_anomaly_score",
+        "source": "trufor_expert",
+        "status": "measured",
+        "measurement_scope": "global",
+        "raw_metric": 0.72,
+        "phenomenon": "局部篡改检测分数",
+        "image_shape": [64, 80],
+        "condition_metadata": {},
+        "visual_artifacts": ["anomaly.png"],
+        "artifact_layout": {"anomaly_map": {"content_box": [0, 38, 80, 102]}},
+    }
+    pack = EvidenceTokenizer.model_visible(token)
+    assert pack["score"]["raw_band"]["label"] == "较高"
+    assert pack["artifact_layout"]["anomaly_map"]["content_box"] == [0, 38, 80, 102]

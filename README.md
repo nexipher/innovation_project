@@ -10,6 +10,11 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 仍是 `probe/npr/univfd`；IML-ViT 代码/权重已核实但未选中。联合任务把整图生成判断与
 > 局部篡改判断分开输出；24 会话人工验收材料已生成于
 > `sft_data/g8_acceptance/dual_20261107/`，**状态仍是 pending human review**。
+> **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
+> 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
+> content_box，并可生成原图与异常图上的预测框叠加；原 24 条保留为旧规则对照，
+> 真实模型复验待 GPU 开启后另写新批次。原 24 条控制记录的预测框核验见
+> `sft_data/g8_acceptance/dual_20261107_prediction_overlays_20261108/index.html`。
 > GenImage test 已被使用历史污染、旧 test 也有先验使用，**没有可靠未见测试**，test 继续隔离；
 > 专家选择使用 dev/val。Qwen3 已迁移到数据盘；未训练/SFT。
 >
@@ -21,7 +26,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-757%20core%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-770%20core%20passed-brightgreen)](./tests/)
 
 ---
 
