@@ -1,9 +1,11 @@
 # 计划（当前代次 g8）
 
-> **2026-11-07 当前状态（入口；覆盖历史段落中的过时表述）**：默认运行时工具箱是
+> **2026-11-08 当前状态（入口；覆盖历史段落中的过时表述）**：默认运行时工具箱是
 > **`probe` / `npr` / `univfd`**；`freq` / `jpeg` / `noise` 已退役、仅 replay；`ela` /
 > `frequency` v1 不注册。可选联合任务 `--tools probe,trufor` 已接入同一真实调用流程，
-> 分别输出整图生成与局部篡改判断；**人工验收 pending**。全局线 **PROBE 保留、SPAI 不接入**；
+> 分别输出整图生成与局部篡改判断；**人工验收 pending**。2026-11-08 已取消机械总体推导、
+> 增加五分档/PROBE 分类语义/TruFor 图标题色条与预测框 overlay；原 24 条为旧规则对照。
+> 全局线 **PROBE 保留、SPAI 不接入**；
 > **IML-ViT 代码与官方权重均已到位并完成 220 输入对照，但未选中**。
 > GenImage test 有使用历史且无未见性，继续隔离；选择只用 dev/val。最新结果见 §11.4/§11.5/
 > §11.7、§12 与 `docs/development/{GENIMAGE_GLOBAL_COMPARISON_20261105,LOCALIZATION_COMPARISON_20261105,IML_VIT_VERIFICATION_20261104}.md`。
@@ -21,7 +23,7 @@
 > `KNOWN_ISSUES.md`（问题清单）、`docs/development/TESTING.md`（测试分层与运行方式）。
 > 文档布局见 §1b：**根目录只保留四份日常文档**，其余在 `docs/{design,development,archive}/`。
 
-## 0. 当前状态（2026-11-07 更新）
+## 0. 当前状态（2026-11-08 更新）
 
 | 事实 | 值 |
 |------|-----|
