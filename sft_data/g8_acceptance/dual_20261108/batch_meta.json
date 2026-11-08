@@ -1,0 +1,35 @@
+{
+  "model": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "licence": "apache-2.0",
+    "dtype": "bfloat16",
+    "inference_mode": "non-thinking",
+    "thinking_supported_by_template": null,
+    "generation": {
+      "temperature": 0.0,
+      "do_sample": false,
+      "max_new_tokens": 1024
+    }
+  },
+  "experts": {
+    "probe_dino_expert": {
+      "class": "ProbeDinoExpert",
+      "device": "cuda"
+    },
+    "trufor_expert": {
+      "class": "TruForExpert",
+      "device": "cuda"
+    }
+  },
+  "prompts": {
+    "digest": "03d6ce133896171d",
+    "tools": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ]
+  },
+  "batch_id": "dual_20261108",
+  "manifest": "/root/autodl-tmp/innovation_project/sft_data/g8_acceptance/dual_20261107/manifest.json"
+}

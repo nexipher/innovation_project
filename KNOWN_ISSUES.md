@@ -17,6 +17,10 @@
 > **2026-11-08 修订**：取消联合字段的机械总体推导（A9）；证据检查器补充中文称谓与
 > TruFor 阈值，5 条真实误纠正已回归（A8）；证据包增加五分档、PROBE 分类语义、
 > 标题/色条/content_box 和预测框 overlay；原 24 条作为对照保留，未重生成。
+> 同一 24 输入的复验批次在 `sft_data/g8_acceptance/dual_20261108/`，**暂不扩新源图**；
+> 自动统计与人工复核见其 `comparison/comparison.md` 与 `plan.md` §12.8。新批次暴露的
+> 单专家停结、AI 生成图被判局部 Tampered、全图 bbox、planning 内重复 call 标签等
+> 行为问题记为 A10，尚未修复。
 
 ## 1. 当前必须解决（与具体专家无关）
 
@@ -31,6 +35,7 @@
 | A5补充（2026-10-14；2026-11-07 修复） | 转换器重建最终verdict，遗漏原始report与primary_evidence | **已修复（2026-11-07）**：`utils/final_v2.py::render_answer` 现在从 adopted closing turn 读取模型原始 JSON，原样保留合法的 `report`、`primary_evidence`、`whole_image_generation`、`local_manipulation`、`suspicious_regions`；缺失字段不补写，非法字段由 `utils/joint_verdict.py` 标记后进入审计/拒收路径。已在真实双专家 trace（`dual_check3_20261107` 及最终 24 会话批次 `dual_20261107`）上对照原始 trace 与最终监督文本，确认 report 与 primary_evidence 逐字保留；新增回归 `tests/test_final_v2.py::test_joint_fields_and_primary_evidence_are_preserved_verbatim`。历史 g7_b2 案例与冻结批次仅留证，不重生成。 |
 | A8 | 证据检查器对专家称谓与阈值的误判 | **已修复（2026-11-08）**：`utils/evidence_ledger.py` 补充“局部篡改检测器/局部篡改检测/局部编辑检测”等中文称谓；TruFor token 记录 `threshold=0.5`，旧控制批次由 ledger 的固定阈值回退兼容。原 `dual_20261107` 的 5 条真实误纠正（0.655/0.382+阈值0.5/0.1989/0.904188/0.94143）已加入回归，5/5 不再触发缺陷；原 trace 不改。 |
 | A9 | 联合字段机械推导 | **已取消（2026-11-08）**：不再从 `whole_image_generation`/`local_manipulation` 推 `overall_from_dimensions`，不再记 `joint_overall_mismatch`；总体 `verdict` 采用 MLLM 综合输出，分项结论与证据保留供审核。原 24 条作为旧规则对照，不重生成。 |
+| A10 | 新批次暴露的调用/结案行为 | **未修复（2026-11-08 记录）**：①24 条中 14 条只调一个专家、1 条 TruFor 失败后未调 PROBE；5 条整图由正确转为 Uncertain 的会话全部停在单专家，模型明知“PROBE 未调用”仍结案。②AI 生成图 `ADM`/`SD14` 被局部判 Tampered，真图 `339e8fae` 高 TruFor 响应被判 Tampered；局部误报 2→3。③全图 bbox 3→3，`ADM`/`SD14` 用 `[0,0,1000,1000]` 配局部原因。④20/24 在 `<planning>` 内重复写 `<call_x>`；提示词称会拒绝整轮，实际执行外层标签且 `protocol_violations=0`。⑤仍有 10 条 confidence=0.95，其中 `ADM` 只调 TruFor 却给整图 0.95。下一轮先人工验收，再做针对性提示词/执行策略修订；不据此扩新源图、不训练。 |
 | B2、B3 | 状态摘要、重复请求及防循环 | 已实现、效果待验证；新专家组内做同源对照，分别统计请求/执行/重复；重复轮须明确排除或掩码，不能仅有徽章就声称不训练 |
 | B4 | 单动作协议和格式纠错 | 已实现、真实效果待验证；调用与结案二选一，论述块内标签不执行，纠错指出正确位置；人工核查格式失败与协议违规 |
 | D1 | 审核工作台批次隔离 | 已实现、浏览器验收待完成；用新版或临时批次查进度/导入/导出及指纹，不需要继续审核冻结b2 |

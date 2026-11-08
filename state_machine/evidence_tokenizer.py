@@ -322,22 +322,45 @@ class EvidenceTokenizer:
                     "bbox_format": "[ymin, xmin, ymax, xmax] in [0,1000]",
                 }
             if token.get("artifact_layout"):
-                visible["artifact_layout"] = token["artifact_layout"]
+                # The full token keeps the pixel content box for review
+                # overlays.  The model gets only a non-numeric content-area
+                # label: exposing either pixel or normalized numbers made it
+                # copy a layout value (e.g. [0,38,369,294] or [0,0,1000,1000])
+                # into a suspicious_regions bbox, which belongs to the
+                # original-image [0,1000] system, not the artifact canvas.
+                visible["artifact_layout"] = {}
+                for name, item in (token.get("artifact_layout") or {}).items():
+                    if not isinstance(item, dict):
+                        continue
+                    visible["artifact_layout"][name] = {
+                        "title": item.get("title"),
+                        "low_colour": item.get("low_colour"),
+                        "high_colour": item.get("high_colour"),
+                        "low_label": item.get("low_label"),
+                        "high_label": item.get("high_label"),
+                        "content_area": "full original-image frame",
+                        "note": ("Title and colour bar are outside the content. "
+                                 "Predicted boxes are your own localisation in "
+                                 "original-image [0,1000] coordinates; do not use "
+                                 "a layout value as a bbox."),
+                    }
             artifacts = token.get("visual_artifacts")
             if artifacts:
                 visible["visual_artifacts"] = list(artifacts)
                 visible["artifact_meaning"] = (
                     "TruFor artifact images have a title and a fixed colour bar "
-                    "OUTSIDE the content area; only the content box maps to the "
-                    "original image. Attached order: diagnostic region crop, "
+                    "OUTSIDE the content area; the content area is the full "
+                    "original-image frame. Attached order: diagnostic region crop, "
                     "anomaly_map, confidence_map. In the anomaly map, blue = low "
                     "response and red = high response. In the confidence map, blue = "
                     "low reliability and red = high reliability. Inspect the SAME "
                     "content coordinates across the original crop, anomaly map and "
                     "confidence map: state where the anomaly is, how reliable that "
                     "location is, and how that supports or limits the local "
-                    "conclusion. A red/bright anomaly region is a local candidate, "
-                    "not proof; low confidence means do not rely on it. The score is "
+                    "conclusion. Predicted boxes must use original-image [0,1000] "
+                    "coordinates; do not copy the layout's pixel values into a "
+                    "bbox. A red/bright anomaly region is a local candidate, not "
+                    "proof; low confidence means do not rely on it. The score is "
                     "not a whole-image generation probability."
                 )
             return visible

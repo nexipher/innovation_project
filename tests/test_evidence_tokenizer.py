@@ -189,4 +189,7 @@ def test_trufor_visible_pack_carries_raw_band_and_artifact_layout():
     }
     pack = EvidenceTokenizer.model_visible(token)
     assert pack["score"]["raw_band"]["label"] == "较高"
-    assert pack["artifact_layout"]["anomaly_map"]["content_box"] == [0, 38, 80, 102]
+    assert pack["artifact_layout"]["anomaly_map"]["content_area"] == \
+        "full original-image frame"
+    assert "content_box" not in pack["artifact_layout"]["anomaly_map"]
+    assert "content_box_normalized_1000" not in pack["artifact_layout"]["anomaly_map"]

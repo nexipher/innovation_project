@@ -32,6 +32,8 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--manifest", default=str(MANIFEST))
     parser.add_argument("--out", default=str(OUT))
+    parser.add_argument("--batch-id", default=None,
+                        help="Batch label written into pages/metadata (default: out basename).")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -49,6 +51,11 @@ def main():
         raise SystemExit("GPU 未授权：设置 FORENSIC_ALLOW_GPU=1（联合验收）")
     out = Path(args.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
+    batch_id = args.batch_id or out.name
+    # Keep the exact input manifest beside the generated batch so a later
+    # reader can reproduce the same 24 inputs without guessing.
+    (out / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.environ.setdefault("PROBE_WEIGHTS",
                           "/root/autodl-tmp/third_party/probe/"
                           "DINOv2_best_model_step_34999.pth")
@@ -79,7 +86,11 @@ def main():
                     for name, expert in fsm._experts.items()},
         "prompts": {"digest": prompt_digest,
                     "tools": list(fsm._experts)},
+        "batch_id": batch_id,
+        "manifest": str(Path(args.manifest).resolve()),
     }
+    (out / "batch_meta.json").write_text(
+        json.dumps(batch_meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     records = []
     started = time.time()
     for index, sample in enumerate(samples, 1):
@@ -150,7 +161,7 @@ def main():
         page = session_page(
             sample_for_page, str(out), "index.html", batch_meta=batch_meta,
             meta={"schema": "dual_acceptance/1", "generation": "g8",
-                  "batch": "dual_20261107", "samples": {}, "repo_decisions": {}})
+                  "batch": batch_id, "samples": {}, "repo_decisions": {}})
         (out / page_name).write_text(page, encoding="utf-8")
         records.append(record)
         print(f"[{index}/{len(samples)}] {sample['sample_id']} "
@@ -171,8 +182,8 @@ def main():
         f'stop={html.escape(str(row["halting_reason"]))}</li>'
         for i, row in enumerate(records))
     index = f"""<!doctype html><html><head><meta charset="utf-8">
-<title>PROBE+TruFor joint acceptance</title></head><body>
-<h1>PROBE + TruFor 联合任务人工验收（pending human review）</h1>
+<title>PROBE+TruFor joint acceptance — {html.escape(batch_id)}</title></head><body>
+<h1>PROBE + TruFor 联合任务人工验收（{html.escape(batch_id)}；pending human review）</h1>
 <p>固定 {len(records)} 个会话；禁止把自动检查当作人工验收。逐条打开核对：模型是否理解
 PROBE/TruFor 的分别作用、是否合理追加工具、是否修正初始怀疑、解释是否忠实。</p>
 <p>模型：{html.escape(json.dumps(identity, ensure_ascii=False))}<br>
@@ -182,7 +193,7 @@ prompt digest: {html.escape(prompt_digest)}；tools: probe, trufor</p>
 </body></html>"""
     (out / "index.html").write_text(index, encoding="utf-8")
     (out / "REVIEW_STATUS.md").write_text(
-        "# PROBE + TruFor joint acceptance\n\n"
+        f"# PROBE + TruFor joint acceptance — {batch_id}\n\n"
         f"- sessions: {len(records)}\n"
         f"- generated: {datetime.now().isoformat(timespec='seconds')}\n"
         "- status: **pending human review**\n"

@@ -78,8 +78,10 @@ def test_dual_mock_executes_both_experts_and_keeps_maps(tmp_path):
     layout = trufor["artifact_layout"]
     assert layout["anomaly_map"]["content_box"][1] > 0
     assert layout["anomaly_map"]["canvas_size"][1] > layout["anomaly_map"]["content_box"][2]
-    assert visible["artifact_layout"]["anomaly_map"]["content_box"] == \
-        layout["anomaly_map"]["content_box"]
+    assert visible["artifact_layout"]["anomaly_map"]["content_area"] == \
+        "full original-image frame"
+    assert "content_box" not in visible["artifact_layout"]["anomaly_map"]
+    assert "content_box_normalized_1000" not in visible["artifact_layout"]["anomaly_map"]
     import cv2
     from config import PROJECT_ROOT
     assert all(os.path.exists(os.path.join(PROJECT_ROOT, path))

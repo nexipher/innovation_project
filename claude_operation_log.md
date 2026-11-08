@@ -952,3 +952,17 @@
 * **涉及/修改的文件清单**：`utils/joint_verdict.py`、`utils/score_semantics.py`、`utils/evidence_ledger.py`、`utils/review_overlays.py (Created)`、`experts/probe_dino.py`、`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/render_dual_prediction_overlays.py (Created)`、`tests/test_joint_verdict.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_ledger.py`、`tests/test_evidence_pack.py`、`tests/test_evidence_tokenizer.py`、`tests/test_message_builder.py`、`tests/test_review_overlays.py (Created)`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`docs/design/CURRENT_PROGRAM_ARCHITECTURE.md`、`sft_data/g8_acceptance/dual_20261107/{SUMMARY.md,REVIEW_STATUS.md}`、`claude_operation_log.md`
 * **执行结果与验证状态**：`core` **770 passed, 1 skipped, 845 deselected**；5 条真实误纠正回归全部通过；CPU overlay 测试 4 passed；未加载 Qwen/TruFor 做新推理；原 24 条未重生成；未启动 SFT、调用策略对照或显存优化。
 * **置信度或遗留待办（TODO）**：①GPU 复验/新批次尚未进行；②原 24 条是旧规则对照，其 `joint_overall_mismatch`/旧 artifact 图不适用于新规则；③新提示词、五分档、图像标题/色条、预测框 overlay 的模型效果需新批次人工审核；④TruFor 1024 显存失败仍待资源方案；⑤验收通过前不训练。
+
+### 2026-11-08 - 阶段四 4.53：相同 24 输入的新批次复验与扩样决策
+
+* **当前操作动作**：GPU 开启后，用与 `dual_20261107` 完全相同的 24 个 manifest 输入运行新规则，产物写入 `sft_data/g8_acceptance/dual_20261108/`；生成自动比较并逐项人工复核，决定暂不扩到新源图。
+* **对应计划锚点**：`plan.md` §12.8；`KNOWN_ISSUES.md` A10。
+* **核心变更说明**：
+  1. **新批次**：24/24 完成，Qwen3-VL-8B-Instruct / greedy / `probe+trufor`，wall **732.3 s**；联合模式 prompt digest `03d6ce133896171d`；状态 pending human review；产物含 `records.json`、traces、`review_overlays`、`batch_meta.json`、`comparison/`、`REVIEW_GUIDE.md`。
+  2. **比较脚本**：新增 `scripts/compare_dual_acceptance.py`；自动统计整图/局部正确性、局部误报、调用数/首工具、图片误读、跨任务相互验证、笼统弃权、框文候选、全图 bbox、confidence 分布；人工复核后修正正则，排除“无需交叉验证”等否定句、视觉观察与 map 的相似措辞、以及“map 没给坐标”的抱怨。
+  3. **自动结果**：整图正确 16→11、局部正确 6→7、两维 2→3、局部误报 2→3、call2 23→9、TruFor-first 0→16、明确图片误读 1→0、强跨任务相互验证 1→1（原自动 1→4 为误报）、弱一致措辞 9→3、总体 Uncertain 4→10、笼统 Uncertain 0→0、框文自动候选 1→0、文字提高响应但无框 4→5、全图 bbox 3→3、confidence=0.95 17→10、≥0.9 18→10、mean 0.9096→0.8104、stdev 0.0768→0.1683。
+  4. **根因观察**：整图 5 条由正确转错误（`58610`、`BigGAN`、`Midjourney`、`VQDM`、`41187_0`）全部只调用 TruFor（`Midjourney` 为 TruFor 失败后未调 PROBE）；模型明确写“PROBE 未调用”仍结案 Uncertain。局部误报新增 `339e8fae`（真图高 TruFor 响应）与 `SD14`（AI 生成图被判局部 Tampered）；`ADM`/`SD14` 仍用 `[0,0,1000,1000]` 配局部原因。20/24 在 planning 内重复写 call 标签，提示词称会拒绝但实际执行外层标签。
+  5. **决策**：**暂不扩新源图**；先人工验收 24 条，再针对“停在单专家”、AI 生成图局部 Tampered、全图 bbox、相互支持措辞做一次提示词/执行策略修订，用同一 24 输入重跑；通过后再扩样。SFT 不启动。
+* **涉及/修改的文件清单**：`scripts/compare_dual_acceptance.py (Created)`、`scripts/g8_dual_acceptance.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_tokenizer.py`、`tests/test_message_builder.py`、`sft_data/g8_acceptance/dual_20261108/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
+* **执行结果与验证状态**：新批次 24/24 完成、wall 732.3 s；`core` **770 passed, 1 skipped, 845 deselected**；比较产物 `comparison/comparison.md`、`comparison.json`；未训练、未扩样、未使用 test。
+* **置信度或遗留待办（TODO）**：①人工逐会话审核新 24 条；②下一轮修单专家停结与局部 Tampered 语义；③修 planning 内重复 call 标签；④TruFor 1024 显存失败仍待资源方案；⑤验收通过前不训练、不扩新源图。

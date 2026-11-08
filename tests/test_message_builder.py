@@ -311,7 +311,7 @@ class TestToolPolicies:
         model-visible local evidence (while keeping them non-calibrated); the
         2026-11-08 revision added PROBE class semantics, five raw-score bands,
         explicit Uncertain conditions and final-verdict confidence wording.
-        The default prompt is now 412ea4f1731884b1.  Anything that moves it again
+        The default prompt is now 5ccac6727c9c216f.  Anything that moves it again
         has to say so in a commit.
         """
         import hashlib
@@ -321,7 +321,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "412ea4f1731884b1"
+            "5ccac6727c9c216f"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

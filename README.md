@@ -12,8 +12,12 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > `sft_data/g8_acceptance/dual_20261107/`，**状态仍是 pending human review**。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
-> content_box，并可生成原图与异常图上的预测框叠加；原 24 条保留为旧规则对照，
-> 真实模型复验待 GPU 开启后另写新批次。原 24 条控制记录的预测框核验见
+> content_box，并可生成原图与异常图上的预测框叠加。同一 24 输入的规则复验写在
+> `sft_data/g8_acceptance/dual_20261108/`，自动比较见其 `comparison/comparison.md`：
+> 图片误读 1→0、confidence=0.95 17→10，但整图正确 16→11、总体 Uncertain 4→10、
+> 两专家调用 23→9；跨任务“相互验证”排除否定句后 1→1，没有变多也尚未消除。
+> **决定：暂不扩到新源图**，先人工审阅这 24 条并修正“停在单专家”、AI 生成图被判
+> 局部 Tampered、全图 bbox 等问题。原 24 条控制记录的预测框核验见
 > `sft_data/g8_acceptance/dual_20261107_prediction_overlays_20261108/index.html`。
 > GenImage test 已被使用历史污染、旧 test 也有先验使用，**没有可靠未见测试**，test 继续隔离；
 > 专家选择使用 dev/val。Qwen3 已迁移到数据盘；未训练/SFT。
