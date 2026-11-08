@@ -134,7 +134,13 @@ def _pseudo_probability(record: dict) -> float:
     走这里（`generate_trajectories_g4.py` 已按策略写 None 而不是折算）。
     """
     verdict = record.get("verdict")
-    confidence = float(record.get("confidence") or 0.0)
+    if "certainty" in record and record.get("confidence") is None:
+        raise ValueError(
+            "certainty_v1 records have no numeric confidence and are not "
+            "comparable on the historical P(Fake) scale")
+    confidence = record.get("confidence")
+    if not isinstance(confidence, (int, float)):
+        raise ValueError(f"record has no numeric confidence: {record!r}")
     if verdict == "Fake":
         return confidence
     if verdict == "Real":

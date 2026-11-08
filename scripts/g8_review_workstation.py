@@ -669,15 +669,25 @@ def session_page(sample: dict, page_dir: str, index_name: str,
     parts.append("</div>")
 
     parts.append("<h2>控制与计数</h2><table><tr><th>项</th><th>值</th></tr>")
+    if "certainty" in record:
+        certainty_value = record.get("certainty")
+        certainty_row = (
+            "总体把握（certainty，定性）",
+            f'{"null" if certainty_value is None else certainty_value}'
+            "　—　High/Medium/Low 是模型对最终结论的定性把握；"
+            "Uncertain 时为 null，不是比例、不是 P(Real/Fake)，"
+            "也不是专家分数")
+    else:
+        # Historical batches keep their original numeric field and wording.
+        certainty_row = (
+            "模型自报置信度（旧批次，未校准）",
+            f'{record.get("confidence")}'
+            "　—　这是旧版模型对所选结论的主观把握，不是 P(Real/Fake)，"
+            "也不是专家分数；专家原始分数见下方证据表")
     rows = [
         ("模型自己的报告", record.get("report")),
         ("模型候选 / 采纳", f'{record.get("model_candidate")} / {record.get("final_verdict")}'),
-        # 严格区分两种量：模型自报的、未校准的把握 与 专家的原始分数。
-        # 不写成一个"置信度"了事，也不渲染成百分比——那会读成 P(真实/伪造)。
-        ("模型自报置信度（未校准）",
-         f'{record.get("confidence")}'
-         "　—　这是模型对所选结论的主观把握，不是 P(Real/Fake)，"
-         "也不是专家分数；专家原始分数见下方证据表"),
+        certainty_row,
         ("停止原因（控制端）", f'{record.get("halting_reason")}｜policy_reasons='
                               f'{record.get("policy_reasons")}'),
         # Closing-gap audit: distinguishes "never tried" from "tried and

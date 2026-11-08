@@ -23,9 +23,13 @@ SECOND_CALL = ("<planning>\nSuspected Region: [400, 300, 700, 600]\n</planning>\
                "<call_noise>[400, 300, 700, 600]</call_noise>")
 GARBAGE = "我认为这张图片看起来很正常，没有发现明显的异常。"
 
-def _verdict(label, confidence=0.8, report="基于已获取的测量给出结论。"):
+def _verdict(label, confidence=0.8, report="基于已获取的测量给出结论。",
+             certainty="Medium"):
+    # confidence is kept as an unused positional argument so existing label
+    # tests need not change; the v3 schema writes qualitative certainty.
+    cert = "null" if label == "Uncertain" else f'"{certainty}"'
     return (f'<reasoning>根据现有测量。</reasoning>\n<verdict>'
-            f'{{"verdict": "{label}", "confidence": {confidence},'
+            f'{{"verdict": "{label}", "certainty": {cert},'
             f' "primary_evidence": [], "report": "{report}"}}</verdict>')
 
 CLOSING = _verdict("Uncertain", 0.4, "现有测量不足以判定，如实说明。")
@@ -145,19 +149,36 @@ class TestStopReasons:
         conclusion = result["final_verdict"]["conclusion"]
         assert conclusion["source"] == "closing_turn"
 
-class TestConfidenceIsTheModelsOwnNumber:
-    def test_a_zero_confidence_is_kept(self, v3):
-        result = v3([CALL, _verdict("Fake", 0.0)])
-        assert result["final_verdict"]["confidence"] == 0.0
+class TestCertaintyIsTheModelsOwnQualitativeJudgement:
+    def test_a_high_certainty_is_kept(self, v3):
+        result = v3([CALL, _verdict("Fake", certainty="High")])
+        assert result["final_verdict"]["certainty"] == "High"
+        assert "confidence" not in result["final_verdict"]
 
-    def test_a_missing_confidence_uses_the_documented_fallback(self, v3):
+    def test_a_missing_certainty_is_not_invented(self, v3):
         result = v3([CALL, '<verdict>{"verdict": "Fake", "primary_evidence": [],'
-                           ' "report": "没有写置信度。"}</verdict>'])
-        assert result["final_verdict"]["confidence"] == 0.5
+                           ' "report": "没有写 certainty。"}</verdict>'])
+        assert result["final_verdict"]["certainty"] is None
+        assert any("certainty:" in issue for issue in
+                   result["final_verdict"].get("joint_verdict_issues") or [])
 
-    def test_an_impossible_confidence_is_not_believed(self, v3):
-        result = v3([CALL, _verdict("Fake", 1.9)])
-        assert result["final_verdict"]["confidence"] == 0.5
+    def test_a_numeric_confidence_is_not_accepted_as_certainty(self, v3):
+        result = v3([CALL, '<verdict>{"verdict": "Fake", "confidence": 0.9,'
+                           ' "primary_evidence": [], "report": "旧字段。"}</verdict>'])
+        assert result["final_verdict"]["certainty"] is None
+        assert "confidence" not in result["final_verdict"]
+        assert any("certainty:" in issue for issue in
+                   result["final_verdict"].get("joint_verdict_issues") or [])
+
+    def test_an_illegal_certainty_is_not_believed(self, v3):
+        result = v3([CALL, _verdict("Fake", certainty="Very sure")])
+        assert result["final_verdict"]["certainty"] is None
+        assert any("certainty:" in issue for issue in
+                   result["final_verdict"].get("joint_verdict_issues") or [])
+
+    def test_uncertain_uses_null_certainty(self, v3):
+        result = v3([CALL, _verdict("Uncertain")])
+        assert result["final_verdict"]["certainty"] is None
 
 class TestAFailedConclusionIsNotAnAbstention:
     def test_it_carries_its_own_status(self, v3):

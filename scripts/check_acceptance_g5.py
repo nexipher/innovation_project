@@ -84,7 +84,15 @@ def cell_auroc(records: Dict[str, dict], cell_suffix: str) -> Optional[float]:
     from scipy.stats import rankdata
 
     def probability(record):
-        verdict, confidence = record.get("verdict"), record.get("confidence") or 0.0
+        if "certainty" in record and record.get("confidence") is None:
+            raise ValueError(
+                "G5 AUROC requires the historical numeric confidence; "
+                "certainty_v1 records are not comparable")
+        verdict = record.get("verdict")
+        confidence = record.get("confidence")
+        if not isinstance(confidence, (int, float)):
+            raise ValueError(
+                f"record {record.get('sample_id')!r} has no numeric confidence")
         if verdict == "Fake":
             return confidence
         if verdict == "Real":

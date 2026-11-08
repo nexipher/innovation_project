@@ -111,9 +111,17 @@ def _correct(record: dict) -> bool:
 
 
 def _confident_error(record: dict) -> bool:
-    confidence = record.get("confidence") or 0.0
+    if "certainty" in record:
+        # certainty_v1: High is the qualitative counterpart of a confident
+        # label; Medium/Low are not treated as confident errors.  Never
+        # convert a missing numeric confidence to 0.0.
+        confident = record.get("certainty") == "High"
+    else:
+        confidence = record.get("confidence")
+        confident = (isinstance(confidence, (int, float))
+                     and confidence >= CONFIDENT)
     return (record.get("final_verdict") in ("Real", "Fake")
-            and not _correct(record) and confidence >= CONFIDENT)
+            and not _correct(record) and confident)
 
 
 def admit(tool_record: dict, baseline_record: Optional[dict],

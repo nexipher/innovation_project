@@ -150,6 +150,9 @@ def measure(batch: Path):
     text_without_box = []
     full_boxes_detail = []
     confidences = []
+    certainties = Counter()
+    confidence_recorded = False
+    certainty_recorded = False
     whole_correct = local_correct = both_correct = 0
     local_false_positive = 0
     joint_issues = 0
@@ -228,7 +231,12 @@ def measure(batch: Path):
                     "scope": region.get("scope"),
                     "reason": region.get("reason"),
                 })
-        confidences.append(record.get("confidence"))
+        if "confidence" in record:
+            confidence_recorded = True
+            confidences.append(record.get("confidence"))
+        if "certainty" in record:
+            certainty_recorded = True
+            certainties[record.get("certainty")] += 1
         whole_truth = record["task_truth"]["whole_image_generation"]
         local_truth = record["task_truth"]["local_manipulation"]
         whole_ok = record.get("whole_image_generation") == whole_truth
@@ -278,6 +286,7 @@ def measure(batch: Path):
             "whole": record.get("whole_image_generation"),
             "local": record.get("local_manipulation"),
             "confidence": record.get("confidence"),
+            "certainty": record.get("certainty"),
             "calls": len(sources),
             "first_tool": sources[0] if sources else None,
             "issues": record.get("joint_verdict_issues") or [],
@@ -300,10 +309,20 @@ def measure(batch: Path):
         "full_boxes_detail": full_boxes_detail,
         "confidence": {
             "values": Counter(confidences),
+            "recorded": confidence_recorded,
             "n_095": sum(c == 0.95 for c in numeric),
             "n_high": sum(c >= 0.9 for c in numeric),
             "mean": round(statistics.mean(numeric), 4) if numeric else None,
             "stdev": round(statistics.pstdev(numeric), 4) if numeric else None,
+        },
+        "certainty": {
+            "values": {("null" if key is None else key): value
+                       for key, value in certainties.items()},
+            "recorded": certainty_recorded,
+            "high": certainties.get("High", 0),
+            "medium": certainties.get("Medium", 0),
+            "low": certainties.get("Low", 0),
+            "null": certainties.get(None, 0),
         },
         "full_image_boxes": len(full_boxes_detail),
         "regions": sum(len(record.get("suspicious_regions") or [])
@@ -339,6 +358,10 @@ def _markdown(control, new):
         "region_flag_sessions", "coverage_correction_sessions",
         "coverage_failed_sessions",
     }
+    confidence_keys = {"confidence", "confidence_095", "confidence_high",
+                       "confidence_mean", "confidence_stdev"}
+    certainty_keys = {"certainty", "certainty_high", "certainty_medium",
+                      "certainty_low", "certainty_null"}
 
     def row(label, key, extract):
         c = extract(control[key])
@@ -349,6 +372,12 @@ def _markdown(control, new):
         if key in review_keys:
             c = c if control.get("coverage_fields_recorded") else "未记录"
             n = n if new.get("coverage_fields_recorded") else "未记录"
+        if key in confidence_keys:
+            c = c if control.get("confidence", {}).get("recorded") else "未记录"
+            n = n if new.get("confidence", {}).get("recorded") else "未记录"
+        if key in certainty_keys:
+            c = c if control.get("certainty", {}).get("recorded") else "未记录"
+            n = n if new.get("certainty", {}).get("recorded") else "未记录"
         if isinstance(c, (int, float)) and isinstance(n, (int, float)):
             delta = f"{n - c:+g}"
         else:
@@ -394,10 +423,22 @@ def _markdown(control, new):
         row("文字提到异常区/高响应但无框", "text_region_without_box", len),
         row("可疑区域数", "regions", lambda x: x),
         row("全图 bbox 数", "full_image_boxes", lambda x: x),
-        row("confidence=0.95 会话", "confidence", lambda x: x["n_095"]),
-        row("confidence>=0.9 会话", "confidence", lambda x: x["n_high"]),
-        row("confidence mean", "confidence", lambda x: x["mean"]),
-        row("confidence stdev", "confidence", lambda x: x["stdev"]),
+        row("certainty=High", "certainty",
+            lambda x: x.get("high", 0)),
+        row("certainty=Medium", "certainty",
+            lambda x: x.get("medium", 0)),
+        row("certainty=Low", "certainty",
+            lambda x: x.get("low", 0)),
+        row("certainty=null（Uncertain）", "certainty",
+            lambda x: x.get("null", 0)),
+        row("旧 confidence=0.95 会话", "confidence",
+            lambda x: x["n_095"]),
+        row("旧 confidence>=0.9 会话", "confidence",
+            lambda x: x["n_high"]),
+        row("旧 confidence mean", "confidence",
+            lambda x: x["mean"]),
+        row("旧 confidence stdev", "confidence",
+            lambda x: x["stdev"]),
         "",
         "## 候选明细",
         "",
@@ -462,6 +503,7 @@ def main():
         "generic_uncertain": [len(control["generic_uncertain"]), len(new["generic_uncertain"])],
         "box_candidates": [len(control["box_text_candidates"]), len(new["box_text_candidates"])],
         "confidence_095": [control["confidence"]["n_095"], new["confidence"]["n_095"]],
+        "certainty": [control["certainty"]["values"], new["certainty"]["values"]],
         "untried_sessions": [control["untried_sessions"], new["untried_sessions"]],
         "preclose_sessions": [control["preclose_sessions"], new["preclose_sessions"]],
         "abstention_cited_untried_sessions": [

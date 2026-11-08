@@ -69,7 +69,9 @@ class TestStateMachineRun:
         result = state_machine.run(FAKE_PATH, "Fake")
         v = result["final_verdict"]
         assert "verdict" in v
-        assert "confidence" in v
+        assert v.get("verdict_schema") == "certainty_v1"
+        assert "certainty" in v
+        assert "confidence" not in v
         assert v["verdict"] in ("Real", "Fake", "Uncertain")
 
     def test_sft_file_created(self, state_machine):
@@ -80,7 +82,7 @@ class TestStateMachineRun:
     def test_real_image_path(self, state_machine):
         """Real image should not crash or produce nonsense."""
         result = state_machine.run(REAL_PATH, "Real")
-        assert result["final_verdict"]["confidence"] > 0.0
+        assert result["final_verdict"]["certainty"] in ("High", "Medium", "Low", None)
 
 class ScriptedMLLM:
     """Deterministic scripted client for controller-level G1 tests."""

@@ -74,8 +74,13 @@ class TestPseudoProbability:
     def test_uncertain_is_uninformative(self):
         assert _pseudo_probability({"verdict": "Uncertain", "confidence": 0.0}) == 0.5
 
-    def test_missing_confidence_defaults_to_zero(self):
-        assert _pseudo_probability({"verdict": "Fake"}) == pytest.approx(0.0)
+    def test_missing_confidence_is_not_silently_treated_as_zero(self):
+        with pytest.raises(ValueError, match="no numeric confidence"):
+            _pseudo_probability({"verdict": "Fake"})
+
+    def test_certainty_records_are_not_comparable_on_the_old_scale(self):
+        with pytest.raises(ValueError, match="certainty_v1"):
+            _pseudo_probability({"verdict": "Fake", "certainty": "High"})
 
 
 def _record(gt, verdict, confidence, cell="real_png"):

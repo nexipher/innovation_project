@@ -117,7 +117,6 @@ def main():
             "risk_tags": sample.get("risk_tags") or [],
             "final_verdict": verdict.get("verdict"),
             "verdict_status": verdict.get("verdict_status"),
-            "confidence": verdict.get("confidence"),
             "report": verdict.get("report"),
             "primary_evidence": verdict.get("primary_evidence"),
             "whole_image_generation": verdict.get("whole_image_generation"),
@@ -154,6 +153,11 @@ def main():
             "coverage_check": verdict.get("coverage_check"),
             "tools_served": list(fsm._experts),
         }
+        if "certainty" in verdict:
+            record["certainty"] = verdict.get("certainty")
+            record["verdict_schema"] = verdict.get("verdict_schema")
+        if "confidence" in verdict:
+            record["confidence"] = verdict.get("confidence")
         page_name = f"{index:02d}__{sample['sample_id']}.html"
         record["trace_path"] = _rel(trace_path, out)
         try:

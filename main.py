@@ -211,7 +211,13 @@ def run_single(image_path: str, mllm_type: str = "mock", mode: str = MOCK_MLLM_M
 
     verdict = result["final_verdict"]
     print(f"\n  Verdict:    {verdict.get('verdict', 'N/A')}")
-    print(f"  Confidence: {verdict.get('confidence', 'N/A'):.4f}")
+    if "certainty" in verdict:
+        certainty = verdict.get("certainty")
+        print(f"  Certainty:  {'null' if certainty is None else certainty}")
+    else:
+        confidence = verdict.get("confidence")
+        print("  Confidence: " + (
+            f"{confidence:.4f}" if isinstance(confidence, (int, float)) else "N/A"))
     print(f"  Steps:      {result['total_steps']}")
     print(f"  Halting:    {result['halting_reason']}")
     print(f"  Evidence:   {len(result['evidence_chain'])} expert(s) called")

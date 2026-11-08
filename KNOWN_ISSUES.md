@@ -26,6 +26,8 @@
 > 2026-11-08 后续已完成三图同位置布局、归一化坐标命名、框核验标记和分项证据覆盖
 > 检查（A12、plan §12.11）。复验批次 `dual_20261108_peakcrop` 已完成：全图 bbox 0、
 > 局部误报 2、覆盖纠正 4/0 失败；confidence、局部假阳性和框文剩余问题见 A13（plan §12.12）。
+> 2026-11-08 后续已统一总体 verdict 语义并用 certainty 替代数值 confidence（A14、plan §12.13）；
+> 旧批次保留原字段，需真实模型复验新提示词效果。
 
 ## 1. 当前必须解决（与具体专家无关）
 
@@ -44,6 +46,7 @@
 | A11 | 结案前检查复验暴露的新问题 | **部分处理（2026-11-08 后续；plan §12.10/§12.11）**：①confidence 机械回升：0.95 从 10→18，其中 13 条至少一维错误；②局部误报 3→5：`51136`/`53059`/`58610` 把真实图高 TruFor 响应当篡改，`ADM`/`SD14` 仍把 AI 生成图判局部 Tampered；③5 条仍有未尝试专家但给出确定结论（`339e8fae`/`35b3b70e`/`42165`/`BigGAN`/`39890_0`），其中 `35b3b70e` 无 TruFor 测量却写 local `Not tampered`（`joint_verdict_issues=1`）；④`58610`/`SD14`/`57501` 仍写“相互支持”，`39890_0` 用 TruFor 局部证据推出整图 AI-generated；⑤全图 bbox 3 条，`ADM` bbox 在左上而文字说“下方”。下一轮先人工审阅，再处理单专家定论、confidence 校准、TruFor 假阳性与跨任务措辞。 |
 | A12 | 三图同位置/坐标/证据覆盖 | **已实现并完成 24 输入复验（2026-11-08 后续；plan §12.11/§12.12）**：①TruFor 三图改为同一原图裁剪、同内容尺寸，标题/图例/色条在内容外；map/conf 先 resize 到源图再裁剪，`model_image_layout` 记录 `region_pixels`/`region_normalized_1000`/`source_size`/`map_size`/`crop_size`/`scale_map_to_source`，不重复运行 TruFor。②模型可见坐标只保留 normalized [0,1000] 名称，删除 pixel `image_size` 和图片 footer 像素数，避免 `[0,0,341,256]` 式照抄。③完整 map 仍供审核叠加；新增 `utils/bbox_review.py` 标记 `pixel_dimension_bbox`/`anomaly_peak_outside_bbox`/`location_text_mismatch`/`global_range`，不改写模型框。④新增 `utils/coverage.py`：无 PROBE 不得定 `whole_image_generation`，无 TruFor 不得定 `local_manipulation`；各维 Uncertain 合法，单专家总体结论可保留；一次覆盖纠正保留原文/反馈/重答，失败写入 `joint_verdict_issues`，`final_v2` 拒收。跨任务“相互支持”和具体编辑过程另行标记/纠正。⑤真实 `35b3b70e`/`39890_0` 已作为覆盖回归；`dual_20261108_peakcrop` 复验结果：全图 bbox 11→0、框标记 11→1、局部误报 5→2、joint issues 2→0、覆盖纠正 4/0 失败，`35b3b70e` 不再无 TruFor 写 Not tampered，`39890_0/1` 改为 whole Uncertain + local Tampered。⑥仍剩 confidence 17 条 0.95、`51136`/`ADM` 局部假阳性、`51136` local Tampered 无局部框、`ADM` 一条强相互验证措辞（本批早于否定句作用域修复）。 |
 | A13 | 复验后的剩余问题 | **未修复（2026-11-08 记录；plan §12.12）**：①confidence 仍 17/24 为 0.95，报告依据不足以支撑；②局部假阳性 `51136`（真实图 PROBE/TruFor 双高）和 `ADM`（AI 生成图 local N/A→Tampered）；③`51136` local Tampered 但无局部框；④`ADM` 框文位置标记 1 条；⑤本批仍有一条强相互验证（ADM），因为生成早于“否定句按短句作用域”修复；⑥总体 Uncertain 从 closing 的 1 增至 3，需人工判断。先人工审阅；不扩样、不训练。 |
+| A14 | 总体标签语义与 certainty_v1 | **已实现，待真实模型复验（2026-11-08 后续；plan §12.13）**：统一 Real/Fake/Uncertain 定义；新版 v3 用定性 certainty（High/Medium/Low；Uncertain null）替代数值 confidence，旧批次保留原 confidence 不转换。新增 `utils/certainty.py`、controller/final_v2/工作台/比较统计、overall-dimension 一致性检查；admission/audit 用 High 判自信错误，G5/Qwen 历史排序对 certainty 记录明确报错而非按 0.0。提示词哈希默认 `0716b8c6595f32f6`、联合 `29a02f274f9189da`；core 811 passed。真实模型效果（尤其 High 是否仍机械）未复验。 |
 | B2、B3 | 状态摘要、重复请求及防循环 | 已实现、效果待验证；新专家组内做同源对照，分别统计请求/执行/重复；重复轮须明确排除或掩码，不能仅有徽章就声称不训练 |
 | B4 | 单动作协议和格式纠错 | 已实现、真实效果待验证；调用与结案二选一，论述块内标签不执行，纠错指出正确位置；人工核查格式失败与协议违规 |
 | D1 | 审核工作台批次隔离 | 已实现、浏览器验收待完成；用新版或临时批次查进度/导入/导出及指纹，不需要继续审核冻结b2 |

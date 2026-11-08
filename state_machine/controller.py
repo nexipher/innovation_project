@@ -41,6 +41,10 @@ from utils.coverage import (
     coverage_issues,
     coverage_note,
 )
+from utils.certainty import (
+    VERDICT_SCHEMA as CERTAINTY_VERDICT_SCHEMA,
+    certainty_issues,
+)
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
 from state_machine.halting_v2 import HaltingPolicyV2
@@ -1038,10 +1042,17 @@ class ForensicStateMachine:
                     else:
                         final_label = "Uncertain"
                         verdict_status = "no_parseable_conclusion"
-                    final_confidence = _model_confidence(model_candidate.get("confidence"))
+                    # New schema: qualitative certainty replaces numeric
+                    # confidence.  It is validated against the overall label;
+                    # an invalid value is not repaired or converted.
+                    final_certainty, certainty_problems = certainty_issues(
+                        model_candidate, final_label)
+                    final_confidence = None
                 else:
                     final_label = decision.verdict
                     final_confidence = decision.confidence
+                    final_certainty = None
+                    certainty_problems = []
                     verdict_status = "policy_label"
                 # Review counters: what stayed untried, what failed, and
                 # whether the adopted Uncertain still cites an untried expert.
@@ -1065,6 +1076,8 @@ class ForensicStateMachine:
                                   for token in evidence_chain
                                   if token.get("evidence_id")],
                 )
+                joint_issues.extend(f"certainty: {problem}"
+                                    for problem in certainty_problems)
                 # Review flags only; the model's bbox is preserved verbatim.
                 map_stats = next(
                     (token.get("map_stats") for token in evidence_chain
@@ -1129,7 +1142,10 @@ class ForensicStateMachine:
                     # fallback for a conclusion that never parsed?  Merging
                     # the two would inflate the abstention rate.
                     "verdict_status": verdict_status,
-                    "confidence": final_confidence,
+                    **({"certainty": final_certainty,
+                        "verdict_schema": CERTAINTY_VERDICT_SCHEMA}
+                       if HALTING_POLICY == "v3"
+                       else {"confidence": final_confidence}),
                     "report": model_candidate.get("report") or (
                         "取证后仍未形成可判定方向，按疑罪从无输出 Uncertain。"
                         if verdict_status == "no_parseable_conclusion"
@@ -1188,7 +1204,10 @@ class ForensicStateMachine:
                     model_turn_count += 1
                     final_verdict = Parser.parse_verdict(final_output) or {
                         "verdict": "Uncertain",
-                        "confidence": 0.5,
+                        **({"certainty": None,
+                            "verdict_schema": CERTAINTY_VERDICT_SCHEMA}
+                           if HALTING_POLICY == "v3"
+                           else {"confidence": 0.5}),
                         "report": "取证资源耗尽，无法做出确定结论。",
                     }
                     final_verdict = self._attach_joint_fields(final_verdict, evidence_chain)
@@ -1205,7 +1224,10 @@ class ForensicStateMachine:
                     model_turn_count += 1
                     final_verdict = Parser.parse_verdict(final_output) or {
                         "verdict": "Uncertain",
-                        "confidence": 0.45,
+                        **({"certainty": None,
+                            "verdict_schema": CERTAINTY_VERDICT_SCHEMA}
+                           if HALTING_POLICY == "v3"
+                           else {"confidence": 0.45}),
                         "report": "证据冲突，疑罪从无。",
                     }
                     final_verdict = self._attach_joint_fields(final_verdict, evidence_chain)
@@ -1219,7 +1241,10 @@ class ForensicStateMachine:
                 "verdict": "Uncertain",
                 # the loop never produced a conclusion: not an abstention
                 "verdict_status": "no_parseable_conclusion",
-                "confidence": 0.5,
+                **({"certainty": None,
+                    "verdict_schema": CERTAINTY_VERDICT_SCHEMA}
+                   if HALTING_POLICY == "v3"
+                   else {"confidence": 0.5}),
                 "report": "分析过程异常终止，无法做出确定结论。",
             }
 

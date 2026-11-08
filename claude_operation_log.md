@@ -1025,3 +1025,19 @@
 * **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`utils/coverage.py`、`scripts/compare_dual_acceptance.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_tokenizer.py`、`tests/test_coverage.py`、`tests/test_message_builder.py`、`sft_data/g8_acceptance/dual_20261108_peakcrop/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
 * **验证**：`core` **795 passed, 1 skipped, 846 deselected**；中间批次移出仓库；最终批次已生成比较（vs 中间批次、vs closing）。
 * **决策/TODO**：人工审核 24 条；不扩新源图、不训练；下一轮处理 confidence、局部假阳性、51136 无局部框和 ADM 相互验证措辞。
+
+### 2026-11-08 - 阶段四 4.59：总体标签语义与 certainty_v1
+
+* **当前操作动作**：统一总体 Real/Fake/Uncertain 定义，把新版 v3 的数值 confidence 改为定性 certainty；同步提示词、控制器、字段校验、final_v2 转换器、工作台、比较报告、admission/ranking 逻辑和历史兼容。
+* **对应计划锚点**：`plan.md` §12.13；`KNOWN_ISSUES.md` A14。
+* **核心变更**：
+  1. **总体标签**：Real = 倾向真实拍摄且本次检查无足够目标局部篡改证据；Fake = 整图生成或目标局部篡改至少一种；Uncertain = 证据不足或仍有足以改变判断的未决矛盾。目标局部篡改只指内容添加/删除/替换，普通重编码/缩放本身不归入 Fake；真实拍摄来源可与后续局部篡改共存，PROBE 低分不能直接推出总体 Real。分项 Uncertain 不强制总体 Uncertain；保留 whole/local/regions/evidence，总体仍由 MLLM 综合，并新增总体-分项一致性检查。
+  2. **certainty_v1**：新增 `utils/certainty.py`。Real/Fake 使用 High/Medium/Low，Uncertain 必须 null；缺失、数字、非法值、Uncertain 非 null 均报错，不修复、不转换。控制器 v3 final_verdict 写 `certainty` + `verdict_schema=certainty_v1`，不再写 `confidence`；invalid 记录到 `joint_verdict_issues`。v1/v2 继续写旧 `confidence`。
+  3. **提示词**：joint/legacy schema 改为 certainty；规则 9 写 overall 定义、High/Medium/Low 语义、禁止分数/档位/工具数/公式映射、明确 Uncertain null 和报告一句话支持/限制；JOINT_GUIDANCE 增加结案前总体/分项/报告一致性检查。历史 `BASELINE_SYSTEM_PROMPT` 冻结不变，training baseline 更新为 certainty。
+  4. **转换/校验**：final_v2 新样本渲染/校验 certainty，旧样本仍走数值 confidence；`render_answer` 新样本不输出 confidence；结构校验区分 missing/illegal/numeric/Uncertain-non-null；旧 confidence 不自动转换。`legal_model_fields` 保留 certainty。
+  5. **记录/展示/统计**：`g8_dual_acceptance`/`g8_generate_batch`/`generate_trajectories_g4`/`g7_acceptance` 按字段存在性记录 certainty 或 confidence；g8 工作台新记录显示“总体把握（certainty，定性）”，旧记录保留“旧批次 confidence”；比较脚本新增 certainty 分布，旧 confidence 统计保留并标注“旧”。
+  6. **训练准入/排序兼容**：admission 的 confident-error 对 certainty 只把 High 视为自信错误，旧记录仍用 confidence>=0.8，不再 `None or 0.0`；audit/workbench 同理；G5/Qwen 历史 P(Fake) 排序遇到 certainty_v1 明确报错，不按 0.0/旧阈值处理。
+* **涉及/修改的文件清单**：`utils/certainty.py (Created)`、`state_machine/controller.py`、`mllm/message_builder.py`、`mllm/mock_client.py`、`utils/final_v2.py`、`utils/joint_verdict.py`、`utils/coverage.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_generate_batch.py`、`scripts/g8_review_workstation.py`、`scripts/generate_trajectories_g4.py`、`scripts/g7_acceptance.py`、`scripts/compare_dual_acceptance.py`、`scripts/admit_trajectories_g4.py`、`scripts/audit_sft_correct.py`、`scripts/build_review_workstation.py`、`scripts/check_acceptance_g5.py`、`scripts/qwen_gain_baseline.py`、`main.py`、`tests/test_certainty.py (Created)`、tests、docs。
+* **执行结果与验证状态**：提示词哈希默认 `0716b8c6595f32f6`，联合 `29a02f274f9189da`；`core` **811 passed, 1 skipped, 851 deselected**。新增 certainty 单元测试、controller/final_v2 新 schema、工作台 certainty 显示、admission/ranking 兼容测试；真实案例 41187_0/1、57501_0、Midjourney、39890_0/1、总体 Uncertain 的字段路径由 final_v2 测试/旧批次回归覆盖。
+* **历史兼容**：`dual_20261108_peakcrop` 及更早记录保留原 confidence 字段和显示语义；不重写 trace、不自动转 certainty；旧批次仍可读取。新版提示词/字段真实效果需后续 GPU 复验。
+* **遗留问题**：certainty 是否仍会被模型机械给 High、旧批次 confidence 与新版 certainty 不可直接数值比较；不扩新源图、不训练。

@@ -376,7 +376,7 @@ class MockMLLMClient(BaseMLLMClient):
 
         verdict_json = json.dumps({
             "verdict": verdict,
-            "confidence": round(confidence, 4),
+            "certainty": "High",
             "primary_evidence": self._called_experts,
             "report": report,
         }, ensure_ascii=False)
@@ -410,7 +410,7 @@ class MockMLLMClient(BaseMLLMClient):
             "whole_image_generation": whole,
             "local_manipulation": local,
             "suspicious_regions": regions,
-            "confidence": 0.8,
+            "certainty": "High",
             "primary_evidence": self._called_experts,
             "report": report,
         }, ensure_ascii=False)
@@ -420,7 +420,7 @@ class MockMLLMClient(BaseMLLMClient):
         """Generate an Uncertain verdict for conflict mode."""
         verdict_json = json.dumps({
             "verdict": "Uncertain",
-            "confidence": 0.45,
+            "certainty": None,
             "primary_evidence": self._called_experts,
             "report": (
                 "多项法证证据存在根本性冲突：频域分析提示AI生成特征，"

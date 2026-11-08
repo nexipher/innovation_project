@@ -12,14 +12,14 @@ The answer has four sections:
                           calibrated likelihood, applicability
     <reasoning>           support, counter-evidence, alternative explanations,
                           why an expert failed here, what remains uncertain
-    <verdict>             the label and confidence the halting posterior gave
+    <verdict>             label and certainty_v1 (or historical confidence)
 
 The validator is the point of the module.  It re-derives each check from the
 record rather than trusting the text, and it covers the failures this project
 has actually produced: a source in two splits, a referenced evidence id that
 does not exist, a direction the calibration contradicts, an expert used where
 it was measured not to separate, a verdict that disagrees with its own
-posterior, confidence without admissible evidence, and — the one that cost two
+posterior, confidence/certainty without admissible evidence, and — the one that cost two
 runs — the container format written up as a reason for the label.
 """
 
@@ -33,6 +33,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 from config import PROJECT_ROOT
 from utils.joint_verdict import extract as extract_joint_verdict
 from utils.joint_verdict import legal_model_fields
+from utils.certainty import CERTAINTY_VALUES, canonical_certainty
 
 SECTIONS = ("observation", "forensic_evidence", "reasoning", "verdict")
 SCHEMA_VERSION = "final_v2"
@@ -287,13 +288,19 @@ def render_answer(record: dict, observation_text: str = "",
         basis = "model_perception"
     else:
         basis = "model_judgement" if model_led else "evidence_posterior"
+    new_certainty_schema = (
+        record.get("verdict_schema") == "certainty_v1"
+        or "certainty" in record)
     verdict = {
         "verdict": record.get("final_verdict"),
         "verdict_status": record.get("verdict_status") or (
             "model_concluded" if model_led else "policy_label"),
-        "confidence": record.get("confidence"),
         "basis": basis,
     }
+    if new_certainty_schema:
+        verdict["certainty"] = record.get("certainty")
+    else:
+        verdict["confidence"] = record.get("confidence")
     # 模型自己写的那段 `report` 原文带上：推理提示词要求它出现在判决 JSON 里，
     # 而转换曾经把它整段丢掉——训练出来的模型于是被教成写一个不含 report 的判决，
     # 与它手上的说明相反。没有 trace（或那一轮没写）时不含此字段，绝不代写。
@@ -309,6 +316,10 @@ def render_answer(record: dict, observation_text: str = "",
                   "suspicious_regions"):
         if field in preserved:
             verdict[field] = preserved[field]
+    if new_certainty_schema and "certainty" not in record and "certainty" in preserved:
+        # Direct render_answer callers may pass a raw record without the
+        # canonical field; preserve the model text only in that fallback.
+        verdict["certainty"] = preserved["certainty"]
     if tokens:
         # The reference lives apart from the label under v3.
         verdict["reference_posterior"] = record.get("posterior")
@@ -589,6 +600,9 @@ def render_sample(record: dict, category: str, observation_text: str = "",
     record = {**record, "_trace": trace}
     model_reasoning = adopted_reasoning(trace)
     dialogue = audit_dialogue(record)
+    new_certainty_schema = (
+        record.get("verdict_schema") == "certainty_v1"
+        or "certainty" in record)
     sample = {
         "id": f"f2_{record['trajectory_id']}",
         "image_path": image_path,
@@ -598,7 +612,10 @@ def render_sample(record: dict, category: str, observation_text: str = "",
             "verdict": record.get("final_verdict"),
             # where the label came from, and the reference beside it (§4.17 R5)
             "verdict_status": record.get("verdict_status"),
-            "confidence": record.get("confidence"),
+            **({"certainty": record.get("certainty"),
+                "verdict_schema": "certainty_v1"}
+               if new_certainty_schema else
+               {"confidence": record.get("confidence")}),
             "posterior": record.get("posterior") if record.get("evidence") else None,
             "reference": record.get("reference"),
             "policy_reasons": record.get("policy_reasons"),
@@ -694,6 +711,8 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         "reference": (sample.get("final_verdict") or {}).get("reference"),
         "posterior": (sample.get("final_verdict") or {}).get("posterior"),
         "confidence": (sample.get("final_verdict") or {}).get("confidence"),
+        "certainty": (sample.get("final_verdict") or {}).get("certainty"),
+        "verdict_schema": (sample.get("final_verdict") or {}).get("verdict_schema"),
         "final_verdict": (sample.get("final_verdict") or {}).get("verdict"),
         "coverage_check": (sample.get("final_verdict") or {}).get("coverage_check"),
         "joint_verdict_issues": (sample.get("final_verdict") or {}).get(
@@ -701,6 +720,10 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         "resolution": (metadata.get("source_resolution")
                        or [(sample.get("evidence_chain") or [{}])[0].get("image_height")]),
     }
+
+    new_certainty_schema = (
+        record.get("verdict_schema") == "certainty_v1"
+        or "certainty" in (sample.get("final_verdict") or {}))
 
     # 1a. unsupported joint dimensions are a training gate, not a style note.
     coverage = record.get("coverage_check") or {}
@@ -757,9 +780,31 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
     if verdict is not None:
         if verdict.get("verdict") not in ("Real", "Fake", "Uncertain"):
             problems.append(f"structure: illegal label {verdict.get('verdict')!r}")
-        confidence = verdict.get("confidence")
-        if not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
-            problems.append(f"structure: confidence out of range: {confidence}")
+        if new_certainty_schema:
+            if "confidence" in verdict:
+                problems.append(
+                    "structure: numeric confidence is not allowed in certainty_v1")
+            if "certainty" not in verdict:
+                problems.append(
+                    "structure: missing certainty (High/Medium/Low or null)")
+            else:
+                label = verdict.get("verdict")
+                value = verdict.get("certainty")
+                if label == "Uncertain":
+                    if value is not None:
+                        problems.append(
+                            "structure: certainty must be null when verdict is Uncertain")
+                elif label in ("Real", "Fake"):
+                    canonical, error = canonical_certainty(value)
+                    if error:
+                        problems.append(f"structure: {error}")
+                    elif canonical is None:
+                        problems.append(
+                            f"structure: certainty is missing for {label}")
+        else:
+            confidence = verdict.get("confidence")
+            if not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
+                problems.append(f"structure: confidence out of range: {confidence}")
         if "primary_evidence" in verdict and not (
                 isinstance(verdict["primary_evidence"], list)
                 and all(isinstance(item, str) for item in verdict["primary_evidence"])):
@@ -903,11 +948,21 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
                     f"but P({record['final_verdict']}) is "
                     f"{round(expected_confidence, 4)}")
     if model_led:
-        # What still has to hold: the confidence is a number in range, and the
-        # disagreement (if any) is on the record rather than hidden.
-        reported = record.get("confidence")
-        if reported is not None and not 0.0 <= float(reported) <= 1.0:
-            problems.append(f"confidence: {reported} 不在 [0,1]")
+        # Certainty_v1 uses a qualitative value; old model-led records keep
+        # the numeric range check.  Neither path invents a missing value.
+        if new_certainty_schema:
+            certainty = record.get("certainty")
+            if record["final_verdict"] in ("Real", "Fake"):
+                if certainty not in CERTAINTY_VALUES:
+                    problems.append(
+                        f"certainty: {certainty!r} is not High/Medium/Low")
+            elif record["final_verdict"] == "Uncertain" and certainty is not None:
+                problems.append(
+                    f"certainty: {certainty!r} must be null for Uncertain")
+        else:
+            reported = record.get("confidence")
+            if reported is not None and not 0.0 <= float(reported) <= 1.0:
+                problems.append(f"confidence: {reported} 不在 [0,1]")
         if record.get("verdict_status") == "no_parseable_conclusion":
             problems.append("verdict: 结案不可解析，不能作为训练样本")
         reference = record.get("reference") or {}
@@ -921,7 +976,13 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
     admissible = [t for t in record["evidence"]
                   if t.get("support") in ("Real", "AI-generated")
                   and (t.get("applicability") or "").startswith(("strong", "weak", "inverted"))]
-    if (uses_tools and record["final_verdict"] in ("Real", "Fake")
+    if new_certainty_schema:
+        high = record.get("certainty") == "High"
+        if (uses_tools and record["final_verdict"] in ("Real", "Fake")
+                and high and not admissible):
+            problems.append(
+                "certainty: label is High but no evidence supports it")
+    elif (uses_tools and record["final_verdict"] in ("Real", "Fake")
             and confidence >= CONFIDENT_THRESHOLD and not admissible):
         problems.append("confidence: label is confident but no evidence supports it")
 

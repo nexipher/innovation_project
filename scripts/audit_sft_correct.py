@@ -125,8 +125,14 @@ def correct_soft_failures(record: dict[str, Any]) -> list[str]:
     if evidence and verdict == "Real" and "real" not in directions:
         failures.append("verdict_real_without_real_evidence")
 
-    confidence = float((record.get("final_verdict") or {}).get("confidence", 0.0))
-    if len(evidence) == 1 and confidence >= 0.95:
+    final_verdict = record.get("final_verdict") or {}
+    if "certainty" in final_verdict:
+        confident = final_verdict.get("certainty") == "High"
+    else:
+        confidence = final_verdict.get("confidence")
+        confident = (isinstance(confidence, (int, float))
+                     and confidence >= 0.95)
+    if len(evidence) == 1 and confident:
         failures.append("single_evidence_high_confidence")
 
     return failures or ["pre_fix_expert_reasoning"]

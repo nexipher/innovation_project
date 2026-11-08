@@ -96,7 +96,11 @@ def _record(variant: dict, policy_name: str, tools_served: List[str],
         "model_candidate": verdict.get("model_candidate"),
         "final_verdict": verdict.get("verdict"),
         "verdict_status": verdict.get("verdict_status"),
-        "confidence": verdict.get("confidence"),
+        **({"certainty": verdict.get("certainty"),
+            "verdict_schema": verdict.get("verdict_schema")}
+           if "certainty" in verdict else {}),
+        **({"confidence": verdict.get("confidence")}
+           if "confidence" in verdict else {}),
         "report": verdict.get("report"),
         "policy_reasons": verdict.get("policy_reasons"),
         "reference": verdict.get("reference"),

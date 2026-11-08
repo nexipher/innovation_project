@@ -36,7 +36,9 @@ PROCESS_CLAIM = re.compile(
     r"拼接到|移花接木|added later|pasted|composited)", re.I)
 
 ACTIONABLE = ("whole_image_without_probe", "local_manipulation_without_trufor",
-              "cross_task_mutual_validation", "edit_process_claim")
+              "cross_task_mutual_validation", "edit_process_claim",
+              "overall_real_with_fake_dimension",
+              "overall_fake_without_fake_dimension")
 
 
 def _measured_sources(evidence_chain: Iterable[dict]) -> set:
@@ -75,6 +77,31 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
     issues: List[dict] = []
     whole = candidate.get("whole_image_generation")
     local = candidate.get("local_manipulation")
+    overall = candidate.get("verdict")
+    fake_dimension = (whole == "AI-generated" or local == "Tampered")
+    if overall == "Real" and fake_dimension:
+        issues.append({
+            "code": "overall_real_with_fake_dimension",
+            "severity": "defect",
+            "message": ("overall verdict is Real while whole_image_generation is "
+                        "AI-generated or local_manipulation is Tampered; Real "
+                        "requires no supported target-fake dimension"),
+        })
+    elif overall == "Fake" and not fake_dimension:
+        issues.append({
+            "code": "overall_fake_without_fake_dimension",
+            "severity": "defect",
+            "message": ("overall verdict is Fake but neither dimension supports "
+                        "AI-generation or local tampering"),
+        })
+    elif overall == "Uncertain" and fake_dimension:
+        issues.append({
+            "code": "overall_uncertain_with_fake_dimension",
+            "severity": "candidate",
+            "message": ("a dimension is definite Fake while the overall verdict "
+                        "is Uncertain; if an unresolved contradiction remains, "
+                        "name it explicitly in the report"),
+        })
     if (whole in ("Real", "AI-generated")
             and "probe_dino_expert" in served
             and "probe_dino_expert" not in measured):
@@ -167,6 +194,21 @@ def coverage_note(issues: Iterable[dict]) -> str:
             lines.append(
                 f"- “{issue.get('phrase')}”从异常图断言了具体编辑过程。异常图"
                 "只是响应候选，不是编辑历史；请改为描述响应位置/强度及其局限。")
+        elif code == "overall_real_with_fake_dimension":
+            lines.append(
+                "- 总体 verdict=Real，但整图生成分项为 AI-generated 或局部分项为 "
+                "Tampered。Real 要求本次检查没有足以支持目标局部篡改的证据；"
+                "若分项确有 Fake 支持，总体应为 Fake，或明确说明证据冲突。")
+        elif code == "overall_fake_without_fake_dimension":
+            lines.append(
+                "- 总体 verdict=Fake，但两个分项都没有支持整图生成或局部篡改。"
+                "Fake 需要至少一个目标分项有证据支持；请补测/修正分项，"
+                "或把总体改为 Uncertain 并说明未决问题。")
+        elif code == "overall_uncertain_with_fake_dimension":
+            lines.append(
+                "- 某个分项已经是确定的 Fake，总体却为 Uncertain。若仍有"
+                "会影响最终判断的未决矛盾，请在报告中明确指出；否则总体"
+                "应按定义与分项一致。")
     lines.append(
         "如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是"
         "没有适用工具；不要为了保持原结论而编造测量。]")

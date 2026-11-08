@@ -186,8 +186,8 @@ def high_risk_reasons(sample: dict, trajectory: Optional[dict]) -> List[str]:
     pass, so they are attention markers only.
     """
     reasons = []
-    verdict = (sample.get("final_verdict") or {}).get("verdict")
-    confidence = (sample.get("final_verdict") or {}).get("confidence") or 0.0
+    final_verdict = sample.get("final_verdict") or {}
+    verdict = final_verdict.get("verdict")
     tools = (sample.get("metadata") or {}).get("tools_served") or []
     conflict = (trajectory or {}).get("conflict_score") or 0.0
 
@@ -195,7 +195,13 @@ def high_risk_reasons(sample: dict, trajectory: Optional[dict]) -> List[str]:
         reasons.append("uncertain")
     if len(tools) > 1:
         reasons.append("multi_tool")
-    if confidence >= HIGH_RISK_CONFIDENCE and verdict in ("Real", "Fake"):
+    if "certainty" in final_verdict:
+        confident = final_verdict.get("certainty") == "High"
+    else:
+        confidence = final_verdict.get("confidence")
+        confident = (isinstance(confidence, (int, float))
+                     and confidence >= HIGH_RISK_CONFIDENCE)
+    if confident and verdict in ("Real", "Fake"):
         reasons.append("high_confidence")
     if conflict > 0.5 or "conflict_unresolved" in ((trajectory or {}).get("policy_reasons") or []):
         reasons.append("conflict")
@@ -517,12 +523,21 @@ def verdict_html(sample: dict, trajectory: Optional[dict],
             _probability_row("参考建议（不决定标签）", reference.get("recommendation"),
                              " / ".join(reference.get("advisory") or []) or
                              "策略参考：" + str(reference.get("note", ""))))
+    if "certainty" in verdict:
+        certainty_row = _probability_row(
+            "总体把握（certainty，定性）", verdict.get("certainty"),
+            "High/Medium/Low 为模型对最终结论的定性把握；Uncertain 时为 null，"
+            "不是比例、不是 P(Real/Fake)")
+    else:
+        certainty_row = _probability_row(
+            "所选标签置信度（旧批次，未校准）", verdict.get("confidence"),
+            confidence_note)
     rows = (
         label_rows +
         _probability_row("原始模型判定", f"{model_candidate}（p={model_probability}）",
                          "模型自己选的标签与自报概率，未受后验约束") +
         likelihood_rows +
-        _probability_row("所选标签置信度", verdict.get("confidence"), confidence_note) +
+        certainty_row +
         _probability_row("模型 Brier", scores.get("model_brier"), "模型自报概率的 Brier 分数") +
         _probability_row("停止后验 Brier", scores.get("posterior_brier"),
                          "后验概率的 Brier 分数") + delta +

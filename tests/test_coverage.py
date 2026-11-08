@@ -111,3 +111,24 @@ def test_real_35b3b70e_and_39890_0_coverage_failures():
         issues = coverage_issues(candidate, record["report"],
                                  record["evidence"], SERVED)
         assert expected in [item["code"] for item in issues], variant_id
+
+
+def test_overall_label_consistency_with_dimensions():
+    real_with_tamper = coverage_issues(
+        {"verdict": "Real", "whole_image_generation": "Real",
+         "local_manipulation": "Tampered"}, "", [], [])
+    assert any(item["code"] == "overall_real_with_fake_dimension"
+               for item in actionable(real_with_tamper))
+
+    fake_without_support = coverage_issues(
+        {"verdict": "Fake", "whole_image_generation": "Real",
+         "local_manipulation": "Not tampered"}, "", [], [])
+    assert any(item["code"] == "overall_fake_without_fake_dimension"
+               for item in actionable(fake_without_support))
+
+    uncertain_with_tamper = coverage_issues(
+        {"verdict": "Uncertain", "whole_image_generation": "Real",
+         "local_manipulation": "Tampered"}, "", [], [])
+    assert any(item["code"] == "overall_uncertain_with_fake_dimension"
+               for item in uncertain_with_tamper)
+    assert actionable(uncertain_with_tamper) == []

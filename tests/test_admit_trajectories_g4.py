@@ -10,6 +10,7 @@ from scripts.admit_trajectories_g4 import (
     RISK_EPSILON,
     admit,
     assert_train_only,
+    _confident_error,
     load_trajectories,
     pair_by_variant,
     run,
@@ -243,3 +244,13 @@ class TestNoToolTrajectories:
                               ground_truth="Fake", confidence=0.95)],
                      APPLICABILITY)
         assert report["no_tool_positive_labels"] == {"Real": 1}
+
+
+def test_certainty_high_is_a_confident_error_but_medium_is_not():
+    wrong = _record("noise", ("noise",), verdict="Real", confidence=None,
+                    ground_truth="Fake")
+    wrong.pop("confidence")
+    wrong["certainty"] = "High"
+    assert _confident_error(wrong) is True
+    wrong["certainty"] = "Medium"
+    assert _confident_error(wrong) is False

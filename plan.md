@@ -2056,3 +2056,59 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   下一次同输入重跑应确认被纠正；⑥整体 Uncertain 1→3，需人工判断是否合理。
 - **决策**：**pending human review，不扩新源图、不训练**。三图/坐标/覆盖修复已把
   全图框和证据覆盖问题压下去，但 confidence 与局部假阳性仍需人工验收后处理。
+
+### 12.13 2026-11-08 总体标签语义与 certainty_v1
+
+- **总体 verdict 定义**：统一回答“图像是否存在本项目关注的整图生成或局部内容篡改”。
+  - `Real`：综合证据倾向真实拍摄，且本次检查没有发现足以支持目标局部篡改的证据；
+  - `Fake`：综合证据认可整图生成或目标局部篡改至少一种；
+  - `Uncertain`：证据不足以支持最终取舍，或仍有会影响最终判断的未决矛盾；
+  - 目标局部篡改 = 内容添加、删除、替换；普通重编码/缩放本身不直接归入 Fake；
+  - 真实拍摄来源可以与后续局部篡改同时存在；PROBE 低分只表示整图生成证据弱，
+    不能直接推出总体 Real。
+  - `whole_image_generation` / `local_manipulation` / `suspicious_regions` /
+    `primary_evidence` 继续分别保存；总体仍由 MLLM 综合，分项 Uncertain 不要求
+    总体 Uncertain。结案前检查总体、分项和报告一致。
+- **certainty_v1**：新版 v3 用定性 `certainty` 替代数值 `confidence`：
+  - Real/Fake：`High` / `Medium` / `Low`；
+  - Uncertain：`null`，不再报告“对弃权的把握”；
+  - 定义：High=关键证据适用、支持结论、无足以改变结论的未决问题；Medium=有支持但
+    仍有误报/局部可靠性/其他解释需要考虑；Low=证据弱、矛盾大、关键测量缺失或
+    图文对应不清；
+  - 由 MLLM 按证据质量、专家适用性和未决问题给出，不按分数/档位/工具数/公式映射，
+    不要求分布均匀；报告用一句话说明主要支持与限制。
+- **实现位置**：
+  - `utils/certainty.py`：canonical/validation；`VERDICT_SCHEMA="certainty_v1"`；
+    数字、缺失、Uncertain 非 null 均报错，不做转换。
+  - `state_machine/controller.py`：v3 final_verdict 写 `certainty` +
+    `verdict_schema`，不写 `confidence`；invalid/missing 记录到
+    `joint_verdict_issues`，不修复；v1/v2 继续写旧 `confidence`。
+  - `mllm/message_builder.py`：joint/legacy schema、规则 9、JOINT_GUIDANCE
+    写 overall 定义、certainty 定义和结案一致性检查；历史 `BASELINE_SYSTEM_PROMPT`
+    保持冻结哈希不变。
+  - `utils/final_v2.py`：新样本渲染/校验 `certainty`，旧样本仍走数值 confidence；
+    `render_answer` 新样本不输出 confidence；校验区分 missing/illegal/numeric/
+    Uncertain-non-null；旧 confidence 不自动转换。
+  - `scripts/g8_dual_acceptance.py`、`g8_generate_batch.py`、
+    `generate_trajectories_g4.py`、`g7_acceptance.py`：记录 conditional
+    `certainty`/`verdict_schema` 或旧 `confidence`。
+  - `scripts/g8_review_workstation.py` / `build_review_workstation.py`：新记录显示
+    定性 certainty；旧记录继续显示“旧批次 confidence”。
+  - `scripts/compare_dual_acceptance.py`：新增 certainty 分布；旧 confidence 统计
+    保留并标注“旧”。
+- **训练/排序兼容**：
+  - `admit_trajectories_g4._confident_error`：有 certainty 时只用 `High` 作为
+    自信错误；否则走旧 `confidence >= 0.8`，不再 `None or 0.0`。
+  - `audit_sft_correct` / `build_review_workstation` 同理：certainty 用 High，
+    旧记录用 confidence 阈值。
+  - `check_acceptance_g5` / `qwen_gain_baseline`：遇到 certainty_v1 记录明确报错，
+    不把缺失 confidence 当 0.0；这些 G5/G2 指标只对历史数值 confidence 可比。
+- **验证**：新增 `tests/test_certainty.py`、controller certainty 测试、final_v2
+  新/旧 schema 测试、workbench certainty 显示测试、admission/ranking 兼容测试；
+  `tests/test_certainty_real_cases.py` 用真实 `dual_20261108_peakcrop` 覆盖
+  41187_0/1、57501_0 的 Real+Tampered 不一致、Midjourney 局部失败和 39890_0/1
+  单专家结案。
+  `core` **811 passed, 1 skipped, 851 deselected**。提示词哈希：默认
+  `0716b8c6595f32f6`，联合模式 `29a02f274f9189da`。
+- **边界**：`dual_20261108_peakcrop` 及更早批次保留原 confidence 语义，不重写、
+  不自动转换；新版实际模型效果需后续复验。

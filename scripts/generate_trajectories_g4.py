@@ -305,7 +305,11 @@ def run_trajectory(variant: dict, policy_name: str, policy: dict,
         # parsed, and whether any call in it was left unexecuted — the
         # conversion gate reads these before rendering a single sample.
         "conclusion": verdict.get("conclusion"),
-        "confidence": verdict.get("confidence"),
+        **({"certainty": verdict.get("certainty"),
+            "verdict_schema": verdict.get("verdict_schema")}
+           if "certainty" in verdict else {}),
+        **({"confidence": verdict.get("confidence")}
+           if "confidence" in verdict else {}),
         "report": verdict.get("report"),
         "posterior": verdict.get("posterior"),
         "conflict_score": verdict.get("conflict_score"),

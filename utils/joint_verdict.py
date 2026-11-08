@@ -157,4 +157,9 @@ def legal_model_fields(candidate: dict, evidence_ids: Optional[Iterable[str]] = 
             and all(isinstance(item, str) for item in primary)):
         out["primary_evidence"] = list(primary)
     out.update(fields)
+    if "certainty" in candidate:
+        # New certainty_v1 samples carry a qualitative value (or null for
+        # Uncertain).  Preserve what the model wrote; validation is done by
+        # utils.certainty.
+        out["certainty"] = candidate.get("certainty")
     return out

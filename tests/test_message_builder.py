@@ -205,16 +205,19 @@ class TestThePromptContractAfterB1:
         assert "not assert their cause" in flat
         assert 'never infer "high resolution" from appearance' in flat
 
-    def test_the_confidence_contract_is_written_down(self):
+    def test_the_certainty_contract_is_written_down(self):
         flat = self._flat(FORENSIC_SYSTEM_PROMPT)
-        assert "uncalibrated certainty in the final overall" in flat
-        assert "never P(Fake)" in flat
-        assert "averaging or multiplying expert scores" in flat
+        assert "qualitative certainty in the final overall" in flat
+        assert "for Uncertain use null" in flat
+        assert "Never derive certainty from expert scores" in flat
+        assert "OVERALL LABEL" in flat
+        assert "Target local tampering means content addition" in flat
+        assert "Authentic capture and later local tampering can coexist" in flat
 
-    def test_the_training_baseline_carries_the_same_confidence_note(self):
+    def test_the_training_baseline_carries_the_same_certainty_note(self):
         from mllm.message_builder import TRAINING_BASELINE_PROMPT
 
-        assert "uncalibrated certainty in THIS verdict" in TRAINING_BASELINE_PROMPT
+        assert "qualitative certainty in THIS verdict" in TRAINING_BASELINE_PROMPT
 
     def test_the_frozen_historical_baseline_is_untouched(self):
         """G2-d/G3-e 的对照臂在这份提示词下测过：改它等于悄悄重开那批结论。"""
@@ -313,7 +316,7 @@ class TestToolPolicies:
         model-visible local evidence (while keeping them non-calibrated); the
         2026-11-08 revision added PROBE class semantics, five raw-score bands,
         explicit Uncertain conditions and final-verdict confidence wording.
-        The default prompt is now 3c885349fbea05e2.  Anything that moves it again
+        The default prompt is now 0716b8c6595f32f6.  Anything that moves it again
         has to say so in a commit.
         """
         import hashlib
@@ -323,7 +326,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "3c885349fbea05e2"
+            "0716b8c6595f32f6"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

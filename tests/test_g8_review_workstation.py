@@ -489,11 +489,11 @@ class TestTheLedgerShowsOnThePage:
 
 
 class TestTheTwoNumbersAreNotConfused:
-    """审核要求：专家原始分数与模型自报置信度分别显示，且不得渲染成百分比结论。"""
+    """专家原始分数与模型把握分别显示；旧批次保留 confidence 语义。"""
 
     def test_the_confidence_row_says_it_is_uncalibrated(self):
         plain = html.unescape(re.sub(r"<[^>]+>", "", _page()))
-        assert "模型自报置信度（未校准）" in plain
+        assert "模型自报置信度（旧批次，未校准）" in plain
         assert "不是 P(Real/Fake)" in plain
 
     def test_the_evidence_table_is_labelled_as_expert_scores(self):
@@ -560,3 +560,17 @@ class TestReviewDoesNotTouchTraining:
             line = json.loads(ledger.read_text(encoding="utf-8").strip())
             assert line["scope"] if "scope" in line else True
             assert "trainable" not in json.dumps(line)
+
+
+def test_certainty_row_for_new_batch_and_old_confidence_row_for_old():
+    record = {**RECORD}
+    record.pop("confidence", None)
+    record["certainty"] = "High"
+    record["verdict_schema"] = "certainty_v1"
+    plain = html.unescape(re.sub(r"<[^>]+>", "", _page(record=record)))
+    assert "总体把握（certainty，定性）" in plain
+    assert "High" in plain
+    assert "旧批次" not in plain
+
+    old_plain = html.unescape(re.sub(r"<[^>]+>", "", _page()))
+    assert "模型自报置信度（旧批次，未校准）" in old_plain

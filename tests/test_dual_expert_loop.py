@@ -39,6 +39,9 @@ def test_dual_prompt_declares_joint_fields_and_local_only_trufor():
     assert "which question is uncertain" in prompt
     assert "missing measurement" in prompt
     assert "raw_band" in prompt
+    assert '"certainty"' in prompt
+    assert '"confidence": 0.0' not in prompt
+    assert "Target local tampering" in prompt
     flat = " ".join(prompt.split())
     assert "blue = low response" in flat
     assert "red = high response" in flat
@@ -218,13 +221,13 @@ def test_preclose_check_can_lead_to_the_uncalled_expert(tmp_path):
         ('<reasoning>局部有候选，但整图未测。</reasoning>\n<verdict>'
          '{"verdict": "Uncertain", "whole_image_generation": "Uncertain",'
          ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
-         ' "confidence": 0.6, "primary_evidence": ["trufor_expert"],'
+         ' "certainty": null, "primary_evidence": ["trufor_expert"],'
          ' "report": "未调用 PROBE，无法判断整图生成性。"}</verdict>'),
         "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
         ('<reasoning>两项测量都已返回。</reasoning>\n<verdict>'
          '{"verdict": "Uncertain", "whole_image_generation": "Uncertain",'
          ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
-         ' "confidence": 0.6, "primary_evidence": ["probe_dino_expert", "trufor_expert"],'
+         ' "certainty": null, "primary_evidence": ["probe_dino_expert", "trufor_expert"],'
          ' "report": "PROBE 和 TruFor 均已测量；证据仍不足，但已无未尝试的适用工具。"}'
          '</verdict>'),
     ])
@@ -255,7 +258,7 @@ def test_preclose_check_keeps_the_models_verdict_when_it_does_not_call(tmp_path)
     abstain = ('<reasoning>仍缺少 PROBE。</reasoning>\n<verdict>'
                '{"verdict": "Uncertain", "whole_image_generation": "Uncertain",'
                ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
-               ' "confidence": 0.6, "primary_evidence": ["trufor_expert"],'
+               ' "certainty": null, "primary_evidence": ["trufor_expert"],'
                ' "report": "未调用 PROBE，无法判断整图生成性。"}</verdict>')
     fsm._mllm = ScriptedMLLM([
         "<planning>\nSuspected Region: none\n</planning>\n<call_trufor>",
@@ -327,12 +330,12 @@ def test_coverage_correction_keeps_original_feedback_and_reanswer(tmp_path):
     bad = ('<reasoning>整图由 PROBE 支持；局部没有 TruFor。</reasoning>\n'
            '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
            ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
-           ' "confidence": 0.8, "primary_evidence": ["probe_dino_expert"],'
+           ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
            ' "report": "整图 AI 生成；局部未发现篡改。"}</verdict>')
     corrected = ('<reasoning>局部问题未测量。</reasoning>\n'
                  '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
                  ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
-                 ' "confidence": 0.8, "primary_evidence": ["probe_dino_expert"],'
+                 ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
                  ' "report": "整图 AI 生成；TruFor 未测量，局部不确定。"}</verdict>')
     fsm._mllm = ScriptedMLLM([
         "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
@@ -363,7 +366,7 @@ def test_coverage_correction_records_a_failed_reanswer_without_changing_label(tm
                          tools=["probe", "trufor"])
     bad = ('<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
            ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
-           ' "confidence": 0.8, "primary_evidence": ["probe_dino_expert"],'
+           ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
            ' "report": "整图 AI 生成；局部未发现篡改。"}</verdict>')
     fsm._mllm = ScriptedMLLM([
         "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",

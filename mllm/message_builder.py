@@ -152,18 +152,19 @@ PROMPT_MID = (" Do NOT use <call_call_freq>, <call_call_noise>, <call_call_probe
     " analysing the evidence. Describe visible artefacts as what you see (blockiness, blur);\n"
     " do not assert their cause, and take image dimensions from the input metadata rather\n"
     " than from appearance. State how many experts returned a valid measurement and whether\n"
-    " you compared them across experts.]\n"
+    " you compared them across experts. Before giving the verdict, check that the overall\n"
+    " label, whole_image_generation, local_manipulation and report are mutually consistent.]\n"
     "</reasoning>\n"
     "<verdict>\n"
-    "{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n"
-    "(confidence = your own uncalibrated certainty in the FINAL verdict, based on evidence\n"
+    "{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"certainty\": \"High\"|\"Medium\"|\"Low\"|null, \"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic report in Chinese\"}\n"
+    "(certainty = your own qualitative certainty in the FINAL verdict: High/Medium/Low for Real/Fake, null for Uncertain; based on evidence\n"
     " quality, expert applicability and unresolved questions; not P(Real/Fake): RULES 9)\n"
     "</verdict>\n\n")
 
 # Legacy example line kept separate so the joint mode can replace exactly this
 # schema without rewriting the rest of the protocol.
 LEGACY_VERDICT_JSON = (
-    '{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"confidence\": 0.0-1.0, '
+    '{\"verdict\": \"Real\"|\"Fake\"|\"Uncertain\", \"certainty\": \"High\"|\"Medium\"|\"Low\"|null, '
     '\"primary_evidence\": [\"evidence_name1\"], \"report\": \"concise forensic '
     'report in Chinese\"}')
 JOINT_VERDICT_JSON = (
@@ -172,7 +173,7 @@ JOINT_VERDICT_JSON = (
     '"local_manipulation": "Tampered"|"Not tampered"|"Uncertain"|"Not applicable", '
     '"suspicious_regions": [{"bbox": [ymin,xmin,ymax,xmax], "reason": "what local '
     'evidence supports this region", "evidence": ["evidence_id1"]}], '
-    '"confidence": 0.0-1.0, "primary_evidence": ["evidence_name1"], '
+    '"certainty": "High"|"Medium"|"Low"|null, "primary_evidence": ["evidence_name1"], '
     '"report": "concise forensic report in Chinese"}')
 JOINT_GUIDANCE = (
     "\nJOINT TASK (this session serves the localisation expert): keep TWO answers "
@@ -223,6 +224,26 @@ JOINT_GUIDANCE = (
     "suspicious region: leave suspicious_regions empty and say that no localized "
     "region was established. Bboxes are normalized [0,1000]; pixel dimensions and "
     "layout values are never bboxes. "
+    "OVERALL LABEL: the overall `verdict` answers whether the image contains target "
+    "whole-image generation OR target local content tampering. `Real` means the "
+    "evidence tends to authentic capture AND this examination found no evidence "
+    "sufficient to support target local tampering. `Fake` means the evidence "
+    "supports at least one of whole-image generation or target local tampering. "
+    "`Uncertain` means the evidence is insufficient for either choice, or an "
+    "unresolved contradiction could change it. Target local tampering means content "
+    "addition, deletion or replacement; ordinary re-encoding or resizing is not "
+    "itself Fake. Authentic capture and later local tampering can coexist; a low "
+    "PROBE score alone does not establish overall Real. A dimension being Uncertain "
+    "does NOT force the overall verdict to be Uncertain: whole-image evidence may "
+    "support Fake while local is Uncertain, or local tampering may support Fake "
+    "while whole-image is Uncertain. Before concluding, check that the overall "
+    "label, both dimensions and the report are consistent. `certainty` is "
+    "High/Medium/Low for Real/Fake and null for Uncertain; High means the key "
+    "evidence applies and no important unresolved issue could change the "
+    "conclusion, Medium means a real but secondary concern remains, Low means the "
+    "evidence is weak, contradictory or key measurements are missing. Never derive "
+    "certainty from expert scores, bands, tool counts or a formula. The report "
+    "gives one short sentence naming the main support and the main limitation. "
     "`raw_band` is only a five-bin reading aid for the raw score: the middle band "
     "needs more visual/other-measurement analysis; it is not a label or a "
     "confidence, and the same band in two experts does not mean equal evidence.\n")
@@ -305,7 +326,7 @@ PROMPT_TAIL_BASE = (
 # 校准概率）已搬进登记表的 `prompt_note`，那里才是模型真正读到的地方。
 TOOL_READ_NOTES: Dict[str, str] = {}
 
-PROMPT_TAIL_RULES = "\nRULES:\n1. Before you conclude, check which questions already have a valid measurement,\n   which are unresolved, and which served tools have not been tried. If an\n   unresolved question is material to the final verdict, and a served tool is\n   applicable and the budget allows, call it. Use as many measurements as the\n   unresolved questions require, but never repeat a measurement. A single-expert\n   conclusion is allowed only when you explain why the second measurement would\n   not materially change the final conclusion.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. You decide when the evidence is sufficient to conclude. `Uncertain` is not a default\n   when a tool is still available: if an unresolved question could be answered by a served,\n   applicable tool and the budget allows, investigate before concluding. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, you may still say \"Uncertain\" — an\n   honest Uncertain is preferred over a confident mistake — but it must describe the\n   limitation that remains after the feasible investigation, or explain why the\n   investigation cannot continue (failed tool, no applicable tool, budget/format limit).\n   Do not write \"I did not call X\" as the reason for Uncertain when X is still callable.\n   An Uncertain conclusion must say which question is uncertain, what limits the evidence\n   (failed/missing measurement, applicability, low reliability, image-text mismatch), and\n   what is missing. `Not tampered` means this examination found no evidence sufficient to\n   support local tampering; it is not proof of absence, and a missing measurement must not\n   become Not tampered.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n7. Every conclusion states the scope of the evidence: how many distinct experts returned\n   a VALID measurement, and whether you compared them ACROSS EXPERTS. Call it a cross-expert\n   comparison, never \"independent cross-validation\": two detectors can share training\n   sources or fail together. One measurement is not a comparison, and calling a second\n   expert does not by itself make the verification independent. When PROBE and TruFor\n   are both high, explain their separate contributions; do not average them or call the\n   coincidence mutual verification. State what the missing evidence limits only when it\n   bears on the conclusion.\n8. Visible artefacts are observations (blockiness, blur, banding): describe them, do not\n   assert their cause. An anomaly map shows a response, not an edit history; never state\n   which edit was performed (for example, text added later). Never claim that compression, re-encoding or sensor noise has been\n   measured, ruled out or shown not to affect a result — only the expert that measures\n   them may say anything about them, and only within its recorded `scope`. Take image\n   dimensions from the input metadata; never infer \"high resolution\" from appearance.\n9. `confidence` is YOUR OWN uncalibrated certainty in the final overall\n   verdict. It is NOT a probability that the image is real or AI-generated, not calibrated,\n   and not an accuracy. Base it on evidence quality, expert applicability, and unresolved\n   questions; never build it by copying, inverting, averaging or multiplying expert scores, and do not output a\n   fixed high value by habit. When the verdict is \"Uncertain\", `confidence` is your\n   certainty about abstaining — never P(Fake). The report must make the basis of the\n   confidence clear and consistent with the stated conclusion.\n"
+PROMPT_TAIL_RULES = "\nRULES:\n1. Before you conclude, check which questions already have a valid measurement,\n   which are unresolved, and which served tools have not been tried. If an\n   unresolved question is material to the final verdict, and a served tool is\n   applicable and the budget allows, call it. Use as many measurements as the\n   unresolved questions require, but never repeat a measurement. A single-expert\n   conclusion is allowed only when you explain why the second measurement would\n   not materially change the final conclusion.\n2. Call each expert AT MOST ONCE per session. Every expert measures the WHOLE image,\n   so a second call — whatever region you name — returns the same measurement: the\n   system answers it with the numbers you already have, and the turn is wasted.\n   This is a hard rule, not advice.\n3. EVERY response carries exactly one action tag: one <call_x> (bbox optional) or\n   one <verdict>. A response with no tag, or with more than one action, is refused.\n4. NEVER fabricate evidence — only reference evidence tokens you have received.\n5. You decide when the evidence is sufficient to conclude. `Uncertain` is not a default\n   when a tool is still available: if an unresolved question could be answered by a served,\n   applicable tool and the budget allows, investigate before concluding. If the evidence is\n   weak, conflicting, or mostly `Uncertain`/`disabled`, you may still say \"Uncertain\" — an\n   honest Uncertain is preferred over a confident mistake — but it must describe the\n   limitation that remains after the feasible investigation, or explain why the\n   investigation cannot continue (failed tool, no applicable tool, budget/format limit).\n   Do not write \"I did not call X\" as the reason for Uncertain when X is still callable.\n   An Uncertain conclusion must say which question is uncertain, what limits the evidence\n   (failed/missing measurement, applicability, low reliability, image-text mismatch), and\n   what is missing. `Not tampered` means this examination found no evidence sufficient to\n   support local tampering; it is not proof of absence, and a missing measurement must not\n   become Not tampered.\n6. Describe only what you can SEE before a call — appearance, texture, edges, lighting.\n   You cannot see SRM residuals, DCT histograms or sensor noise in the picture itself;\n   make those claims only after the expert that measures them has returned a token.\n7. Every conclusion states the scope of the evidence: how many distinct experts returned\n   a VALID measurement, and whether you compared them ACROSS EXPERTS. Call it a cross-expert\n   comparison, never \"independent cross-validation\": two detectors can share training\n   sources or fail together. One measurement is not a comparison, and calling a second\n   expert does not by itself make the verification independent. When PROBE and TruFor\n   are both high, explain their separate contributions; do not average them or call the\n   coincidence mutual verification. State what the missing evidence limits only when it\n   bears on the conclusion.\n8. Visible artefacts are observations (blockiness, blur, banding): describe them, do not\n   assert their cause. An anomaly map shows a response, not an edit history; never state\n   which edit was performed (for example, text added later). Never claim that compression, re-encoding or sensor noise has been\n   measured, ruled out or shown not to affect a result — only the expert that measures\n   them may say anything about them, and only within its recorded `scope`. Take image\n   dimensions from the input metadata; never infer \"high resolution\" from appearance.\n9. `certainty` is YOUR OWN qualitative certainty in the final overall verdict.\n   For Real or Fake use High / Medium / Low; for Uncertain use null and do NOT report\n   a separate \"confidence in abstaining\". High = the key evidence applies to this\n   task, supports the final conclusion, and no important unresolved issue is likely\n   to change it. Medium = the conclusion is supported, but a false positive, local\n   reliability limit, or another reasonable explanation still needs weight. Low =\n   evidence is weak, contradictory, a key measurement is missing, or image-text\n   correspondence is unclear. Never derive certainty from expert scores, score\n   bands, tool counts or a formula, and do not force a uniform distribution.\n   OVERALL LABEL: verdict answers whether the image contains this project's target\n   whole-image generation OR target local content tampering. Real = the evidence\n   tends to authentic capture AND this examination found no evidence sufficient to\n   support target local tampering. Fake = the evidence supports at least one of\n   whole-image generation or target local tampering. Uncertain = the evidence is\n   insufficient for either choice, or an unresolved contradiction could change it.\n   Target local tampering means content addition, deletion or replacement; ordinary\n   re-encoding or resizing is not itself Fake. Authentic capture and later local\n   tampering can coexist; a low PROBE score alone does not establish overall Real.\n   A dimension being Uncertain does NOT force the overall verdict to be Uncertain:\n   whole-image evidence may support Fake while local is Uncertain, or local tampering\n   may support Fake while whole-image is Uncertain. Before concluding, check that the\n   overall label, the two dimensions, and the report are consistent. The report must\n   give one short sentence naming the main support and the main limitation.\n"
 
 SUBSET_NOTE = ("(In this session ONLY the tools listed above exist. Requests for any other "
                "tool will not be served, and spending a turn on one wastes the budget.)")
@@ -417,9 +438,9 @@ no guess about how it was made.]
 [what those observations suggest, and what remains uncertain]
 </reasoning>
 <verdict>
-{"verdict": "Real"|"Fake"|"Uncertain", "confidence": 0.0-1.0, "primary_evidence": [], "report": "concise report in Chinese"}
+{"verdict": "Real"|"Fake"|"Uncertain", "certainty": "High"|"Medium"|"Low"|null, "primary_evidence": [], "report": "concise report in Chinese"}
 </verdict>
-(confidence = your own uncalibrated certainty in THIS verdict, based on evidence
+(certainty = your own qualitative certainty in THIS verdict: High/Medium/Low for Real/Fake, null for Uncertain; based on evidence
 quality, expert applicability and unresolved questions; not P(Real/Fake).)
 """
 

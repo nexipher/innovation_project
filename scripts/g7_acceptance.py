@@ -381,7 +381,11 @@ def run_agent(samples: List[dict], experts: Dict[str, Any],
             "label": sample["label"],
             "treatment": sample["treatment"],
             "verdict": verdict.get("verdict"),
-            "confidence": verdict.get("confidence"),
+            **({"certainty": verdict.get("certainty"),
+                "verdict_schema": verdict.get("verdict_schema")}
+               if "certainty" in verdict else {}),
+            **({"confidence": verdict.get("confidence")}
+               if "confidence" in verdict else {}),
             "posterior": verdict.get("posterior"),
             "halting_reason": result.get("halting_reason"),
             "policy_reasons": verdict.get("policy_reasons"),

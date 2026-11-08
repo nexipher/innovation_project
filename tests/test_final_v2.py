@@ -766,3 +766,49 @@ def test_a_failed_coverage_check_blocks_the_sample():
     problems = _validate(sample)
     assert any("coverage: failed" in problem for problem in problems)
     assert any("joint: coverage:" in problem for problem in problems)
+
+
+def test_certainty_schema_is_rendered_and_validated_without_confidence():
+    record = _record(confidence=None, certainty="High",
+                     verdict_schema="certainty_v1")
+    sample = render_sample(record, "positive", observation_text=OBSERVATION,
+                           split_entry=SPLIT["sources"]["ADM/x"])
+    assert sample["final_verdict"]["certainty"] == "High"
+    assert "confidence" not in sample["final_verdict"]
+    answer = render_answer(record)
+    verdict_json = json.loads(parse_sections(answer)["verdict"])
+    assert verdict_json["certainty"] == "High"
+    assert "confidence" not in verdict_json
+    problems = _validate(sample)
+    assert not any("certainty" in problem or "confidence" in problem
+                   for problem in problems)
+
+
+def test_certainty_v1_rejects_missing_and_numeric_certainty():
+    missing = _record(confidence=None, verdict_schema="certainty_v1")
+    sample = render_sample(missing, "positive", observation_text=OBSERVATION,
+                           split_entry=SPLIT["sources"]["ADM/x"])
+    problems = _validate(sample)
+    assert any("certainty" in problem for problem in problems)
+
+    numeric = _record(confidence=0.95, certainty=0.95,
+                      verdict_schema="certainty_v1")
+    sample = render_sample(numeric, "positive", observation_text=OBSERVATION,
+                           split_entry=SPLIT["sources"]["ADM/x"])
+    problems = _validate(sample)
+    assert any("certainty" in problem for problem in problems)
+
+
+def test_certainty_null_is_legal_for_uncertain_and_old_confidence_still_works():
+    uncertain = _record(final_verdict="Uncertain", confidence=None,
+                        certainty=None, verdict_schema="certainty_v1")
+    sample = render_sample(uncertain, "positive", observation_text=OBSERVATION,
+                           split_entry=SPLIT["sources"]["ADM/x"])
+    problems = _validate(sample)
+    assert not any("certainty" in problem for problem in problems)
+
+    old = _record(confidence=0.9, final_verdict="Fake")
+    old_sample = render_sample(old, "positive", observation_text=OBSERVATION,
+                               split_entry=SPLIT["sources"]["ADM/x"])
+    assert old_sample["final_verdict"]["confidence"] == 0.9
+    assert "certainty" not in old_sample["final_verdict"]

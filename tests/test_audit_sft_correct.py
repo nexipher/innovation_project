@@ -148,3 +148,10 @@ def test_audit_final_is_idempotent(tmp_path):
     metadata = json.loads((final_dir / "metadata.json").read_text(encoding="utf-8"))
     assert metadata["breakdown"]["correct"] == 1
     assert metadata["rejected"]["total"] == 1
+
+
+def test_certainty_high_with_single_evidence_is_flagged():
+    record = _record("cert", [_evidence("noise_expert", "Real", 0.2)])
+    record["final_verdict"].pop("confidence", None)
+    record["final_verdict"]["certainty"] = "High"
+    assert "single_evidence_high_confidence" in correct_soft_failures(record)

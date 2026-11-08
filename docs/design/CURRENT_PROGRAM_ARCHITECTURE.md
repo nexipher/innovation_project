@@ -19,13 +19,20 @@
 
 | 角色 | 决定 | 不决定 |
 |------|------|--------|
-| **Qwen（v3 策略）** | 调用哪个专家、何时结案、**结案标签与自报置信度** | 不决定能否调用（预算与协议由控制器把关） |
+| **Qwen（v3 策略）** | 调用哪个专家、何时结案、**结案标签与定性 certainty** | 不决定能否调用（预算与协议由控制器把关） |
 | **控制器** | 执行调用、单动作协议、重复调用跳过、预算/防循环停止、证据账本检查与一次纠正、一次结案前补测提醒、一次证据覆盖纠正（均不改标签）、门禁 | 不决定标签（v3 下），不强制两个专家 |
 | **参考后验（策略计算）** | 记录在案，供对照 | **不覆盖模型标签**（`reference.recommendation` 只是参考） |
 
 v3 的停止原因各自独立记录：`model_concluded`（模型自主结案，标签即其结案）、
 `budget_exhausted` / `loop_protection` / `format_failure`（外部截断，结案由收尾轮给出，
 不可解析则记 `no_parseable_conclusion`——**这不是弃权**）、`evidence_check_failed`。
+
+总体 `verdict` 统一回答“是否存在本项目关注的整图生成或目标局部内容篡改”：Real =
+倾向真实拍摄且本次检查无足够目标局部篡改证据；Fake = 整图生成或目标局部篡改至少
+一种；Uncertain = 证据不足或仍有足以改变判断的未决矛盾。目标局部篡改只指内容添加/
+删除/替换，普通重编码/缩放本身不归入 Fake；真实拍摄来源可与后续局部篡改共存。
+新版 v3 的 `certainty` 为 Real/Fake 的 High/Medium/Low 或 Uncertain 的 null，
+替代数值 confidence；旧批次保留 `confidence` 原义，不做自动转换。
 
 ## 3. 唯一推荐启动命令
 
@@ -100,12 +107,13 @@ python scripts/batch_inventory.py                                               
                 保留原回答、反馈、重答；不执行调用、不改标签
 结案流程（所有路径共用）：
   账本检查（专家/字段/数值/方向）→ 有缺陷则一次纠正 → 仍不合格记 failed
-  → 落 final_verdict：标签、verdict_status、证据检查、覆盖检查、参考后验（单列）
+  → 落 final_verdict：标签、verdict_status、certainty（新版）/confidence（旧版）、
+    证据检查、覆盖检查、参考后验（单列）
   → 联合任务另存 whole_image_generation / local_manipulation /
     suspicious_regions；总体 verdict 采用模型综合输出，不做机械推导；
     框核验标记（pixel_dimension_bbox / anomaly_peak_outside_bbox /
     location_text_mismatch / global_range）只记录，不改写模型框；
-    schema/证据/覆盖问题记 joint_verdict_issues
+    schema/证据/覆盖/总体-分项一致性问题记 joint_verdict_issues
 ```
 
 ## 6. 版本记录与门禁
