@@ -36,7 +36,14 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > verdict 语义：Real=倾向真实拍摄且无足够目标局部篡改证据，Fake=整图生成或目标局部
 > 篡改至少一种，Uncertain=证据不足或未决矛盾；目标局部篡改只指内容添加/删除/替换。
 > 新版 v3 用定性 `certainty`（Real/Fake: High/Medium/Low；Uncertain: null）替代数值
-> confidence，旧批次保留原 confidence 且不自动转换。原 24 条控制记录的预测框核验见
+> confidence，旧批次保留原 confidence 且不自动转换。第一轮复验 `dual_20261108_certainty`
+> 暴露了 Uncertain 非 null、总体与确定 Fake 分项不一致、局部候选误写 Tampered 等问题；
+> 已加入一次 certainty 字段纠错、总体一致性检查、局部候选/Not applicable/低分
+> Not tampered 检查和更明确的提示词规则。最终 `dual_20261108_consistency` 复验：
+> 总体正确 20/24、joint issues 0、coverage/certainty 失败 0、局部误报 1；
+> 但仍有过保守的局部 Uncertain（局部正确 7/24）、3 条 PROBE 真实图高分误报和
+> certainty High 21/23，需人工审阅（该批 `SUMMARY.md`/`REVIEW_GUIDE.md`）。
+> 原 24 条控制记录的预测框核验见
 > `sft_data/g8_acceptance/dual_20261107_prediction_overlays_20261108/index.html`。
 > GenImage test 已被使用历史污染、旧 test 也有先验使用，**没有可靠未见测试**，test 继续隔离；
 > 专家选择使用 dev/val。Qwen3 已迁移到数据盘；未训练/SFT。
@@ -49,7 +56,7 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 [![Python](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.5-red)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-811%20core%20passed-brightgreen)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-825%20core%20passed-brightgreen)](./tests/)
 
 ---
 

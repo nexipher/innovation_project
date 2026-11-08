@@ -758,6 +758,23 @@ class TestTheObservationSectionKeepsWhatIsKnown:
         assert "眼睛周围纹理不一致" in extract_observation({"trace_path": str(path)})
 
 
+def test_render_sample_keeps_audit_gates():
+    record = _record(
+        verdict_schema="certainty_v1", confidence=None, certainty="High",
+        coverage_check={"status": "failed"},
+        certainty_check={"status": "failed"},
+        joint_verdict_issues=["certainty: certainty must be null when the "
+                              "overall verdict is Uncertain"])
+    sample = render_sample(record, "positive", observation_text=OBSERVATION,
+                           split_entry=SPLIT["sources"]["ADM/x"])
+    assert sample["final_verdict"]["coverage_check"]["status"] == "failed"
+    assert sample["final_verdict"]["certainty_check"]["status"] == "failed"
+    problems = _validate(sample)
+    assert any("coverage: failed" in problem for problem in problems)
+    assert any("certainty: failed" in problem for problem in problems)
+    assert any("joint: certainty:" in problem for problem in problems)
+
+
 def test_a_failed_coverage_check_blocks_the_sample():
     sample = _sample()
     sample["final_verdict"]["coverage_check"] = {"status": "failed"}
@@ -766,6 +783,18 @@ def test_a_failed_coverage_check_blocks_the_sample():
     problems = _validate(sample)
     assert any("coverage: failed" in problem for problem in problems)
     assert any("joint: coverage:" in problem for problem in problems)
+
+
+def test_a_failed_certainty_check_blocks_the_sample():
+    sample = _sample()
+    sample["final_verdict"]["certainty_check"] = {
+        "status": "failed", "remaining_issues": [
+            "certainty must be null when the overall verdict is Uncertain"]}
+    sample["final_verdict"]["joint_verdict_issues"] = [
+        "certainty: certainty must be null when the overall verdict is Uncertain"]
+    problems = _validate(sample)
+    assert any("certainty: failed" in problem for problem in problems)
+    assert any("joint: certainty:" in problem for problem in problems)
 
 
 def test_certainty_schema_is_rendered_and_validated_without_confidence():

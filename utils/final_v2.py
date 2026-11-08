@@ -619,6 +619,15 @@ def render_sample(record: dict, category: str, observation_text: str = "",
             "posterior": record.get("posterior") if record.get("evidence") else None,
             "reference": record.get("reference"),
             "policy_reasons": record.get("policy_reasons"),
+            # Audit blocks are kept on the rendered sample so validate_sample
+            # can enforce the coverage/certainty gates before writing SFT data.
+            # They are metadata, not supervised answer text.
+            **({"coverage_check": record.get("coverage_check")}
+               if "coverage_check" in record else {}),
+            **({"certainty_check": record.get("certainty_check")}
+               if "certainty_check" in record else {}),
+            **({"joint_verdict_issues": record.get("joint_verdict_issues")}
+               if "joint_verdict_issues" in record else {}),
         },
         "conversations": render_conversation(record, record.get("_trace"),
                                              observation_text),
@@ -715,6 +724,7 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         "verdict_schema": (sample.get("final_verdict") or {}).get("verdict_schema"),
         "final_verdict": (sample.get("final_verdict") or {}).get("verdict"),
         "coverage_check": (sample.get("final_verdict") or {}).get("coverage_check"),
+        "certainty_check": (sample.get("final_verdict") or {}).get("certainty_check"),
         "joint_verdict_issues": (sample.get("final_verdict") or {}).get(
             "joint_verdict_issues") or [],
         "resolution": (metadata.get("source_resolution")
@@ -731,9 +741,15 @@ def validate_sample(sample: dict, split: Optional[dict] = None,
         problems.append(
             f"coverage: {coverage.get('status')} — an unsupported definite "
             "joint dimension survived the correction")
+    certainty_check = record.get("certainty_check") or {}
+    if certainty_check.get("status") in ("failed", "not_corrected"):
+        problems.append(
+            f"certainty: {certainty_check.get('status')} — an invalid certainty "
+            "field survived the correction")
     for issue in record.get("joint_verdict_issues") or []:
         text = str(issue)
-        if text.startswith("coverage:") or "without a TruFor measurement" in text:
+        if (text.startswith("coverage:") or text.startswith("certainty:")
+                or "without a TruFor measurement" in text):
             problems.append(f"joint: {text}")
 
     # 1. source/partition leakage

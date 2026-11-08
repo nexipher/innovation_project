@@ -7,6 +7,7 @@ from utils.certainty import (
     VERDICT_SCHEMA,
     canonical_certainty,
     certainty_issues,
+    certainty_note,
 )
 
 pytestmark = pytest.mark.core
@@ -47,3 +48,10 @@ def test_uncertain_requires_null_and_numeric_confidence_is_rejected():
 def test_schema_name_is_stable():
     assert VERDICT_SCHEMA == "certainty_v1"
     assert CERTAINTY_VALUES == ("High", "Medium", "Low")
+
+
+def test_correction_note_keeps_the_model_in_charge():
+    note = certainty_note(["certainty must be null when the overall verdict is Uncertain"])
+    assert "必须为 null" in note
+    assert "不要为了让字段合法而改变证据结论" in note
+    assert "confidence" in note

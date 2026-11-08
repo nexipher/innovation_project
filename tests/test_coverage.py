@@ -81,10 +81,42 @@ def test_correction_note_offers_uncertain_and_keeps_supported_parts():
     note = coverage_note([
         {"code": "local_manipulation_without_trufor", "value": "Not tampered"},
         {"code": "whole_image_without_probe", "value": "AI-generated"},
+        {"code": "overall_uncertain_with_fake_dimension"},
+        {"code": "overall_real_with_unmeasured_whole"},
     ])
     assert "局部问题未测时应写 Uncertain" in note
     assert "整图生成分项应写 Uncertain" in note
+    assert "总体必须是 Fake" in note
+    assert "局部“未发现篡改”只排除了一个方向" in note
     assert "不要伪造专家分数" in note
+
+
+def test_local_tampered_with_only_candidate_wording_is_actionable():
+    candidate = {"verdict": "Fake", "whole_image_generation": "Real",
+                 "local_manipulation": "Tampered"}
+    issues = coverage_issues(
+        candidate, "TruFor 仅提供局部篡改候选，不构成证明。",
+        _evidence("trufor_expert"), SERVED)
+    assert any(item["code"] == "local_tampered_candidate_only"
+               for item in actionable(issues))
+    supported = coverage_issues(
+        candidate, "TruFor 高响应且高可靠性，支持该区域存在内容变化。",
+        _evidence("trufor_expert"), SERVED)
+    assert not any(item["code"] == "local_tampered_candidate_only"
+                   for item in supported)
+
+
+def test_not_applicable_requires_generated_whole():
+    issues = coverage_issues(
+        {"verdict": "Real", "whole_image_generation": "Real",
+         "local_manipulation": "Not applicable"}, "", [], [])
+    assert any(item["code"] == "not_applicable_without_generated_whole"
+               for item in actionable(issues))
+    generated = coverage_issues(
+        {"verdict": "Fake", "whole_image_generation": "AI-generated",
+         "local_manipulation": "Not applicable"}, "", [], [])
+    assert not any(item["code"] == "not_applicable_without_generated_whole"
+                   for item in generated)
 
 
 def test_real_35b3b70e_and_39890_0_coverage_failures():
@@ -131,4 +163,39 @@ def test_overall_label_consistency_with_dimensions():
          "local_manipulation": "Tampered"}, "", [], [])
     assert any(item["code"] == "overall_uncertain_with_fake_dimension"
                for item in uncertain_with_tamper)
-    assert actionable(uncertain_with_tamper) == []
+    assert any(item["code"] == "overall_uncertain_with_fake_dimension"
+               for item in actionable(uncertain_with_tamper))
+
+
+def test_overall_real_with_unmeasured_whole_is_actionable():
+    for whole in ("Real", "Uncertain"):
+        issues = coverage_issues(
+            {"verdict": "Real", "whole_image_generation": whole,
+             "local_manipulation": "Not tampered"},
+            "整图生成尚未测量，无法排除 AI 生成。",
+            _evidence("trufor_expert"), SERVED)
+        assert any(item["code"] == "overall_real_with_unmeasured_whole"
+                   for item in actionable(issues)), whole
+    # A measured whole-image answer, or a local Tampered answer, does not
+    # trigger this check.
+    measured = coverage_issues(
+        {"verdict": "Real", "whole_image_generation": "Real",
+         "local_manipulation": "Not tampered"}, "",
+        _evidence("probe_dino_expert", "trufor_expert"), SERVED)
+    assert not any(item["code"] == "overall_real_with_unmeasured_whole"
+                   for item in measured)
+    local_fake = coverage_issues(
+        {"verdict": "Fake", "whole_image_generation": "Uncertain",
+         "local_manipulation": "Tampered"}, "",
+        _evidence("trufor_expert"), SERVED)
+    assert not any(item["code"] == "overall_real_with_unmeasured_whole"
+                   for item in local_fake)
+    # A failed PROBE cannot be called again, so the correction must not tell
+    # the model to retry it; the Real verdict is left for human review.
+    probe_failed = coverage_issues(
+        {"verdict": "Real", "whole_image_generation": "Uncertain",
+         "local_manipulation": "Not tampered"}, "",
+        [{"source": "probe_dino_expert", "status": "failed"},
+         {"source": "trufor_expert", "status": "measured"}], SERVED)
+    assert not any(item["code"] == "overall_real_with_unmeasured_whole"
+                   for item in probe_failed)

@@ -316,8 +316,9 @@ class TestToolPolicies:
         model-visible local evidence (while keeping them non-calibrated); the
         2026-11-08 revision added PROBE class semantics, five raw-score bands,
         explicit Uncertain conditions and final-verdict confidence wording.
-        The default prompt is now 0716b8c6595f32f6.  Anything that moves it again
-        has to say so in a commit.
+        The certainty_v1 revision made the overall label semantics explicit and
+        moved the default prompt to a2620b1e1c72fe18.  Anything that moves it
+        again has to say so in a commit.
         """
         import hashlib
 
@@ -326,7 +327,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "0716b8c6595f32f6"
+            "a2620b1e1c72fe18"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER
@@ -336,6 +337,8 @@ class TestToolPolicies:
         # 主检测器的定位现在写在登记表的 prompt_note 里（同一句话进提示词）
         assert "image-level classifier output" in FORENSIC_SYSTEM_PROMPT
         assert "not a cross-expert comparison" in FORENSIC_SYSTEM_PROMPT
+        assert "Never write the Chinese phrases" in FORENSIC_SYSTEM_PROMPT
+        assert "交叉验证" in FORENSIC_SYSTEM_PROMPT
 
     def test_a_policy_without_probe_never_advertises_it(self):
         """The shared FORBIDDEN sentence names variants, not tools — but nothing

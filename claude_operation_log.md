@@ -1041,3 +1041,36 @@
 * **执行结果与验证状态**：提示词哈希默认 `0716b8c6595f32f6`，联合 `29a02f274f9189da`；`core` **811 passed, 1 skipped, 851 deselected**。新增 certainty 单元测试、controller/final_v2 新 schema、工作台 certainty 显示、admission/ranking 兼容测试；真实案例 41187_0/1、57501_0、Midjourney、39890_0/1、总体 Uncertain 的字段路径由 final_v2 测试/旧批次回归覆盖。
 * **历史兼容**：`dual_20261108_peakcrop` 及更早记录保留原 confidence 字段和显示语义；不重写 trace、不自动转 certainty；旧批次仍可读取。新版提示词/字段真实效果需后续 GPU 复验。
 * **遗留问题**：certainty 是否仍会被模型机械给 High、旧批次 confidence 与新版 certainty 不可直接数值比较；不扩新源图、不训练。
+
+### 2026-11-08 - 阶段四 4.60：总体标签语义与 certainty_v1 真实模型复验
+
+* **当前操作动作**：先用同一 24 输入运行 `dual_20261108_certainty`，检查 certainty_v1 在真实模型上的效果；再按真实失败模式做一次范围明确的控制器/提示词修订。
+* **对应计划锚点**：`plan.md` §12.13/§12.14；`KNOWN_ISSUES.md` A14/A15。
+* **第一轮批次**：`sft_data/g8_acceptance/dual_20261108_certainty/`；24/24 完成；Qwen3-VL-8B-Instruct / greedy / `probe+trufor`；联合 prompt digest `29a02f274f9189da`；wall 约 17 分钟；0 条 `confidence`，`verdict_schema=certainty_v1` 24 条；certainty High 14 / Medium 3 / Low 0 / null 7。
+* **自动结果**：整图 14、局部 8、两维 5；局部误报 4；`joint_verdict_issues` 7；覆盖失败 1；call2 15；总体 Uncertain 7。与 peakcrop 比：整图 16→14、局部 11→8、两维 8→5、局部误报 2→4、joint issues 0→7。
+* **真实失败模式**：
+  1. 7 条 `verdict=Uncertain` 仍写 `certainty=Low/Medium`；控制器只记录 `certainty must be null ...`，没有静默改值。
+  2. 5 条总体 Uncertain 但整图分项已 `AI-generated`（SD14、SD15、Wukong、Midjourney、53059）；SD14 在覆盖纠正后仍保留该组合，覆盖失败 1 条。
+  3. `BigGAN` 总体 Real、整图 Uncertain、PROBE 未测量且仍可调用；局部 Not tampered 被当成总体 Real 的充分证据。
+  4. 局部误报 4 条（339e8fae、58610、51136、53059）；多条报告自写“TruFor 仅候选/非证明”却把 local 写成 Tampered。
+  5. 5 条 TruFor 子进程未产出 npz（351a、Midjourney、SD14、SD15、Wukong）；peakcrop 仅 1 条，属于测量噪声。
+* **修订**：
+  - `utils/certainty.py` 新增 `certainty_note`；controller 在覆盖纠正后、账本前做一次 certainty 字段纠正，记录 `certainty_check`（pass/pass_after_correction/failed/not_corrected + 原文/反馈/重答），不静默改值。
+  - `utils/coverage.py` 把 `overall_uncertain_with_fake_dimension` 改为可纠正，新增 `overall_real_with_unmeasured_whole`、`local_tampered_candidate_only`、`not_applicable_without_generated_whole`；纠正 note 明确“若把局部改为 Uncertain，总体也要重检”。
+  - 提示词规则 7/9：明确 PROBE/TruFor 逻辑独立、未校准不等于无信息、High 不得与主要限制冲突、TruFor 中间档/非主体响应只是候选、总体 Real 需正向真实证据、确定 Fake 分项与总体 Uncertain 的硬性组合；禁止 reasoning/report 写“交叉验证/相互验证/共同支持/相互支持”。
+  - `final_v2`：记录 `certainty_check`，failed/not_corrected 与 `certainty:` joint issue 进入拒收；`render_sample` 保留 coverage/certainty 审计块，修复校验器看不到 gate 的问题。
+  - 工作台新增“结论字段检查（certainty）”；比较报告新增 certainty_check 状态统计。
+* **验证**：`core` **825 passed, 1 skipped, 853 deselected**；`slow` **250 passed, 3 skipped**；默认提示词哈希 `a2620b1e1c72fe18`，联合模式 `6b4756ca21bc7a63`。
+* **边界**：第一轮 certainty 批次不重写；5 条 TruFor 失败是外部测量失败；最终 `dual_20261108_consistency` 结果见下一条及该批 `SUMMARY.md`。不训练、不扩新源图。
+
+### 2026-11-08 - 阶段四 4.61：certainty_v1 一致性最终复验批次
+
+* **当前操作动作**：完成 certainty_v1 的最终 24 输入复验；本批包含 certainty 字段一次性纠错、总体-分项一致性、局部候选/Not applicable/低分 Not tampered 检查，以及禁止跨任务相互验证措辞。
+* **对应计划锚点**：`plan.md` §12.14/§12.15；`KNOWN_ISSUES.md` A15。
+* **批次信息**：`sft_data/g8_acceptance/dual_20261108_consistency/`；24/24；Qwen3-VL-8B-Instruct / greedy / `probe+trufor`；联合 prompt digest `6b4756ca21bc7a63`；wall 约 762 s（17:30:49–17:43:31）；0 条 `confidence`，24 条 `verdict_schema=certainty_v1`。
+* **自动结果**：总体正确 **20/24**（certainty 批次 12、peakcrop 17）；整图 14、局部 7、两维 5；局部误报 **1**；`joint_verdict_issues` **0**；coverage 重答 3/失败 0；certainty 重答 1/失败 0；总体 Uncertain 1；certainty High 21 / Medium 2 / Low 0 / null 1；TruFor 失败 2 条（Midjourney、42005_2）。
+* **解决的问题**：7 条 Uncertain 非 null、5 条总体 Uncertain + 确定 Fake 分项、1 条总体 Real + 整图未测、`Not applicable` 误用、局部候选误写 Tampered、强跨任务措辞均消失；Midjourney 改为 Fake/AI-generated/Uncertain，SD14/SD15/Wukong 保持 Fake/AI-generated/Uncertain，35b3b70e/58610/333c2446/42165 为 Real/Real/Not tampered。
+* **剩余问题**：总体 339e8fae/51136/53059 为真实图被 PROBE 高分带成 Fake；57501_0 真实局部篡改但整体 Uncertain；局部漏检 5 条（39890_1、72399_2、42005_0、42005_2、57501_0，其中 42005_2 TruFor 失败）；ADM 局部误报 1 条；certainty High 21/23 仍偏高，需人工判断是否机械。
+* **涉及/修改的文件清单**：`mllm/message_builder.py`、`state_machine/controller.py`、`utils/certainty.py`、`utils/coverage.py`、`utils/final_v2.py`、`tests/test_certainty.py`、`tests/test_certainty_real_cases.py`、`tests/test_coverage.py`、`tests/test_controller_v3.py`、`tests/test_final_v2.py`、`tests/test_message_builder.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/compare_dual_acceptance.py`、`sft_data/g8_acceptance/dual_20261108_certainty/**`、`sft_data/g8_acceptance/dual_20261108_consistency/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：`core` **825 passed, 1 skipped, 853 deselected**；`slow` **250 passed, 3 skipped, 1426 deselected**；比较产物 `comparison_vs_certainty/`、`comparison_vs_peakcrop/`；工作台/逐条记录已生成。
+* **置信度或遗留待办（TODO）**：①人工审阅 24 条，重点看 REVIEW_GUIDE 列出的案例；②局部召回偏低与 certainty High 偏高需后续决定是否调提示词/阈值；③TruFor 外部失败仍是测量噪声；④验收通过前不训练、不扩新源图。

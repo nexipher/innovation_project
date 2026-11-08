@@ -1,0 +1,977 @@
+{
+  "control": {
+    "batch": "sft_data/g8_acceptance/dual_20261108_certainty",
+    "sessions": 24,
+    "image_missing": [
+      {
+        "variant_id": "autosplice__53059__authentic__q95",
+        "match": "未达高阈值），其异常图显示面部区域有中等响应，可靠性图",
+        "sentence": "图像视觉真实特征矛盾。TruFor 的局部篡改分数为 0.662（较高，但未达高阈值），其异常图显示面部区域有中等响应，可靠性图显示该区域可靠性中等。这表明图像局部可能存在编辑痕迹，但不足以证明是“局部篡改”或“AI 生成”。由于 PROBE 和 TruFor 的测量结果相互矛盾（PROBE 高分 vs. TruFor 未达高分），且 TruFor 的异常响应未明确指向编辑，无法确认图像是否为 AI 生成或局部篡改。因此，整体结论仍为“Uncertain”，因为两个专家的测量结果无法统一解释图像来源，且均未提供足够证据支持“Real”或“Fake”。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"Low\", \"primary_evidence\": [\"E-690ff21c0f\", \"E-d1da31e988\"], \"report\": \"PROBE 高分（0.967）支持 AI 生成，但与视觉真实矛盾；TruFor 分数 0.662 为局部篡改候选，但未达高阈值且无明确编辑证据。\"}\n</verdict>"
+      }
+    ],
+    "coordinate_complaints": [],
+    "map_content_claims": [],
+    "mutual_strong": [
+      {
+        "variant_id": "autosplice__42005__2__q95",
+        "match": "共同支持"
+      }
+    ],
+    "mutual_strong_negated": [],
+    "visual_agreement": [],
+    "mutual_weak": [
+      {
+        "variant_id": "genimage__Real__333c2446-4c1a-4c9f-b296-9c5b3c5fdf94__q95",
+        "match": "无冲突"
+      },
+      {
+        "variant_id": "genimage__Real__339e8fae-3317-4d7f-9c6e-c36754bf35a7__q95",
+        "match": "无冲突"
+      },
+      {
+        "variant_id": "genimage__Real__35b3b70e-4994-4618-8aaa-86467988d1d5__q95",
+        "match": "无冲突"
+      },
+      {
+        "variant_id": "autosplice__58610__authentic__q95",
+        "match": "consistent"
+      },
+      {
+        "variant_id": "autosplice__51136__authentic__q95",
+        "match": "consistent"
+      },
+      {
+        "variant_id": "autosplice__42165__authentic__q95",
+        "match": "结果一致"
+      },
+      {
+        "variant_id": "autosplice__41187__0__q95",
+        "match": "consistent"
+      }
+    ],
+    "overall_uncertain": [
+      "genimage__Real__351a8be1-104f-49be-9634-7c045dee48a2__q95",
+      "autosplice__53059__authentic__q95",
+      "genimage__Midjourney__144_midjourney_34__q95",
+      "genimage__SD14__045_sdv4_00039__q95",
+      "genimage__SD15__042_sdv5_00003__q95",
+      "genimage__Wukong__147_wukong_image128__q95",
+      "autosplice__42005__0__q95"
+    ],
+    "generic_uncertain": [],
+    "box_text_candidates": [],
+    "text_region_without_box": [
+      {
+        "variant_id": "autosplice__72399__2__q95",
+        "sentence": "对整图生成的判断。因此，当前证据支持“Fake”（因整图生成被判定为 AI 生成），但局部篡改证据为“候选”而非确证，且未见明确编辑痕迹。由于 PROBE 的高分与 TruFor 的“候选”结果在证据强度上不冲突，且 PROBE 的测量结果直接支持“Fake”，而 TruFor 的结果未改变“Fake”的整体判断，因此最终结论为“Fake”，主要支持来自 PROBE 的高分，主要限制为 TruFor 的“候选”结果未提供明确编辑证据。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 高分支持整图 AI 生成；TruFor 仅显示局部篡改候选，未提供明确编辑证据。\"}\n</verdict>"
+      },
+      {
+        "variant_id": "autosplice__57501__0__q95",
+        "sentence": "体背景，可靠性高但无主体内容异常，无法确认是否存在局部篡改。由于 PROBE 的低分支持整图真实，而 TruFor 的高分无法确认局部篡改，两者证据方向不一致，但 PROBE 的低分更直接支持整图真实，且 TruFor 的高分区域非主体，其异常响应可能源于背景或压缩，而非主体篡改。因此，整图生成判断为 Real，局部编辑判断为 Uncertain，但整体结论为 Real，因为整图生成证据更直接且可靠。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"整图生成判为真实（PROBE 低分），局部编辑无法确认（TruFor 高分区域非主体），整体结论为真实。\"}\n</verdict>"
+      }
+    ],
+    "full_boxes_detail": [],
+    "confidence": {
+      "values": {},
+      "recorded": false,
+      "n_095": 0,
+      "n_high": 0,
+      "mean": null,
+      "stdev": null
+    },
+    "certainty": {
+      "values": {
+        "High": 14,
+        "null": 7,
+        "Medium": 3
+      },
+      "recorded": true,
+      "high": 14,
+      "medium": 3,
+      "low": 0,
+      "null": 7
+    },
+    "full_image_boxes": 0,
+    "regions": 7,
+    "call_counts": {
+      "2": 15,
+      "1": 9
+    },
+    "first_tool": {
+      "trufor_expert": 17,
+      "probe_dino_expert": 7
+    },
+    "whole_correct": 14,
+    "local_correct": 8,
+    "both_correct": 5,
+    "local_false_positive": 4,
+    "joint_issues": 7,
+    "local_without_trufor": 0,
+    "untried_sessions": 4,
+    "failed_expert_sessions": 5,
+    "preclose_sessions": 11,
+    "preclose_total": 11,
+    "abstention_cited_untried_sessions": 0,
+    "gap_counters_recorded": true,
+    "region_flag_sessions": 0,
+    "coverage_correction_sessions": 4,
+    "coverage_failed_sessions": 1,
+    "coverage_fields_recorded": true,
+    "certainty_check_status": {},
+    "certainty_check_fields_recorded": false,
+    "session_rows": [
+      {
+        "variant_id": "genimage__Real__333c2446-4c1a-4c9f-b296-9c5b3c5fdf94__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Real__339e8fae-3317-4d7f-9c6e-c36754bf35a7__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Real__351a8be1-104f-49be-9634-7c045dee48a2__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Uncertain",
+        "whole": "Real",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": [
+          "certainty: certainty must be null when the overall verdict is Uncertain"
+        ]
+      },
+      {
+        "variant_id": "genimage__Real__35b3b70e-4994-4618-8aaa-86467988d1d5__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__58610__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Real",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "Medium",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__51136__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__42165__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__53059__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Uncertain",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 2,
+        "first_tool": "probe_dino_expert",
+        "issues": [
+          "certainty: certainty must be null when the overall verdict is Uncertain"
+        ]
+      },
+      {
+        "variant_id": "genimage__ADM__146_adm_91__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__BigGAN__051_biggan_00020__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Real",
+        "whole": "Uncertain",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "Medium",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Glide__GLIDE_1000_200_00_048_glide_00127__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Midjourney__144_midjourney_34__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Uncertain",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": [
+          "certainty: certainty must be null when the overall verdict is Uncertain"
+        ]
+      },
+      {
+        "variant_id": "genimage__SD14__045_sdv4_00039__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Uncertain",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": [
+          "certainty: certainty must be null when the overall verdict is Uncertain"
+        ]
+      },
+      {
+        "variant_id": "genimage__SD15__042_sdv5_00003__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Uncertain",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": [
+          "certainty: certainty must be null when the overall verdict is Uncertain"
+        ]
+      },
+      {
+        "variant_id": "genimage__VQDM__VQDM_1000_200_00_055_vqdm_00039__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Wukong__147_wukong_image128__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Uncertain",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": [
+          "certainty: certainty must be null when the overall verdict is Uncertain"
+        ]
+      },
+      {
+        "variant_id": "autosplice__39890__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__39890__1__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__41187__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Real",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__41187__1__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Real",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__72399__2__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__42005__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Uncertain",
+        "whole": "Uncertain",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__42005__2__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": [
+          "coverage: cross_task_mutual_validation: PROBE and TruFor answer different questions; do not call their results mutual validation/support"
+        ]
+      },
+      {
+        "variant_id": "autosplice__57501__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "Medium",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      }
+    ]
+  },
+  "new": {
+    "batch": "sft_data/g8_acceptance/dual_20261108_consistency",
+    "sessions": 24,
+    "image_missing": [],
+    "coordinate_complaints": [],
+    "map_content_claims": [],
+    "mutual_strong": [],
+    "mutual_strong_negated": [],
+    "visual_agreement": [],
+    "mutual_weak": [
+      {
+        "variant_id": "genimage__Real__333c2446-4c1a-4c9f-b296-9c5b3c5fdf94__q95",
+        "match": "结果一致"
+      },
+      {
+        "variant_id": "genimage__Real__35b3b70e-4994-4618-8aaa-86467988d1d5__q95",
+        "match": "结果一致"
+      },
+      {
+        "variant_id": "autosplice__42165__authentic__q95",
+        "match": "无冲突"
+      },
+      {
+        "variant_id": "genimage__BigGAN__051_biggan_00020__q95",
+        "match": "无冲突"
+      },
+      {
+        "variant_id": "autosplice__41187__0__q95",
+        "match": "consistent"
+      },
+      {
+        "variant_id": "autosplice__41187__1__q95",
+        "match": "consistent"
+      },
+      {
+        "variant_id": "autosplice__72399__2__q95",
+        "match": "方向一致"
+      }
+    ],
+    "overall_uncertain": [
+      "autosplice__57501__0__q95"
+    ],
+    "generic_uncertain": [
+      {
+        "variant_id": "autosplice__57501__0__q95",
+        "sentence": "PROBE 支持图像为真实拍摄，但 TruFor 的高响应区域与图像主体无关，且未提供具体编辑内容，因此局部篡改证据不足，整体结论为不确定。"
+      }
+    ],
+    "box_text_candidates": [],
+    "text_region_without_box": [
+      {
+        "variant_id": "autosplice__53059__authentic__q95",
+        "sentence": "。然而，TruFor 的异常响应未明确指向具体编辑内容，仅表明存在局部编辑的可能，但未提供足够证据支持“Tampered”结论。因此，虽然PROBE的高分支持“Fake”，但TruFor的“Uncertain”局部编辑结论仍存在，且未明确编辑内容，导致整体结论仍为“Uncertain”。PROBE的高分是关键证据，但TruFor的“Uncertain”局部编辑结论未被明确支持，因此整体仍为“Uncertain”。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"整图生成检测高分支持AI生成，局部编辑检测未明确编辑内容，但整体为Fake。\"}\n</verdict>"
+      },
+      {
+        "variant_id": "autosplice__42005__0__q95",
+        "sentence": "返回 manipulation_anomaly_score=0.595108，高于阈值但其高响应区域可靠性低，且无具体编辑内容可确认，故支持“未发现局部篡改”。整图生成判断由 PROBE 支持为 AI 生成，局部编辑判断为“未发现篡改”，二者不矛盾：AI 生成图像可无局部篡改。因此，整体结论应为 Fake，因证据支持至少一个目标（整图生成）。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"主要支持：PROBE 高分（0.995251）支持整图AI生成；主要限制：TruFor 未发现高可靠性局部篡改，其候选响应不可靠，不影响整体结论。\"}\n</verdict>"
+      },
+      {
+        "variant_id": "autosplice__57501__0__q95",
+        "sentence": "值 0.5，指向“Real”，而 TruFor 专家返回的局部篡改检测分数为 0.98934，但其高响应区域与图像主体无关，且未提供具体编辑内容，因此不能据此断定图像存在目标局部篡改。整体结论为“Uncertain”，因为局部篡改证据不足，且虽然 PROBE 支持真实，但 TruFor 的高响应区域与图像主体无关，且未提供具体编辑内容，因此不能排除局部篡改的可能性。\n</planning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": null, \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"PROBE 支持图像为真实拍摄，但 TruFor 的高响应区域与图像主体无关，且未提供具体编辑内容，因此局部篡改证据不足，整体结论为不确定。\"}\n</verdict>"
+      }
+    ],
+    "full_boxes_detail": [],
+    "confidence": {
+      "values": {},
+      "recorded": false,
+      "n_095": 0,
+      "n_high": 0,
+      "mean": null,
+      "stdev": null
+    },
+    "certainty": {
+      "values": {
+        "High": 21,
+        "Medium": 2,
+        "null": 1
+      },
+      "recorded": true,
+      "high": 21,
+      "medium": 2,
+      "low": 0,
+      "null": 1
+    },
+    "full_image_boxes": 0,
+    "regions": 5,
+    "call_counts": {
+      "2": 12,
+      "1": 12
+    },
+    "first_tool": {
+      "probe_dino_expert": 10,
+      "trufor_expert": 14
+    },
+    "whole_correct": 14,
+    "local_correct": 7,
+    "both_correct": 5,
+    "local_false_positive": 1,
+    "joint_issues": 0,
+    "local_without_trufor": 0,
+    "untried_sessions": 10,
+    "failed_expert_sessions": 2,
+    "preclose_sessions": 7,
+    "preclose_total": 7,
+    "abstention_cited_untried_sessions": 0,
+    "gap_counters_recorded": true,
+    "region_flag_sessions": 0,
+    "coverage_correction_sessions": 3,
+    "coverage_failed_sessions": 0,
+    "coverage_fields_recorded": true,
+    "certainty_check_status": {
+      "pass": 23,
+      "pass_after_correction": 1
+    },
+    "certainty_check_fields_recorded": true,
+    "session_rows": [
+      {
+        "variant_id": "genimage__Real__333c2446-4c1a-4c9f-b296-9c5b3c5fdf94__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Real__339e8fae-3317-4d7f-9c6e-c36754bf35a7__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Real__351a8be1-104f-49be-9634-7c045dee48a2__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "Medium",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Real__35b3b70e-4994-4618-8aaa-86467988d1d5__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__58610__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__51136__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__42165__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Real",
+        "whole": "Real",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__53059__authentic__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Not tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "Medium",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__ADM__146_adm_91__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__BigGAN__051_biggan_00020__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Glide__GLIDE_1000_200_00_048_glide_00127__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Midjourney__144_midjourney_34__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__SD14__045_sdv4_00039__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__SD15__042_sdv5_00003__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__VQDM__VQDM_1000_200_00_055_vqdm_00039__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "genimage__Wukong__147_wukong_image128__q95",
+        "truth": {
+          "whole_image_generation": "AI-generated",
+          "local_manipulation": "Not applicable"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__39890__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__39890__1__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__41187__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Real",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__41187__1__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__72399__2__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__42005__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__42005__2__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Fake",
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": "High",
+        "calls": 1,
+        "first_tool": "probe_dino_expert",
+        "issues": []
+      },
+      {
+        "variant_id": "autosplice__57501__0__q95",
+        "truth": {
+          "whole_image_generation": "Real",
+          "local_manipulation": "Tampered"
+        },
+        "verdict": "Uncertain",
+        "whole": "Real",
+        "local": "Uncertain",
+        "confidence": null,
+        "certainty": null,
+        "calls": 2,
+        "first_tool": "trufor_expert",
+        "issues": []
+      }
+    ]
+  }
+}

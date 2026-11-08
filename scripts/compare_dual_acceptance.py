@@ -167,6 +167,8 @@ def measure(batch: Path):
     coverage_correction_sessions = 0
     coverage_failed_sessions = 0
     coverage_fields_recorded = False
+    certainty_check_status = Counter()
+    certainty_check_fields_recorded = False
     call_counts = Counter()
     first_tool = Counter()
     session_rows = []
@@ -279,6 +281,10 @@ def measure(batch: Path):
         call_counts[len(sources)] += 1
         if sources:
             first_tool[sources[0]] += 1
+        certainty_check = record.get("certainty_check")
+        if isinstance(certainty_check, dict):
+            certainty_check_fields_recorded = True
+            certainty_check_status[certainty_check.get("status")] += 1
         session_rows.append({
             "variant_id": record["variant_id"],
             "truth": record.get("task_truth"),
@@ -345,6 +351,8 @@ def measure(batch: Path):
         "coverage_correction_sessions": coverage_correction_sessions,
         "coverage_failed_sessions": coverage_failed_sessions,
         "coverage_fields_recorded": coverage_fields_recorded,
+        "certainty_check_status": dict(certainty_check_status),
+        "certainty_check_fields_recorded": certainty_check_fields_recorded,
         "session_rows": session_rows,
     }
 
@@ -362,6 +370,7 @@ def _markdown(control, new):
                        "confidence_mean", "confidence_stdev"}
     certainty_keys = {"certainty", "certainty_high", "certainty_medium",
                       "certainty_low", "certainty_null"}
+    certainty_check_keys = {"certainty_check_status"}
 
     def row(label, key, extract):
         c = extract(control[key])
@@ -378,6 +387,9 @@ def _markdown(control, new):
         if key in certainty_keys:
             c = c if control.get("certainty", {}).get("recorded") else "未记录"
             n = n if new.get("certainty", {}).get("recorded") else "未记录"
+        if key in certainty_check_keys:
+            c = c if control.get("certainty_check_fields_recorded") else "未记录"
+            n = n if new.get("certainty_check_fields_recorded") else "未记录"
         if isinstance(c, (int, float)) and isinstance(n, (int, float)):
             delta = f"{n - c:+g}"
         else:
@@ -409,6 +421,12 @@ def _markdown(control, new):
         row("有框核验标记的会话", "region_flag_sessions", lambda x: x),
         row("覆盖检查后重答的会话", "coverage_correction_sessions", lambda x: x),
         row("覆盖检查失败/未纠正的会话", "coverage_failed_sessions", lambda x: x),
+        row("certainty 字段检查通过", "certainty_check_status",
+            lambda x: x.get("pass", 0)),
+        row("certainty 字段检查重答后通过", "certainty_check_status",
+            lambda x: x.get("pass_after_correction", 0)),
+        row("certainty 字段检查失败/未纠正", "certainty_check_status",
+            lambda x: x.get("failed", 0) + x.get("not_corrected", 0)),
         row("expert call 数为 2 的会话", "call_counts", lambda x: x.get(2, 0)),
         row("TruFor 先调用的会话", "first_tool", lambda x: x.get("trufor_expert", 0)),
         row("图片误读候选（有图却称未提供/看不到）", "image_missing", len),

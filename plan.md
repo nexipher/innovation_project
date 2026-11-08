@@ -2112,3 +2112,96 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `0716b8c6595f32f6`，联合模式 `29a02f274f9189da`。
 - **边界**：`dual_20261108_peakcrop` 及更早批次保留原 confidence 语义，不重写、
   不自动转换；新版实际模型效果需后续复验。
+
+### 12.14 2026-11-08 certainty_v1 真实模型复验与一致性修订
+
+- **第一轮复验 `dual_20261108_certainty`**（同一 24 输入，联合 prompt digest
+  `29a02f274f9189da`，wall 约 17 分钟）：24/24 完成，`confidence` 字段 0 条，
+  `verdict_schema=certainty_v1` 24 条；`certainty` 分布 High 14 / Medium 3 /
+  Low 0 / null 7。整图正确 14、局部正确 8、两维 5；局部误报 4、
+  `joint_verdict_issues` 7、覆盖失败 1、call2 15、总体 Uncertain 7。
+  与 `dual_20261108_peakcrop` 相比，整图 16→14、局部 11→8、两维 8→5、
+  局部误报 2→4、joint issues 0→7。
+- **暴露的问题**：
+  1. 7 条 `verdict=Uncertain` 仍写 `certainty=Low/Medium`，控制器按设计只记录
+     `certainty must be null ...`，没有静默改值；这是字段语义未落地，不是解析错误。
+  2. 5 条（SD14、SD15、Wukong、Midjourney、53059）总体 Uncertain 但整图分项已
+     `AI-generated`；其中 SD14/SD15/Wukong/Midjourney 把“局部未测/失败”当作
+     总体 Uncertain 的理由，违反“分项 Uncertain 不强制总体 Uncertain”的规则。
+  3. `BigGAN` 总体 Real、整图 Uncertain、PROBE 未测量且仍可调用；局部
+     Not tampered 被当成“总体 Real”的充分证据。`SD14` 在覆盖纠正后仍保留
+     “总体 Uncertain + 整图 AI-generated”，覆盖失败 1 条。
+  4. 局部误报 4 条（`339e8fae`、`58610`、`51136`、`53059`）中，多条报告自己
+     写“TruFor 高分只是候选/非证明”，却把 local 写成 Tampered；`58610` 的
+     “主要支持”甚至是 PROBE 低分支持 Real，与总体 Fake 相反。
+  5. `351a8be1`、`Midjourney`、`SD14`、`SD15`、`Wukong` 的 TruFor 子进程未产出
+     npz（5/24，peakcrop 为 1/24）；`351a` 在 peakcrop 中本来有有效测量。
+     这属于测量噪声，不能把对应维度变化全部归因于提示词。
+  6. `41187_0/1` 由 peakcrop 的总体 Real + local Tampered 改为 Fake/Real/Tampered，
+     符合新总体定义；`57501` 因异常区非主体改为 local Uncertain，是更保守但
+     语义自洽的取舍；`39890_0/1` 的 Fake/whole Uncertain/local Tampered 单专家
+     结案仍合法。
+- **修订（均在控制器/提示词/校验层，不改旧 trace）**：
+  1. **certainty 一次性纠正**：`utils/certainty.py` 新增 `certainty_note`；v3 在
+     覆盖纠正之后、账本之前检查 `certainty_issues`，发现缺失/数字/非法值或
+     Uncertain 非 null 时发一次仅针对字段的反馈，要求模型保留证据判断、重新输出
+     `<verdict>`；控制器记录 `certainty_check.status`（pass /
+     pass_after_correction / failed / not_corrected）、`issues`、`feedback`、
+     `original_output`、`corrected_output`、`remaining_issues`。不静默改值，
+     不把 Low/Medium 转成 null，也不改标签。
+  2. **总体一致性纠正**：`overall_uncertain_with_fake_dimension` 从 candidate 改为
+     actionable；提示词进一步写成硬性组合：禁止 `verdict=Uncertain` 与
+     `whole_image_generation=AI-generated` 或 `local_manipulation=Tampered`
+     同时出现，模型必须二选一：总体 Fake，或把该分项降为 Uncertain 并说明未决
+     矛盾。新增 `overall_real_with_unmeasured_whole`：总体 Real、PROBE 可用却未测量
+     （整图分项写成 Real 或 Uncertain 都算）时，要求补测/给出正向真实证据/
+     改总体 Uncertain；PROBE 已失败时不触发（不能再叫它补测）。
+  3. **局部候选/适用性一致性**：新增 `local_tampered_candidate_only`。当
+     local=Tampered 而模型自己写“仅候选/非证明/未提供明确编辑证据/无法确认
+     局部篡改”时，要求说明具体内容变化和同区域响应，或改 local Uncertain；
+     若改局部，同时检查总体是否仍为 Fake。该检查只命中“候选/非证明”措辞，
+     不按分数档位机械改标签。新增 `not_applicable_without_generated_whole`：
+     local=Not applicable 只在 whole=AI-generated 时合法；whole 为 Real/
+     Uncertain 时应写 Not tampered 或 Uncertain，提示词同步明确。
+  4. **提示词规则 9**：明确 `Uncertain` + High/Medium/Low 非法（null 不是“弃权
+     把握”）；未校准不等于无信息，高 PROBE 分数在有具体反证前是整图生成证据；
+     规则 7 明确禁止在 reasoning/report 写“交叉验证/相互验证/共同支持/相互支持”；
+     有效 TruFor 低分且无高响应区域支持 `Not tampered`，不能只因“不能证明不存在”
+     写 Uncertain；`Not applicable` 仅限整图 AI-generated。
+     PROBE 与 TruFor 逻辑独立，低/缺失局部测量不能削弱整图 AI 结论；总体 Real
+     必须具备正向真实证据，局部“未发现篡改”或整图未测不够；High 不能与“关键
+     测量未校准/仅候选/缺失”这类主要限制并存；TruFor 中间档/非主体区域的高响应
+     是候选，不直接等于 Tampered；报告“主要支持”必须支持总体结论。
+  5. **转换/展示**：`final_v2` 记录 `certainty_check` 并对 failed/not_corrected
+     拒收；`joint_verdict_issues` 的 `certainty:` 也进入 gate；`render_sample`
+     保留 coverage/certainty 审计块，否则校验器看不到这些门（新增回归）；工作台新增
+     “结论字段检查（certainty）”；比较报告新增 pass/pass_after_correction/
+     failed/not_corrected 统计，旧批次显示“未记录”。
+- **验证**：`core` **825 passed, 1 skipped, 853 deselected**；`slow` **250 passed,
+  3 skipped**。新增 certainty 纠正、总体一致性、局部候选措辞、failed certainty
+  gate 的单元/真实记录回归；默认提示词哈希 `a2620b1e1c72fe18`，联合模式 `6b4756ca21bc7a63`；批次联合 prompt digest 以 `batch_meta.json` 为准。
+- **边界**：第一轮 certainty 批次保留原输出和原 `joint_verdict_issues`，不重写；
+  5 条 TruFor 失败是外部测量失败，不能当作提示词效果；最终是否可进入人工验收
+  以 `dual_20261108_consistency` 的逐条审核为准。不训练、不扩新源图。
+
+### 12.15 2026-11-08 `dual_20261108_consistency` 最终复验
+
+- **批次**：同一 24 输入；`sft_data/g8_acceptance/dual_20261108_consistency/`；
+  Qwen3-VL-8B-Instruct / greedy / `probe+trufor`；联合 prompt digest
+  `6b4756ca21bc7a63`；wall 约 762 s；24/24 完成。
+- **自动结果**：总体正确 **20/24**（certainty 12、peakcrop 17）；整图 14、
+  局部 7、两维 5；局部误报 **1**（`ADM`）；`joint_verdict_issues` **0**；
+  coverage 重答 3/失败 **0**；certainty 重答 1/失败 **0**；总体 Uncertain 1；
+  certainty High 21 / Medium 2 / Low 0 / null 1；`confidence` 字段 0。
+  TruFor 失败 2 条（`Midjourney`、`42005_2`）。
+- **结构性结果**：`Uncertain` 非 null 的 7 条、总体 Uncertain + 确定 Fake 分项的
+  5 条、总体 Real + 整图未测、`Not applicable` 误用、局部候选误写 Tampered、
+  强跨任务措辞均在本批消除；`Midjourney` 从 certainty 批的 Uncertain 改成
+  Fake/AI-generated/Uncertain，`SD14`/`SD15`/`Wukong` 保持 Fake/AI-generated/
+  Uncertain，`35b3b70e`/`58610`/`333c2446`/`42165` 为 Real/Real/Not tampered。
+- **仍有错误**：总体 `339e8fae`、`51136`、`53059` 为真实图被 PROBE 高分带成 Fake；
+  `57501_0` 为真实局部篡改但整体 Uncertain。局部漏检 5 条（`39890_1`、`72399_2`、
+  `42005_0`、`42005_2`、`57501_0`），其中 `42005_2` TruFor 失败；局部误报 1 条
+  `ADM`。certainty High 21/23 仍偏高，是否机械需人工判断。
+- **决策**：**pending human review**；不训练、不扩新源图、不改旧 trace。旧 confidence
+  批次继续按原字段读取；新旧 certainty 分布不可直接当作校准概率比较。

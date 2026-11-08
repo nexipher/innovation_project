@@ -558,6 +558,17 @@ def _format_coverage(check) -> str:
             "（原文/反馈/重答见 trace 的 coverage_check）")
 
 
+def _format_certainty_check(check) -> str:
+    if not isinstance(check, dict):
+        return "无记录"
+    issues = list(check.get("issues") or [])
+    remaining = list(check.get("remaining_issues") or [])
+    feedback = check.get("feedback")
+    return (f"status={check.get('status')}；issues={issues}；"
+            f"remaining={remaining}；feedback={'有' if feedback else '无'}"
+            "（原文/反馈/重答见 trace 的 certainty_check）")
+
+
 def _joint_pills(record: dict) -> str:
     """Whole-image and local answers are separate pills, never one merged label."""
     if not isinstance(record, dict):
@@ -704,6 +715,8 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         ("框核验标记", _format_region_flags(
             record.get("suspicious_region_review_flags"))),
         ("证据覆盖检查", _format_coverage(record.get("coverage_check"))),
+        ("结论字段检查（certainty）",
+         _format_certainty_check(record.get("certainty_check"))),
         ("联合字段问题", record.get("joint_verdict_issues") or "无记录"),
         ("请求 / 执行 / 重复", f'执行 {counters.get("expert_calls")}｜跳过重复请求 '
                                f'{metadata.get("skipped_duplicate_calls", "未记录")}｜'

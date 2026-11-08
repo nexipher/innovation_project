@@ -60,3 +60,23 @@ def certainty_issues(candidate: dict, overall_label: Optional[str]) -> Tuple[Opt
         issues.append(error)
         return None, issues
     return canonical, issues
+
+
+def certainty_note(issues) -> str:
+    """One targeted correction for an invalid certainty field.
+
+    It never supplies a label and never converts a value: the model decides
+    whether to keep its overall verdict (and write null) or change the label
+    (and give a certainty for Real/Fake).
+    """
+    details = "；".join(issues or [])
+    return (
+        "[System: 结论字段检查：certainty 与总体标签不一致。"
+        f"{details}。\n"
+        "- 总体 verdict=Uncertain 时，certainty 必须为 null；High/Medium/Low "
+        "只用于 Real/Fake，不能表示“对弃权的把握”。\n"
+        "- 请保留你的证据判断，只重新输出一个 <verdict>（不要再调用专家）："
+        "若仍是 Uncertain，certainty 写 null；若改为 Real/Fake，再按该结论"
+        "给出 High/Medium/Low。\n"
+        "- 不要为了让字段合法而改变证据结论；也不要另写一个 confidence。]"
+    )

@@ -180,6 +180,33 @@ class TestCertaintyIsTheModelsOwnQualitativeJudgement:
         result = v3([CALL, _verdict("Uncertain")])
         assert result["final_verdict"]["certainty"] is None
 
+    def test_an_uncertain_with_low_certainty_is_asked_once_to_use_null(self, v3):
+        low = ('<verdict>{"verdict": "Uncertain", "certainty": "Low",'
+               ' "primary_evidence": [], "report": "证据不足。"}</verdict>')
+        fixed = ('<verdict>{"verdict": "Uncertain", "certainty": null,'
+                 ' "primary_evidence": [], "report": "证据不足。"}</verdict>')
+        result = v3([CALL, low, fixed])
+        verdict = result["final_verdict"]
+        assert verdict["verdict"] == "Uncertain"
+        assert verdict["certainty"] is None
+        check = verdict["certainty_check"]
+        assert check["status"] == "pass_after_correction"
+        assert check["original_output"] == low
+        assert check["corrected_output"] == fixed
+        assert "certainty" in (check["feedback"] or "")
+        assert not verdict.get("joint_verdict_issues")
+
+    def test_a_failed_certainty_correction_is_recorded_not_invented(self, v3):
+        low = ('<verdict>{"verdict": "Uncertain", "certainty": "Low",'
+               ' "primary_evidence": [], "report": "证据不足。"}</verdict>')
+        result = v3([CALL, low])
+        verdict = result["final_verdict"]
+        assert verdict["certainty"] is None
+        assert verdict["certainty_check"]["status"] == "failed"
+        assert verdict["certainty_check"]["original_output"] == low
+        assert any("certainty:" in issue
+                   for issue in verdict.get("joint_verdict_issues") or [])
+
 class TestAFailedConclusionIsNotAnAbstention:
     def test_it_carries_its_own_status(self, v3):
         result = v3([GARBAGE, GARBAGE, GARBAGE, GARBAGE, GARBAGE, GARBAGE])

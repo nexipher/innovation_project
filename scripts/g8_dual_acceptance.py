@@ -151,6 +151,7 @@ def main():
             "evidence": result.get("evidence_chain") or [],
             "evidence_check": verdict.get("evidence_check"),
             "coverage_check": verdict.get("coverage_check"),
+            "certainty_check": verdict.get("certainty_check"),
             "tools_served": list(fsm._experts),
         }
         if "certainty" in verdict:

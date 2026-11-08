@@ -44,6 +44,7 @@ from utils.coverage import (
 from utils.certainty import (
     VERDICT_SCHEMA as CERTAINTY_VERDICT_SCHEMA,
     certainty_issues,
+    certainty_note,
 )
 from state_machine.evidence_tokenizer import EvidenceTokenizer
 from state_machine.halting import HaltingChecker
@@ -374,6 +375,12 @@ class ForensicStateMachine:
         coverage_original_issues: List[dict] = []
         coverage_corrected_output: Optional[str] = None
         coverage_check: Optional[dict] = None
+        # One certainty-field correction per session, with both sides kept.
+        certainty_check_sent = False
+        certainty_original_output: Optional[str] = None
+        certainty_feedback: Optional[str] = None
+        certainty_original_issues: List[str] = []
+        certainty_check: Optional[dict] = None
 
         # Outer safety net: the halting budget fires first; the +1 allows the
         # forced-conclusion turn that budget halting triggers.
@@ -950,6 +957,30 @@ class ForensicStateMachine:
                     conversation.append({"from": "user", "value": coverage_feedback})
                     previous_action = None
                     continue
+                # One certainty-field correction.  The schema says certainty is
+                # null for an Uncertain overall verdict and High/Medium/Low
+                # only for Real/Fake.  The model's value is never silently
+                # repaired or converted; it is asked once to make the field
+                # consistent, and both answers are kept.
+                certainty_now = (
+                    certainty_issues(
+                        candidate_verdict or {},
+                        (candidate_verdict or {}).get("verdict"),
+                    )[1]
+                    if HALTING_POLICY == "v3" and accepted else []
+                )
+                if (HALTING_POLICY == "v3" and accepted
+                        and certainty_now
+                        and not certainty_check_sent
+                        and model_turn_count < MAX_MODEL_TURNS):
+                    certainty_check_sent = True
+                    certainty_original_output = raw_output
+                    certainty_original_issues = list(certainty_now)
+                    certainty_feedback = certainty_note(certainty_now)
+                    self._logger.add_system_message(certainty_feedback)
+                    conversation.append({"from": "user", "value": certainty_feedback})
+                    previous_action = None
+                    continue
                 # §4.17 R3/R4: the ledger is the only authority on what was
                 # measured, and **every** conclusion this pipeline adopts goes
                 # through it — the accepted-candidate shortcut used to skip the
@@ -1048,6 +1079,36 @@ class ForensicStateMachine:
                     final_certainty, certainty_problems = certainty_issues(
                         model_candidate, final_label)
                     final_confidence = None
+                    if certainty_check_sent:
+                        certainty_status = (
+                            "pass_after_correction" if not certainty_problems
+                            else "failed")
+                        certainty_check = {
+                            "status": certainty_status,
+                            "issues": list(certainty_original_issues),
+                            "feedback": certainty_feedback,
+                            "original_output": certainty_original_output,
+                            "corrected_output": final_output,
+                            "remaining_issues": list(certainty_problems),
+                        }
+                    elif certainty_problems:
+                        certainty_check = {
+                            "status": "not_corrected",
+                            "issues": list(certainty_problems),
+                            "feedback": None,
+                            "original_output": None,
+                            "corrected_output": None,
+                            "remaining_issues": list(certainty_problems),
+                        }
+                    else:
+                        certainty_check = {
+                            "status": "pass",
+                            "issues": [],
+                            "feedback": None,
+                            "original_output": None,
+                            "corrected_output": None,
+                            "remaining_issues": [],
+                        }
                 else:
                     final_label = decision.verdict
                     final_confidence = decision.confidence
@@ -1165,6 +1226,8 @@ class ForensicStateMachine:
                     "model_candidate": model_candidate.get("verdict"),
                     "evidence_check": evidence_check,
                     **({"coverage_check": coverage_check} if coverage_check else {}),
+                    **({"certainty_check": certainty_check}
+                       if certainty_check else {}),
                     # §4.17 R4: check-pass / format-valid / conclusion-faithful
                     # / trainable are four different things.  This block is the
                     # first three; `trainable` is the conversion gate's call.

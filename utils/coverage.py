@@ -34,11 +34,21 @@ NEGATION = re.compile(
 PROCESS_CLAIM = re.compile(
     r"(?:后期添加|后期合成|后期编辑|添加了|被添加|被合成|抠图|合成到|"
     r"拼接到|移花接木|added later|pasted|composited)", re.I)
+LOCAL_CANDIDATE_ONLY = re.compile(
+    r"(?:(?<!不)仅(?:为|是|提供|显示|支持)?[^。；\n]{0,12}候选|"
+    r"候选(?:而|但)?(?:非|不是|不构成)(?:证明|确证)|"
+    r"(?:非|不是|不构成)(?:证明|确证)|"
+    r"未提供(?:明确|具体)?的?(?:编辑|篡改)(?:内容|证据)|"
+    r"无法(?:确认|证明)(?:是否)?(?:存在)?(?:局部)?(?:编辑|篡改))", re.I)
 
 ACTIONABLE = ("whole_image_without_probe", "local_manipulation_without_trufor",
               "cross_task_mutual_validation", "edit_process_claim",
               "overall_real_with_fake_dimension",
-              "overall_fake_without_fake_dimension")
+              "overall_fake_without_fake_dimension",
+              "overall_uncertain_with_fake_dimension",
+              "overall_real_with_unmeasured_whole",
+              "local_tampered_candidate_only",
+              "not_applicable_without_generated_whole")
 
 
 def _measured_sources(evidence_chain: Iterable[dict]) -> set:
@@ -73,6 +83,10 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
     """Return unsupported definite fields and cross-task wording issues."""
     candidate = candidate or {}
     measured = _measured_sources(evidence_chain)
+    failed = {
+        token.get("source") for token in evidence_chain or []
+        if token.get("source") and token.get("status") == "failed"
+    }
     served = set(served or [])
     issues: List[dict] = []
     whole = candidate.get("whole_image_generation")
@@ -97,10 +111,31 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
     elif overall == "Uncertain" and fake_dimension:
         issues.append({
             "code": "overall_uncertain_with_fake_dimension",
-            "severity": "candidate",
+            "severity": "defect",
             "message": ("a dimension is definite Fake while the overall verdict "
-                        "is Uncertain; if an unresolved contradiction remains, "
-                        "name it explicitly in the report"),
+                        "is Uncertain; either the overall is Fake, or that "
+                        "dimension must be downgraded to Uncertain with the "
+                        "unresolved contradiction named"),
+        })
+    if (overall == "Real"
+            and local != "Tampered"
+            and "probe_dino_expert" in served
+            and "probe_dino_expert" not in measured
+            and "probe_dino_expert" not in failed):
+        issues.append({
+            "code": "overall_real_with_unmeasured_whole",
+            "severity": "defect",
+            "message": ("overall verdict is Real while PROBE is unmeasured and "
+                        "still available; an absent local finding is not "
+                        "positive evidence of authentic capture"),
+        })
+    if local == "Not applicable" and whole != "AI-generated":
+        issues.append({
+            "code": "not_applicable_without_generated_whole",
+            "severity": "defect",
+            "message": ("local_manipulation = Not applicable requires "
+                        "whole_image_generation = AI-generated; use Not tampered "
+                        "or Uncertain for a real/uncertain whole image"),
         })
     if (whole in ("Real", "AI-generated")
             and "probe_dino_expert" in served
@@ -137,6 +172,18 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
                             "call their results mutual validation/support"),
             })
             break
+    if (text and "trufor_expert" in measured and local == "Tampered"):
+        candidate_only = LOCAL_CANDIDATE_ONLY.search(text)
+        if candidate_only and not _negated(text, candidate_only):
+            issues.append({
+                "code": "local_tampered_candidate_only",
+                "severity": "defect",
+                "phrase": candidate_only.group(0),
+                "message": ("local_manipulation is Tampered while the text "
+                            "describes the local evidence as only a candidate "
+                            "or not proof; either name a supported content "
+                            "change or use local Uncertain"),
+            })
     if text and "trufor_expert" in measured and local == "Tampered":
         match = PROCESS_CLAIM.search(text)
         if match:
@@ -165,7 +212,7 @@ def coverage_note(issues: Iterable[dict]) -> str:
     """One targeted correction; it never supplies a label."""
     issues = list(issues or [])
     lines = [
-        "[System: 证据覆盖检查：以下分项或措辞没有得到本会话的测量支持。"
+        "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。"
         "请保留由证据支持的总体结论，只修正这些分项/措辞后重新输出 <verdict>；"
         "也可以先补测缺失的专家（只输出一个 <call_x>），不要同时给调用和 verdict；"
         "不要伪造专家分数。"
@@ -179,7 +226,9 @@ def coverage_note(issues: Iterable[dict]) -> str:
                 "应写 Uncertain，或明确说明非 PROBE 的依据边界；不要把 TruFor "
                 "的局部高分改写成整图生成结论。若因此把整图改为 Uncertain，"
                 "local_manipulation 的 Not applicable 也必须改为 Uncertain"
-                "（Not applicable 只在整图 AI-generated 时成立）。")
+                "（Not applicable 只在整图 AI-generated 时成立）；若局部只是 "
+                "Not tampered，总体 Real 也仍缺正向真实证据，必须同时改总体"
+                "或补测 PROBE。")
         elif code == "local_manipulation_without_trufor":
             lines.append(
                 f"- local_manipulation={issue.get('value')}，但本会话没有 "
@@ -188,8 +237,10 @@ def coverage_note(issues: Iterable[dict]) -> str:
         elif code == "cross_task_mutual_validation":
             lines.append(
                 f"- “{issue.get('phrase')}”把 PROBE 和 TruFor 写成相互验证/"
-                "相互支持。两者测量不同问题，只能分别说明各自贡献；若同一句"
-                "已经否定该说法，可保留否定表述。")
+                "相互支持。两者测量不同问题，只能分别说明各自贡献；例如改为"
+                "“PROBE 支持整图真实；TruFor 支持局部无篡改；两者回答不同"
+                "问题，不能合并成相互验证”。若同一句已经否定该说法，可保留"
+                "否定表述。这条检查覆盖 reasoning 和报告全文，只改 report 不够。")
         elif code == "edit_process_claim":
             lines.append(
                 f"- “{issue.get('phrase')}”从异常图断言了具体编辑过程。异常图"
@@ -206,9 +257,32 @@ def coverage_note(issues: Iterable[dict]) -> str:
                 "或把总体改为 Uncertain 并说明未决问题。")
         elif code == "overall_uncertain_with_fake_dimension":
             lines.append(
-                "- 某个分项已经是确定的 Fake，总体却为 Uncertain。若仍有"
-                "会影响最终判断的未决矛盾，请在报告中明确指出；否则总体"
-                "应按定义与分项一致。")
+                "- 只要 whole_image_generation=AI-generated（即使 local="
+                "Uncertain），总体必须是 Fake；只要 local_manipulation="
+                "Tampered（即使 whole=Uncertain），总体也必须是 Fake。"
+                "若你认为该分项本身不可靠（例如 PROBE 与视觉冲突），请先把"
+                "该分项改为 Uncertain 并在报告中说明未决矛盾；不能只以"
+                "“另一个维度未测”为总体 Uncertain 的理由，也不能保留确定"
+                "Fake 分项而总体 Uncertain。")
+        elif code == "overall_real_with_unmeasured_whole":
+            lines.append(
+                "- 总体 verdict=Real，但 PROBE 仍可调用却未测量（整图分项可能"
+                "写成了 Real 或 Uncertain）。局部“未发现篡改”只排除了一个"
+                "方向，不能单独证明整图真实；请调用 PROBE，或说明已有的"
+                "正向真实证据，或把总体改为 Uncertain。")
+        elif code == "not_applicable_without_generated_whole":
+            lines.append(
+                "- local_manipulation=Not applicable 只允许在整图已判 "
+                "AI-generated 时使用；若整体是 Real/Uncertain，局部应写 "
+                "Not tampered（有 TruFor 且无足够证据）或 Uncertain（未测/仅候选），"
+                "不能把 Not applicable 当作“无局部编辑”。")
+        elif code == "local_tampered_candidate_only":
+            lines.append(
+                f"- “{issue.get('phrase')}”说明你把局部证据当作“仅候选/非证明”，"
+                "但 local_manipulation 写成了 Tampered。Tampered 需要能说明"
+                "被支持的内容变化和同区域响应；若只有候选，请改为 Uncertain。\n"
+                "  若把局部改为 Uncertain，请同时检查总体：没有其他 Fake 分项时，"
+                "总体不能仍为 Fake，应按定义改为 Real 或 Uncertain。")
     lines.append(
         "如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是"
         "没有适用工具；不要为了保持原结论而编造测量。]")
