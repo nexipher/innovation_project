@@ -2028,3 +2028,31 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
    作为覆盖回归。默认提示词哈希 `3c885349fbea05e2`，联合模式 `d179aa70a1f4cf91`；
    `core` **795 passed, 1 skipped, 846 deselected**。
    `dual_20261108_closing` 是这些改动前的批次，需再跑同一 24 输入验证。
+
+### 12.12 2026-11-08 anomaly-peak 复验批次（dual_20261108_peakcrop）
+
+- **批次**：`sft_data/g8_acceptance/dual_20261108_peakcrop/`；同一 24 输入；
+  联合模式 prompt digest `d179aa70a1f4cf91`；wall ~1030 s；状态 pending human review。
+  前置中间批次 `dual_20261108_triptych_coverage` 已移到仓库外
+  `/root/autodl-tmp/dual_20261108_triptych_coverage_prefix_20261108`：该批无 bbox 时给
+  全图视图，11 条会话把 `[0,0,1000,1000]` 抄进 `suspicious_regions`，仅作回归证据。
+- **相对中间批次**：全图 bbox **11→0**，框核验标记会话 **11→1**，局部误报 **5→2**，
+  `joint_verdict_issues` **2→0**，覆盖检查失败 **2→0**；整图正确 16→16、局部 11→11、
+  两维 8→8；总体 Uncertain 1→3，结案前检查 3→6，强相互验证 1→1（排除否定句后）。
+- **相对 `dual_20261108_closing`**：整图 16→16、局部 12→11、两维 7→8、局部误报 5→2、
+  joint issues 1→0、局部缺 TruFor 1→0、未尝试专家 5→2、call2 18→21、
+  全图 bbox 3→0、强相互验证 3→1、confidence=0.95 18→17、mean 0.9296→0.9246、
+  stdev 0.0593→0.0756。
+- **覆盖纠正**：4 条触发，0 条最终失败：
+  - `35b3b70e`：无 TruFor 时 local `Not tampered` 不再出现，最终 Real/Not tampered；
+  - `39890_0/1`：初始无 PROBE 的整图 AI-generated 被纠正为 `whole=Uncertain`，
+    保留 local Tampered 与总体 Fake；
+  - `ADM`：初始无 PROBE 的整图 AI-generated 被纠正，补测后 both measured；
+  - `41187_0`：跨任务“相互支持”措辞被纠正。
+- **剩余问题**：①confidence 仍 17 条 0.95；②局部误报 2 条：`51136`（真实图，
+  PROBE/TruFor 双高）和 `ADM`（AI 生成图的局部 N/A→Tampered）；③`51136` local Tampered
+  但没有局部框（`text_region_without_box`）；④`ADM` 框文位置标记 1 条；
+  ⑤本批仍有一条强相互验证措辞（ADM），因为批次生成早于“否定句按短句作用域”修复，
+  下一次同输入重跑应确认被纠正；⑥整体 Uncertain 1→3，需人工判断是否合理。
+- **决策**：**pending human review，不扩新源图、不训练**。三图/坐标/覆盖修复已把
+  全图框和证据覆盖问题压下去，但 confidence 与局部假阳性仍需人工验收后处理。

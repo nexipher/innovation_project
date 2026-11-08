@@ -1009,3 +1009,19 @@
 * **真实冒烟（2 个会话，/tmp/g8_triptych_smoke2_20261108）**：真实 TruFor token 的三张面板 content_box 一致，`model_image_layout` 记录 `region_normalized_1000=[0,0,1000,1000]`、`source_size`/`map_size`/`crop_size`/`scale_map_to_source`；`map_stats.anomaly_peak_normalized_1000` 已进入完整 token，模型可见 `reading` 不再含 `imgsize`，每轮投送 3 张同区域面板。冒烟中发现并修复两处：①全图 bbox 归一化误用 size-1，曾得到 `[0,0,1003,1002]`；②`stats` 嵌套导致 `map_stats` 为空。另用真实冒烟文本发现并修复“两者结果一致，但不构成相互验证”被误判为相互验证的否定句问题。
 * **执行结果与验证状态**：默认提示词哈希 `3c885349fbea05e2`，联合模式 `d179aa70a1f4cf91`；`core` **795 passed, 1 skipped, 846 deselected**（否定句修复后最后一次全量见提交）。
 * **置信度或遗留待办（TODO）**：①未跑 GPU 复验；`dual_20261108_closing` 是改动前批次，需同 24 输入再跑；②confidence 机械偏高、TruFor 真图假阳性仍未解决；③全图框仍会记录但不改框；④验收通过前不训练、不扩新源图。
+
+### 2026-11-08 - 阶段四 4.58：anomaly-peak 三图复验与全图框回归修复
+
+* **当前操作动作**：先跑同一 24 输入检查三图/覆盖改动；发现无 bbox 时全图 inspection view 被模型抄成 `[0,0,1000,1000]`（11 条），改为从已有异常峰值生成同区域 inspection crop，并隐藏全图视图的 bbox 字段；再跑 `dual_20261108_peakcrop` 复验。
+* **对应计划锚点**：`plan.md` §12.11/§12.12；`KNOWN_ISSUES.md` A12/A13。
+* **中间批次**：`sft_data/g8_acceptance/dual_20261108_triptych_coverage`（已移到仓库外 `/root/autodl-tmp/dual_20261108_triptych_coverage_prefix_20261108`）：全图 bbox 11、框标记 11，原因是无 bbox 时全图三图视图暴露 `region_normalized_1000=[0,0,1000,1000]`；仅作回归证据，不进入最终审核。
+* **修复**：
+  1. `render_region_artifacts(region_pixels=None)` 从已有异常图峰值自动取局部 inspection crop（`region_source=anomaly_peak`，side=max(128,min(h,w)/2)）；无 map 才回退 `full_frame`。不重跑 TruFor。
+  2. 模型可见 layout 对 `full_frame` 隐藏 `region_normalized_1000`，并明确“context view，不可当局部框”；`anomaly_peak` 标注为已有测量建议的候选，不是第二次测量/预测框。
+  3. 提示词明确：全图视图不得写 `[0,0,1000,1000]` 为局部框；无局部定位时 `suspicious_regions=[]`。
+  4. 否定句判断按短句作用域（`_clause_prefix`）修复，避免“无需再调用其他专家。两个测量结果相互支持”被误判为否定；比较脚本同步修复，并补充“可靠性中等/未达确凿/候选”等限制词，减少笼统 Uncertain 误报。
+* **复验 `dual_20261108_peakcrop`**：24/24，联合 prompt digest `d179aa70a1f4cf91`，wall ~1030 s；全图 bbox 11→0、框标记 11→1、局部误报 5→2、joint issues 2→0、覆盖检查失败 0；整图正确 16、局部 11、两维 8；总体 Uncertain 1→3、confidence 0.95 18→17。覆盖纠正 4 条：`35b3b70e` 不再无 TruFor 写 Not tampered；`39890_0/1` 改为 whole Uncertain + local Tampered；`ADM` 补测 PROBE；`41187_0` 纠正相互支持措辞。
+* **剩余**：confidence 17 条 0.95；`51136`/`ADM` 局部假阳性；`51136` local Tampered 无局部框；`ADM` 框文位置标记；`ADM` 一条强相互验证（本批早于否定句作用域修复，下一次同批重跑应修正）。
+* **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`mllm/message_builder.py`、`utils/coverage.py`、`scripts/compare_dual_acceptance.py`、`tests/test_dual_expert_loop.py`、`tests/test_evidence_tokenizer.py`、`tests/test_coverage.py`、`tests/test_message_builder.py`、`sft_data/g8_acceptance/dual_20261108_peakcrop/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`
+* **验证**：`core` **795 passed, 1 skipped, 846 deselected**；中间批次移出仓库；最终批次已生成比较（vs 中间批次、vs closing）。
+* **决策/TODO**：人工审核 24 条；不扩新源图、不训练；下一轮处理 confidence、局部假阳性、51136 无局部框和 ADM 相互验证措辞。

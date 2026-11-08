@@ -47,8 +47,15 @@ def _measured_sources(evidence_chain: Iterable[dict]) -> set:
     }
 
 
+def _clause_prefix(text: str, start: int, window: int) -> str:
+    """Text before a match, cut at the latest sentence boundary."""
+    prefix = text[max(0, start - window):start]
+    cut = max((prefix.rfind(ch) for ch in "。；;！？\n"), default=-1)
+    return prefix[cut + 1:] if cut >= 0 else prefix
+
+
 def _negated(text: str, match) -> bool:
-    prefix = text[max(0, match.start() - 16):match.start()]
+    prefix = _clause_prefix(text, match.start(), 24)
     if NEGATION.search(prefix):
         return True
     # "两者结果一致，但不构成相互验证" negates the phrase in the same clause
@@ -106,7 +113,7 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
     if text and "trufor_expert" in measured and local == "Tampered":
         match = PROCESS_CLAIM.search(text)
         if match:
-            prefix = text[max(0, match.start() - 20):match.start()]
+            prefix = _clause_prefix(text, match.start(), 24)
             negated = bool(re.search(
                 r"(?:不能|无法|不应|不要|不可|并未|没有|并非|不是|不|"
                 r"未发现|未见|未显示|未确认|不能确认|无法确认)",

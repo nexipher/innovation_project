@@ -54,7 +54,8 @@ LIMITATION = re.compile(
     r"Not applicable|未达到|低于阈值|高于阈值|failed|failure|missing|not measured|"
     r"not called|low reliability|low confidence|threshold|mapping|coordinates|"
     r"confidence map|anomaly map|未被.{0,10}(测量|评估)|未.{0,10}(测量|评估)|"
-    r"未校准|uncalibrated|not measured|not assessed)", re.I)
+    r"未校准|uncalibrated|not measured|not assessed|"
+    r"可靠性中等|未达确凿|未达|候选|不足以|未证实|无法证实)", re.I)
 # A complaint that a map does not carry coordinates/reliability is not the same
 # as claiming the map was never delivered.  The first review confused the two.
 COORDINATE_COMPLAINT = re.compile(
@@ -89,8 +90,15 @@ def _review_text(record: dict, trace: dict) -> str:
 
 def _negated(text: str, match) -> bool:
     """A phrase such as "无需交叉验证" is not a cross-task validation claim."""
-    prefix = text[max(0, match.start() - 12):match.start()]
-    return bool(NEGATION.search(prefix))
+    prefix = text[max(0, match.start() - 24):match.start()]
+    cut = max((prefix.rfind(ch) for ch in "。；;！？\n"), default=-1)
+    if cut >= 0:
+        prefix = prefix[cut + 1:]
+    if NEGATION.search(prefix):
+        return True
+    return bool(re.search(
+        r"(?:不构成|不能|不应|不要|不可|无法|并非|不是|没有|无需|无须)",
+        prefix, re.I))
 
 
 def _load(batch: Path):
