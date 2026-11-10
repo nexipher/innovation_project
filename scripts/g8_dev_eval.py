@@ -373,6 +373,13 @@ def main() -> int:
     if os.environ.get("FORENSIC_ALLOW_GPU") != "1":
         raise SystemExit("GPU 未授权：设置 FORENSIC_ALLOW_GPU=1 后再运行")
     out.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault(
+        "PROBE_WEIGHTS",
+        "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth")
+    os.environ.setdefault("TRUFOR_HOME", "/root/autodl-tmp/third_party/TruFor")
+    os.environ.setdefault("TRUFOR_PYTHON", "/root/miniconda3/bin/python")
+    os.environ.setdefault("TRUFOR_RESULTS", str(out / "trufor_raw"))
+    os.environ.setdefault("NO_ALBUMENTATIONS_UPDATE", "1")
     batch_id = args.batch_id or out.name
     records_dir = out / "records"
     failures_dir = out / "failures"
