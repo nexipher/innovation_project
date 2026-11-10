@@ -1,0 +1,104 @@
+{
+  "code": {
+    "commit": "df65259232d1f316f8a88f224d95159021cc325b",
+    "worktree_clean": true,
+    "dirty": []
+  },
+  "manifest": {
+    "path": "sft_data/g8_dev_eval_20261110/manifest.json",
+    "sha256": "a4b319556ef075534359d825881734ba78d80b075f1e2e957e63468307dcfa7c",
+    "samples": 200
+  },
+  "model": {
+    "name": "Qwen3-VL-8B-Instruct",
+    "checkpoint": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b",
+    "dtype": "bfloat16",
+    "inference_mode": "non-thinking",
+    "generation": {
+      "temperature": 0.0,
+      "do_sample": false,
+      "max_new_tokens": 1024
+    }
+  },
+  "prompts": {
+    "actual_sha256": "6b4756ca21bc7a63325236f2f5dea52bfb1100b8e7ffb480c20fdeded527a102",
+    "actual_digest": "6b4756ca21bc7a63",
+    "tools": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ]
+  },
+  "experts": {
+    "probe_dino_expert": {
+      "class": "ProbeDinoExpert",
+      "polarity": 1,
+      "source_name": "probe_dino_expert",
+      "device": "cpu",
+      "weight_source": "ModelScope shuinishaojiu/PROBE-AIGI-Detection · DINOv2_best_model_step_34999.pth（ICML 2026, arXiv 2605.24906）",
+      "licence_note": "许可待确认：上游仓库无 LICENSE 文件；本项目不附带、不再分发其代码与权重，论文引用仅为学术归属，不构成使用授权",
+      "score_reference": "PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）",
+      "preprocess": {
+        "name": "pad→336 滑窗均值",
+        "detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+        "measurement_scope": "global",
+        "sha256": "aaf1df76aba5ac666d9afe1cc40be1da7d3b1f4d222901efbc1eb2257d4edcd5"
+      },
+      "weights_path": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+      "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+      "weights_bytes": 1217679947
+    },
+    "trufor_expert": {
+      "class": "TruForExpert",
+      "polarity": 1,
+      "source_name": "trufor_expert",
+      "device": "cpu",
+      "weight_source": "GRIP-UNINA TruFor (CVPR 2023) · TruFor_weights.zip",
+      "licence_note": "GRIP-UNINA：仅限信息性与非营利用途；本项目不再分发其代码与权重",
+      "score_reference": "TruFor 检测头（RGB + Noiseprint++ 融合）",
+      "weights_path": "/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar",
+      "weights_sha256": "ac1d90e329a72e0d66e8665e123a19e94bfae3209c3ef8a4f9ca3b91578c7844",
+      "weights_bytes": 281496429,
+      "preprocess": {
+        "name": "original RGB -> TruFor test.py",
+        "detail": "RGB source image saved as PNG; TruFor test.py forwards directly (model resize/normalize inside); outputs score/map/conf",
+        "measurement_scope": "local",
+        "sha256": "4b22d36c777b875a37380efbb8cf83ca0474a4ca4bf08a75912978de10d1a1ee"
+      }
+    }
+  },
+  "tools": {
+    "policy": "probe+trufor",
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ]
+  },
+  "budget": {
+    "halting_policy": "v3",
+    "max_expert_calls": 5,
+    "max_model_turns": 6
+  },
+  "decoding": {
+    "greedy": true,
+    "do_sample": false,
+    "temperature": 0.0,
+    "inference_mode": "non-thinking",
+    "max_new_tokens": 1024
+  },
+  "provenance": {
+    "files": {
+      "config.py": "07a67424fa928d5bc18e7ee8b51fc918718513d97505dbe671f1812ed8f93c73",
+      "experts/external_base.py": "e9afe5a71b31fa75c6c0d7712c324fc193fc7b7b5af5fcbcf36302e99b29c3db",
+      "experts/probe_dino.py": "0a311ff958bb9dcb648c39a210c4954a0cc2b63d66d9dcc00f7a25769f1dbeb9",
+      "experts/score_semantics.json": "f39c6268ad42420395c489d5f6b2e9cbcf8aefcb3d2ce6608a00771e1438a449",
+      "experts/trufor.py": "ce1f5cae3f66f527bff5844b25fe4f0c060a039f84c04ce5e4ac2af94801770e",
+      "mllm/message_builder.py": "9bbf8dbfcc95fab2ef75c059bb6f4f3d545bd08a23ca2ffdc98b0eb16abbdef9",
+      "mllm/qwen3_client.py": "3d11bde175dfc168387f0ba2c562adc839e2bb45a14feb283ec7bf1b742e234a",
+      "state_machine/controller.py": "df7649e67c2cc1eb89bd3b313d0fe7d3c0bf7bed4f2bef1d126dbb0e08970f95",
+      "state_machine/evidence_tokenizer.py": "19c6c52e398795422742c9d17c9d212bb39b55bf85390337f0bf55b213882925",
+      "utils/score_semantics.py": "fc9a3de31e6f7b21ca01fd4a43e6c74c179ac9c24990ef469a4f6824681e9039"
+    },
+    "sha256": "8bcd8b223e834425fcb47f788b3c43979fa7de018b1980fb9bfa3cfef35d9d31"
+  }
+}
