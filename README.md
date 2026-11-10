@@ -14,7 +14,11 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 指令开展 **200 张新源图开发评测**（仅 dev/val、JPEG q95、`probe+trufor`、
 > certainty_v1、贪心/non-thinking）。该项是 **development evaluation**，不是人工验收，
 > 也不是 SFT 数据；组成、seed、路径、哈希与配置见 `plan.md` §13 和
-> `sft_data/g8_dev_eval_20261110/manifest.json`。不训练、不扩到 test。
+> `sft_data/g8_dev_eval_20261110/manifest.json`。200/200 已完成：总体正确 125/200
+> （62.5%）、弃权 57、整图生成 67/80；但 **TruFor 发生 131 次 CUDA OOM，60 条真实
+> 局部篡改无一条有效局部测量**，局部维度无效。整图维度可解释；结果、代表案例和
+> 失败分析见 `sft_data/g8_dev_eval_20261110/DEVELOPMENT_EVAL_REPORT.md` 与
+> `plan.md` §13.1。不训练、不扩到 test。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
 > content_box，并可生成原图与异常图上的预测框叠加。同一 24 输入的规则复验写在

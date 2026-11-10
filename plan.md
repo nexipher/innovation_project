@@ -12,7 +12,10 @@
 > **2026-11-10 状态更新**：此前“暂不扩新源图”的验收阶段结束；按用户指令开展
 > **200 张新源图开发评测**（仅 dev/val、JPEG q95、`probe+trufor`、certainty_v1、
 > 贪心/non-thinking）。该批是 **development evaluation**，不是人工验收/SFT 数据；
-> 组成、seed、路径、哈希、配置和运行安排见 §13。test 继续隔离，不训练。
+> 组成、seed、路径、哈希、配置和运行安排见 §13。200/200 已完成，但 **TruFor 发生 131 次
+> CUDA OOM，60 条真实局部篡改无一条有效局部测量**；整图维度可解释，局部维度无效，
+> 结果与失败分析见 `sft_data/g8_dev_eval_20261110/DEVELOPMENT_EVAL_REPORT.md`。
+> test 继续隔离，不训练。
 > 历史段落保留当时记录；凡与本条冲突，以本条、§11、§12 和 §13 为准。
 
 > **本文件从 2026-10-15 起只记当前代次的工作，只追加、不改写已写下的条目。**
@@ -2267,3 +2270,39 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 - **输出**：`index.html`（原始对话、投送图、三图、预测框、专家结果、纠正、停止
   原因）、`records.json`/`review_records.csv`、`SUMMARY.md`、`review_queue.json`、
   `REVIEW_GUIDE.md`。结果只用于问题汇总和后续决策；不进入训练，不改变历史 trace。
+
+### 13.1 2026-11-10 结果与失败记录
+
+- **运行**：200/200 完成，0 条会话级失败；21:34:38–23:38:15，约 2 h 04 m；config
+  `06af5cd74a608152`，commit `9a7d9fa`，prompt `6b4756ca21bc7a63`，manifest
+  `a4b31955…`。逐条报告见 `sft_data/g8_dev_eval_20261110/DEVELOPMENT_EVAL_REPORT.md`。
+- **总体**：正确 125/200（62.50%）、错误 18、弃权 57、未形成结论 0；覆盖率 71.50%，
+  已结案准确率 87.41%，平衡准确率 60.14%，Fake P/R/F1 92.04/74.29/82.22%。
+  Real 21/60（30 弃权）、整图生成 67/80、局部篡改 37/60；但局部篡改的 37 个总体 Fake
+  **全部由 whole=AI-generated 驱动，local=Tampered 为 0**，不能当作局部检出。
+- **整图维度**：Real 66/120（48 条被 PROBE 误报 AI）、AI-generated 67/80；AI precision
+  58.26%、recall 83.75%。GenImage SD14/SD15/Wukong 10/10、Midjourney 9/10、Glide 5/10；
+  AutoSplice Authentic 21/30、Forged 17/60，domain shift 明显。
+- **局部维度**：AutoSplice 60 条真实篡改 0 Tampered、58 Uncertain、2 Not applicable；
+  30 条真图 0 Not tampered、30 Uncertain；60 个 mask 但 bbox 0，定位不可评价。
+  GenImage 纯生成图 local 70 Uncertain / 8 Not tampered / 2 Not applicable，单独口径。
+- **TruFor 失败**：131 次 `CUDA error: out of memory`（129 条会话，2 条重复失败）；
+  17 条有效全部在 22:08 前且只覆盖 GenImage Real/ADM/BigGAN；AutoSplice 0/90 有效。
+  Qwen 常驻约 17.53 GB，TruFor 每次启动子进程，session 推进后显存不足；TruFor `test.py`
+  裸 `except` 吞异常并退出 0，外层表现为“未产出 npz”。原始记录全部保留。
+- **调用/纠正**：首工具 TruFor 123 / PROBE 77；执行 339，有效 208，失败 131，重复请求 2；
+  单专家 176（175 PROBE-only + 1 TruFor-only）；结案前检查 107（101 补测，6 仍结案）；
+  覆盖纠正 30 通过/2 失败，certainty 纠正 47 通过/1 失败；初始“确定分项无测量”8 条
+  全部纠正，最终 0。8 条无任何有效测量的弃权（只试 TruFor 失败后未试 PROBE）属于
+  可用工具未尝试的提前结案；泛称“整图未测量”未触发 preclose 检查。
+- **解释/审核**：三图仅 17 条；跨任务 mutual 自动候选 1 条为误报（PROBE+视觉特征，
+  非 PROBE+TruFor）；44 条编辑过程候选多为假设/否定/规划句，不能当缺陷数；最终
+  `joint_verdict_issues` 2 条（`42357_2`、`62011_authentic`，总体 Uncertain + whole AI
+  纠正失败）。审核队列 156 条（129 工具失败、57 弃权、18 错误、32 覆盖纠正、48 certainty
+  纠正、20 随机 High）。
+- **certainty**：High 108（总体正确 98，90.74%）、Medium 27（20，74.07%）、Low 8（7，
+  87.50%）、null 57；High 占已结案 75.5%，74 条 High 报告含限制措辞候选。
+- **决策**：本批只用于问题汇总；局部维度无效，不用其召回/定位做结论。下一轮先验证
+  TruFor 显存修复（`empty_cache`/常驻 worker/CPU 或第二 GPU），用 10–20 条连续
+  AutoSplice 会话确认 100% 有效后再考虑重跑；同时处理 PROBE 在 AutoSplice 的 domain
+  shift、`Not applicable` 误用、无测量提前结案和最终一致性硬门。不训练、不改历史 trace。
