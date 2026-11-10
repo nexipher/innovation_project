@@ -56,6 +56,7 @@ EXPERT_FILES = {
     "NoiseExpert": "experts/noise.py",
     "JPEGExpert": "experts/jpeg.py",
     "FrequencyExpertV2": "experts/frequency_v2.py",
+    "TruForExpert": "experts/trufor.py",
 }
 
 #: 身份必须包含的小节；缺一节就不是可比较的身份。

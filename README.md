@@ -10,13 +10,18 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 仍是 `probe/npr/univfd`；IML-ViT 代码/权重已核实但未选中。联合任务把整图生成判断与
 > 局部篡改判断分开输出；24 会话人工验收材料已生成于
 > `sft_data/g8_acceptance/dual_20261107/`，**状态仍是 pending human review**。
+> **2026-11-10 当前状态更新**：此前“暂不扩新源图”的 24 条验收阶段已结束；按用户
+> 指令开展 **200 张新源图开发评测**（仅 dev/val、JPEG q95、`probe+trufor`、
+> certainty_v1、贪心/non-thinking）。该项是 **development evaluation**，不是人工验收，
+> 也不是 SFT 数据；组成、seed、路径、哈希与配置见 `plan.md` §13 和
+> `sft_data/g8_dev_eval_20261110/manifest.json`。不训练、不扩到 test。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
 > content_box，并可生成原图与异常图上的预测框叠加。同一 24 输入的规则复验写在
 > `sft_data/g8_acceptance/dual_20261108/`，自动比较见其 `comparison/comparison.md`：
 > 图片误读 1→0、confidence=0.95 17→10，但整图正确 16→11、总体 Uncertain 4→10、
 > 两专家调用 23→9；跨任务“相互验证”排除否定句后 1→1，没有变多也尚未消除。
-> **决定：暂不扩到新源图**，先人工审阅这 24 条并修正“停在单专家”、AI 生成图被判
+> **历史决定（2026-11-08；已被 2026-11-10 的开发评测安排取代）**：暂不扩到新源图，先人工审阅这 24 条并修正“停在单专家”、AI 生成图被判
 > 局部 Tampered、全图 bbox 等问题。2026-11-08 后续已改提示词规则 1/5、状态提示和
 > 失败提示，并加入一次结案前补测检查（只提醒，不强制调用、不改标签；plan §12.9）。
 > 复验批次 `sft_data/g8_acceptance/dual_20261108_closing/` 已完成：call2 9→18、

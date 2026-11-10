@@ -9,7 +9,11 @@
 > **IML-ViT 代码与官方权重均已到位并完成 220 输入对照，但未选中**。
 > GenImage test 有使用历史且无未见性，继续隔离；选择只用 dev/val。最新结果见 §11.4/§11.5/
 > §11.7、§12 与 `docs/development/{GENIMAGE_GLOBAL_COMPARISON_20261105,LOCALIZATION_COMPARISON_20261105,IML_VIT_VERIFICATION_20261104}.md`。
-> 历史段落保留当时记录；凡与本条冲突，以本条、§11 和 §12 为准。
+> **2026-11-10 状态更新**：此前“暂不扩新源图”的验收阶段结束；按用户指令开展
+> **200 张新源图开发评测**（仅 dev/val、JPEG q95、`probe+trufor`、certainty_v1、
+> 贪心/non-thinking）。该批是 **development evaluation**，不是人工验收/SFT 数据；
+> 组成、seed、路径、哈希、配置和运行安排见 §13。test 继续隔离，不训练。
+> 历史段落保留当时记录；凡与本条冲突，以本条、§11、§12 和 §13 为准。
 
 > **本文件从 2026-10-15 起只记当前代次的工作，只追加、不改写已写下的条目。**
 > v1 计划（Qwen2.5-VL + PROBE/noise/jpeg/frequency_v2 时代，含其全部阶段与决策记录）已归档：
@@ -2203,5 +2207,60 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `57501_0` 为真实局部篡改但整体 Uncertain。局部漏检 5 条（`39890_1`、`72399_2`、
   `42005_0`、`42005_2`、`57501_0`），其中 `42005_2` TruFor 失败；局部误报 1 条
   `ADM`。certainty High 21/23 仍偏高，是否机械需人工判断。
-- **决策**：**pending human review**；不训练、不扩新源图、不改旧 trace。旧 confidence
+- **决策**：**pending human review**；不训练、不改旧 trace。该历史段落中的“暂不扩新源图”状态已于 2026-11-10 由 §13 的 200 张开发评测取代（仍不训练、test 隔离）。旧 confidence
   批次继续按原字段读取；新旧 certainty 分布不可直接当作校准概率比较。
+
+## 13. 2026-11-10 200 张新源图开发评测
+
+> 本节是开发评测安排，不是人工验收，也不是 SFT 数据。此前“暂不扩新源图”的
+> 24 条验收阶段到此结束；test 仍隔离，仍不训练。若 GPU 授权不明确，停在运行前。
+
+- **固定组成（200 会话）**：
+  - 真实图 60：GenImage Real 30 + AutoSplice Authentic 30；
+  - 整图生成 80：ADM / BigGAN / Glide / Midjourney / SD14 / SD15 / VQDM / Wukong
+    各 10；
+  - 局部篡改 60：AutoSplice 60 个不同 forged base；每个源只取一张 q95 输入。
+- **抽样规则**：
+  - seed `20261110`，按 group 的 `random.Random(f"{seed}:{quota}")` 在按
+    source_id 排序后的候选上抽取；规则和候选池写入 manifest。
+  - GenImage 只取 `eval_dev_manifest_20261102.json` +
+    `eval_val_manifest_20261102.json` 中 `no_known_use=True` 的输入；使用 dev+val，
+    不读 test。
+  - AutoSplice 只取 `autosplice_dev_subset_20261102.json` 的 dev bases；选择
+    60 个 forged base，再从未选 forged、未使用的 base 中选 30 个 authentic；
+    两者 base 不相交。
+  - 排除 `dual_20261107` 的 24 条 source 及 AutoSplice 同 base 变体：
+    AutoSplice 排除 39890/41187/72399/42005/57501/58610/51136/42165/53059；
+    GenImage 排除其 4 个 Real source 和 8 个生成 source。
+  - 每个源只选一张输入；q95/source/mask 哈希在 CPU 侧重算并与 manifest 对照。
+- **当前样本池（排除后）**：GenImage Real 524、每个生成器 782–789；AutoSplice
+  91 bases，其中 forged 65、authentic-only 26。选 60 forged 后剩余 31 bases，
+  足够选 30 authentic；实际有 4 个 authentic 来自未选 forged base，均与局部
+  篡改 base 不相交。
+- **批次与清单**：`sft_data/g8_dev_eval_20261110/`；
+  manifest `sft_data/g8_dev_eval_20261110/manifest.json`；当前 SHA256
+  `a4b319556ef075534359d825881734ba78d80b075f1e2e957e63468307dcfa7c`。
+  200 条 q95 + 200 source + 60 mask 哈希已核对，失败 0。
+- **运行配置**：Qwen3-VL-8B-Instruct 固定 revision `0c351dd0…`；显式
+  `probe,trufor`；certainty_v1；greedy、temperature 0、non-thinking；
+  CURRENT_TOOL_TAGS/预算/控制器规则不变。新入口 `scripts/g8_dev_eval.py`：
+  运行前写 `batch_meta.json`（commit、worktree、prompt actual hash、model
+  revision、专家权重/预处理、budget/decoding、manifest hash、config_sha256）；
+  每样本独立 record，`--resume` 跳过 completed，失败写 `failures.jsonl` 和
+  `failures/`，不覆盖原始结果；拒绝非 `qwen3_real`（禁止 Mock）和无 GPU 授权。
+- **运行前 CPU 检查**：`python scripts/g8_dev_eval.py --dry-run` 返回 200 条、
+  组成正确、哈希 200/200/60 全匹配；预计 GPU 时间按上一批 24 会话 762 s
+  （31.75 s/会话）估算约 **6 350 s（1 h 46 m）**，含模型加载/重试按
+  **2–2.5 h** 规划。GPU 运行仅在明确授权时启动；若授权状态不清，停在运行前。
+- **报告要求**：总体按真实图/整图生成/局部篡改分别统计 correct/wrong/abstain/
+  no_conclusion、准确率、平衡准确率、Fake P/R/F1、覆盖率与已结案准确率；
+  整图分项和局部编辑分项分开；AutoSplice 单列真实检出/真图误报/弃权/未调用
+  TruFor/工具失败；GenImage 纯生成图的 local Not applicable 单独口径；定位
+  评价区分图像级结论与 bbox/mask 质量，注明 base 共享 mask 和同源关系；
+  调用行为统计首工具、请求/执行/有效测量/失败/重复、补测/覆盖/certainty 纠正；
+  解释质量自动命中只作候选并定位原句/轮次；certainty 分布及分档准确率单列。
+  审核队列优先全部错误、弃权、工具失败、纠正案例，再固定随机抽查约 20 条
+  “总体正确且 High”。
+- **输出**：`index.html`（原始对话、投送图、三图、预测框、专家结果、纠正、停止
+  原因）、`records.json`/`review_records.csv`、`SUMMARY.md`、`review_queue.json`、
+  `REVIEW_GUIDE.md`。结果只用于问题汇总和后续决策；不进入训练，不改变历史 trace。
