@@ -2248,10 +2248,13 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   revision、专家权重/预处理、budget/decoding、manifest hash、config_sha256）；
   每样本独立 record，`--resume` 跳过 completed，失败写 `failures.jsonl` 和
   `failures/`，不覆盖原始结果；拒绝非 `qwen3_real`（禁止 Mock）和无 GPU 授权。
-- **运行前 CPU 检查**：`python scripts/g8_dev_eval.py --dry-run` 返回 200 条、
-  组成正确、哈希 200/200/60 全匹配；预计 GPU 时间按上一批 24 会话 762 s
-  （31.75 s/会话）估算约 **6 350 s（1 h 46 m）**，含模型加载/重试按
-  **2–2.5 h** 规划。GPU 运行仅在明确授权时启动；若授权状态不清，停在运行前。
+- **运行前 CPU/入口检查**：`python scripts/g8_dev_eval.py --dry-run` 返回 200
+  条、组成正确、哈希 200/200/60 全匹配；真实模型 3 会话 smoke 3/3 完成、0
+  失败，均 2 次调用，63.0/48.6/58.0 s（模型加载后合计 169.6 s），页面/记录/
+  CSV/index 正常；`--resume` 验证身份后跳过 3/3（0.1 s）；分析脚本在 smoke 上
+  正常生成报告。core 测试 **829 passed, 1 skipped**。
+  按 smoke 的 56 s/会话估算 200 条约 **11 200 s（3 h 7 m）**，含波动按
+  **3.5–4 h** 规划。GPU 运行仅在明确授权时启动；若授权状态不清，停在运行前。
 - **报告要求**：总体按真实图/整图生成/局部篡改分别统计 correct/wrong/abstain/
   no_conclusion、准确率、平衡准确率、Fake P/R/F1、覆盖率与已结案准确率；
   整图分项和局部编辑分项分开；AutoSplice 单列真实检出/真图误报/弃权/未调用

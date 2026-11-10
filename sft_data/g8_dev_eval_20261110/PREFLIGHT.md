@@ -1,13 +1,15 @@
 # g8 200-source development evaluation — CPU preflight
 
 - date: 2026-11-10
-- status: **prepared; GPU run pending explicit authorization gate**
+- status: **prepared; 3-session GPU smoke passed; full run pending**
 - batch: `sft_data/g8_dev_eval_20261110/`
 - manifest: `sft_data/g8_dev_eval_20261110/manifest.json`
 - manifest SHA256: `a4b319556ef075534359d825881734ba78d80b075f1e2e957e63468307dcfa7c`
-- code commit: `df65259232d1f316f8a88f224d95159021cc325b`
+- code commit at preflight: `f7742e989955766897dd33bc83c8c219584448cf`
+  (doc-only commits after this preflight do not change the runtime identity;
+  `batch_meta.json` records the exact commit at batch start)
 - worktree at preflight: clean
-- preflight static config SHA256: `19ddbbcad0111e79`
+- preflight static config SHA256: `04fc2717e4b70930`
   (`preflight_config.json`; runtime `batch_meta.json` records the actual
   `config_sha256` after building the real pipeline)
 
@@ -83,11 +85,32 @@ Not applicable 80 / Tampered 60. Split: dev 181 / val 19; test not read.
   manifest/config/commit; completed records are skipped; failures are preserved
   separately. The runner refuses non-`qwen3_real` sessions (no Mock).
 
+## Run-entry checks (2026-11-10)
+
+- `--dry-run`: 200 samples, hashes 200 q95 / 200 source / 60 mask all match.
+- 3-session GPU smoke (first three manifest inputs, real Qwen + PROBE + TruFor):
+  3/3 completed, 0 failed, all `Real/Real/Not tampered/High`, 2 calls each,
+  63.0 s / 48.6 s / 58.0 s (169.6 s total after model load). Pages, per-sample
+  records, `records.json`, `records.jsonl`, `review_records.csv` and `index.html`
+  were generated; the smoke output is outside the repo at
+  `/root/autodl-tmp/g8_dev_eval_smoke_20261110` (not part of this batch).
+- One smoke session had a wording-only coverage correction: the model fixed the
+  `report` but left “共同支持” in `reasoning`, so `coverage_check.status` stayed
+  `failed`; the final label was unchanged. This is a real correction-scope
+  finding for review, not a runner failure.
+- `--resume` on the smoke: identity verified, 3/3 completed skipped, 0.1 s.
+- `scripts/analyze_dev_eval.py` on the smoke produced `SUMMARY.md`,
+  `review_queue.json` and `REVIEW_GUIDE.md`; no analyzer exception.
+- Core tests: 829 passed, 1 skipped, 853 deselected.
+
 ## Expected GPU time
 
-Previous 24 sessions: 762 s → 31.75 s/session. Linear estimate for 200:
-**6,400 s ≈ 1 h 47 m**. Plan **2–2.5 h** including model load, corrections,
-and normal variation. This is an estimate, not a promise.
+The previous 24-session consistency batch averaged 31.7 s/session, but that
+average includes 1-call sessions (about 12 s); its 2-call GenImage Real sessions
+were 34.7–58.9 s. The 3-session smoke (all 2-call Real) averaged **56.5 s**.
+Using 56 s/session for 200 sessions gives **11,200 s ≈ 3 h 7 m** after model
+load. Plan **3.5–4 h** wall clock to allow for AutoSplice/TruFor sessions,
+corrections and normal variation. This is an estimate, not a promise.
 
 ## Run entry
 

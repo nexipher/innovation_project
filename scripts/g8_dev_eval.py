@@ -192,8 +192,8 @@ def build_batch_meta(fsm, manifest_path: Path, out: Path, batch_id: str,
         "decoding": {"greedy": True, "inference_mode": "non-thinking",
                      "do_sample": False, "temperature": 0.0,
                      "max_new_tokens": 1024},
-        "expected_seconds_per_session": 32.0,
-        "expected_total_seconds": round(32.0 * verification["samples"], 1),
+        "expected_seconds_per_session": 56.0,
+        "expected_total_seconds": round(56.0 * verification["samples"], 1),
         "resume_policy": "completed records are skipped; failed records are preserved",
     }
 
@@ -365,7 +365,7 @@ def main() -> int:
             "samples": len(samples),
             "counts": manifest.get("counts"),
             "verification": verification,
-            "estimated_seconds": round(32.0 * len(samples), 1),
+            "estimated_seconds": round(56.0 * len(samples), 1),
             "output": str(out),
         }, ensure_ascii=False, indent=2))
         return 0
@@ -449,7 +449,7 @@ def main() -> int:
         "batch_id": batch_id, "samples": len(samples),
         "completed": len(completed), "failed_recorded": len(failed_ids),
         "config_sha256": batch_meta["config_sha256"],
-        "estimated_seconds": round(32.0 * (len(samples) - len(completed)), 1),
+        "estimated_seconds": round(56.0 * (len(samples) - len(completed)), 1),
         "out": str(out),
     }, ensure_ascii=False, indent=2), flush=True)
 
