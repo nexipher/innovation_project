@@ -1113,3 +1113,17 @@
 * **涉及/修改的文件清单**：`scripts/g8_dev_eval.py`、`plan.md`、`sft_data/g8_dev_eval_20261127_part1/**`、`sft_data/g8_dev_eval_20261127_part2/**`、`claude_operation_log.md`。
 * **执行结果与验证状态**：前 100 条检查通过后直接启动后 100 条；后 100 条首次启动因前 100 条产物未入库被 worktree 门拒绝（未跑样本），提交前 100 条产物 `cbc2b85` 后重启成功；后 100 条产物提交 `930fbeb`。core 831 passed, 1 skipped。
 * **置信度或遗留待办（TODO）**：TruFor 在高 reserved 下未再 OOM；Agent 主动未调用 TruFor 共 54 条（31+23），其中 AutoSplice 18 条，属既有调用策略行为；未训练、未碰 test，原批次不变。
+
+### [2026-11-27 12:50–12:53] - §13.4 独立专家对照
+
+* **当前操作动作**：在同一 200 张 q95 输入上分别独立运行 PROBE 与 TruFor（不加载 Qwen、不经过 Agent），并与 2026-11-27 两批 Agent 记录逐图合并。
+* **对应计划锚点**：`plan.md` §13.4；`sft_data/independent_expert_20261127/`。
+* **核心变更说明**：
+  1. 新增 `scripts/independent_expert_compare.py`：PROBE 逐图 raw score（阈值 0.5）；TruFor batch 跑完 200 张，保留 raw npz 与异常/可靠性图，图像 score 阈值 0.5、map 阈值 0.5，AutoSplice 用 base 共享 mask 算 IoU/F1/precision/recall。
+  2. PROBE：GenImage 生成图 74/80（92.5%），GenImage 真图 2/30（6.7%），AutoSplice 真图 8/30（26.7%）、编辑图 43/60（71.7%）整图误报；SD14/SD15/VQDM/Wukong/ADM/Midjourney 10/10，Glide 6/10、BigGAN 8/10。
+  3. TruFor：AutoSplice 篡改 41/60（68.3%）检出、真图 6/30（20.0%）误报，P/R/F1 0.872/0.683/0.766；60 篡改定位 IoU mean/median 0.530/0.542、F1 0.645/0.703，IoU≥0.1/0.3/0.5 为 55/47/33；GenImage 80 生成图 score≥0.5 11/80、high-fraction mean 0.0738，单列不计误报。
+  4. 重点组：Agent 未调用 14 张中独立 TruFor score 检出 10、定位 13；已调用未检出 33 张中 score 18、定位 29；已检出 13 张中 score/定位 13/13。问题层级：未调用组主要调用覆盖（10），已调用未检出组主要 Agent 判读/证据使用（18），专家输出限制 4，仅定位命中 11。
+  5. Agent 已调用 TruFor 的 146 条 score 与独立重跑逐图完全一致（146/146，0 差异）。
+* **涉及/修改的文件清单**：`scripts/independent_expert_compare.py`、`sft_data/independent_expert_20261127/per_sample.csv`、`report.md`、`report.json`、`plan.md`、`.gitignore`。
+* **执行结果与验证状态**：200/200 独立测量完成，无加载/推理/NPZ/渲染错误；PROBE/TruFor 使用原权重、预处理和阈值；提交 `47984ff`。
+* **置信度或遗留待办（TODO）**：报告中“问题层级”是描述性规则，不是自动验收；11 条仅定位命中需人工看响应区域；raw npz 与 400 张异常/可靠性图保留本地（已 gitignore）。不训练、不碰 test。

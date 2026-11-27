@@ -2369,3 +2369,17 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   定位，并给代表案例判断问题层级。
 - **输出**：`sft_data/independent_expert_20261127/` 的逐图 CSV、`report.md`、
   `report.json`、TruFor raw npz 与异常/可靠性图；运行错误立即停止并报告。
+- **结果（2026-11-27）**：PROBE GenImage 生成图 **74/80 = 92.5%** 检出，GenImage 真图
+  **2/30 = 6.7%** 误报，AutoSplice 真图 **8/30 = 26.7%**、编辑图 **43/60 = 71.7%**
+  整图误报；SD14/SD15/VQDM/Wukong/ADM/Midjourney 10/10，Glide 6/10、BigGAN 8/10。
+  TruFor AutoSplice 图像级 **41/60 = 68.3%** 检出、真图误报 **6/30 = 20.0%**，
+  P/R/F1 **0.872/0.683/0.766**；60 篡改定位 IoU mean/median **0.530/0.542**，
+  F1 **0.645/0.703**，IoU≥0.1/0.3/0.5 为 **55/47/33**。GenImage 80 生成图局部
+  score≥0.5 **11/80**、high-fraction mean 0.0738，单列不计误报。
+  Agent 14 张未调用中独立 TruFor score 检出 **10/14**、定位 IoU≥0.1 **13/14**；
+  33 张已调用未检出中 score 检出 **18/33**、定位 **29/33**；13 张已检出中
+  score/定位均 **13/13**。问题层级：未调用组主要是调用覆盖（10 条 score 明确），
+  已调用未检出组主要是 Agent 判读/证据使用（18 条 score 明确），4 条专家输出限制，
+  11 条仅定位命中。146 条 Agent 已调用 TruFor score 与独立重跑逐图完全一致
+  （146/146，0 差异）。运行 12:50:50–12:53:26，无错误；逐图 CSV `per_sample.csv`，
+  报告 `report.md`/`report.json`；raw npz 与图在本地目录（不入 git）。
