@@ -2350,3 +2350,22 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   产物（`cbc2b85`），后 100 条 commit `cbc2b85`；`cbc2b85` 只新增产物、不改运行代码，
   runtime config 两批相同。第一次后 100 条启动曾在 worktree 门被拒绝（未跑任何样本），
   清理空目录并提交前 100 条后重新启动。原 11-10 批次未改动。
+
+### 13.4 2026-11-27 独立专家对照
+
+- **目的**：在同一 200 张 q95 输入上分别独立运行 PROBE 和 TruFor，与 2026-11-27
+  Agent 重跑逐图对比，判断差异来自工具调用、专家输出还是 Agent 判读。
+- **输入/身份**：沿用 `sft_data/g8_dev_eval_20261110/manifest.json` 的 200 张和原顺序；
+  PROBE/TruFor 现有权重、预处理、阈值；不加载 Qwen，不训练、不碰 test。
+- **阈值口径**：PROBE 原始 `raw_metric` 阈值 **0.5**（外部默认，登记表）；TruFor 图像级
+  score 阈值 **0.5**，map 高响应阈值 **0.5**；AutoSplice 定位用 base 共享 mask，
+  mask resize 到 map 尺寸，报 IoU/F1/precision/recall；同 base 多变体不重复（本批每
+  base 只选一张）。
+- **分组**：PROBE 报 GenImage 80 生成图检出率、GenImage 30 真图误报率、AutoSplice
+  30 真图和 60 编辑图的整图误报率；TruFor 报 AutoSplice 60 篡改/30 真图的图像级检出
+  与误报、60 篡改的 mask 定位、GenImage 80 生成图的局部响应单列。
+- **重点组**：Agent 未调用 TruFor 的 14 张篡改图（`tampered_agent_not_called`）和已调用
+  但未检出的 33 张（`tampered_agent_called_not_detected`），统计独立 TruFor 的检出/
+  定位，并给代表案例判断问题层级。
+- **输出**：`sft_data/independent_expert_20261127/` 的逐图 CSV、`report.md`、
+  `report.json`、TruFor raw npz 与异常/可靠性图；运行错误立即停止并报告。
