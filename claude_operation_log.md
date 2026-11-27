@@ -1074,3 +1074,29 @@
 * **涉及/修改的文件清单**：`mllm/message_builder.py`、`state_machine/controller.py`、`utils/certainty.py`、`utils/coverage.py`、`utils/final_v2.py`、`tests/test_certainty.py`、`tests/test_certainty_real_cases.py`、`tests/test_coverage.py`、`tests/test_controller_v3.py`、`tests/test_final_v2.py`、`tests/test_message_builder.py`、`scripts/g8_dual_acceptance.py`、`scripts/g8_review_workstation.py`、`scripts/compare_dual_acceptance.py`、`sft_data/g8_acceptance/dual_20261108_certainty/**`、`sft_data/g8_acceptance/dual_20261108_consistency/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：`core` **825 passed, 1 skipped, 853 deselected**；`slow` **250 passed, 3 skipped, 1426 deselected**；比较产物 `comparison_vs_certainty/`、`comparison_vs_peakcrop/`；工作台/逐条记录已生成。
 * **置信度或遗留待办（TODO）**：①人工审阅 24 条，重点看 REVIEW_GUIDE 列出的案例；②局部召回偏低与 certainty High 偏高需后续决定是否调提示词/阈值；③TruFor 外部失败仍是测量噪声；④验收通过前不训练、不扩新源图。
+
+### [2026-11-10 21:34–23:38] - §13.1 200 张新源图开发评测
+
+* **当前操作动作**：完成 200 来源/200 会话开发评测；CPU 预检、manifest/哈希验证、真实模型 smoke、全批运行与分析。
+* **对应计划锚点**：`plan.md` §13/§13.1；`sft_data/g8_dev_eval_20261110/DEVELOPMENT_EVAL_REPORT.md`。
+* **核心变更说明**：
+  1. 固定 seed `20261110`；200 输入（GenImage Real 30、AutoSplice Authentic 30、8 个生成器各 10、AutoSplice Forged 60）；manifest SHA `a4b31955…`；q95/source/mask 哈希 200/200/60 全匹配。
+  2. 运行配置 Qwen3-VL-8B-Instruct `0c351dd0…`、`probe+trufor`、certainty_v1、greedy/non-thinking；runtime config SHA `06af5cd74a608152`。
+  3. 200/200 完成，0 会话级失败；总体正确 125/200（62.50%）、弃权 57；整图生成 67/80；真实图 21/60、局部篡改 37/60。
+  4. 失败：TruFor 131 次 CUDA OOM（129 条会话）；17 条有效集中在 21:35–22:08；AutoSplice 0/90 有效，60 条真实篡改 0 条 Tampered；局部维度无效。
+* **涉及/修改的文件清单**：`scripts/build_dev_eval_manifest.py`、`scripts/g8_dev_eval.py`、`scripts/analyze_dev_eval.py`、`tests/test_dev_eval_manifest.py`、`sft_data/g8_dev_eval_20261110/**`、`README.md`、`plan.md`、`KNOWN_ISSUES.md`。
+* **执行结果与验证状态**：manifest/哈希预检通过；smoke 3/3；全批 200/200；分析脚本生成 `SUMMARY.md`/`review_queue.json`；当时 core 829 passed, 1 skipped。
+* **置信度或遗留待办（TODO）**：局部维度需先修 TruFor 同卡 OOM；PROBE 在 AutoSplice 的 domain shift、`Not applicable` 误用、无测量提前结案等见 `DEVELOPMENT_EVAL_REPORT.md`；不训练、不碰 test。
+
+### [2026-11-27 10:07–10:38] - §13.2 TruFor 同卡 OOM 修复与验证
+
+* **当前操作动作**：复现、最小修复并验证 Qwen3-VL + PROBE + TruFor 同卡 CUDA OOM；未重跑 200 条。
+* **对应计划锚点**：`plan.md` §13.2；`docs/development/TRUFOR_OOM_FIX_20261127.md`；`KNOWN_ISSUES.md` A17。
+* **核心变更说明**：
+  1. 复现：历史成功/失败图在仅 Qwen、生成后、PROBE 后、生成+PROBE 四状态均成功；分数 `0.116657`/`0.400073`；重复同输入 6 次 reserved 稳定 19.214 GB；旧代码 12 条 AutoSplice reserved 19.292→22.070 GB、free 5.460→2.681 GB，小图仍成功。
+  2. 根因：Qwen+PROBE allocated 约 18.76 GB；会话多样性使 reserved 缓存涨到 22–23 GB；TruFor 子进程 CUDA context 在 free 不足时 OOM；上游 `test.py` 裸 `except` 退出 0，旧 trace 只显示“未产出 npz”。
+  3. 修复：`experts/trufor.py` 在子进程前 `gc.collect()+torch.cuda.empty_cache()`；新增 `TruForCUDAOutOfMemory`（`failure_kind=cuda_oom`）与 `_is_cuda_oom`；`state_machine/controller.py` failed token 写 `failure_kind`。不改设备/权重/精度/输入尺寸。
+  4. 验证：18 条连续 AutoSplice 会话；14 条实际调用 TruFor，14/14 产出 score/map/conf，0 失败；释放前最高 reserved 22.941 GB / free 1.811 GB，释放后 18.925 GB / 5.827 GB。
+* **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`tests/test_external_experts.py`、`tests/test_tool_absence.py`、`docs/development/TRUFOR_OOM_FIX_20261127.md`、`plan.md`、`README.md`、`KNOWN_ISSUES.md`。
+* **执行结果与验证状态**：core **831 passed, 1 skipped, 855 deselected**；提交 `89b8df5`；未重跑 200 条，原批次保留。
+* **置信度或遗留待办（TODO）**：4/18 条会话未调用 TruFor，属既有调用策略行为；若未来重跑 200 条，需重新固定 commit/config identity 并刷新 preflight；不训练、不碰 test。
