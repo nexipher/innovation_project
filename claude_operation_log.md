@@ -1100,3 +1100,16 @@
 * **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`tests/test_external_experts.py`、`tests/test_tool_absence.py`、`docs/development/TRUFOR_OOM_FIX_20261127.md`、`plan.md`、`README.md`、`KNOWN_ISSUES.md`。
 * **执行结果与验证状态**：core **831 passed, 1 skipped, 855 deselected**；提交 `89b8df5`；未重跑 200 条，原批次保留。
 * **置信度或遗留待办（TODO）**：4/18 条会话未调用 TruFor，属既有调用策略行为；若未来重跑 200 条，需重新固定 commit/config identity 并刷新 preflight；不训练、不碰 test。
+
+### [2026-11-27 10:48–12:39] - §13.3 修复版 200 条分半重跑
+
+* **当前操作动作**：用 TruFor OOM 修复版按原 manifest 顺序重跑 200 条开发评测，分前 100/后 100 两批；未改原 11-10 批次。
+* **对应计划锚点**：`plan.md` §13.3；两个新批次目录 `sft_data/g8_dev_eval_20261127_part1/`、`part2/`。
+* **核心变更说明**：
+  1. `scripts/g8_dev_eval.py` 新增 `--offset`，在完整 200 条 manifest 上按原顺序切片；页面/记录保留全量序号；增加 `split` 元数据和进度行 `failed=` 便于审计。提交 `f07e006`。
+  2. 前 100 条（1–100，GenImage）100/100 完成、0 失败、3352.7 s；TruFor 成功 69、失败 0、未调用 31；record/trace/页面齐全；抽查 score/map/conf 正常。
+  3. 后 100 条（101–200，Wukong 10 + AutoSplice 90）100/100 完成、0 失败、3258.6 s；TruFor 成功 77、失败 0、未调用 23；AutoSplice 有效 72/90 = 80.0%；record/trace/页面齐全。
+  4. 两批 runtime config 均 `88eb852e9e26efe3`；合计 200/200，TruFor 成功 146、失败 0、未调用 54，调用成功率 146/146 = 100%；无 OOM、无工具输出缺失、无记录异常。
+* **涉及/修改的文件清单**：`scripts/g8_dev_eval.py`、`plan.md`、`sft_data/g8_dev_eval_20261127_part1/**`、`sft_data/g8_dev_eval_20261127_part2/**`、`claude_operation_log.md`。
+* **执行结果与验证状态**：前 100 条检查通过后直接启动后 100 条；后 100 条首次启动因前 100 条产物未入库被 worktree 门拒绝（未跑样本），提交前 100 条产物 `cbc2b85` 后重启成功；后 100 条产物提交 `930fbeb`。core 831 passed, 1 skipped。
+* **置信度或遗留待办（TODO）**：TruFor 在高 reserved 下未再 OOM；Agent 主动未调用 TruFor 共 54 条（31+23），其中 AutoSplice 18 条，属既有调用策略行为；未训练、未碰 test，原批次不变。
