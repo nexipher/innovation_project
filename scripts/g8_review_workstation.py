@@ -649,6 +649,12 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         + _review_controls(trajectory_id)
         + "</header>")
 
+    if record.get("dialogue_mode") == "sft_candidate_scripted":
+        parts.append(
+            '<p class="banner"><b>候选样板：</b>助手文本由候选写手按当前协议拟写，'
+            '不是 Qwen 原始输出；PROBE/TruFor 的调用、证据 token、三图和控制器'
+            '检查是真实运行。真值与 mask 只用于审核。</p>')
+
     # ⑥ 审计信息：图、尺寸、版本、计数、检查发现
     variant = record.get("image_path") or ""
     image_size = metadata.get("image_size") or []
@@ -730,6 +736,10 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         ("耗时", f'{record.get("elapsed_s")} s'),
         ("记录 schema", record.get("record_schema")),
     ]
+    if record.get("dialogue_mode"):
+        rows.insert(1, ("对话模式", record.get("dialogue_mode")))
+    if record.get("assistant_source"):
+        rows.insert(2, ("助手来源", record.get("assistant_source")))
     for name, value in rows:
         parts.append(f"<tr><td>{html.escape(name)}</td>"
                      f"<td>{html.escape(str(value))}</td></tr>")

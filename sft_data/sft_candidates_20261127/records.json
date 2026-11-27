@@ -1,0 +1,4661 @@
+[
+  {
+    "index": 1,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__54029__1__q95",
+    "variant_id": "autosplice__54029__1__q95",
+    "source_id": "54029",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_mid",
+      "trufor_very_high",
+      "localization_good"
+    ],
+    "key_case": true,
+    "key_case_rank": 1,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "e09deb0653142b84020e0e818672fb027a50787d9e8d7a60ce4c55431ed1008f",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/54029_mask.png",
+    "mask_sha256": "0289ebb107f7c82f055068712539bba4e5deba1da14670ee5b8a5989447c953b",
+    "mask_shared_by_base": true,
+    "base_variant_count": 4,
+    "variant": "1",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.721901,
+      "trufor_score": 0.999517,
+      "trufor_map_high_fraction": 0.091042,
+      "trufor_confidence_mean": 0.936411,
+      "trufor_low_confidence_fraction": 0.000117,
+      "trufor_iou": 0.393387
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_152944_54029_1",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            300,
+            760,
+            935,
+            910
+          ],
+          "reason": "TruFor 高响应集中在右侧白色衣物，可靠性图同区域可靠，原图该处内容边界较直",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "High",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "TruFor 的高响应局限在右侧白色衣物且可靠性高，支持局部篡改；PROBE 的整图高分不能定位，原图其余场景保持照片连续性，故整图仍判 Real。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 的高响应局限在右侧白色衣物且可靠性高，支持局部篡改；PROBE 的整图高分不能定位，原图其余场景保持照片连续性，故整图仍判 Real。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          300,
+          760,
+          935,
+          910
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应集中在右侧白色衣物，可靠性图同区域可靠，原图该处内容边界较直",
+        "evidence": [
+          "E-376c1fea8e"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 28.1,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/54029_1.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/54029_1.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_152944_54029_1.json",
+    "evidence": [
+      {
+        "evidence_id": "E-376c1fea8e",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9995,
+        "raw_metric": 0.999517,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          401
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9997798800468445,
+          "anomaly_peak_normalized_1000": [
+            557,
+            828
+          ],
+          "high_response_fraction": 0.09104192643391522,
+          "confidence_mean": 0.9364113277724324,
+          "low_confidence_fraction": 0.00011689526184538653
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_152944_54029_1/model_anomaly_map_E-376c1fea8e.png",
+          "traces/evidence/session_20261127_152944_54029_1/model_confidence_map_E-376c1fea8e.png"
+        ]
+      },
+      {
+        "evidence_id": "E-a637e4b86c",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.7219,
+        "raw_metric": 0.721901,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          401
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_152944_54029_1__original_predictions.png"
+    ],
+    "page": "001__autosplice__54029__1__q95.html"
+  },
+  {
+    "index": 2,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__55310__1__q95",
+    "variant_id": "autosplice__55310__1__q95",
+    "source_id": "55310",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_low",
+      "trufor_very_high",
+      "localization_good"
+    ],
+    "key_case": true,
+    "key_case_rank": 2,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "7c903f0b21215c76a9680972a94ac30ea5e72303db1ea8ed0d9565ef8bf9f715",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/55310_mask.png",
+    "mask_sha256": "602f14bf73bdf8d46324b9f3cf0036f259459628a9cd9e0e7e4b160595a86423",
+    "mask_shared_by_base": true,
+    "base_variant_count": 4,
+    "variant": "1",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.078204,
+      "trufor_score": 0.999163,
+      "trufor_map_high_fraction": 0.048604,
+      "trufor_confidence_mean": 0.962704,
+      "trufor_low_confidence_fraction": 0.002228,
+      "trufor_iou": 0.929973
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153012_55310_1",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            180,
+            300,
+            475,
+            505
+          ],
+          "reason": "TruFor 高响应覆盖报纸矩形，可靠性高，原图该矩形与信箱表面不连续",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "High",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "TruFor 的高响应与报纸矩形重合且可靠，支持局部篡改；PROBE 低分只说明整图倾向 Real，不能清除局部证据。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 的高响应与报纸矩形重合且可靠，支持局部篡改；PROBE 低分只说明整图倾向 Real，不能清除局部证据。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          180,
+          300,
+          475,
+          505
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应覆盖报纸矩形，可靠性高，原图该矩形与信箱表面不连续",
+        "evidence": [
+          "E-dc4b64b25d"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.18,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/55310_1.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/55310_1.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153012_55310_1.json",
+    "evidence": [
+      {
+        "evidence_id": "E-dc4b64b25d",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9992,
+        "raw_metric": 0.999163,
+        "region_pixels": [
+          46,
+          115,
+          122,
+          194
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9984608888626099,
+          "anomaly_peak_normalized_1000": [
+            275,
+            329
+          ],
+          "high_response_fraction": 0.048604329427083336,
+          "confidence_mean": 0.9627037786064344,
+          "low_confidence_fraction": 0.002227783203125
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153012_55310_1/model_anomaly_map_E-dc4b64b25d.png",
+          "traces/evidence/session_20261127_153012_55310_1/model_confidence_map_E-dc4b64b25d.png"
+        ]
+      },
+      {
+        "evidence_id": "E-5a67368018",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0782,
+        "raw_metric": 0.078204,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          384
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153012_55310_1__original_predictions.png"
+    ],
+    "page": "002__autosplice__55310__1__q95.html"
+  },
+  {
+    "index": 3,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__45749__1__q95",
+    "variant_id": "autosplice__45749__1__q95",
+    "source_id": "45749",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_high",
+      "trufor_very_high",
+      "localization_good"
+    ],
+    "key_case": true,
+    "key_case_rank": 3,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "f073ad6325f9c07febf57fd8e3b3760b7b600cee7f719ac85e78b10032df4a5c",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/45749_mask.png",
+    "mask_sha256": "318a5c9999bc5a1ca3d6d334dd85357de11001684680a96bd63fd08f32fffa1a",
+    "mask_shared_by_base": true,
+    "base_variant_count": 4,
+    "variant": "1",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.999415,
+      "trufor_score": 0.998262,
+      "trufor_map_high_fraction": 0.075024,
+      "trufor_confidence_mean": 0.96542,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": 0.806851
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153012_45749_1",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            315,
+            330,
+            730,
+            650
+          ],
+          "reason": "TruFor 高响应集中在企鹅身体，可靠性高，冰面和雪地无同等响应",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "High",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "PROBE 高分不定位；TruFor 高响应局限在企鹅身体且可靠，冰面背景连续，支持照片中的局部内容变化。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 高分不定位；TruFor 高响应局限在企鹅身体且可靠，冰面背景连续，支持照片中的局部内容变化。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          315,
+          330,
+          730,
+          650
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应集中在企鹅身体，可靠性高，冰面和雪地无同等响应",
+        "evidence": [
+          "E-df7e8a5d8b"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.19,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/45749_1.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/45749_1.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153012_45749_1.json",
+    "evidence": [
+      {
+        "evidence_id": "E-a09f6ece48",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9994,
+        "raw_metric": 0.999415,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          388
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-df7e8a5d8b",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9983,
+        "raw_metric": 0.998262,
+        "region_pixels": [
+          81,
+          128,
+          187,
+          252
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9991390705108643,
+          "anomaly_peak_normalized_1000": [
+            369,
+            419
+          ],
+          "high_response_fraction": 0.07502416237113402,
+          "confidence_mean": 0.9654200926264652,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153012_45749_1/model_anomaly_map_E-df7e8a5d8b.png",
+          "traces/evidence/session_20261127_153012_45749_1/model_confidence_map_E-df7e8a5d8b.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153012_45749_1__original_predictions.png"
+    ],
+    "page": "003__autosplice__45749__1__q95.html"
+  },
+  {
+    "index": 4,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__69868__0__q95",
+    "variant_id": "autosplice__69868__0__q95",
+    "source_id": "69868",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_high",
+      "trufor_very_high",
+      "localization_good"
+    ],
+    "key_case": true,
+    "key_case_rank": 4,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "00ac5c8c47321ff2f27d64ea4b0e765e62592c784ea7651738237e8bda291da8",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/69868_mask.png",
+    "mask_sha256": "44200e8b1f4a90a9b438cc9c3c73c85c037dcd2e4e7f757d3f6aa9491552de6b",
+    "mask_shared_by_base": true,
+    "base_variant_count": 2,
+    "variant": "0",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.810086,
+      "trufor_score": 0.995207,
+      "trufor_map_high_fraction": 0.18406,
+      "trufor_confidence_mean": 0.937389,
+      "trufor_low_confidence_fraction": 0.000385,
+      "trufor_iou": 0.713503
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153012_69868_0",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            100,
+            360,
+            1000,
+            720
+          ],
+          "reason": "TruFor 高响应覆盖老虎身体，可靠性较高，原图轮廓与背景过渡偏硬",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "Medium",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "TruFor 高响应覆盖老虎身体且可靠性较高，支持局部篡改；PROBE 高分不定位，背景连续，整图仍判 Real。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 高响应覆盖老虎身体且可靠性较高，支持局部篡改；PROBE 高分不定位，背景连续，整图仍判 Real。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          100,
+          360,
+          1000,
+          720
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应覆盖老虎身体，可靠性较高，原图轮廓与背景过渡偏硬",
+        "evidence": [
+          "E-3f1890f6f9"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "Medium",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.26,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/69868_0.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/69868_0.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153012_69868_0.json",
+    "evidence": [
+      {
+        "evidence_id": "E-3f1890f6f9",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9952,
+        "raw_metric": 0.995207,
+        "region_pixels": [
+          26,
+          157,
+          256,
+          314
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9984392523765564,
+          "anomaly_peak_normalized_1000": [
+            635,
+            464
+          ],
+          "high_response_fraction": 0.18405963302752293,
+          "confidence_mean": 0.9373891679967921,
+          "low_confidence_fraction": 0.0003852494266055046
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153012_69868_0/model_anomaly_map_E-3f1890f6f9.png",
+          "traces/evidence/session_20261127_153012_69868_0/model_confidence_map_E-3f1890f6f9.png"
+        ]
+      },
+      {
+        "evidence_id": "E-17878473be",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.8101,
+        "raw_metric": 0.810086,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          436
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153012_69868_0__original_predictions.png"
+    ],
+    "page": "004__autosplice__69868__0__q95.html"
+  },
+  {
+    "index": 5,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__48251__0__q95",
+    "variant_id": "autosplice__48251__0__q95",
+    "source_id": "48251",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_high",
+      "trufor_very_high",
+      "broad_map",
+      "localization_good"
+    ],
+    "key_case": true,
+    "key_case_rank": 5,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "0f0de8d120cfe186aa042d664faa1025faad413a391fe730782b1c480c2ddbc0",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/48251_mask.png",
+    "mask_sha256": "b95a36605c380d9e1b4820dde94fcbac138dbc3e0fa80045b933fca84959a1ea",
+    "mask_shared_by_base": true,
+    "base_variant_count": 3,
+    "variant": "0",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.930811,
+      "trufor_score": 0.993394,
+      "trufor_map_high_fraction": 0.306376,
+      "trufor_confidence_mean": 0.885338,
+      "trufor_low_confidence_fraction": 0.002014,
+      "trufor_iou": 0.665637
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153013_48251_0",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            30,
+            310,
+            1000,
+            730
+          ],
+          "reason": "TruFor 高响应覆盖人物头部和肩部，可靠性较高，原图人物边缘与背景过渡偏硬",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "Medium",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "TruFor 高响应集中在人物头部和肩部，支持局部篡改；PROBE 高分不定位，背景连续，整图仍判 Real。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 高响应集中在人物头部和肩部，支持局部篡改；PROBE 高分不定位，背景连续，整图仍判 Real。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          30,
+          310,
+          1000,
+          730
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应覆盖人物头部和肩部，可靠性较高，原图人物边缘与背景过渡偏硬",
+        "evidence": [
+          "E-4a1aa74ec2"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": [
+      {
+        "region_index": 1,
+        "bbox": [
+          30,
+          310,
+          1000,
+          730
+        ],
+        "flags": [
+          "location_text_mismatch"
+        ],
+        "detail": "text mentions 头部 but the bbox centre is [y=515,x=520]"
+      }
+    ],
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "Medium",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.27,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/48251_0.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/48251_0.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153013_48251_0.json",
+    "evidence": [
+      {
+        "evidence_id": "E-c4678a14a3",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9308,
+        "raw_metric": 0.930811,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          384
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-4a1aa74ec2",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9934,
+        "raw_metric": 0.993394,
+        "region_pixels": [
+          8,
+          119,
+          256,
+          280
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9963104128837585,
+          "anomaly_peak_normalized_1000": [
+            337,
+            431
+          ],
+          "high_response_fraction": 0.3063761393229167,
+          "confidence_mean": 0.8853378605996719,
+          "low_confidence_fraction": 0.00201416015625
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153013_48251_0/model_anomaly_map_E-4a1aa74ec2.png",
+          "traces/evidence/session_20261127_153013_48251_0/model_confidence_map_E-4a1aa74ec2.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153013_48251_0__original_predictions.png"
+    ],
+    "page": "005__autosplice__48251__0__q95.html"
+  },
+  {
+    "index": 6,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__51186__authentic__q95",
+    "variant_id": "autosplice__51186__authentic__q95",
+    "source_id": "51186",
+    "family": null,
+    "group": "AutoSplice_Authentic",
+    "source_role": null,
+    "kind": "autosplice_authentic",
+    "split": "train",
+    "selection_role": "trufor_high_real",
+    "risk_tags": [
+      "probe_low",
+      "trufor_high",
+      "false_positive_candidate"
+    ],
+    "key_case": true,
+    "key_case_rank": 6,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "f748a9bc9972472a0c7e274568a10266f48d7d672aba56e550acb8b09b7a4853",
+    "source_sha256": null,
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": false,
+    "base_variant_count": 1,
+    "variant": "authentic",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.000812,
+      "trufor_score": 0.972335,
+      "trufor_map_high_fraction": 0.042866,
+      "trufor_confidence_mean": 0.93532,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153013_51186",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Real",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Real",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Real",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.21,
+    "image_path": "dataset/AutoSplice_q95/Authentic/51186.jpg",
+    "source_image": "dataset/AutoSplice/Authentic/51186.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153013_51186.json",
+    "evidence": [
+      {
+        "evidence_id": "E-2148c64ce3",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9723,
+        "raw_metric": 0.972335,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          341
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9981790781021118,
+          "anomaly_peak_normalized_1000": [
+            208,
+            982
+          ],
+          "high_response_fraction": 0.04286565249266862,
+          "confidence_mean": 0.93531978219103,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153013_51186/model_anomaly_map_E-2148c64ce3.png",
+          "traces/evidence/session_20261127_153013_51186/model_confidence_map_E-2148c64ce3.png"
+        ]
+      },
+      {
+        "evidence_id": "E-fdb3c3be3c",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0008,
+        "raw_metric": 0.000812,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          341
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "006__autosplice__51186__authentic__q95.html"
+  },
+  {
+    "index": 7,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__65547__authentic__q95",
+    "variant_id": "autosplice__65547__authentic__q95",
+    "source_id": "65547",
+    "family": null,
+    "group": "AutoSplice_Authentic",
+    "source_role": null,
+    "kind": "autosplice_authentic",
+    "split": "train",
+    "selection_role": "trufor_high_real",
+    "risk_tags": [
+      "probe_low",
+      "trufor_high",
+      "false_positive_candidate"
+    ],
+    "key_case": true,
+    "key_case_rank": 7,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "c736a7c670784d57b82f8bb701d290dc273943f9b5a34aee0aea5fd91b489edd",
+    "source_sha256": null,
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": false,
+    "base_variant_count": 1,
+    "variant": "authentic",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.037187,
+      "trufor_score": 0.897234,
+      "trufor_map_high_fraction": 0.178192,
+      "trufor_confidence_mean": 0.795595,
+      "trufor_low_confidence_fraction": 0.005249,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153014_65547",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Uncertain",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Uncertain",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            470,
+            320,
+            1000,
+            1000
+          ],
+          "reason": "TruFor 高响应在肩部/衣领，但原图该处是衣物褶皱和墙面交界，缺少内容层面的替换证据",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": null,
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 低分支持整图 Real，但 TruFor 在肩部/衣领的高响应只能算候选，原图缺少内容替换证据，局部保留 Uncertain。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 低分支持整图 Real，但 TruFor 在肩部/衣领的高响应只能算候选，原图缺少内容替换证据，局部保留 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          470,
+          320,
+          1000,
+          1000
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应在肩部/衣领，但原图该处是衣物褶皱和墙面交界，缺少内容层面的替换证据",
+        "evidence": [
+          "E-6303837ef8"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Uncertain",
+    "certainty": null,
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.22,
+    "image_path": "dataset/AutoSplice_q95/Authentic/65547.jpg",
+    "source_image": "dataset/AutoSplice/Authentic/65547.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153014_65547.json",
+    "evidence": [
+      {
+        "evidence_id": "E-6303837ef8",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.8972,
+        "raw_metric": 0.897234,
+        "region_pixels": [
+          121,
+          124,
+          256,
+          384
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.990871250629425,
+          "anomaly_peak_normalized_1000": [
+            914,
+            535
+          ],
+          "high_response_fraction": 0.178192138671875,
+          "confidence_mean": 0.7955948677326887,
+          "low_confidence_fraction": 0.0052490234375
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153014_65547/model_anomaly_map_E-6303837ef8.png",
+          "traces/evidence/session_20261127_153014_65547/model_confidence_map_E-6303837ef8.png"
+        ]
+      },
+      {
+        "evidence_id": "E-3f6e7f7998",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0372,
+        "raw_metric": 0.037187,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          384
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153014_65547__original_predictions.png"
+    ],
+    "page": "007__autosplice__65547__authentic__q95.html"
+  },
+  {
+    "index": 8,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__SD15__459_sdv5_00195__q95",
+    "variant_id": "genimage__SD15__459_sdv5_00195__q95",
+    "source_id": "SD15/459_sdv5_00195",
+    "family": null,
+    "group": "SD15",
+    "source_role": null,
+    "kind": "genimage_generated",
+    "split": "train",
+    "selection_role": "whole_generated",
+    "risk_tags": [
+      "probe_high",
+      "trufor_high_local_false_response"
+    ],
+    "key_case": true,
+    "key_case_rank": 8,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "032d2f8291139b979724e8f42cffbbae14d42eb1476943b47b68e203bbf96d7d",
+    "source_sha256": "fb680fdd97e56055038242c70a84405dcf01ef3bb365d0730352bfe76b1c070e",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "screening_review_only": {
+      "probe_score": 0.999973,
+      "trufor_score": 0.979874,
+      "trufor_map_high_fraction": 0.151707,
+      "trufor_confidence_mean": 0.926584,
+      "trufor_low_confidence_fraction": 0.00935,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153014_459_sdv5_00195",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert"
+      ],
+      "report": "PROBE 接近 1 支持整图 AI-generated；TruFor 虽在内衣区域高响应，但整图生成后局部问题为 Not applicable，不另写局部篡改。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 接近 1 支持整图 AI-generated；TruFor 虽在内衣区域高响应，但整图生成后局部问题为 Not applicable，不另写局部篡改。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.51,
+    "image_path": "dataset/GenImage_q95/SD15/459_sdv5_00195.jpg",
+    "source_image": "dataset/GenImage_Test/SD15/459_sdv5_00195.png",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153014_459_sdv5_00195.json",
+    "evidence": [
+      {
+        "evidence_id": "E-18fc4c8200",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9799,
+        "raw_metric": 0.979874,
+        "region_pixels": [
+          124,
+          85,
+          462,
+          419
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9994538426399231,
+          "anomaly_peak_normalized_1000": [
+            442,
+            793
+          ],
+          "high_response_fraction": 0.15170669555664062,
+          "confidence_mean": 0.9265839365495196,
+          "low_confidence_fraction": 0.009349822998046875
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153014_459_sdv5_00195/model_anomaly_map_E-18fc4c8200.png",
+          "traces/evidence/session_20261127_153014_459_sdv5_00195/model_confidence_map_E-18fc4c8200.png"
+        ]
+      },
+      {
+        "evidence_id": "E-b996380041",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 1.0,
+        "raw_metric": 0.999973,
+        "region_pixels": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "008__genimage__SD15__459_sdv5_00195__q95.html"
+  },
+  {
+    "index": 9,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__52769__authentic__q95",
+    "variant_id": "autosplice__52769__authentic__q95",
+    "source_id": "52769",
+    "family": null,
+    "group": "AutoSplice_Authentic",
+    "source_role": null,
+    "kind": "autosplice_authentic",
+    "split": "train",
+    "selection_role": "trufor_mid_low_reliability",
+    "risk_tags": [
+      "probe_low",
+      "trufor_mid",
+      "low_confidence"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "5d5aff53588e60e5837030284a58e04bcc8f2ec053e6646f6ecc312618f1aa49",
+    "source_sha256": null,
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": false,
+    "base_variant_count": 1,
+    "variant": "authentic",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.093739,
+      "trufor_score": 0.581003,
+      "trufor_map_high_fraction": 0.116602,
+      "trufor_confidence_mean": 0.872643,
+      "trufor_low_confidence_fraction": 0.092269,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153015_52769",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Uncertain",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Uncertain",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            52,
+            273,
+            465,
+            672
+          ],
+          "reason": "TruFor 面部高响应所在区域的可靠性图偏低，响应不能作为篡改证据",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": null,
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 低分支持整图 Real；TruFor 面部响应所在区域可靠性低，不能据此写 Tampered，局部保留 Uncertain。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 低分支持整图 Real；TruFor 面部响应所在区域可靠性低，不能据此写 Tampered，局部保留 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          52,
+          273,
+          465,
+          672
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 面部高响应所在区域的可靠性图偏低，响应不能作为篡改证据",
+        "evidence": [
+          "E-c0091b1872"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Uncertain",
+    "certainty": null,
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.23,
+    "image_path": "dataset/AutoSplice_q95/Authentic/52769.jpg",
+    "source_image": "dataset/AutoSplice/Authentic/52769.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153015_52769.json",
+    "evidence": [
+      {
+        "evidence_id": "E-c0091b1872",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.581,
+        "raw_metric": 0.581003,
+        "region_pixels": [
+          17,
+          70,
+          152,
+          172
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9213595986366272,
+          "anomaly_peak_normalized_1000": [
+            334,
+            416
+          ],
+          "high_response_fraction": 0.11660215978593272,
+          "confidence_mean": 0.8726433782574126,
+          "low_confidence_fraction": 0.09226873088685016
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153015_52769/model_anomaly_map_E-c0091b1872.png",
+          "traces/evidence/session_20261127_153015_52769/model_confidence_map_E-c0091b1872.png"
+        ]
+      },
+      {
+        "evidence_id": "E-3a6cc6c44a",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0937,
+        "raw_metric": 0.093739,
+        "region_pixels": [
+          0,
+          0,
+          327,
+          256
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153015_52769__original_predictions.png"
+    ],
+    "page": "009__autosplice__52769__authentic__q95.html"
+  },
+  {
+    "index": 10,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__57332__authentic__q95",
+    "variant_id": "autosplice__57332__authentic__q95",
+    "source_id": "57332",
+    "family": null,
+    "group": "AutoSplice_Authentic",
+    "source_role": null,
+    "kind": "autosplice_authentic",
+    "split": "train",
+    "selection_role": "trufor_mid_real",
+    "risk_tags": [
+      "probe_borderline",
+      "trufor_borderline"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "850909524745ebabd5ea70464b5c6cbcc3a865668233d3c9027898a9ca45ceae",
+    "source_sha256": null,
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": false,
+    "base_variant_count": 1,
+    "variant": "authentic",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.457679,
+      "trufor_score": 0.626877,
+      "trufor_map_high_fraction": 0.003429,
+      "trufor_confidence_mean": 0.963764,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153015_57332",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Uncertain",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Uncertain",
+      "suspicious_regions": [],
+      "certainty": null,
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 略低于阈值、倾向整图 Real；TruFor 虽高于阈值，但高响应只是画面右缘的小条带，局部缺少内容证据，保留 Uncertain。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 略低于阈值、倾向整图 Real；TruFor 虽高于阈值，但高响应只是画面右缘的小条带，局部缺少内容证据，保留 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Uncertain",
+    "certainty": null,
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.21,
+    "image_path": "dataset/AutoSplice_q95/Authentic/57332.jpg",
+    "source_image": "dataset/AutoSplice/Authentic/57332.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153015_57332.json",
+    "evidence": [
+      {
+        "evidence_id": "E-8089844f8f",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.6269,
+        "raw_metric": 0.626877,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          344
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9853686690330505,
+          "anomaly_peak_normalized_1000": [
+            980,
+            309
+          ],
+          "high_response_fraction": 0.0034293241279069768,
+          "confidence_mean": 0.9637637859938645,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153015_57332/model_anomaly_map_E-8089844f8f.png",
+          "traces/evidence/session_20261127_153015_57332/model_confidence_map_E-8089844f8f.png"
+        ]
+      },
+      {
+        "evidence_id": "E-3fbf0c31a2",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.4577,
+        "raw_metric": 0.457679,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          344
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "010__autosplice__57332__authentic__q95.html"
+  },
+  {
+    "index": 11,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__67006__authentic__q95",
+    "variant_id": "autosplice__67006__authentic__q95",
+    "source_id": "67006",
+    "family": null,
+    "group": "AutoSplice_Authentic",
+    "source_role": null,
+    "kind": "autosplice_authentic",
+    "split": "train",
+    "selection_role": "probe_high_real",
+    "risk_tags": [
+      "probe_high",
+      "trufor_mid"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "9a476ed8697bacca5f74a249f070cb565b5cafb04377aa287920cc693f4576f6",
+    "source_sha256": null,
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": false,
+    "base_variant_count": 1,
+    "variant": "authentic",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.552667,
+      "trufor_score": 0.428067,
+      "trufor_map_high_fraction": 0.015117,
+      "trufor_confidence_mean": 0.93542,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153015_67006",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Uncertain",
+      "whole_image_generation": "Uncertain",
+      "local_manipulation": "Uncertain",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            250,
+            360,
+            415,
+            570
+          ],
+          "reason": "TruFor 在面部有小范围高响应但总分低于阈值，原图没有清楚的内容替换边界",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": null,
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 仅边界高分且与老照片质感不一致，TruFor 低于阈值但面部有小候选；整图与局部都保留 Uncertain。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 仅边界高分且与老照片质感不一致，TruFor 低于阈值但面部有小候选；整图与局部都保留 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Uncertain",
+    "local_manipulation": "Uncertain",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          250,
+          360,
+          415,
+          570
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 在面部有小范围高响应但总分低于阈值，原图没有清楚的内容替换边界",
+        "evidence": [
+          "E-2fb890c30d"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Uncertain",
+    "certainty": null,
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.24,
+    "image_path": "dataset/AutoSplice_q95/Authentic/67006.jpg",
+    "source_image": "dataset/AutoSplice/Authentic/67006.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153015_67006.json",
+    "evidence": [
+      {
+        "evidence_id": "E-faa3731446",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.5527,
+        "raw_metric": 0.552667,
+        "region_pixels": [
+          0,
+          0,
+          377,
+          256
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-2fb890c30d",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.4281,
+        "raw_metric": 0.428067,
+        "region_pixels": [
+          94,
+          92,
+          156,
+          146
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.8121504187583923,
+          "anomaly_peak_normalized_1000": [
+            279,
+            447
+          ],
+          "high_response_fraction": 0.015117291114058356,
+          "confidence_mean": 0.9354195222264744,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153015_67006/model_anomaly_map_E-2fb890c30d.png",
+          "traces/evidence/session_20261127_153015_67006/model_confidence_map_E-2fb890c30d.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153015_67006__original_predictions.png"
+    ],
+    "page": "011__autosplice__67006__authentic__q95.html"
+  },
+  {
+    "index": 12,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__70684__authentic__q95",
+    "variant_id": "autosplice__70684__authentic__q95",
+    "source_id": "70684",
+    "family": null,
+    "group": "AutoSplice_Authentic",
+    "source_role": null,
+    "kind": "autosplice_authentic",
+    "split": "train",
+    "selection_role": "trufor_mid_real",
+    "risk_tags": [
+      "probe_low",
+      "trufor_mid"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "3b79f174d2fac1fe4fdc82327c1cbb66137b15fb0371b62b794fc499811d9874",
+    "source_sha256": null,
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": false,
+    "base_variant_count": 1,
+    "variant": "authentic",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.002166,
+      "trufor_score": 0.58828,
+      "trufor_map_high_fraction": 0.031924,
+      "trufor_confidence_mean": 0.948156,
+      "trufor_low_confidence_fraction": 0.01392,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153016_70684",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Uncertain",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Uncertain",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            461,
+            541,
+            719,
+            754
+          ],
+          "reason": "TruFor 高响应落在北极熊身体中部，但响应占比小，原图毛皮与雪地过渡自然",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": null,
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 低分支持整图 Real；TruFor 仅略高于阈值，响应落在熊身但缺少内容层面的替换证据，局部保留 Uncertain。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 低分支持整图 Real；TruFor 仅略高于阈值，响应落在熊身但缺少内容层面的替换证据，局部保留 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          461,
+          541,
+          719,
+          754
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应落在北极熊身体中部，但响应占比小，原图毛皮与雪地过渡自然",
+        "evidence": [
+          "E-784a1d9c48"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": [
+      {
+        "region_index": 1,
+        "bbox": [
+          461,
+          541,
+          719,
+          754
+        ],
+        "flags": [
+          "anomaly_peak_outside_bbox"
+        ],
+        "detail": "anomaly peak is at normalized [y=867,x=997], outside bbox [461, 541, 719, 754]"
+      }
+    ],
+    "joint_verdict_issues": null,
+    "model_candidate": "Uncertain",
+    "certainty": null,
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.19,
+    "image_path": "dataset/AutoSplice_q95/Authentic/70684.jpg",
+    "source_image": "dataset/AutoSplice/Authentic/70684.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153016_70684.json",
+    "evidence": [
+      {
+        "evidence_id": "E-784a1d9c48",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.5883,
+        "raw_metric": 0.58828,
+        "region_pixels": [
+          118,
+          213,
+          184,
+          297
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9327477216720581,
+          "anomaly_peak_normalized_1000": [
+            867,
+            997
+          ],
+          "high_response_fraction": 0.031924175126903556,
+          "confidence_mean": 0.9481559843090859,
+          "low_confidence_fraction": 0.01391973350253807
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153016_70684/model_anomaly_map_E-784a1d9c48.png",
+          "traces/evidence/session_20261127_153016_70684/model_confidence_map_E-784a1d9c48.png"
+        ]
+      },
+      {
+        "evidence_id": "E-823dc85902",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0022,
+        "raw_metric": 0.002166,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          394
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153016_70684__original_predictions.png"
+    ],
+    "page": "012__autosplice__70684__authentic__q95.html"
+  },
+  {
+    "index": 13,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__45914__2__q95",
+    "variant_id": "autosplice__45914__2__q95",
+    "source_id": "45914",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_high",
+      "trufor_very_high",
+      "localization_good"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "8911ce3c7989c164b8313d2dd1c9f19062eeac1c5338f9926d761df2638271bf",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/45914_mask.png",
+    "mask_sha256": "3b635dfc4852650653c0d4336320d5e601b14feae55a0cf8bab1c34d4cba08a0",
+    "mask_shared_by_base": true,
+    "base_variant_count": 4,
+    "variant": "2",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.989876,
+      "trufor_score": 0.992805,
+      "trufor_map_high_fraction": 0.305868,
+      "trufor_confidence_mean": 0.864655,
+      "trufor_low_confidence_fraction": 0.003398,
+      "trufor_iou": 0.91858
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153016_45914_2",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            200,
+            190,
+            735,
+            945
+          ],
+          "reason": "TruFor 高响应覆盖公交车车身，可靠性较高，背景道路和树木无同等响应",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "High",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "PROBE 高分不定位；TruFor 高响应集中在公交车车身且可靠，背景连续，支持照片中的局部内容变化。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 高分不定位；TruFor 高响应集中在公交车车身且可靠，背景连续，支持照片中的局部内容变化。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          200,
+          190,
+          735,
+          945
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应覆盖公交车车身，可靠性较高，背景道路和树木无同等响应",
+        "evidence": [
+          "E-deb07bdd91"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.23,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/45914_2.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/45914_2.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153016_45914_2.json",
+    "evidence": [
+      {
+        "evidence_id": "E-f35d466b87",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9899,
+        "raw_metric": 0.989876,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          384
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-deb07bdd91",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9928,
+        "raw_metric": 0.992805,
+        "region_pixels": [
+          51,
+          73,
+          188,
+          363
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.98758465051651,
+          "anomaly_peak_normalized_1000": [
+            447,
+            368
+          ],
+          "high_response_fraction": 0.3058675130208333,
+          "confidence_mean": 0.8646547673833993,
+          "low_confidence_fraction": 0.0033976236979166665
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153016_45914_2/model_anomaly_map_E-deb07bdd91.png",
+          "traces/evidence/session_20261127_153016_45914_2/model_confidence_map_E-deb07bdd91.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153016_45914_2__original_predictions.png"
+    ],
+    "page": "013__autosplice__45914__2__q95.html"
+  },
+  {
+    "index": 14,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__64223__2__q95",
+    "variant_id": "autosplice__64223__2__q95",
+    "source_id": "64223",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_mid",
+      "trufor_very_high",
+      "localization_good"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "bdfa0c8022c8209620c07c71d2d610670ba1c798e3089781eea44983964c7975",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/64223_mask.png",
+    "mask_sha256": "085df483480a6889b4478fbc5d69fc461180eb92eaf214c65f7f35fa9bdb5411",
+    "mask_shared_by_base": true,
+    "base_variant_count": 3,
+    "variant": "2",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.543351,
+      "trufor_score": 0.993421,
+      "trufor_map_high_fraction": 0.246947,
+      "trufor_confidence_mean": 0.933299,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": 0.816232
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153016_64223_2",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            45,
+            265,
+            930,
+            755
+          ],
+          "reason": "TruFor 高响应覆盖容器和物件区域，可靠性较高，原图该内容块与地面过渡较硬",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "Medium",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "TruFor 高响应覆盖容器和物件区域且可靠，支持局部篡改；PROBE 仅略高于阈值且不定位，整图仍判 Real。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 高响应覆盖容器和物件区域且可靠，支持局部篡改；PROBE 仅略高于阈值且不定位，整图仍判 Real。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          45,
+          265,
+          930,
+          755
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应覆盖容器和物件区域，可靠性较高，原图该内容块与地面过渡较硬",
+        "evidence": [
+          "E-4a1aa74ec2"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "Medium",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.28,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/64223_2.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/64223_2.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153016_64223_2.json",
+    "evidence": [
+      {
+        "evidence_id": "E-4a1aa74ec2",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9934,
+        "raw_metric": 0.993421,
+        "region_pixels": [
+          12,
+          120,
+          238,
+          342
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9982224106788635,
+          "anomaly_peak_normalized_1000": [
+            510,
+            294
+          ],
+          "high_response_fraction": 0.24694743377483444,
+          "confidence_mean": 0.933298857879535,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153016_64223_2/model_anomaly_map_E-4a1aa74ec2.png",
+          "traces/evidence/session_20261127_153016_64223_2/model_confidence_map_E-4a1aa74ec2.png"
+        ]
+      },
+      {
+        "evidence_id": "E-eb9d306f74",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.5434,
+        "raw_metric": 0.543351,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          453
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153016_64223_2__original_predictions.png"
+    ],
+    "page": "014__autosplice__64223__2__q95.html"
+  },
+  {
+    "index": 15,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "autosplice__72548__1__q95",
+    "variant_id": "autosplice__72548__1__q95",
+    "source_id": "72548",
+    "family": null,
+    "group": "AutoSplice_Forged",
+    "source_role": null,
+    "kind": "autosplice_forged",
+    "split": "train",
+    "selection_role": "strong_local_evidence",
+    "risk_tags": [
+      "probe_high",
+      "trufor_very_high",
+      "localization_weak"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "6b7ba589d1d7be591bf5a0ff43bc404d83793a4ae76af8c98b24d4614d705233",
+    "source_sha256": null,
+    "mask_path": "dataset/AutoSplice/Mask/72548_mask.png",
+    "mask_sha256": "47dee6cf960239543fe32513c3b9ec7a887a17403bd07c3ac2f1dde95288a21c",
+    "mask_shared_by_base": true,
+    "base_variant_count": 2,
+    "variant": "1",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.864273,
+      "trufor_score": 0.994234,
+      "trufor_map_high_fraction": 0.156005,
+      "trufor_confidence_mean": 0.830287,
+      "trufor_low_confidence_fraction": 0.012641,
+      "trufor_iou": 0.268843
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153017_72548_1",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered",
+      "suspicious_regions": [
+        {
+          "bbox": [
+            60,
+            100,
+            950,
+            620
+          ],
+          "reason": "TruFor 高响应沿舞者身体分布，可靠性中等偏高，原图身体与墙面过渡较硬",
+          "evidence": [
+            "{{TRUFOR_ID}}"
+          ]
+        }
+      ],
+      "certainty": "Medium",
+      "primary_evidence": [
+        "trufor_expert"
+      ],
+      "report": "TruFor 高响应沿舞者身体分布，支持局部篡改，但范围较宽；PROBE 高分不定位，墙面光影连续，整图判 Real。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 高响应沿舞者身体分布，支持局部篡改，但范围较宽；PROBE 高分不定位，墙面光影连续，整图判 Real。",
+    "primary_evidence": [
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "suspicious_regions": [
+      {
+        "bbox": [
+          60,
+          100,
+          950,
+          620
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor 高响应沿舞者身体分布，可靠性中等偏高，原图身体与墙面过渡较硬",
+        "evidence": [
+          "E-0ab780bb20"
+        ]
+      }
+    ],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "Medium",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.21,
+    "image_path": "dataset/AutoSplice_q95/Forged_JPEG100/72548_1.jpg",
+    "source_image": "dataset/AutoSplice/Forged_JPEG100/72548_1.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153017_72548_1.json",
+    "evidence": [
+      {
+        "evidence_id": "E-0ab780bb20",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9942,
+        "raw_metric": 0.994234,
+        "region_pixels": [
+          0,
+          0,
+          271,
+          256
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9979263544082642,
+          "anomaly_peak_normalized_1000": [
+            581,
+            353
+          ],
+          "high_response_fraction": 0.15600495848708487,
+          "confidence_mean": 0.8302866579974207,
+          "low_confidence_fraction": 0.01264125922509225
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153017_72548_1/model_anomaly_map_E-0ab780bb20.png",
+          "traces/evidence/session_20261127_153017_72548_1/model_confidence_map_E-0ab780bb20.png"
+        ]
+      },
+      {
+        "evidence_id": "E-c712cc2ab5",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.8643,
+        "raw_metric": 0.864273,
+        "region_pixels": [
+          0,
+          0,
+          271,
+          256
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [
+      "sft_data/sft_candidates_20261127/review_overlays/session_20261127_153017_72548_1__original_predictions.png"
+    ],
+    "page": "015__autosplice__72548__1__q95.html"
+  },
+  {
+    "index": 16,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__ADM__921_adm_7__q95",
+    "variant_id": "genimage__ADM__921_adm_7__q95",
+    "source_id": "ADM/921_adm_7",
+    "family": null,
+    "group": "ADM",
+    "source_role": null,
+    "kind": "genimage_generated",
+    "split": "train",
+    "selection_role": "whole_generated",
+    "risk_tags": [
+      "probe_high",
+      "trufor_low"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "d89ff7ab77a2e4de82a8e83caac15d228706996be2b2daeef7715e3ea8a6ab3f",
+    "source_sha256": "68eb3832579904d9ea89b3bbba476c75b3acc93a0b4a80749a803825139c28b0",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "screening_review_only": {
+      "probe_score": 0.989797,
+      "trufor_score": 0.15895,
+      "trufor_map_high_fraction": 0.0,
+      "trufor_confidence_mean": 0.961037,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153017_921_adm_7",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert"
+      ],
+      "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 7.21,
+    "image_path": "dataset/GenImage_q95/ADM/921_adm_7.jpg",
+    "source_image": "dataset/GenImage_Test/ADM/921_adm_7.PNG",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153017_921_adm_7.json",
+    "evidence": [
+      {
+        "evidence_id": "E-1341e705c3",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9898,
+        "raw_metric": 0.989797,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          256
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-1f3df4e176",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.1589,
+        "raw_metric": 0.15895,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          256
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.3422510027885437,
+          "anomaly_peak_normalized_1000": [
+            573,
+            635
+          ],
+          "high_response_fraction": 0.0,
+          "confidence_mean": 0.9610374683916234,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153017_921_adm_7/model_anomaly_map_E-1f3df4e176.png",
+          "traces/evidence/session_20261127_153017_921_adm_7/model_confidence_map_E-1f3df4e176.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "016__genimage__ADM__921_adm_7__q95.html"
+  },
+  {
+    "index": 17,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__BigGAN__545_biggan_00074__q95",
+    "variant_id": "genimage__BigGAN__545_biggan_00074__q95",
+    "source_id": "BigGAN/545_biggan_00074",
+    "family": null,
+    "group": "BigGAN",
+    "source_role": null,
+    "kind": "genimage_generated",
+    "split": "train",
+    "selection_role": "whole_generated",
+    "risk_tags": [
+      "probe_high",
+      "trufor_low"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "4c6d0a01e3fbd5337f1228348e466e79a03a9c34013837bd648f6a1dda5decba",
+    "source_sha256": "166baa98ae4144281e348fdce76ba4624ad5faa6d7ce7a0e4c75bcb440a3ab93",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "screening_review_only": {
+      "probe_score": 0.995929,
+      "trufor_score": 0.24741,
+      "trufor_map_high_fraction": 0.0,
+      "trufor_confidence_mean": 0.947292,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153024_545_biggan_00074",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert"
+      ],
+      "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 7.68,
+    "image_path": "dataset/GenImage_q95/BigGAN/545_biggan_00074.jpg",
+    "source_image": "dataset/GenImage_Test/BigGAN/545_biggan_00074.png",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153024_545_biggan_00074.json",
+    "evidence": [
+      {
+        "evidence_id": "E-a058b470b5",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9959,
+        "raw_metric": 0.995929,
+        "region_pixels": [
+          0,
+          0,
+          128,
+          128
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-e11e00b065",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.2474,
+        "raw_metric": 0.24741,
+        "region_pixels": [
+          0,
+          0,
+          128,
+          128
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.23797670006752014,
+          "anomaly_peak_normalized_1000": [
+            354,
+            512
+          ],
+          "high_response_fraction": 0.0,
+          "confidence_mean": 0.9472917046041403,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153024_545_biggan_00074/model_anomaly_map_E-e11e00b065.png",
+          "traces/evidence/session_20261127_153024_545_biggan_00074/model_confidence_map_E-e11e00b065.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "017__genimage__BigGAN__545_biggan_00074__q95.html"
+  },
+  {
+    "index": 18,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95",
+    "variant_id": "genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95",
+    "source_id": "Glide/GLIDE_1000_200_01_185_glide_00020",
+    "family": null,
+    "group": "Glide",
+    "source_role": null,
+    "kind": "genimage_generated",
+    "split": "train",
+    "selection_role": "whole_generated",
+    "risk_tags": [
+      "probe_high",
+      "trufor_low",
+      "broad_map"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "3459ea69d4b5417ced450847ae73af1e507b7c054900b275baa7d5d9f3beb19e",
+    "source_sha256": "f4171f92ea30215f5e7a507b957f84b0193234ef7c92876653124bb3358521c7",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "screening_review_only": {
+      "probe_score": 0.967244,
+      "trufor_score": 0.148888,
+      "trufor_map_high_fraction": 0.191849,
+      "trufor_confidence_mean": 0.79394,
+      "trufor_low_confidence_fraction": 0.173248,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153032_GLIDE_1000_200_01_185_glide_00020",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert"
+      ],
+      "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且口鼻响应可靠性低，不能另写局部篡改，局部为 Not applicable。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且口鼻响应可靠性低，不能另写局部篡改，局部为 Not applicable。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 7.39,
+    "image_path": "dataset/GenImage_q95/Glide/GLIDE_1000_200_01_185_glide_00020.jpg",
+    "source_image": "dataset/GenImage_Test/Glide/GLIDE_1000_200_01_185_glide_00020.png",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153032_GLIDE_1000_200_01_185_glide_00020.json",
+    "evidence": [
+      {
+        "evidence_id": "E-b977ed6724",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9672,
+        "raw_metric": 0.967244,
+        "region_pixels": [
+          0,
+          0,
+          256,
+          256
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-567ff61185",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.1489,
+        "raw_metric": 0.148888,
+        "region_pixels": [
+          44,
+          19,
+          173,
+          186
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.7473079562187195,
+          "anomaly_peak_normalized_1000": [
+            631,
+            698
+          ],
+          "high_response_fraction": 0.1918487548828125,
+          "confidence_mean": 0.7939397032027955,
+          "low_confidence_fraction": 0.173248291015625
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153032_GLIDE_1000_200_01_185_glide_00020/model_anomaly_map_E-567ff61185.png",
+          "traces/evidence/session_20261127_153032_GLIDE_1000_200_01_185_glide_00020/model_confidence_map_E-567ff61185.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "018__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95.html"
+  },
+  {
+    "index": 19,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Midjourney__229_midjourney_197__q95",
+    "variant_id": "genimage__Midjourney__229_midjourney_197__q95",
+    "source_id": "Midjourney/229_midjourney_197",
+    "family": null,
+    "group": "Midjourney",
+    "source_role": null,
+    "kind": "genimage_generated",
+    "split": "train",
+    "selection_role": "whole_generated",
+    "risk_tags": [
+      "probe_high",
+      "trufor_mid",
+      "low_confidence"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "d9a42c47bf8582dead9a98ab5d41473b740417168ba72b3815b01cfbce36bae2",
+    "source_sha256": "c8d1238493690527071b9b2119528ff11b75fa7632fd57c5de8b919858602dd8",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "screening_review_only": {
+      "probe_score": 0.988592,
+      "trufor_score": 0.514932,
+      "trufor_map_high_fraction": 0.471662,
+      "trufor_confidence_mean": 0.669218,
+      "trufor_low_confidence_fraction": 0.394839,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153040_229_midjourney_197",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert"
+      ],
+      "report": "PROBE 支持整图 AI-generated；TruFor 的狗身响应可靠性低，不能当作独立局部篡改，局部为 Not applicable。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 支持整图 AI-generated；TruFor 的狗身响应可靠性低，不能当作独立局部篡改，局部为 Not applicable。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 1.4,
+    "image_path": "dataset/GenImage_q95/Midjourney/229_midjourney_197.jpg",
+    "source_image": "dataset/GenImage_Test/Midjourney/229_midjourney_197.png",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153040_229_midjourney_197.json",
+    "evidence": [
+      {
+        "evidence_id": "E-b20c5176fb",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.9886,
+        "raw_metric": 0.988592,
+        "region_pixels": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-788df29802",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.5149,
+        "raw_metric": 0.514932,
+        "region_pixels": [
+          0,
+          0,
+          1024,
+          1024
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9789142608642578,
+          "anomaly_peak_normalized_1000": [
+            404,
+            299
+          ],
+          "high_response_fraction": 0.4716615676879883,
+          "confidence_mean": 0.6692182483307079,
+          "low_confidence_fraction": 0.3948392868041992
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153040_229_midjourney_197/model_anomaly_map_E-788df29802.png",
+          "traces/evidence/session_20261127_153040_229_midjourney_197/model_confidence_map_E-788df29802.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "019__genimage__Midjourney__229_midjourney_197__q95.html"
+  },
+  {
+    "index": 20,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Wukong__217_wukong_image88__q95",
+    "variant_id": "genimage__Wukong__217_wukong_image88__q95",
+    "source_id": "Wukong/217_wukong_image88",
+    "family": null,
+    "group": "Wukong",
+    "source_role": null,
+    "kind": "genimage_generated",
+    "split": "train",
+    "selection_role": "whole_generated",
+    "risk_tags": [
+      "probe_high",
+      "trufor_high_local_false_response"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "e9cbe57d35e9a70366ce11ba00ecbfd96202c9d3b7e31b9bacccb525d689f762",
+    "source_sha256": "822a7e513d5df239dcda5d6ddaa3143bca43a8022a0a371507571c8ce87f47c3",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "screening_review_only": {
+      "probe_score": 0.99998,
+      "trufor_score": 0.807494,
+      "trufor_map_high_fraction": 0.091347,
+      "trufor_confidence_mean": 0.898251,
+      "trufor_low_confidence_fraction": 0.040741,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153041_217_wukong_image88",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Fake",
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert"
+      ],
+      "report": "PROBE 接近 1 支持整图 AI-generated；TruFor 头部高响应属于整图生成内容，局部为 Not applicable，不另写篡改。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Fake",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 接近 1 支持整图 AI-generated；TruFor 头部高响应属于整图生成内容，局部为 Not applicable，不另写篡改。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Fake",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.41,
+    "image_path": "dataset/GenImage_q95/Wukong/217_wukong_image88.jpg",
+    "source_image": "dataset/GenImage_Test/Wukong/217_wukong_image88.png",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153041_217_wukong_image88.json",
+    "evidence": [
+      {
+        "evidence_id": "E-b996380041",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 1.0,
+        "raw_metric": 0.99998,
+        "region_pixels": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-349dceba44",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.8075,
+        "raw_metric": 0.807494,
+        "region_pixels": [
+          85,
+          309,
+          261,
+          512
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9956521391868591,
+          "anomaly_peak_normalized_1000": [
+            294,
+            716
+          ],
+          "high_response_fraction": 0.09134674072265625,
+          "confidence_mean": 0.8982513415148219,
+          "low_confidence_fraction": 0.040740966796875
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153041_217_wukong_image88/model_anomaly_map_E-349dceba44.png",
+          "traces/evidence/session_20261127_153041_217_wukong_image88/model_confidence_map_E-349dceba44.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "020__genimage__Wukong__217_wukong_image88__q95.html"
+  },
+  {
+    "index": 21,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Real__96d68646-b0a2-450e-ac0a-a5a1b58aa6c8__q95",
+    "variant_id": "genimage__Real__96d68646-b0a2-450e-ac0a-a5a1b58aa6c8__q95",
+    "source_id": "Real/96d68646-b0a2-450e-ac0a-a5a1b58aa6c8",
+    "family": null,
+    "group": "Real",
+    "source_role": null,
+    "kind": "genimage_real",
+    "split": "train",
+    "selection_role": "clean_real",
+    "risk_tags": [
+      "probe_low",
+      "trufor_low"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "cd00f48334d62999378aa11c78bbb93558ab2cc49492810a0301254cb1b3a5ad",
+    "source_sha256": "66808f24af8f7d74cb9386f02335b7a7bfd8b456f26c60be2e5f2d0015d5d6ec",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.016567,
+      "trufor_score": 0.099493,
+      "trufor_map_high_fraction": 0.006757,
+      "trufor_confidence_mean": 0.955991,
+      "trufor_low_confidence_fraction": 0.0,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153042_96d68646-b0a2-450e-ac0a-a5a1b58aa6c8",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Real",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 与 TruFor 均低于阈值；球体上缘小响应属正常高光，原图内容连续，整图与局部均判 Real。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Real",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 与 TruFor 均低于阈值；球体上缘小响应属正常高光，原图内容连续，整图与局部均判 Real。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Real",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.22,
+    "image_path": "dataset/Real_q95/96d68646-b0a2-450e-ac0a-a5a1b58aa6c8.jpg",
+    "source_image": "dataset/Real/96d68646-b0a2-450e-ac0a-a5a1b58aa6c8.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153042_96d68646-b0a2-450e-ac0a-a5a1b58aa6c8.json",
+    "evidence": [
+      {
+        "evidence_id": "E-fab1cb90d2",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0166,
+        "raw_metric": 0.016567,
+        "region_pixels": [
+          0,
+          0,
+          333,
+          500
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-7c1fbf55e4",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0995,
+        "raw_metric": 0.099493,
+        "region_pixels": [
+          61,
+          203,
+          90,
+          260
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.5813403725624084,
+          "anomaly_peak_normalized_1000": [
+            220,
+            461
+          ],
+          "high_response_fraction": 0.006756756756756757,
+          "confidence_mean": 0.9559905620126037,
+          "low_confidence_fraction": 0.0
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153042_96d68646-b0a2-450e-ac0a-a5a1b58aa6c8/model_anomaly_map_E-7c1fbf55e4.png",
+          "traces/evidence/session_20261127_153042_96d68646-b0a2-450e-ac0a-a5a1b58aa6c8/model_confidence_map_E-7c1fbf55e4.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "021__genimage__Real__96d68646-b0a2-450e-ac0a-a5a1b58aa6c8__q95.html"
+  },
+  {
+    "index": 22,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Real__ac71afc5-10b2-4a79-86e2-aa55191c0d10__q95",
+    "variant_id": "genimage__Real__ac71afc5-10b2-4a79-86e2-aa55191c0d10__q95",
+    "source_id": "Real/ac71afc5-10b2-4a79-86e2-aa55191c0d10",
+    "family": null,
+    "group": "Real",
+    "source_role": null,
+    "kind": "genimage_real",
+    "split": "train",
+    "selection_role": "probe_high_real",
+    "risk_tags": [
+      "probe_high",
+      "trufor_low"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "33d1ee019d442019e2c939c687241f3abe756c7830dccb6e655d825c36ff6994",
+    "source_sha256": "8fd3b093f5f6cd583fe9d05bc58bb9d5ddad43bfe38fa0bd8be08de447e5b7fd",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.586931,
+      "trufor_score": 0.203719,
+      "trufor_map_high_fraction": 0.086985,
+      "trufor_confidence_mean": 0.9446,
+      "trufor_low_confidence_fraction": 0.049015,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153042_ac71afc5-10b2-4a79-86e2-aa55191c0d10",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "probe",
+      "trufor"
+    ],
+    "target_verdict": {
+      "verdict": "Uncertain",
+      "whole_image_generation": "Uncertain",
+      "local_manipulation": "Not tampered",
+      "suspicious_regions": [],
+      "certainty": null,
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "TruFor 低分支持局部 Not tampered；PROBE 仅边界高分、与自然场景不一致，整图保留 Uncertain。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Uncertain",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 低分支持局部 Not tampered；PROBE 仅边界高分、与自然场景不一致，整图保留 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Uncertain",
+    "local_manipulation": "Not tampered",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Uncertain",
+    "certainty": null,
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.25,
+    "image_path": "dataset/Real_q95/ac71afc5-10b2-4a79-86e2-aa55191c0d10.jpg",
+    "source_image": "dataset/Real/ac71afc5-10b2-4a79-86e2-aa55191c0d10.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153042_ac71afc5-10b2-4a79-86e2-aa55191c0d10.json",
+    "evidence": [
+      {
+        "evidence_id": "E-30bc27d6a2",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.5869,
+        "raw_metric": 0.586931,
+        "region_pixels": [
+          0,
+          0,
+          333,
+          500
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      },
+      {
+        "evidence_id": "E-813211d2c0",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.2037,
+        "raw_metric": 0.203719,
+        "region_pixels": [
+          214,
+          106,
+          333,
+          295
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9709857702255249,
+          "anomaly_peak_normalized_1000": [
+            783,
+            317
+          ],
+          "high_response_fraction": 0.08698498498498498,
+          "confidence_mean": 0.9446002807705789,
+          "low_confidence_fraction": 0.04901501501501501
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153042_ac71afc5-10b2-4a79-86e2-aa55191c0d10/model_anomaly_map_E-813211d2c0.png",
+          "traces/evidence/session_20261127_153042_ac71afc5-10b2-4a79-86e2-aa55191c0d10/model_confidence_map_E-813211d2c0.png"
+        ]
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "022__genimage__Real__ac71afc5-10b2-4a79-86e2-aa55191c0d10__q95.html"
+  },
+  {
+    "index": 23,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Real__b3cfabea-3cae-414b-a9e7-37f421542552__q95",
+    "variant_id": "genimage__Real__b3cfabea-3cae-414b-a9e7-37f421542552__q95",
+    "source_id": "Real/b3cfabea-3cae-414b-a9e7-37f421542552",
+    "family": null,
+    "group": "Real",
+    "source_role": null,
+    "kind": "genimage_real",
+    "split": "train",
+    "selection_role": "trufor_borderline_real",
+    "risk_tags": [
+      "probe_low",
+      "trufor_borderline"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "3f6fb58377e12b3d5ada6151932733e7d864748f621b3e55d677b5fe973ba15e",
+    "source_sha256": "050d3a45d92ea37c2b4129a844c426228e90d5591b0abb3f39eb186b483d1d8d",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.001705,
+      "trufor_score": 0.458893,
+      "trufor_map_high_fraction": 0.043243,
+      "trufor_confidence_mean": 0.914743,
+      "trufor_low_confidence_fraction": 0.023844,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153043_b3cfabea-3cae-414b-a9e7-37f421542552",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Real",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered",
+      "suspicious_regions": [],
+      "certainty": "High",
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "TruFor 低于阈值，边缘小响应未落在内容上；PROBE 低分支持整图 Real，局部 Not tampered。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Real",
+    "verdict_status": "model_concluded",
+    "report": "TruFor 低于阈值，边缘小响应未落在内容上；PROBE 低分支持整图 Real，局部 Not tampered。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Real",
+    "certainty": "High",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.3,
+    "image_path": "dataset/Real_q95/b3cfabea-3cae-414b-a9e7-37f421542552.jpg",
+    "source_image": "dataset/Real/b3cfabea-3cae-414b-a9e7-37f421542552.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153043_b3cfabea-3cae-414b-a9e7-37f421542552.json",
+    "evidence": [
+      {
+        "evidence_id": "E-e0ce93e013",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.4589,
+        "raw_metric": 0.458893,
+        "region_pixels": [
+          0,
+          0,
+          333,
+          500
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9873356223106384,
+          "anomaly_peak_normalized_1000": [
+            756,
+            100
+          ],
+          "high_response_fraction": 0.043243243243243246,
+          "confidence_mean": 0.9147427014488357,
+          "low_confidence_fraction": 0.023843843843843845
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153043_b3cfabea-3cae-414b-a9e7-37f421542552/model_anomaly_map_E-e0ce93e013.png",
+          "traces/evidence/session_20261127_153043_b3cfabea-3cae-414b-a9e7-37f421542552/model_confidence_map_E-e0ce93e013.png"
+        ]
+      },
+      {
+        "evidence_id": "E-ab7fff4537",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0017,
+        "raw_metric": 0.001705,
+        "region_pixels": [
+          0,
+          0,
+          333,
+          500
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "023__genimage__Real__b3cfabea-3cae-414b-a9e7-37f421542552__q95.html"
+  },
+  {
+    "index": 24,
+    "record_schema": "sft_candidate_scripted/1",
+    "sample_id": "genimage__Real__e4ce4d06-00f7-456f-a17e-6049516d9668__q95",
+    "variant_id": "genimage__Real__e4ce4d06-00f7-456f-a17e-6049516d9668__q95",
+    "source_id": "Real/e4ce4d06-00f7-456f-a17e-6049516d9668",
+    "family": null,
+    "group": "Real",
+    "source_role": null,
+    "kind": "genimage_real",
+    "split": "train",
+    "selection_role": "trufor_mid_low_reliability",
+    "risk_tags": [
+      "probe_low",
+      "trufor_mid",
+      "low_confidence"
+    ],
+    "key_case": false,
+    "key_case_rank": null,
+    "condition": "jpeg_q95",
+    "treatment": "jpeg_q95",
+    "bytes": null,
+    "width": null,
+    "height": null,
+    "encoder": "jpeg",
+    "q95_sha256": "e677f906cb87da32b1e67984bbd8d630f5f180f0571b50d5b6e3fa63cf286d4f",
+    "source_sha256": "fc05f8330a31dc1e016ae0dd57da77da4576e7190d710b0ca403cef2d8c166c5",
+    "mask_path": null,
+    "mask_sha256": null,
+    "mask_shared_by_base": null,
+    "base_variant_count": null,
+    "variant": "q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "screening_review_only": {
+      "probe_score": 0.00012,
+      "trufor_score": 0.395936,
+      "trufor_map_high_fraction": 0.258267,
+      "trufor_confidence_mean": 0.703157,
+      "trufor_low_confidence_fraction": 0.223872,
+      "trufor_iou": null
+    },
+    "config_sha256": "6eb4980f50971d5d",
+    "status": "completed",
+    "trajectory_id": "session_20261127_153043_e4ce4d06-00f7-456f-a17e-6049516d9668",
+    "dialogue_mode": "sft_candidate_scripted",
+    "assistant_source": "scripted candidate writer; PROBE/TruFor real through the runtime controller",
+    "call_order": [
+      "trufor",
+      "probe"
+    ],
+    "target_verdict": {
+      "verdict": "Real",
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered",
+      "suspicious_regions": [],
+      "certainty": "Medium",
+      "primary_evidence": [
+        "probe_dino_expert",
+        "trufor_expert"
+      ],
+      "report": "PROBE 低分支持整图 Real；TruFor 低于阈值，狐猴身上的宽响应可靠性低且无内容边界，局部 Not tampered。"
+    },
+    "target_matches_record": true,
+    "final_verdict": "Real",
+    "verdict_status": "model_concluded",
+    "report": "PROBE 低分支持整图 Real；TruFor 低于阈值，狐猴身上的宽响应可靠性低且无内容边界，局部 Not tampered。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "suspicious_regions": [],
+    "suspicious_region_review_flags": null,
+    "joint_verdict_issues": null,
+    "model_candidate": "Real",
+    "certainty": "Medium",
+    "halting_reason": "model_concluded",
+    "policy_reasons": [
+      "model_concluded"
+    ],
+    "counters": {
+      "model_turns": 3,
+      "expert_calls": 2,
+      "unique_evidence": 2,
+      "skipped_duplicate_calls": 0,
+      "suppressed_duplicate_count": 0,
+      "weighted_cost": 3.5,
+      "untried_experts": [],
+      "failed_experts": [],
+      "preclose_checks": [],
+      "abstention_cited_untried_expert": []
+    },
+    "elapsed_s": 0.44,
+    "image_path": "dataset/Real_q95/e4ce4d06-00f7-456f-a17e-6049516d9668.jpg",
+    "source_image": "dataset/Real/e4ce4d06-00f7-456f-a17e-6049516d9668.jpg",
+    "trace_path": "sft_data/sft_candidates_20261127/traces/forensic_sft_session_20261127_153043_e4ce4d06-00f7-456f-a17e-6049516d9668.json",
+    "evidence": [
+      {
+        "evidence_id": "E-0d6a5dde5f",
+        "expert": "trufor_expert",
+        "measurement": "manipulation_anomaly_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.3959,
+        "raw_metric": 0.395936,
+        "region_pixels": [
+          24,
+          64,
+          375,
+          318
+        ],
+        "map_stats": {
+          "anomaly_peak": 0.9222571849822998,
+          "anomaly_peak_normalized_1000": [
+            358,
+            515
+          ],
+          "high_response_fraction": 0.25826666666666664,
+          "confidence_mean": 0.703156754162709,
+          "low_confidence_fraction": 0.223872
+        },
+        "visual_artifacts": [
+          "traces/evidence/session_20261127_153043_e4ce4d06-00f7-456f-a17e-6049516d9668/model_anomaly_map_E-0d6a5dde5f.png",
+          "traces/evidence/session_20261127_153043_e4ce4d06-00f7-456f-a17e-6049516d9668/model_confidence_map_E-0d6a5dde5f.png"
+        ]
+      },
+      {
+        "evidence_id": "E-12f5a9e0d3",
+        "expert": "probe_dino_expert",
+        "measurement": "aigi_discriminator_score",
+        "status": "measured",
+        "scope": "global",
+        "strength": 0.0001,
+        "raw_metric": 0.00012,
+        "region_pixels": [
+          0,
+          0,
+          375,
+          500
+        ],
+        "map_stats": null,
+        "visual_artifacts": null
+      }
+    ],
+    "evidence_check": {
+      "status": "pass",
+      "findings": [],
+      "candidates": [],
+      "entry": "candidate",
+      "caveat": "未命中不等于已证明忠实：检查只覆盖已定义的模式"
+    },
+    "coverage_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "certainty_check": {
+      "status": "pass",
+      "issues": [],
+      "feedback": null,
+      "original_output": null,
+      "corrected_output": null,
+      "remaining_issues": []
+    },
+    "tools_served": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "review_note": "Assistant text is a candidate draft; every claim is tied to the evidence tokens shown on this page. Ground truth and mask are review-only.",
+    "review_overlays": [],
+    "page": "024__genimage__Real__e4ce4d06-00f7-456f-a17e-6049516d9668__q95.html"
+  }
+]

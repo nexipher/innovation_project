@@ -319,14 +319,28 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
             f"{row.get('ground_truth')} | {row.get('final_verdict')} | "
             f"{' → '.join(row.get('call_order') or [])} | "
             f"[{row['page']}]({row['page']}) |")
+    uncertain = [row for row in records if row.get("final_verdict") == "Uncertain"]
     lines += [
+        "",
+        "## 候选结论分布（审核用）",
+        "",
+        f"- 24 条全部完成；每会话 2 次专家调用、3 轮助手输出；证据/覆盖/certainty 检查均为 pass。",
+        f"- 总体与真值一致 {sum(1 for row in records if row.get('final_verdict') == row.get('ground_truth'))}/24；"
+        f"整图维度 {sum(1 for row in records if row.get('whole_image_generation') == (row.get('task_truth') or {}).get('whole_image_generation'))}/24；"
+        f"局部维度 {sum(1 for row in records if row.get('local_manipulation') == (row.get('task_truth') or {}).get('local_manipulation'))}/24。"
+        "这是审核对照，不是验收分数。",
+        f"- 总体 Uncertain 共 {len(uncertain)} 条："
+        + "、".join(f"`{row['sample_id']}`" for row in uncertain) + "。",
+        "- 其中 5 条 AutoSplice 真图和 1 条 Real 是有意选入的 TruFor 高分/边界/低可靠讨论案例；"
+        "候选按协议把“分数高于阈值但只有候选”或“局部图低可靠”写成 Uncertain，未硬写 Not tampered。"
+        "请审核这些案例该维持 Uncertain，还是应判 Real/Not tampered。",
         "",
         "## 审核时请重点判断",
         "",
         "1. 每一步是否只引用了该轮之前已经投递的证据；有没有提前使用真值或 mask。",
         "2. 整图来源与局部篡改是否分开写；PROBE 高分是否被错误写成整图生成。",
         "3. TruFor 高分真图是否被写成 Tampered；可靠性图低的区域是否被当成证据。",
-        "4. 该补测时是否补测；不该补测时是否说明了为什么第二个专家不会改变结论。",
+        "4. 补测时机是否合理：是否在整图或局部仍未解决时才补测；有没有为凑双调用而补测，或该补测时提前结案。",
         "5. 局部框是否与异常图/可靠性图所示区域一致；框过宽时 certainty 是否降级。",
         "",
         "## 边界",

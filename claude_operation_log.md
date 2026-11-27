@@ -1148,10 +1148,24 @@
 * **对应计划锚点**：`plan.md` §13.6；`sft_data/sft_candidates_20261127/`。
 * **核心变更说明**：
   1. 新增 `scripts/build_sft_candidate_split.py`：AutoSplice 使用完整数据集中 dev subset 100 个 base 之外的 1640 个可篡改 base 和 533 个纯真图 base，base 为划分单位；GenImage/Real 使用 dev+val 清单中 `no_known_use=True`、排除 200 和上一轮 24 control 源，source_id 为划分单位；90/10 deterministic split，写 `split.json` 与 `shortlist.json`。
-  2. 新增 `scripts/screen_sft_candidates.py`：不加载 Qwen，独立跑真实 PROBE/TruFor 149 张候选池；PROBE 阈值 0.5，TruFor score/map 阈值 0.5；写 `screening/per_sample.csv`、`summary.json`，保存 raw npz 与异常/可靠性图（本地）。
+  2. 新增 `scripts/screen_sft_candidates.py`：不加载 Qwen，独立跑真实 PROBE/TruFor 147 张候选池；PROBE 阈值 0.5，TruFor score/map 阈值 0.5；写 `screening/per_sample.csv`、`summary.json`，保存 raw npz 与异常/可靠性图（本地）。
   3. 新增 `scripts/select_sft_candidates.py`、`selection.json`：按 8/6/6/4 组成选 24 条，全部 train 侧；AutoSplice 8 个不同 base、GenImage 6 个不同生成器、Real 4 个不同源；选样优先强局部证据、TruFor 高分真图、PROBE 高分的局部编辑，并保留少量边界/低可靠案例。
   4. 新增 `scripts/sft_candidate_cases.py`、`scripts/draft_sft_candidates.py`：按当前协议拟写 24 条候选助手文本（69 轮），校验 joint 字段、Tampered 区域、Uncertain certainty、禁用“相互验证”等措辞；证据 ID 用运行时占位符填充，数字引用同一确定性预筛结果。
   5. 新增 `mllm/scripted_candidate.py`、`scripts/run_sft_candidates.py`：候选文本由 scripted client 提供，PROBE/TruFor、控制器、证据 token、三图、coverage/certainty/结案规则保持真实运行；不加载 Qwen；运行记录标注 `sft_candidate_scripted`，真值/mask 只写审核侧。
 * **涉及/修改的文件清单**：`scripts/build_sft_candidate_split.py`、`scripts/screen_sft_candidates.py`、`scripts/select_sft_candidates.py`、`scripts/draft_sft_candidates.py`、`scripts/run_sft_candidates.py`、`scripts/sft_candidate_cases.py`、`mllm/scripted_candidate.py`、`sft_data/sft_candidates_20261127/{split,shortlist,selection,manifest,candidate_scripts}.json`、`.gitignore`、`plan.md`、`claude_operation_log.md`。
-* **执行结果与验证状态**：预筛 149/149 完成，0 加载/推理错误；生成图候选 PROBE 全高分，AutoSplice 篡改 68/91 PROBE≥0.5、67/91 TruFor≥0.5，AutoSplice 真图 7/30 TruFor≥0.5；24 条组成与划分校验通过（preparation script）。正式 24 条轨迹尚未运行。
+* **执行结果与验证状态**：预筛 147/147 完成，0 加载/推理错误；生成图候选 PROBE 全高分，AutoSplice 篡改 68/91 PROBE≥0.5、67/91 TruFor≥0.5，AutoSplice 真图 7/30 TruFor≥0.5；24 条组成与划分校验通过（preparation script）。随后完成 24 条正式候选轨迹，结果见下一条。
 * **置信度或遗留待办（TODO）**：`split.json` 5.4 MB，含全量 base/source 划分；预筛真值/mask 指标只用于审核，选样未使用 mask；待提交代码后运行 24 条，检查 target/record 一致性与页面，再补结果。
+
+### [2026-11-27 15:28–15:33] - §13.6 首轮 SFT 24 条候选轨迹运行与审核工作台
+
+* **当前操作动作**：运行 24 条候选轨迹（真实 PROBE + TruFor，候选写手拟写助手文本），生成逐条 record/trace/页面、入口页、重点案例清单和汇总；未训练、未扩样、未碰 test。
+* **对应计划锚点**：`plan.md` §13.6；`sft_data/sft_candidates_20261127/`。
+* **核心变更说明**：
+  1. 24 条全部来自 split.json 训练侧：8 张 AutoSplice 局部篡改（8 个不同 base）、6 张 AutoSplice 真图、6 张 GenImage 整图生成（6 个不同生成器）、4 张 GenImage Real；每会话 2 次真实专家调用、3 轮助手输出，共 48 次调用/72 轮。
+  2. 运行方式：`mllm/scripted_candidate.py` 只提供拟写助手文本；控制器、真实 PROBE/TruFor、证据 token、三图、coverage/certainty/结案规则不变；不加载 Qwen。记录字段 `dialogue_mode=sft_candidate_scripted`、`assistant_source`，页面新增候选样板横幅与“对话模式/助手来源”行。
+  3. 24/24 完成，0 失败、0 工具失败、0 证据缺失；48 次调用全部有效；证据检查/覆盖检查/certainty 检查均 pass；target/record 24/24 一致；runtime config `6eb4980f50971d5d`，wall 60.1 s。
+  4. 候选结论（审核对照，不是验收分数）：总体 18/24、整图 22/24、局部 19/24。篡改图 8/8 三维全对；生成图 6/6 三维全对；Real 总体/整图 3/4、局部 4/4；AutoSplice 真图总体/局部 1/6、整图 5/6。6 条 overall Uncertain（5 张 AutoSplice 真图 + 1 张 Real）是有意选入的高分/边界/低可靠讨论案例，按协议未硬写 Not tampered。
+  5. 重点案例 8 条排在最前：54029_1、55310_1、45749_1、69868_0、48251_0、51186、65547、SD15 459；入口 `index.html`，清单 `CANDIDATE_CASES.md`，汇总 `SUMMARY.md`，逐条页面/记录/trace 齐全。
+* **涉及/修改的文件清单**：`mllm/scripted_candidate.py`、`scripts/sft_candidate_cases.py`、`scripts/draft_sft_candidates.py`、`scripts/run_sft_candidates.py`、`scripts/render_sft_candidate_pages.py`、`tests/test_scripted_candidate.py`、`scripts/g8_review_workstation.py`（候选横幅/字段行）、`sft_data/sft_candidates_20261127/**`、`plan.md`、`claude_operation_log.md`、`.gitignore`。
+* **执行结果与验证状态**：24/24 完成；24 个页面均含原图、3 张 TruFor 投送图（原图裁剪/异常图/可靠性图）、PROBE 裁剪、专家分数表、调用顺序和结案；`pytest -q tests/test_scripted_candidate.py tests/test_g8_review_workstation.py tests/test_controller.py tests/test_controller_v3.py` 107 passed。
+* **置信度或遗留待办（TODO）**：候选文本是拟写稿，不是 Qwen 原始输出；真值/mask 只在审核侧。6 条 Uncertain 是审核重点：维持 Uncertain，还是判 Real/Not tampered，需要用户定判例。等审核意见后再扩样或训练；本轮不转 final_v2、不碰 test。

@@ -24,6 +24,15 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 18 条连续 AutoSplice 验证中 14 条实际调用 TruFor，14/14 产出 score/map/conf，
 > 0 失败；未重跑 200 条，未改设备/权重/精度/输入。详见
 > `docs/development/TRUFOR_OOM_FIX_20261127.md` 与 `plan.md` §13.2。
+> **2026-11-27 SFT 候选**：首轮 **24 条候选样板轨迹**已生成，入口
+> `sft_data/sft_candidates_20261127/index.html`，重点案例
+> `CANDIDATE_CASES.md`，汇总 `SUMMARY.md`。组成 8 张 AutoSplice 局部篡改、6 张
+> AutoSplice 真图、6 张 GenImage 整图生成、4 张 Real，全部来自独立 source/base
+> 级划分的训练侧（`split.json`）。每会话真实 PROBE+TruFor 各一次，助手文本由
+> 候选写手按当前协议拟写（`sft_candidate_scripted`，不是 Qwen 原始输出）；24/24
+> 完成、0 工具失败、48 次专家调用，证据/覆盖/certainty 检查均 pass。真值/mask
+> 只用于审核；**状态 pending human review，不训练、不转 final_v2、不碰 test**。
+> 详见 `plan.md` §13.6。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
 > content_box，并可生成原图与异常图上的预测框叠加。同一 24 输入的规则复验写在

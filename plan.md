@@ -2446,4 +2446,24 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `screening/`、`traces/`、逐条 record/页面、`index.html`、`CANDIDATE_CASES.md`、
   `SUMMARY.md`。运行错误（专家失败、证据缺失、记录异常）立即停止并报告，不现场修复、
   不自动重跑；不训练、不转 final_v2、不改原 200/24 批次。
-- **结果（2026-11-27）**：待运行后回填。
+- **结果（2026-11-27）**：候选划分与预筛完成：AutoSplice 1640 个可篡改 base + 533 个
+  纯真图 base，90/10 后 train 1476/480；GenImage/Real 各生成器约 700 train、约 77 val，
+  Real 445/49。预筛 147 张（91 篡改变体、30 AutoSplice 真图、16 生成图、10 Real），
+  0 错误；AutoSplice 篡改 PROBE≥0.5 **68/91**、TruFor≥0.5 **67/91**；AutoSplice 真图
+  PROBE≥0.5 **6/30**、TruFor≥0.5 **7/30**；生成图 PROBE≥0.5 **16/16**、TruFor≥0.5
+  **4/16**；Real PROBE≥0.5 **1/10**、TruFor≥0.5 **0/10**。24 条全部从 train 侧选：
+  8 个不同 AutoSplice base、6 个不同生成器、4 个不同 Real 源；每会话真实 PROBE +
+  TruFor 各一次（48 次调用），3 轮助手输出（72 轮），runtime config
+  `6eb4980f50971d5d`，24/24 完成、0 失败、0 工具失败、wall 60.1 s；证据检查、
+  覆盖检查、certainty 检查均 pass，target/record 24/24 一致。
+- **候选结论（审核对照，不是验收分数）**：总体 18/24、整图 22/24、局部 19/24。
+  8 张篡改图三维全对（8/8）；6 张生成图三维全对（6/6）；4 张 Real 总体/整图 3/4、
+  局部 4/4；6 张 AutoSplice 真图总体/局部 1/6、整图 5/6。差异集中在有意选入的
+  TruFor 高分/边界/低可靠真图：`65547`、`52769`、`57332`、`67006`、`70684` 和
+  Real `ac71afc5` 判 Uncertain，按协议没有把“高于阈值但只有候选”或“局部图低可靠”
+  硬写成 Not tampered。重点案例 8 条排在最前：`54029_1`、`55310_1`、`45749_1`、
+  `69868_0`、`48251_0`、`51186`、`65547`、SD15 `459`。审核入口
+  `sft_data/sft_candidates_20261127/index.html`；清单 `CANDIDATE_CASES.md`；汇总
+  `SUMMARY.md`；逐条 record/trace/页面齐全。助手文本是候选写手拟写（标注
+  `sft_candidate_scripted`），PROBE/TruFor 与三图为真实运行；真值/mask 只写审核侧。
+  不训练、不转 final_v2、不碰 test；等审核意见后再扩样或定判例。

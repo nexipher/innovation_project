@@ -1,0 +1,70 @@
+{
+  "batch_id": "sft_candidates_20261127",
+  "started_at": "2026-11-27T15:29:44",
+  "manifest": {
+    "path": "sft_data/sft_candidates_20261127/manifest.json",
+    "sha256": "9d1524944c97ee65f7fff118eb73e27ca4c2822b411c8d041453959b85f195d9"
+  },
+  "scripts": {
+    "path": "sft_data/sft_candidates_20261127/candidate_scripts.json",
+    "sha256": "b86c251c380c6c35443f2b7dd7278f10caa7d50b22604816ac0c00a3c3961436"
+  },
+  "model": {
+    "checkpoint": "none — assistant text scripted candidate writer",
+    "revision": "",
+    "dtype": "",
+    "inference_mode": "sft_candidate_scripted"
+  },
+  "prompts": {
+    "digest": "6b4756ca21bc7a63"
+  },
+  "prompt_digest": "6b4756ca21bc7a63",
+  "experts": {
+    "probe_dino_expert": {
+      "class": "ProbeDinoExpert",
+      "polarity": 1,
+      "source_name": "probe_dino_expert",
+      "device": "cuda",
+      "weight_source": "ModelScope shuinishaojiu/PROBE-AIGI-Detection · DINOv2_best_model_step_34999.pth（ICML 2026, arXiv 2605.24906）",
+      "licence_note": "许可待确认：上游仓库无 LICENSE 文件；本项目不附带、不再分发其代码与权重，论文引用仅为学术归属，不构成使用授权",
+      "score_reference": "PROBE-DINOv2 判别器（DINOv2-L 主干 + 线性头）",
+      "preprocess": {
+        "name": "pad→336 滑窗均值",
+        "detail": "RGB PIL → pad 到 ≥336 → ToTensor + ImageNet 归一化 → 非重叠 336×336 滑窗 → 逐窗 logit 均值 → sigmoid",
+        "measurement_scope": "global",
+        "sha256": "aaf1df76aba5ac666d9afe1cc40be1da7d3b1f4d222901efbc1eb2257d4edcd5"
+      },
+      "weights_path": "/root/autodl-tmp/third_party/probe/DINOv2_best_model_step_34999.pth",
+      "weights_sha256": "c8caa9bad54c029e4d22e1909c4673e46a239d8419a986e0ab461d423a450156",
+      "weights_bytes": 1217679947
+    },
+    "trufor_expert": {
+      "class": "TruForExpert",
+      "polarity": 1,
+      "source_name": "trufor_expert",
+      "device": "cuda",
+      "weight_source": "GRIP-UNINA TruFor (CVPR 2023) · TruFor_weights.zip",
+      "licence_note": "GRIP-UNINA：仅限信息性与非营利用途；本项目不再分发其代码与权重",
+      "score_reference": "TruFor 检测头（RGB + Noiseprint++ 融合）",
+      "weights_path": "/root/autodl-tmp/third_party/TruFor/pretrained_models/trufor.pth.tar",
+      "weights_sha256": "ac1d90e329a72e0d66e8665e123a19e94bfae3209c3ef8a4f9ca3b91578c7844",
+      "weights_bytes": 281496429
+    }
+  },
+  "config_sha256": "6eb4980f50971d5d",
+  "code": {
+    "commit": "d01f674b46826d0a9f93a0366c15f5fe9edbbd7f",
+    "dirty": false,
+    "dirty_paths": []
+  },
+  "cgroup": {
+    "memory.max": "128849018880",
+    "memory.high": "max",
+    "memory.current": "5810638848"
+  },
+  "dialogue_mode": "sft_candidate_scripted",
+  "note": "Assistant turns are candidate drafts; PROBE/TruFor, evidence tokens, artifacts and controller checks are real runtime.",
+  "finished_at": "2026-11-27T15:30:44",
+  "completed": 24,
+  "failed": 0
+}
