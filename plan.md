@@ -2412,3 +2412,38 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   降低局部 Tampered 检出；仅“强制调用”不足以解决局部判读，Qwen 仍把高 TruFor 响应写成
   “仅候选/未明确编辑内容”。逐图 CSV/报告见
   `sft_data/g8_fixed_dual_20261127/comparison/`；固定批次页面/trace 入库，raw npz 本地。
+
+### 13.6 2026-11-27 首轮 SFT 24 条候选样板与审核工作台
+
+- **目标**：在现有 200 张开发评测之外选 24 个新源，跑真实 PROBE/TruFor，按当前
+  Agent 协议拟写候选轨迹（不是 Qwen 原始输出），复用审核工作台供人工审阅；本轮只出
+  候选样板，不扩样、不训练、不碰 test，等审核意见后再定判例。
+- **组成**：8 张 AutoSplice 局部篡改、6 张 AutoSplice 真图、6 张 GenImage 整图生成、
+  4 张 GenImage Real 拍摄真图。AutoSplice 使用完整数据集中 **dev subset 100 个 base
+  之外**的 1640 个可篡改 base 和 533 个纯真图 base，不再只限于 dev subset 内未用的
+  少量 base；GenImage/Real 只取 dev+val 清单中 `no_known_use=True` 且不在 200 张内的
+  源，候选全部来自训练侧。
+- **划分**：AutoSplice 以 base 为最小单位做 90/10 train/val，同 base 的 authentic 和
+  全部 forged 变体继承同一划分；GenImage/Real 以 source_id 为最小单位做 90/10
+  train/val，同源 q95 变体继承同一划分。划分由固定 seed 和排序后的候选池确定性生成，
+  写入 `split.json`；200 张开发评测源、`no_known_use=False` 源和 dev subset base 全部
+  排除。候选只从 train 侧选，val 侧只登记不取样。
+- **预筛**：在 train 侧取一个有限候选池，独立跑 PROBE/TruFor（不加载 Qwen），按
+  TruFor score/高响应/置信度、PROBE score 和图像内容挑出 24 条；预筛只用于选样，
+  不把真值、mask 或预筛结果写进助手可见证据。优先保留强局部证据、TruFor 高分真图、
+  PROBE 高分但实为局部编辑的案例，以及少量边界/低分案例供讨论。
+- **轨迹**：每条轨迹的专家调用和证据包必须来自真实 PROBE/TruFor；助手文本由候选
+  写手按当前协议逐轮拟写，**每一轮只引用该轮之前已经投递的 evidence token、分数和
+  三图**；真值与 mask 只在审核侧显示，不进入助手上下文。轨迹至少示范：读原图、
+  读异常图和可靠性图的同一内容区域、何时补测第二个专家、整图来源与局部篡改分开
+  判断、以及证据不足时如何写 Uncertain。Qwen 不参与本轮候选文本生成；运行记录明确
+  标注 `dialogue_mode=sft_candidate_scripted`，避免把拟写文本冒充模型原始输出。
+- **审核工作台**：复用 `scripts/g8_review_workstation.py` 的 `session_page`；每条展示
+  原图、实际投送的三图、专家分数、候选调用顺序、结案字段和证据引用检查。入口页先列
+  6–8 条重点案例（强局部证据、TruFor 高分真图、PROBE 高分的局部编辑），再列其余
+  全部 24 条；重点案例清单另写 `CANDIDATE_CASES.md`。
+- **输出**：`sft_data/sft_candidates_20261127/` 下的 `split.json`、`manifest.json`、
+  `screening/`、`traces/`、逐条 record/页面、`index.html`、`CANDIDATE_CASES.md`、
+  `SUMMARY.md`。运行错误（专家失败、证据缺失、记录异常）立即停止并报告，不现场修复、
+  不自动重跑；不训练、不转 final_v2、不改原 200/24 批次。
+- **结果（2026-11-27）**：待运行后回填。

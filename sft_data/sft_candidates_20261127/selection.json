@@ -1,0 +1,58 @@
+{
+  "schema": "sft_candidate_selection/1",
+  "created_at": "2026-11-27",
+  "seed": 20261127,
+  "rules": {
+    "source": "train side only; AutoSplice base split and GenImage/Real source split from split.json",
+    "composition": {
+      "autosplice_forged": 8,
+      "autosplice_authentic": 6,
+      "genimage_generated": 6,
+      "genimage_real": 4
+    },
+    "forged": "distinct bases; TruFor score>=0.99, high-response region present; mix of PROBE low/mid/high",
+    "authentic": "distinct bases; include two TruFor-high false positives, two borderline/mid, one low-reliability, one PROBE-high",
+    "generated": "distinct generators; include one high TruFor local response and one low-reliability Midjourney map",
+    "real": "distinct sources; include one PROBE-high, one TruFor-borderline, one low-reliability, one clean",
+    "key_cases": "strong local evidence, TruFor-high real, PROBE-high local edit; 8 cases listed first"
+  },
+  "samples": [
+    {"sample_id": "autosplice__54029__1__q95", "role": "strong_local_evidence", "tags": ["probe_mid", "trufor_very_high", "localization_good"]},
+    {"sample_id": "autosplice__55310__1__q95", "role": "strong_local_evidence", "tags": ["probe_low", "trufor_very_high", "localization_good"]},
+    {"sample_id": "autosplice__45749__1__q95", "role": "strong_local_evidence", "tags": ["probe_high", "trufor_very_high", "localization_good"]},
+    {"sample_id": "autosplice__69868__0__q95", "role": "strong_local_evidence", "tags": ["probe_high", "trufor_very_high", "localization_good"]},
+    {"sample_id": "autosplice__72548__1__q95", "role": "strong_local_evidence", "tags": ["probe_high", "trufor_very_high", "localization_weak"]},
+    {"sample_id": "autosplice__64223__2__q95", "role": "strong_local_evidence", "tags": ["probe_mid", "trufor_very_high", "localization_good"]},
+    {"sample_id": "autosplice__48251__0__q95", "role": "strong_local_evidence", "tags": ["probe_high", "trufor_very_high", "broad_map", "localization_good"]},
+    {"sample_id": "autosplice__45914__2__q95", "role": "strong_local_evidence", "tags": ["probe_high", "trufor_very_high", "localization_good"]},
+
+    {"sample_id": "autosplice__51186__authentic__q95", "role": "trufor_high_real", "tags": ["probe_low", "trufor_high", "false_positive_candidate"]},
+    {"sample_id": "autosplice__65547__authentic__q95", "role": "trufor_high_real", "tags": ["probe_low", "trufor_high", "false_positive_candidate"]},
+    {"sample_id": "autosplice__57332__authentic__q95", "role": "trufor_mid_real", "tags": ["probe_borderline", "trufor_borderline"]},
+    {"sample_id": "autosplice__70684__authentic__q95", "role": "trufor_mid_real", "tags": ["probe_low", "trufor_mid"]},
+    {"sample_id": "autosplice__52769__authentic__q95", "role": "trufor_mid_low_reliability", "tags": ["probe_low", "trufor_mid", "low_confidence"]},
+    {"sample_id": "autosplice__67006__authentic__q95", "role": "probe_high_real", "tags": ["probe_high", "trufor_mid"]},
+
+    {"sample_id": "genimage__SD15__459_sdv5_00195__q95", "role": "whole_generated", "tags": ["probe_high", "trufor_high_local_false_response"]},
+    {"sample_id": "genimage__Midjourney__229_midjourney_197__q95", "role": "whole_generated", "tags": ["probe_high", "trufor_mid", "low_confidence"]},
+    {"sample_id": "genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95", "role": "whole_generated", "tags": ["probe_high", "trufor_low", "broad_map"]},
+    {"sample_id": "genimage__BigGAN__545_biggan_00074__q95", "role": "whole_generated", "tags": ["probe_high", "trufor_low"]},
+    {"sample_id": "genimage__ADM__921_adm_7__q95", "role": "whole_generated", "tags": ["probe_high", "trufor_low"]},
+    {"sample_id": "genimage__Wukong__217_wukong_image88__q95", "role": "whole_generated", "tags": ["probe_high", "trufor_high_local_false_response"]},
+
+    {"sample_id": "genimage__Real__ac71afc5-10b2-4a79-86e2-aa55191c0d10__q95", "role": "probe_high_real", "tags": ["probe_high", "trufor_low"]},
+    {"sample_id": "genimage__Real__b3cfabea-3cae-414b-a9e7-37f421542552__q95", "role": "trufor_borderline_real", "tags": ["probe_low", "trufor_borderline"]},
+    {"sample_id": "genimage__Real__e4ce4d06-00f7-456f-a17e-6049516d9668__q95", "role": "trufor_mid_low_reliability", "tags": ["probe_low", "trufor_mid", "low_confidence"]},
+    {"sample_id": "genimage__Real__96d68646-b0a2-450e-ac0a-a5a1b58aa6c8__q95", "role": "clean_real", "tags": ["probe_low", "trufor_low"]}
+  ],
+  "key_cases": [
+    "autosplice__54029__1__q95",
+    "autosplice__55310__1__q95",
+    "autosplice__45749__1__q95",
+    "autosplice__69868__0__q95",
+    "autosplice__48251__0__q95",
+    "autosplice__51186__authentic__q95",
+    "autosplice__65547__authentic__q95",
+    "genimage__SD15__459_sdv5_00195__q95"
+  ]
+}

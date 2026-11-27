@@ -1141,3 +1141,17 @@
 * **涉及/修改的文件清单**：`mllm/fixed_dual.py`、`scripts/g8_dev_eval.py`、`utils/protocol_identity.py`、`tests/test_fixed_dual.py`、`scripts/compare_fixed_dual.py`、`sft_data/g8_fixed_dual_20261127/**`、`plan.md`、`.gitignore`。
 * **执行结果与验证状态**：core 834 passed, 1 skipped；固定批次 200/200、records/traces/pages 齐全；对比 CSV/报告 `comparison/per_sample.csv`、`report.md`、`report.json`；提交 `8deeea0`（模式）与本次结果提交。
 * **置信度或遗留待办（TODO）**：固定调用发生在 Qwen 首轮之前，Qwen 没有自主模式的首轮视觉规划；本对照测量该流程。强制调用未改善局部 Tampered，反而增加整图误报；下一步应针对“仅候选/未明确编辑内容”的局部判读做提示词/证据语义修订，而不是继续增加调用次数。不训练、不碰 test。
+
+### [2026-11-27 14:40–15:40] - §13.6 首轮 SFT 24 条候选样板：数据与预筛
+
+* **当前操作动作**：在 200 张开发评测之外建立 AutoSplice base 级 / GenImage source 级 90/10 训练-验证划分，抽取并预筛候选池，确定 24 条样板源；尚未生成正式轨迹。
+* **对应计划锚点**：`plan.md` §13.6；`sft_data/sft_candidates_20261127/`。
+* **核心变更说明**：
+  1. 新增 `scripts/build_sft_candidate_split.py`：AutoSplice 使用完整数据集中 dev subset 100 个 base 之外的 1640 个可篡改 base 和 533 个纯真图 base，base 为划分单位；GenImage/Real 使用 dev+val 清单中 `no_known_use=True`、排除 200 和上一轮 24 control 源，source_id 为划分单位；90/10 deterministic split，写 `split.json` 与 `shortlist.json`。
+  2. 新增 `scripts/screen_sft_candidates.py`：不加载 Qwen，独立跑真实 PROBE/TruFor 149 张候选池；PROBE 阈值 0.5，TruFor score/map 阈值 0.5；写 `screening/per_sample.csv`、`summary.json`，保存 raw npz 与异常/可靠性图（本地）。
+  3. 新增 `scripts/select_sft_candidates.py`、`selection.json`：按 8/6/6/4 组成选 24 条，全部 train 侧；AutoSplice 8 个不同 base、GenImage 6 个不同生成器、Real 4 个不同源；选样优先强局部证据、TruFor 高分真图、PROBE 高分的局部编辑，并保留少量边界/低可靠案例。
+  4. 新增 `scripts/sft_candidate_cases.py`、`scripts/draft_sft_candidates.py`：按当前协议拟写 24 条候选助手文本（69 轮），校验 joint 字段、Tampered 区域、Uncertain certainty、禁用“相互验证”等措辞；证据 ID 用运行时占位符填充，数字引用同一确定性预筛结果。
+  5. 新增 `mllm/scripted_candidate.py`、`scripts/run_sft_candidates.py`：候选文本由 scripted client 提供，PROBE/TruFor、控制器、证据 token、三图、coverage/certainty/结案规则保持真实运行；不加载 Qwen；运行记录标注 `sft_candidate_scripted`，真值/mask 只写审核侧。
+* **涉及/修改的文件清单**：`scripts/build_sft_candidate_split.py`、`scripts/screen_sft_candidates.py`、`scripts/select_sft_candidates.py`、`scripts/draft_sft_candidates.py`、`scripts/run_sft_candidates.py`、`scripts/sft_candidate_cases.py`、`mllm/scripted_candidate.py`、`sft_data/sft_candidates_20261127/{split,shortlist,selection,manifest,candidate_scripts}.json`、`.gitignore`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：预筛 149/149 完成，0 加载/推理错误；生成图候选 PROBE 全高分，AutoSplice 篡改 68/91 PROBE≥0.5、67/91 TruFor≥0.5，AutoSplice 真图 7/30 TruFor≥0.5；24 条组成与划分校验通过（preparation script）。正式 24 条轨迹尚未运行。
+* **置信度或遗留待办（TODO）**：`split.json` 5.4 MB，含全量 base/source 划分；预筛真值/mask 指标只用于审核，选样未使用 mask；待提交代码后运行 24 条，检查 target/record 一致性与页面，再补结果。
