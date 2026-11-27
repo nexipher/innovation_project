@@ -562,11 +562,13 @@
    "key_case_rank": null,
    "selection_role": "whole_generated",
    "call_order": [
-    "probe"
+    "probe",
+    "trufor"
    ],
    "outputs": [
-    "<planning>\nSuspected Region: none\nVisual Observation: 泛黄旧书页的特写，页面上有密集的手写/印刷文字和装饰线条，纸张边缘磨损；文字整体可辨但局部排列不规整。\nSuspected Anomalies: 文字的笔画和行距不完全自然，先测量整图来源。\nExpert Target & Hypothesis: probe — 先回答整图是否 AI 生成；旧书页的纹理和文字需要整图判别器。\n</planning>\n<call_probe></call_probe>",
-    "<reasoning>\nPROBE 0.9898 高于阈值，支持整图 AI-generated；原图旧书页的泛黄、磨损和文字排列整体带有生成痕迹，和整图生成一致。整图判 AI-generated 后局部问题为 Not applicable，不需要补测 TruFor；总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated，旧书页纹理和文字排列一致；局部问题为 Not applicable，未补测 TruFor。\"}\n</verdict>"
+    "<planning>\nSuspected Region: none\nVisual Observation: 泛黄旧书页的特写，页面上有密集的手写/印刷文字和装饰线条，纸张边缘磨损；文字整体可辨但局部排列不规整。\nSuspected Anomalies: 文字的笔画和行距不完全自然，先测量整图来源；局部细节稍后补测。\nExpert Target & Hypothesis: probe — 先回答整图是否 AI 生成；旧书页的纹理和文字需要整图判别器。\n</planning>\n<call_probe></call_probe>",
+    "<planning>\nSuspected Region: none\nVisual Observation: 同一张旧书页特写；纸张纹理、文字和边缘磨损保持连续。\nSuspected Anomalies: PROBE 0.9898 高于阈值，支持整图 AI-generated；补测 TruFor 检查书页文字区域是否有局部高响应。\nExpert Target & Hypothesis: trufor — 整图已倾向生成，补测局部以确认文字区域是否存在可靠的局部响应。\n</planning>\n<call_trufor></call_trufor>",
+    "<reasoning>\nPROBE 0.9898 高于阈值，支持整图 AI-generated；原图旧书页的泛黄、磨损和文字排列整体带有生成痕迹，和整图生成一致。TruFor 0.1590 低于阈值，异常图没有大面积高响应，可靠性图整体较高；文字区域的响应很弱，不能支持独立的局部篡改。按协议，整图判 AI-generated 后局部问题为 Not applicable；总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。\"}\n</verdict>"
    ],
    "verdict": {
     "verdict": "Fake",
@@ -577,7 +579,7 @@
     "primary_evidence": [
      "probe_dino_expert"
     ],
-    "report": "PROBE 支持整图 AI-generated，旧书页纹理和文字排列一致；局部问题为 Not applicable，未补测 TruFor。"
+    "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。"
    }
   },
   {
@@ -586,11 +588,13 @@
    "key_case_rank": null,
    "selection_role": "whole_generated",
    "call_order": [
-    "probe"
+    "probe",
+    "trufor"
    ],
    "outputs": [
-    "<planning>\nSuspected Region: none\nVisual Observation: 橙色背景前的金属/木质圆形器物，表面有放射状纹样和中心凸起；光线均匀，阴影柔和，背景纯色。\nSuspected Anomalies: 器物的对称纹样和中心结构略显规则，先测量整图来源。\nExpert Target & Hypothesis: probe — 先回答整图是否 AI 生成；纯色背景和规则纹样需要整图判别器。\n</planning>\n<call_probe></call_probe>",
-    "<reasoning>\nPROBE 0.9959 高于阈值，支持整图 AI-generated；原图纯色背景、均匀光线和规则纹样与整图生成一致。整图判 AI-generated 后局部问题为 Not applicable，不需要补测 TruFor；总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated，纯色背景和规则纹样一致；局部问题为 Not applicable，未补测 TruFor。\"}\n</verdict>"
+    "<planning>\nSuspected Region: none\nVisual Observation: 橙色背景前的金属/木质圆形器物，表面有放射状纹样和中心凸起；光线均匀，阴影柔和，背景纯色。\nSuspected Anomalies: 器物的对称纹样和中心结构略显规则，先测量整图来源；局部细节稍后补测。\nExpert Target & Hypothesis: probe — 先回答整图是否 AI 生成；纯色背景和规则纹样需要整图判别器。\n</planning>\n<call_probe></call_probe>",
+    "<planning>\nSuspected Region: none\nVisual Observation: 同一张圆形器物照片；器物居中，橙色背景纯色，阴影柔和。\nSuspected Anomalies: PROBE 0.9959 高于阈值，支持整图 AI-generated；补测 TruFor 检查器物表面是否有局部高响应。\nExpert Target & Hypothesis: trufor — 整图已倾向生成，补测局部以确认表面纹样是否产生可靠的局部响应。\n</planning>\n<call_trufor></call_trufor>",
+    "<reasoning>\nPROBE 0.9959 高于阈值，支持整图 AI-generated；原图纯色背景、均匀光线和规则纹样与整图生成一致。TruFor 0.2474 低于阈值，异常图没有大面积高响应，可靠性图整体较高；器物表面的纹样响应很弱，不能支持独立的局部篡改。按协议，整图判 AI-generated 后局部问题为 Not applicable；总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。\"}\n</verdict>"
    ],
    "verdict": {
     "verdict": "Fake",
@@ -601,7 +605,7 @@
     "primary_evidence": [
      "probe_dino_expert"
     ],
-    "report": "PROBE 支持整图 AI-generated，纯色背景和规则纹样一致；局部问题为 Not applicable，未补测 TruFor。"
+    "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且无大面积高响应，不能另写局部篡改，局部为 Not applicable。"
    }
   },
   {
@@ -610,11 +614,13 @@
    "key_case_rank": null,
    "selection_role": "whole_generated",
    "call_order": [
-    "probe"
+    "probe",
+    "trufor"
    ],
    "outputs": [
-    "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向和口鼻边缘略显过度平滑，先测量整图来源；如果整图已判生成，局部问题将不适用。\nExpert Target & Hypothesis: probe — 整图是否 AI 生成是当前唯一实质问题；先看整图判别器，再决定是否需要局部补测。\n</planning>\n<call_probe></call_probe>",
-    "<reasoning>\nPROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要再用 TruFor 另写一次局部篡改；TruFor 的高响应即使存在也不会改变整图结论。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated，毛发整体过度平滑；局部问题为 Not applicable，未补测 TruFor。\"}\n</verdict>"
+    "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向和口鼻边缘略显过度平滑，先测量整图来源；局部细节稍后补测。\nExpert Target & Hypothesis: probe — 先回答整图是否 AI 生成；纯色/虚化背景和过度平滑的毛发需要整图判别器。\n</planning>\n<call_probe></call_probe>",
+    "<planning>\nSuspected Region: [170, 75, 675, 725]\nVisual Observation: 同一张狗脸特写；口鼻、眼睛和周围毛发保持连续，背景虚化。\nSuspected Anomalies: PROBE 0.9672 高于阈值，支持整图 AI-generated；补测 TruFor 检查口鼻/面部是否有局部响应，并读该响应的可靠性。\nExpert Target & Hypothesis: trufor — 整图已倾向生成，补测局部是为了确认口鼻区域的响应是否只是整图生成的一部分，以及可靠性是否支持任何局部结论。\n</planning>\n<call_trufor>[170, 75, 675, 725]</call_trufor>",
+    "<reasoning>\nPROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。TruFor 0.1489 低于阈值，异常图在口鼻区域有宽而低的中等响应，可靠性图在同一区域偏低（低可靠占比较高），不能作为独立篡改证据。按协议，整图判 AI-generated 后局部问题为 Not applicable；局部图只用于确认没有可靠的独立局部证据，总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated；TruFor 低于阈值且口鼻响应可靠性低，不能另写局部篡改，局部为 Not applicable。\"}\n</verdict>"
    ],
    "verdict": {
     "verdict": "Fake",
@@ -625,7 +631,7 @@
     "primary_evidence": [
      "probe_dino_expert"
     ],
-    "report": "PROBE 支持整图 AI-generated，毛发整体过度平滑；局部问题为 Not applicable，未补测 TruFor。"
+    "report": "PROBE 支持整图 AI-generated；TruFor 低于阈值且口鼻响应可靠性低，不能另写局部篡改，局部为 Not applicable。"
    }
   },
   {
