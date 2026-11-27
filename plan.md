@@ -2383,3 +2383,19 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   11 条仅定位命中。146 条 Agent 已调用 TruFor score 与独立重跑逐图完全一致
   （146/146，0 差异）。运行 12:50:50–12:53:26，无错误；逐图 CSV `per_sample.csv`，
   报告 `report.md`/`report.json`；raw npz 与图在本地目录（不入 git）。
+
+### 13.5 2026-11-27 固定双调用 vs 自主调用
+
+- **目标**：同一 200 张 q95、同一 Qwen/PROBE/TruFor 权重/预处理/结案规则，新增固定模式：
+  每张图先强制 `PROBE`，再强制 `TruFor`，两份证据通过现有证据包进入同一 Qwen，由 Qwen
+  输出整图来源、局部篡改和总体真假。自主基线为 2026-11-27 的 part1+part2 合并记录。
+- **实现**：新增 `mllm/fixed_dual.py` 包装客户端，只在前两轮返回固定 `call_probe` /
+  `call_trufor`，之后完全委托真实 Qwen；控制器、证据包、coverage/certainty/结案规则不变。
+  `scripts/g8_dev_eval.py --fixed-dual` 记录 `dialogue_mode` 与 `forced_calls`；固定模式
+  的 provenance 加入 `mllm/fixed_dual.py`。
+- **运行**：输出 `sft_data/g8_fixed_dual_20261127/`；遇到专家失败或记录异常立即停止并报告，
+  不现场修复、不自动重跑。预计 200 会话、固定 400 次专家调用。
+- **报告**：逐图 CSV + `report.md`/`report.json`；汇总总体正确率、弃权率、整图检出/误报、
+  局部检出/误报、调用次数和耗时；重点列 14 张原未调用、33 张原调用未检出、30 张
+  AutoSplice 真图的三分类、60 张篡改中“拍摄来源+局部篡改”同时正确（对比基线 5/60）。
+  不训练、不碰 test、不改原批次。

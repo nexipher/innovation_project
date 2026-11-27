@@ -42,6 +42,7 @@ PROTOCOL_FILES = (
     "state_machine/evidence_tokenizer.py",
     "mllm/message_builder.py",
     "mllm/qwen3_client.py",
+    "mllm/fixed_dual.py",
     "config.py",
     "utils/score_semantics.py",
     "experts/score_semantics.json",

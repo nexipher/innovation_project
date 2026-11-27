@@ -327,7 +327,7 @@ def write_csv(out: Path, records: list[dict]) -> None:
     fields = ["index", "sample_id", "variant_id", "family", "group",
               "source_role", "ground_truth", "whole_image_generation",
               "local_manipulation", "final_verdict", "certainty",
-              "verdict_status", "halting_reason", "mask_path",
+              "verdict_status", "halting_reason", "dialogue_mode", "mask_path",
               "suspicious_regions", "joint_verdict_issues",
               "coverage_check", "certainty_check", "counters", "attempt"]
     with (out / "review_records.csv").open("w", newline="", encoding="utf-8") as handle:
@@ -348,6 +348,10 @@ def main() -> int:
     parser.add_argument("--offset", type=int, default=0,
                         help="Start position in the manifest (default 0).")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--fixed-dual", action="store_true",
+                        help="Force one PROBE call then one TruFor call per session.")
+    parser.add_argument("--stop-on-tool-failure", action="store_true",
+                        help="Stop after writing a record whose expert call failed.")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--retry-failed", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
@@ -376,6 +380,8 @@ def main() -> int:
             "samples": len(samples),
             "first_sample": samples[0]["sample_id"],
             "last_sample": samples[-1]["sample_id"],
+            "dialogue_mode": ("fixed_probe_then_trufor" if args.fixed_dual
+                              else "autonomous"),
             "counts": manifest.get("counts"),
             "verification": verification,
             "estimated_seconds": round(56.0 * len(samples), 1),
@@ -408,12 +414,18 @@ def main() -> int:
 
     fsm = build_pipeline("qwen", greedy=True, inference_mode="non-thinking",
                          local_files_only=True, tools=["probe", "trufor"])
+    if args.fixed_dual:
+        from mllm.fixed_dual import FixedDualMLLM
+        fsm._mllm = FixedDualMLLM(fsm._mllm, calls=("probe", "trufor"))
     mllm = getattr(fsm, "_mllm", None)
     if getattr(mllm, "mode", None) != "qwen3_real":
         raise SystemExit("refusing a non-real MLLM session (mock or unknown mode)")
     batch_meta = build_batch_meta(fsm, manifest_path, out, batch_id, manifest, verification)
     batch_meta["split"] = {"offset": args.offset, "limit": args.limit,
                            "sessions": len(samples)}
+    batch_meta["dialogue_mode"] = ("fixed_probe_then_trufor" if args.fixed_dual
+                                   else "autonomous")
+    batch_meta["fixed_dual"] = bool(args.fixed_dual)
     batch_meta["expected_total_seconds"] = round(56.0 * len(samples), 1)
     batch_meta["worktree_allowed_dirty"] = args.allow_dirty
     meta_path = out / "batch_meta.json"
@@ -435,6 +447,13 @@ def main() -> int:
             raise SystemExit(
                 "resume refused: split changed since batch start "
                 f"({previous_split} != offset={args.offset}, limit={args.limit})")
+        expected_mode = ("fixed_probe_then_trufor" if args.fixed_dual
+                         else "autonomous")
+        previous_mode = previous.get("dialogue_mode", "autonomous")
+        if previous_mode != expected_mode:
+            raise SystemExit(
+                f"resume refused: dialogue mode changed ({previous_mode!r} "
+                f"!= {expected_mode!r})")
         if batch_meta["code"]["dirty"] and not args.allow_dirty:
             raise SystemExit(
                 "resume refused: non-output worktree changed:\n  "
@@ -477,6 +496,7 @@ def main() -> int:
     }, ensure_ascii=False, indent=2), flush=True)
 
     started = time.time()
+    stop_reason = None
     for position, sample in enumerate(samples, 1):
         index = args.offset + position
         sid = sample["sample_id"]
@@ -501,6 +521,10 @@ def main() -> int:
                 if trace_path.exists() else {}
             record = make_record(sample, index, result, trace, elapsed,
                                  batch_meta["config_sha256"], attempt)
+            record["dialogue_mode"] = batch_meta["dialogue_mode"]
+            record["fixed_dual"] = batch_meta["fixed_dual"]
+            if args.fixed_dual:
+                record["forced_calls"] = fsm._mllm.forced_calls
             record["trace_path"] = os.path.relpath(trace_path, out)
             try:
                 from utils.review_overlays import render_record_overlays
@@ -531,6 +555,14 @@ def main() -> int:
                   f"calls={record['counters']['expert_calls']} "
                   f"failed={record['counters']['failed_experts']} {elapsed:.1f}s",
                   flush=True)
+            if (args.stop_on_tool_failure
+                    and record["counters"]["failed_experts"]):
+                stop_reason = {
+                    "sample_id": sid, "index": index,
+                    "failed_experts": record["counters"]["failed_experts"],
+                }
+                print(f"STOPPING on tool failure: {stop_reason}", flush=True)
+                break
         except Exception as exc:
             elapsed = time.perf_counter() - t0
             failure = {
@@ -553,6 +585,10 @@ def main() -> int:
             failed_ids.add(sid)
             print(f"[{position}/{len(samples)}] {sid} FAILED: {failure['error']}",
                   flush=True)
+            if args.stop_on_tool_failure:
+                stop_reason = {"sample_id": sid, "index": index,
+                               "error": failure["error"], "session_failed": True}
+                break
 
     ordered = [completed[s["sample_id"]] for s in samples if s["sample_id"] in completed]
     write_json_atomic(out / "records.json", ordered)
@@ -565,9 +601,11 @@ def main() -> int:
         "finished_at": datetime.now().isoformat(timespec="seconds"),
         "code": git_state(out),
         "config_sha256": batch_meta["config_sha256"],
+        "dialogue_mode": batch_meta["dialogue_mode"],
         "split": {"offset": args.offset, "limit": args.limit},
         "completed": len(ordered), "expected": len(samples),
         "failed": len(failed_ids),
+        "stopped_on_tool_failure": stop_reason,
     }
     write_json_atomic(out / "run_end.json", end)
     (out / "REVIEW_STATUS.md").write_text(
@@ -576,6 +614,7 @@ def main() -> int:
         f"- generated: {datetime.now().isoformat(timespec='seconds')}\n"
         f"- status: development evaluation; not human acceptance, not SFT data\n"
         f"- config: `{batch_meta['config_sha256']}`\n"
+        f"- dialogue mode: `{batch_meta['dialogue_mode']}`\n"
         f"- workbench: `index.html`\n"
         f"- records: `records.json`, `records.jsonl` (if present), `review_records.csv`\n"
         f"- failures: `failures.jsonl` / `failures/`\n"
