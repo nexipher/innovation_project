@@ -23,8 +23,10 @@ from experts.probe_dino import MockProbeExpert, ProbeDinoExpert
 from experts.trufor import (
     HIGH_RESPONSE_THRESHOLD,
     MockTruForExpert,
+    TruForCUDAOutOfMemory,
     TruForExpert,
     _entropy,
+    _is_cuda_oom,
 )
 
 
@@ -507,3 +509,28 @@ def test_trufor_summary_records_peak_in_normalized_coordinates():
     })
     assert stats["anomaly_peak_normalized_1000"] == [
         round(7 / 9 * 1000), round(3 / 19 * 1000)]
+
+
+def test_cuda_oom_is_classified_with_an_explicit_failure_kind():
+    assert _is_cuda_oom("", "RuntimeError: CUDA error: out of memory")
+    assert _is_cuda_oom(
+        "torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2 GiB", "")
+    assert not _is_cuda_oom("", "RuntimeError: input file is missing")
+    assert TruForCUDAOutOfMemory.failure_kind == "cuda_oom"
+    assert isinstance(TruForCUDAOutOfMemory("CUDA OOM"), RuntimeError)
+
+
+def test_a_trufor_child_oom_raises_the_explicit_class(tmp_path):
+    weights = tmp_path / "trufor.pth.tar"
+    weights.write_bytes(b"w")
+
+    class OomTruFor(TruForExpert):
+        def _run_tool_single(self, image_path, out_dir):  # noqa: ARG002
+            return 0, "", "RuntimeError: CUDA error: out of memory\n", ""
+
+    expert = OomTruFor(weights_path=str(weights), device="cpu", cache=False,
+                       results_dir=str(tmp_path / "results"))
+    with pytest.raises(TruForCUDAOutOfMemory) as caught:
+        expert._score(np.zeros((8, 8, 3), dtype=np.uint8))
+    assert caught.value.failure_kind == "cuda_oom"
+    assert "CUDA OOM" in str(caught.value)

@@ -19,6 +19,11 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 局部篡改无一条有效局部测量**，局部维度无效。整图维度可解释；结果、代表案例和
 > 失败分析见 `sft_data/g8_dev_eval_20261110/DEVELOPMENT_EVAL_REPORT.md` 与
 > `plan.md` §13.1。不训练、不扩到 test。
+> **2026-11-27 修复**：已定位同卡 TruFor OOM 为父进程 reserved 缓存累积；在启动
+> TruFor 子进程前释放父进程缓存，并在 trace 中明确记录 `failure_kind=cuda_oom`。
+> 18 条连续 AutoSplice 验证中 14 条实际调用 TruFor，14/14 产出 score/map/conf，
+> 0 失败；未重跑 200 条，未改设备/权重/精度/输入。详见
+> `docs/development/TRUFOR_OOM_FIX_20261127.md` 与 `plan.md` §13.2。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
 > content_box，并可生成原图与异常图上的预测框叠加。同一 24 输入的规则复验写在

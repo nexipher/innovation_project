@@ -2306,3 +2306,20 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   TruFor 显存修复（`empty_cache`/常驻 worker/CPU 或第二 GPU），用 10–20 条连续
   AutoSplice 会话确认 100% 有效后再考虑重跑；同时处理 PROBE 在 AutoSplice 的 domain
   shift、`Not applicable` 误用、无测量提前结案和最终一致性硬门。不训练、不改历史 trace。
+
+### 13.2 2026-11-27 TruFor 同卡 OOM 修复
+
+- **复现**：历史成功图与失败图在 fresh process 的四种状态（仅 Qwen、生成后、PROBE 后、
+  生成+PROBE）均成功；单图不 OOM，重复同一输入 6 次 reserved 稳定 19.214 GB。
+  旧代码 12 条 AutoSplice 会话 reserved 19.292→22.070 GB、free 5.460→2.681 GB，
+  小图仍成功；200 条批次的 131 次 OOM 与更大多样会话/大图累积有关。
+- **根因**：Qwen+PROBE allocated 约 18.76 GB；会话多样性让 reserved 缓存涨到 22–23 GB，
+  TruFor 子进程 CUDA context 在 free 不足时 OOM；`test.py` 裸 `except` 退出 0，旧 trace
+  只显示“未产出 npz”，stderr 尾部有时不含 OOM。
+- **修复**：`experts/trufor.py` 在子进程前 `gc.collect()+torch.cuda.empty_cache()`；
+  新增 `TruForCUDAOutOfMemory`（`failure_kind=cuda_oom`）和 `_is_cuda_oom`；
+  `state_machine/controller.py` failed token 写 `failure_kind`。不改设备/权重/精度/输入。
+- **验证**：18 条连续 AutoSplice 会话，14 条调用 TruFor，14/14 产出 score/map/conf，
+  0 失败；释放前最高 reserved 22.941 GB / free 1.811 GB，释放后 18.925 GB / 5.827 GB；
+  core 831 passed, 1 skipped。详见 `docs/development/TRUFOR_OOM_FIX_20261127.md`。
+- **边界**：未重跑 200 条；原批次与历史 trace 不变；未来重跑需重新固定 config identity。

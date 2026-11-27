@@ -536,6 +536,7 @@ class ForensicStateMachine:
                     except Exception as exc:                      # noqa: BLE001
                         # 加载失败、超时、NaN、缺权重——如实记录为 failed，
                         # 会话继续（提案：不得伪装成正常返回，也不该让整个会话崩掉）。
+                        failure_kind = getattr(exc, "failure_kind", "execution_error")
                         failed_tool_calls.append(f"{source_name}: "
                                                  f"{type(exc).__name__}: {exc}")
                         failed_sources.add(source_name)
@@ -546,6 +547,7 @@ class ForensicStateMachine:
                             "source": source_name,
                             "evidence_name": getattr(expert, "evidence_name", source_name),
                             "status": "failed",
+                            "failure_kind": failure_kind,
                             "reason": f"{type(exc).__name__}: {exc}",
                             "measurement_scope": "global",
                             "model_delivered": "slim",

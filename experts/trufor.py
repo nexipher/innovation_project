@@ -42,6 +42,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -66,6 +67,28 @@ HIGH_RESPONSE_THRESHOLD = 0.5
 RECIPE_VERSION = "trufor-v1"
 
 DEFAULT_RESULTS_DIR = os.path.join(PROJECT_ROOT, "calibration", "trufor_raw")
+
+
+class TruForCUDAOutOfMemory(RuntimeError):
+    """The TruFor child process failed on a CUDA allocation.
+
+    The upstream ``test.py`` catches every exception with a bare ``except`` and
+    exits 0, so the parent only sees that no ``.npz`` was written.  This class
+    keeps the cause explicit in the trace instead of collapsing it into a
+    generic "no npz" error.
+    """
+
+    failure_kind = "cuda_oom"
+
+
+_OOM_PATTERN = re.compile(
+    r"(?:CUDA|torch)[^\n]{0,80}out of memory|out of memory[^\n]{0,80}CUDA",
+    re.IGNORECASE)
+
+
+def _is_cuda_oom(stdout: str, stderr: str) -> bool:
+    """Whether the child's output contains a CUDA out-of-memory failure."""
+    return bool(_OOM_PATTERN.search(f"{stdout or ''}\n{stderr or ''}"))
 
 
 class TruForExpert(ExternalScoreExpert):
@@ -192,6 +215,29 @@ class TruForExpert(ExternalScoreExpert):
             json.dump(meta, handle, ensure_ascii=False, indent=1)
         return directory
 
+    def _release_parent_cuda_cache(self) -> None:
+        """Return cached blocks to the driver before starting a child process.
+
+        Qwen and PROBE live in this process; generation leaves reserved but
+        unused blocks, and the TruFor child needs its own CUDA context.  The
+        child can OOM while the parent's live tensors still fit, so release the
+        parent's unused cache immediately before spawning it.  This changes no
+        device, weight, precision or input, and is a no-op off CUDA.
+        """
+        if not str(self.device).startswith("cuda"):
+            return
+        try:
+            import gc
+
+            import torch
+
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:                                     # noqa: BLE001
+            # Memory cleanup must never be the reason a measurement fails.
+            pass
+
     def _score(self, img_bgr: np.ndarray):  # pragma: no cover - subprocess path
         from PIL import Image
 
@@ -203,6 +249,7 @@ class TruForExpert(ExternalScoreExpert):
                                  "elapsed_s": 0.0, "cached": True})
             return self.result_from_arrays(cached)
 
+        self._release_parent_cuda_cache()
         started = time.perf_counter()
         cold_start = self._runs == 0
         with tempfile.TemporaryDirectory(prefix="trufor_") as work:
@@ -212,9 +259,12 @@ class TruForExpert(ExternalScoreExpert):
             os.makedirs(out_dir, exist_ok=True)
             returncode, stdout, stderr, npz_path = self._run_tool_single(image_path, out_dir)
             if not npz_path:
-                raise RuntimeError(
-                    f"{self.source_name}：未产出 npz（退出码 {returncode}）\n"
-                    f"stdout 尾部：{stdout[-500:]}\nstderr 尾部：{stderr[-500:]}")
+                detail = (f"{self.source_name}：未产出 npz（退出码 {returncode}）\n"
+                          f"stdout 尾部：{stdout[-500:]}\n"
+                          f"stderr 尾部：{stderr[-500:]}")
+                if _is_cuda_oom(stdout, stderr):
+                    raise TruForCUDAOutOfMemory(f"CUDA OOM；{detail}")
+                raise RuntimeError(detail)
             arrays = dict(np.load(npz_path, allow_pickle=True))
 
         elapsed = time.perf_counter() - started
@@ -275,6 +325,7 @@ class TruForExpert(ExternalScoreExpert):
         if not pending:
             return results
 
+        self._release_parent_cuda_cache()
         started = time.perf_counter()
         cold_start = self._runs == 0
         with tempfile.TemporaryDirectory(prefix="trufor_batch_") as work:
@@ -297,10 +348,13 @@ class TruForExpert(ExternalScoreExpert):
                          .replace(".png", "")] = path
             missing = [image_id for image_id in pending if keys[image_id] not in produced]
             if missing:
-                raise RuntimeError(
+                detail = (
                     f"{self.source_name}：批量运行缺少 {len(missing)} 张的结果"
                     f"（退出码 {returncode}）\nstdout 尾部：{stdout[-400:]}\n"
                     f"stderr 尾部：{stderr[-400:]}")
+                if _is_cuda_oom(stdout, stderr):
+                    raise TruForCUDAOutOfMemory(f"CUDA OOM；{detail}")
+                raise RuntimeError(detail)
 
             for image_id, image in pending.items():
                 key = keys[image_id]

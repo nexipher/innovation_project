@@ -78,6 +78,8 @@ REGION = "patch_coordinates_[0, 0, 64, 64]"
 
 CALL_UNKNOWN = ("<planning>\nSuspected Region: none\n</planning>\n"
                 "<call_jpeg></call_jpeg>")
+CALL_TRUFOR = ("<planning>\nSuspected Region: none\n</planning>\n"
+               "<call_trufor></call_trufor>")
 CALL_BROKEN = ("<planning>\nSuspected Region: none\n</planning>\n"
                "<call_npr></call_npr>")
 VERDICT = ('<reasoning>证据不足。</reasoning>\n<verdict>'
@@ -128,6 +130,7 @@ class TestAFailedToolLeavesAFailedRecord:
                   if token.get("status") == "failed"]
         assert len(failed) == 1
         assert failed[0]["source"] == "npr_expert"
+        assert failed[0]["failure_kind"] == "execution_error"
         assert "RuntimeError" in failed[0]["reason"]
 
     def test_the_model_is_told_it_is_not_a_neutral_measurement(self, tmp_path):
@@ -143,6 +146,33 @@ class TestAFailedToolLeavesAFailedRecord:
         trace = json.load(open(result["sft_data_path"], encoding="utf-8"))
         assert trace["metadata"]["failed_tool_calls"]
         assert "RuntimeError" in trace["metadata"]["failed_tool_calls"][0]
+
+
+class TestATruForOOMIsExplicit:
+    class _OomExpert(_WorkingExpert):
+        source_name = "trufor_expert"
+
+        def analyze(self, patch):
+            from experts.trufor import TruForCUDAOutOfMemory
+
+            raise TruForCUDAOutOfMemory("CUDA OOM：未产出 npz（退出码 0）")
+
+    def test_the_failed_token_carries_the_machine_readable_kind(self, tmp_path):
+        result = _run(tmp_path, [CALL_TRUFOR, VERDICT],
+                      {"trufor_expert": self._OomExpert()})
+        failed = [token for token in result["evidence_chain"]
+                  if token.get("status") == "failed"]
+        assert len(failed) == 1
+        assert failed[0]["source"] == "trufor_expert"
+        assert failed[0]["failure_kind"] == "cuda_oom"
+        assert "CUDA OOM" in failed[0]["reason"]
+
+    def test_the_trace_failure_list_names_the_oom(self, tmp_path):
+        result = _run(tmp_path, [CALL_TRUFOR, VERDICT],
+                      {"trufor_expert": self._OomExpert()})
+        trace = json.load(open(result["sft_data_path"], encoding="utf-8"))
+        assert "TruForCUDAOutOfMemory" in trace["metadata"]["failed_tool_calls"][0]
+        assert "CUDA OOM" in trace["metadata"]["failed_tool_calls"][0]
 
 
 class TestAFailedTokenDeliversNothing:
