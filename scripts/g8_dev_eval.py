@@ -345,6 +345,8 @@ def main() -> int:
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     parser.add_argument("--out", default=str(DEFAULT_OUT))
     parser.add_argument("--batch-id", default=None)
+    parser.add_argument("--offset", type=int, default=0,
+                        help="Start position in the manifest (default 0).")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--retry-failed", action="store_true")
@@ -357,12 +359,23 @@ def main() -> int:
     manifest = load_manifest(manifest_path)
     verification = verify_manifest(manifest, manifest_path)
     samples = manifest["samples"]
-    if args.limit:
+    if args.offset < 0 or args.offset > len(samples):
+        raise SystemExit(f"offset must be within 0..{len(samples)}, got {args.offset}")
+    samples = samples[args.offset:]
+    if args.limit is not None:
+        if args.limit < 0:
+            raise SystemExit("limit must be non-negative")
         samples = samples[:args.limit]
+    if not samples:
+        raise SystemExit("no samples selected")
     if args.dry_run:
         print(json.dumps({
             "manifest": str(manifest_path),
+            "offset": args.offset,
+            "limit": args.limit,
             "samples": len(samples),
+            "first_sample": samples[0]["sample_id"],
+            "last_sample": samples[-1]["sample_id"],
             "counts": manifest.get("counts"),
             "verification": verification,
             "estimated_seconds": round(56.0 * len(samples), 1),
@@ -399,6 +412,9 @@ def main() -> int:
     if getattr(mllm, "mode", None) != "qwen3_real":
         raise SystemExit("refusing a non-real MLLM session (mock or unknown mode)")
     batch_meta = build_batch_meta(fsm, manifest_path, out, batch_id, manifest, verification)
+    batch_meta["split"] = {"offset": args.offset, "limit": args.limit,
+                           "sessions": len(samples)}
+    batch_meta["expected_total_seconds"] = round(56.0 * len(samples), 1)
     batch_meta["worktree_allowed_dirty"] = args.allow_dirty
     meta_path = out / "batch_meta.json"
     identity_path = out / "config_identity.json"
@@ -412,6 +428,13 @@ def main() -> int:
             raise SystemExit("resume refused: runtime/config identity changed since batch start")
         if previous.get("code", {}).get("commit") != batch_meta["code"].get("commit"):
             raise SystemExit("resume refused: code commit changed since batch start")
+        previous_split = previous.get("split")
+        if previous_split and (
+                previous_split.get("offset") != args.offset
+                or previous_split.get("limit") != args.limit):
+            raise SystemExit(
+                "resume refused: split changed since batch start "
+                f"({previous_split} != offset={args.offset}, limit={args.limit})")
         if batch_meta["code"]["dirty"] and not args.allow_dirty:
             raise SystemExit(
                 "resume refused: non-output worktree changed:\n  "
@@ -454,12 +477,14 @@ def main() -> int:
     }, ensure_ascii=False, indent=2), flush=True)
 
     started = time.time()
-    for index, sample in enumerate(samples, 1):
+    for position, sample in enumerate(samples, 1):
+        index = args.offset + position
         sid = sample["sample_id"]
         if sid in completed:
             continue
         if sid in failed_ids and not args.retry_failed:
-            print(f"[{index}/{len(samples)}] {sid} skipped: previously failed", flush=True)
+            print(f"[{position}/{len(samples)}] {sid} skipped: previously failed",
+                  flush=True)
             continue
         attempt = 1
         while (failures_dir / f"{index:03d}__{sid}__attempt{attempt}.json").exists():
@@ -500,10 +525,12 @@ def main() -> int:
             record["page"] = page_name
             write_json_atomic(records_dir / f"{index:03d}__{sid}.json", record)
             completed[sid] = record
-            print(f"[{index}/{len(samples)}] {sid} "
+            print(f"[{position}/{len(samples)}] {sid} "
                   f"overall={record['final_verdict']} whole={record['whole_image_generation']} "
                   f"local={record['local_manipulation']} certainty={record.get('certainty')} "
-                  f"calls={record['counters']['expert_calls']} {elapsed:.1f}s", flush=True)
+                  f"calls={record['counters']['expert_calls']} "
+                  f"failed={record['counters']['failed_experts']} {elapsed:.1f}s",
+                  flush=True)
         except Exception as exc:
             elapsed = time.perf_counter() - t0
             failure = {
@@ -524,7 +551,8 @@ def main() -> int:
             with failures_path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(failure, ensure_ascii=False) + "\n")
             failed_ids.add(sid)
-            print(f"[{index}/{len(samples)}] {sid} FAILED: {failure['error']}", flush=True)
+            print(f"[{position}/{len(samples)}] {sid} FAILED: {failure['error']}",
+                  flush=True)
 
     ordered = [completed[s["sample_id"]] for s in samples if s["sample_id"] in completed]
     write_json_atomic(out / "records.json", ordered)
@@ -537,6 +565,7 @@ def main() -> int:
         "finished_at": datetime.now().isoformat(timespec="seconds"),
         "code": git_state(out),
         "config_sha256": batch_meta["config_sha256"],
+        "split": {"offset": args.offset, "limit": args.limit},
         "completed": len(ordered), "expected": len(samples),
         "failed": len(failed_ids),
     }

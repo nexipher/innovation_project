@@ -2323,3 +2323,20 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   0 失败；释放前最高 reserved 22.941 GB / free 1.811 GB，释放后 18.925 GB / 5.827 GB；
   core 831 passed, 1 skipped。详见 `docs/development/TRUFOR_OOM_FIX_20261127.md`。
 - **边界**：未重跑 200 条；原批次与历史 trace 不变；未来重跑需重新固定 config identity。
+
+### 13.3 2026-11-27 修复版 200 条分半重跑
+
+- **目标**：在修复版代码上重跑 `sft_data/g8_dev_eval_20261110/manifest.json` 的 200 条；
+  沿用原顺序、原模型/prompt/专家权重与推理配置，仅代码包含 2026-11-27 的 CUDA 缓存释放
+  和 OOM 记录修复。运行前重新记录 `batch_meta.json` 的 config identity。
+- **分批**：前 100 条（offset 0, limit 100）写入
+  `sft_data/g8_dev_eval_20261127_part1/`；后 100 条（offset 100, limit 100）写入
+  `sft_data/g8_dev_eval_20261127_part2/`。两批均保留原 manifest 顺序和完整 manifest
+  SHA；页面/记录索引保留全量序号（1–100、101–200）。
+- **前 100 条验收门**：结束后检查 100 条 record、trace、页面齐全；统计 TruFor 成功、
+  失败、Agent 主动未调用；抽查成功调用的 score、异常图、可靠性图。出现 OOM、工具输出
+  缺失或记录异常时停止并报告受影响样本/错误，不启动后 100 条、不现场修复。
+- **后 100 条**：仅当前 100 条通过上述门后启动；否则等待指示。
+- **汇总**：两批结束后报告会话完成数、TruFor 调用成功率（成功/(成功+失败)，主动未调用
+  单列）和 AutoSplice 有效测量覆盖率（AutoSplice 中有有效 TruFor 测量的会话/全部
+  AutoSplice 会话）。不训练、不碰 test、不改原批次。
