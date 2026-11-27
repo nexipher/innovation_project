@@ -1127,3 +1127,17 @@
 * **涉及/修改的文件清单**：`scripts/independent_expert_compare.py`、`sft_data/independent_expert_20261127/per_sample.csv`、`report.md`、`report.json`、`plan.md`、`.gitignore`。
 * **执行结果与验证状态**：200/200 独立测量完成，无加载/推理/NPZ/渲染错误；PROBE/TruFor 使用原权重、预处理和阈值；提交 `47984ff`。
 * **置信度或遗留待办（TODO）**：报告中“问题层级”是描述性规则，不是自动验收；11 条仅定位命中需人工看响应区域；raw npz 与 400 张异常/可靠性图保留本地（已 gitignore）。不训练、不碰 test。
+
+### [2026-11-27 13:18–14:31] - §13.5 固定双调用 vs 自主调用
+
+* **当前操作动作**：新增固定 PROBE→TruFor 双调用模式，跑完 200 张 q95；与 2026-11-27 part1+part2 自主记录逐图合并对比。
+* **对应计划锚点**：`plan.md` §13.5；`sft_data/g8_fixed_dual_20261127/`。
+* **核心变更说明**：
+  1. `mllm/fixed_dual.py` 包装真实 Qwen：前两轮只返回协议合法的 `call_probe` / `call_trufor`，之后完全委托真实 Qwen；控制器、证据包、coverage/certainty、结案规则不变。
+  2. `scripts/g8_dev_eval.py` 新增 `--fixed-dual`、`--stop-on-tool-failure`，记录 `dialogue_mode`、`forced_calls`、`fixed_dual`；`utils/protocol_identity.py` 将 fixed wrapper 纳入 provenance。
+  3. 3 会话冒烟 3/3 完成、每会话 2 calls / 3 turns，强制顺序正确；正式 200/200 完成、400 次专家调用、0 工具失败/会话失败，wall 4111.5 s。
+  4. 对比：总体正确均 164/200（82.0%）；固定弃权 6/200（3.0%）vs 基线 17/200（8.5%）；整图检出 74/80 vs 69/80，整图真图误报 51/120 vs 45/120；局部检出 6/60 vs 13/60，AutoSplice 真图局部误报 1/30 vs 0/30；both 3/60 vs 5/60。
+  5. 重点组：原未调用 14 张固定 local Tampered 1/14；原已调用未检出 33 张固定 3/33、仍漏 30/33；30 张 AutoSplice 真图固定 23 Not tampered/6 Uncertain/1 Tampered。
+* **涉及/修改的文件清单**：`mllm/fixed_dual.py`、`scripts/g8_dev_eval.py`、`utils/protocol_identity.py`、`tests/test_fixed_dual.py`、`scripts/compare_fixed_dual.py`、`sft_data/g8_fixed_dual_20261127/**`、`plan.md`、`.gitignore`。
+* **执行结果与验证状态**：core 834 passed, 1 skipped；固定批次 200/200、records/traces/pages 齐全；对比 CSV/报告 `comparison/per_sample.csv`、`report.md`、`report.json`；提交 `8deeea0`（模式）与本次结果提交。
+* **置信度或遗留待办（TODO）**：固定调用发生在 Qwen 首轮之前，Qwen 没有自主模式的首轮视觉规划；本对照测量该流程。强制调用未改善局部 Tampered，反而增加整图误报；下一步应针对“仅候选/未明确编辑内容”的局部判读做提示词/证据语义修订，而不是继续增加调用次数。不训练、不碰 test。

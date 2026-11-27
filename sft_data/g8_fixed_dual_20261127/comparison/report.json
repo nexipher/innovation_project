@@ -1,0 +1,420 @@
+{
+  "schema": "fixed_dual_compare/1",
+  "baseline": {
+    "n": 200,
+    "overall": {
+      "correct": 164,
+      "wrong": 19,
+      "abstain": 17,
+      "no_conclusion": 0,
+      "accuracy": 0.82,
+      "coverage": 0.915,
+      "closed_accuracy": 0.8962,
+      "by_truth_class": {
+        "real": {
+          "n": 60,
+          "correct": 46,
+          "wrong": 10,
+          "abstain": 4,
+          "accuracy": 0.7667,
+          "coverage": 0.9333,
+          "closed_accuracy": 0.8214
+        },
+        "whole_generated": {
+          "n": 80,
+          "correct": 71,
+          "wrong": 4,
+          "abstain": 5,
+          "accuracy": 0.8875,
+          "coverage": 0.9375,
+          "closed_accuracy": 0.9467
+        },
+        "local_tampered": {
+          "n": 60,
+          "correct": 47,
+          "wrong": 5,
+          "abstain": 8,
+          "accuracy": 0.7833,
+          "coverage": 0.8667,
+          "closed_accuracy": 0.9038
+        }
+      }
+    },
+    "whole": {
+      "generated_n": 80,
+      "generated_detected": 69,
+      "real_n": 120,
+      "real_false_positive": 45
+    },
+    "local": {
+      "forged_n": 60,
+      "forged_detected": 13,
+      "authentic_n": 30,
+      "authentic_fp": 0,
+      "authentic_labels": {
+        "Uncertain": 12,
+        "Not tampered": 18
+      },
+      "forged_labels": {
+        "Not tampered": 13,
+        "Not applicable": 2,
+        "Tampered": 13,
+        "Uncertain": 32
+      },
+      "forged_both_whole_real_and_local_tampered": 5
+    },
+    "calls": {
+      "expert_calls_total": 335,
+      "expert_calls_distribution": {
+        "2": 135,
+        "1": 65
+      },
+      "model_turns_distribution": {
+        "3": 71,
+        "4": 52,
+        "2": 54,
+        "5": 18,
+        "6": 2,
+        "7": 3
+      },
+      "elapsed_s_total": 6609.8,
+      "elapsed_s_mean": 33.05,
+      "elapsed_s_median": 30.25
+    }
+  },
+  "fixed": {
+    "n": 200,
+    "overall": {
+      "correct": 164,
+      "wrong": 30,
+      "abstain": 6,
+      "no_conclusion": 0,
+      "accuracy": 0.82,
+      "coverage": 0.97,
+      "closed_accuracy": 0.8454,
+      "by_truth_class": {
+        "real": {
+          "n": 60,
+          "correct": 43,
+          "wrong": 15,
+          "abstain": 2,
+          "accuracy": 0.7167,
+          "coverage": 0.9667,
+          "closed_accuracy": 0.7414
+        },
+        "whole_generated": {
+          "n": 80,
+          "correct": 74,
+          "wrong": 6,
+          "abstain": 0,
+          "accuracy": 0.925,
+          "coverage": 1.0,
+          "closed_accuracy": 0.925
+        },
+        "local_tampered": {
+          "n": 60,
+          "correct": 47,
+          "wrong": 9,
+          "abstain": 4,
+          "accuracy": 0.7833,
+          "coverage": 0.9333,
+          "closed_accuracy": 0.8393
+        }
+      }
+    },
+    "whole": {
+      "generated_n": 80,
+      "generated_detected": 74,
+      "real_n": 120,
+      "real_false_positive": 51
+    },
+    "local": {
+      "forged_n": 60,
+      "forged_detected": 6,
+      "authentic_n": 30,
+      "authentic_fp": 1,
+      "authentic_labels": {
+        "Uncertain": 6,
+        "Not tampered": 23,
+        "Tampered": 1
+      },
+      "forged_labels": {
+        "Not tampered": 15,
+        "Uncertain": 39,
+        "Tampered": 6
+      },
+      "forged_both_whole_real_and_local_tampered": 3
+    },
+    "calls": {
+      "expert_calls_total": 400,
+      "expert_calls_distribution": {
+        "2": 200
+      },
+      "model_turns_distribution": {
+        "3": 159,
+        "4": 40,
+        "5": 1
+      },
+      "elapsed_s_total": 4111.5,
+      "elapsed_s_mean": 20.56,
+      "elapsed_s_median": 17.75
+    }
+  },
+  "focus": {
+    "tampered_agent_not_called": {
+      "n": 14,
+      "fixed_local": {
+        "Not tampered": 3,
+        "Uncertain": 10,
+        "Tampered": 1
+      },
+      "fixed_whole": {
+        "AI-generated": 11,
+        "Real": 3
+      },
+      "fixed_final": {
+        "Fake": 11,
+        "Uncertain": 1,
+        "Real": 2
+      },
+      "fixed_local_tampered": 1,
+      "fixed_both": 0,
+      "examples": [
+        {
+          "sample_id": "autosplice__40591__1__q95",
+          "baseline_local": "Not applicable",
+          "baseline_final": "Fake",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__41859__0__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__42357__2__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Uncertain",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__44492__0__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Real",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Uncertain",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__45563__2__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__47410__1__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__48056__2__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__48730__2__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        }
+      ]
+    },
+    "tampered_agent_called_not_detected": {
+      "n": 33,
+      "fixed_local": {
+        "Not tampered": 12,
+        "Uncertain": 18,
+        "Tampered": 3
+      },
+      "fixed_whole": {
+        "AI-generated": 25,
+        "Real": 6,
+        "Uncertain": 2
+      },
+      "fixed_final": {
+        "Fake": 27,
+        "Real": 4,
+        "Uncertain": 2
+      },
+      "fixed_local_tampered": 3,
+      "fixed_both": 1,
+      "examples": [
+        {
+          "sample_id": "autosplice__39697__0__q95",
+          "baseline_local": "Not tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__40340__2__q95",
+          "baseline_local": "Not tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__41242__1__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Uncertain",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Real",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__42057__2__q95",
+          "baseline_local": "Not tampered",
+          "baseline_final": "Uncertain",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Real",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__42911__1__q95",
+          "baseline_local": "Uncertain",
+          "baseline_final": "Fake",
+          "fixed_local": "Tampered",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__44505__1__q95",
+          "baseline_local": "Not tampered",
+          "baseline_final": "Real",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Real",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__46499__1__q95",
+          "baseline_local": "Not tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__46565__1__q95",
+          "baseline_local": "Not tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Not tampered",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        }
+      ]
+    },
+    "tampered_agent_detected": {
+      "n": 13,
+      "fixed_local": {
+        "Uncertain": 11,
+        "Tampered": 2
+      },
+      "fixed_whole": {
+        "Real": 8,
+        "AI-generated": 5
+      },
+      "fixed_final": {
+        "Fake": 9,
+        "Real": 3,
+        "Uncertain": 1
+      },
+      "fixed_local_tampered": 2,
+      "fixed_both": 2,
+      "examples": [
+        {
+          "sample_id": "autosplice__41178__2__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__42724__0__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Real",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__43680__1__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Uncertain",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__43821__1__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__45359__2__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__48925__0__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        },
+        {
+          "sample_id": "autosplice__50949__2__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "Real"
+        },
+        {
+          "sample_id": "autosplice__52626__1__q95",
+          "baseline_local": "Tampered",
+          "baseline_final": "Fake",
+          "fixed_local": "Uncertain",
+          "fixed_final": "Fake",
+          "fixed_whole": "AI-generated"
+        }
+      ]
+    }
+  }
+}
