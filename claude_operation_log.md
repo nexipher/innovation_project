@@ -1183,3 +1183,15 @@
 * **涉及/修改的文件清单**：`scripts/audit_sft_candidates.py`、`scripts/g8_review_workstation.py`、`scripts/run_sft_candidates.py`、`scripts/sft_candidate_cases.py`、`sft_data/sft_candidates_20261127/{AUDIT_REPORT.md,audit.json,POST_RUN_PATCHES.md,TEST_STATUS.md,REVIEW_QUESTIONS.md,candidate_scripts.json,records.json,batch_meta.json,SUMMARY.md,CANDIDATE_CASES.md,001..024*.html,traces/...Midjourney...json}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：审计 24/24 pass；相关测试（scripted/workbench/controller）107 passed；core 834 passed；module 既有 5 failed 已定位为 pre-existing。无 GPU、无模型前向、无训练、无 test。
 * **置信度或遗留待办（TODO）**：5 个既有 module 测试失败建议单独维护提交；6 条 Uncertain 真图仍等用户定判例；候选文本仍是拟写稿，不是 Qwen 原始输出。
+
+### [2026-11-28] - §13.7 审核图片打包与可拉取页面
+
+* **当前操作动作**：不重跑模型，把 24 条案例页面实际使用的图片复制到批次内 `review_assets/`，改写页面相对路径，准备推送供本地审核。
+* **对应计划锚点**：`plan.md` §13.7；`sft_data/sft_candidates_20261127/review_assets/`。
+* **核心变更说明**：
+  1. 新增 `scripts/package_sft_review_assets.py`：逐条复制 q95 输入图、源图、TruFor 三图（原图裁剪/异常图/可靠性图）、PROBE 诊断裁剪、已有预测框叠加；文件按 `review_assets/<sample_id>/` 组织，写 `ASSET_MANIFEST.json`（原路径、打包路径、sha256、bytes）和 `README.md`。
+  2. 将 24 个页面的图片 `src`（以及页面里展示的路径文本）改写为 `review_assets/...`；records/traces/专家结果/候选结论未改，原始 trace 仍保留运行时路径作审计出处。
+  3. 24 条目录、158 个文件、约 15.0 MB；每条页面至少 6 张图（有 suspicious_regions 的 7 张）；全部 `src` 指向 review_assets 且存在；审计仍 24/24 pass、0 问题。
+* **涉及/修改的文件清单**：`scripts/package_sft_review_assets.py`、`scripts/audit_sft_candidates.py`（页面图片名适配）、`scripts/run_sft_candidates.py`（索引/汇总说明）、`sft_data/sft_candidates_20261127/review_assets/**`、`001..024*.html`、`index.html`、`SUMMARY.md`、`CANDIDATE_CASES.md`、`AUDIT_REPORT.md`、`audit.json`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：打包脚本 24 条全部通过；页面链接检查 0 缺失；待提交后用干净目录模拟拉取，确认 index 24 条和图片引用。
+* **置信度或遗留待办（TODO）**：本次只复制图片，没有重跑或改判；GitHub 推送需网络可用。

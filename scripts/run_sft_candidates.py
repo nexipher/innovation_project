@@ -256,6 +256,7 @@ th{{background:#f4f4f4;text-align:left}} .muted{{color:#666}}
 <p>配置 <code>{html.escape(batch_meta.get('config_sha256', ''))}</code>；manifest
 <code>{html.escape(batch_meta.get('manifest', {}).get('sha256', ''))}</code>；
 system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</code>。</p>
+<p class="muted">审核图片已打包在 <code>review_assets/</code>；每条页面里的原图、源图、TruFor 三图、PROBE 裁剪和预测框叠加都使用批次内相对路径，拉取仓库后可直接打开。原始 trace 仍保留运行时的路径，作为审计出处。</p>
 <h2>重点案例（{len(key)}）</h2>
 {table(key)}
 <h2>其余候选（{len(rest)}）</h2>
@@ -352,6 +353,8 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
         "",
         "- 待定判例 `REVIEW_QUESTIONS.md`：TruFor 高分真图何时写 Not tampered、",
         "  PROBE 高分的局部编辑整图维度怎么写、调用顺序/是否保留单专家样板。",
+        "- 审核图片 `review_assets/`：逐条复制运行时的输入图、源图、TruFor 三图、",
+        "  PROBE 裁剪和预测框叠加；页面改为批次内相对路径，拉取仓库后可直接打开。",
         "- 收尾审计 `AUDIT_REPORT.md`：24/24 pass，0 问题（证据引用时序、数字出处、",
         "  真值/mask 词、页面结构、链接、划分与组成）。",
         "- 文字补丁 `POST_RUN_PATCHES.md`：Midjourney 229 的推理去掉了未投递的",
@@ -381,6 +384,8 @@ def build_summary(out: Path, records: list[dict], batch_meta: dict,
         f"- 工具：真实 PROBE + TruFor；配置 `{batch_meta.get('config_sha256', '')}`；",
         f"  manifest `{batch_meta.get('manifest', {}).get('sha256', '')}`。",
         f"- 审核入口：`index.html`；重点案例：`CANDIDATE_CASES.md`。",
+        f"- 审核图片：`review_assets/`（24 条，原图/源图/TruFor 三图/PROBE 裁剪/叠加；",
+        f"  页面使用批次内相对路径；共 15.0 MB）。",
         f"- 收尾审计：`AUDIT_REPORT.md`（24/24 pass，0 问题，2026-11-28）。",
         f"- 待定判例：`REVIEW_QUESTIONS.md`（TruFor 高分真图、PROBE 高分的局部编辑、",
         f"  调用顺序与是否保留单专家样板）。",

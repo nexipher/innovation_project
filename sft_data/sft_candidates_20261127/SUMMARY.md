@@ -5,6 +5,8 @@
 - 工具：真实 PROBE + TruFor；配置 `6eb4980f50971d5d`；
   manifest `9d1524944c97ee65f7fff118eb73e27ca4c2822b411c8d041453959b85f195d9`。
 - 审核入口：`index.html`；重点案例：`CANDIDATE_CASES.md`。
+- 审核图片：`review_assets/`（24 条，原图/源图/TruFor 三图/PROBE 裁剪/叠加；
+  页面使用批次内相对路径；共 15.0 MB）。
 - 收尾审计：`AUDIT_REPORT.md`（24/24 pass，0 问题，2026-11-28）。
 - 待定判例：`REVIEW_QUESTIONS.md`（TruFor 高分真图、PROBE 高分的局部编辑、
   调用顺序与是否保留单专家样板）。

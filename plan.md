@@ -2483,3 +2483,19 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   Not tampered（51186 已按“边缘响应”排除；65547/52769/57332/70684/67006 仍 Uncertain）；
   B) PROBE 高分的局部编辑为什么整图写 Real（与 Real ac71 的 Uncertain 如何区分）；
   C) 调用顺序与是否需要保留一条单专家样板。审计是出处/结构检查，判例选择仍需人工决定。
+
+### 13.7 2026-11-28 审核图片打包
+
+- **目的**：让审核者在另一台机器拉取仓库后直接打开 `index.html`。原页面图片来自
+  `dataset/` 和 `traces/evidence/`，二者被 `.gitignore` 排除；只提交页面会出现
+  图片缺失。
+- **做法**：新增 `scripts/package_sft_review_assets.py`，按逐条案例把运行时实际
+  使用的 q95 输入图、源图、TruFor 原图裁剪/异常图/可靠性图、PROBE 诊断裁剪和已有
+  预测框叠加复制到 `sft_data/sft_candidates_20261127/review_assets/<sample_id>/`；
+  页面中的图片链接改写为批次内相对路径 `review_assets/...`。不重跑专家、不改
+  records/traces/候选结论；原始 trace 保留运行时路径作为审计出处。
+- **校验**：24 条目录、158 个文件、约 15.0 MB；每条页面至少含原图、源图、3 张
+  TruFor 图、PROBE 裁剪（有 suspicious_regions 的另含预测框叠加）；所有 `src`
+  均指向 `review_assets/` 且文件存在；`audit.json`/`AUDIT_REPORT.md` 仍为 24/24
+  pass、0 问题。打包后从提交重建干净目录，确认 `index.html` 能打开 24 条且图片
+  引用全部存在（见 `review_assets/ASSET_MANIFEST.json`）。

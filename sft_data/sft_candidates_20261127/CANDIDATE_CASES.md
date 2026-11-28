@@ -65,6 +65,8 @@
 
 - 待定判例 `REVIEW_QUESTIONS.md`：TruFor 高分真图何时写 Not tampered、
   PROBE 高分的局部编辑整图维度怎么写、调用顺序/是否保留单专家样板。
+- 审核图片 `review_assets/`：逐条复制运行时的输入图、源图、TruFor 三图、
+  PROBE 裁剪和预测框叠加；页面改为批次内相对路径，拉取仓库后可直接打开。
 - 收尾审计 `AUDIT_REPORT.md`：24/24 pass，0 问题（证据引用时序、数字出处、
   真值/mask 词、页面结构、链接、划分与组成）。
 - 文字补丁 `POST_RUN_PATCHES.md`：Midjourney 229 的推理去掉了未投递的

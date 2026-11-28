@@ -152,12 +152,10 @@ def audit_page(page: Path, record: dict) -> list[str]:
                   "候选调用顺序"):
         if label not in text:
             issues.append(f"page missing section/label {label!r}")
-    for panel in ("model_original_crop", "model_anomaly_map",
-                  "model_confidence_map"):
+    for panel in ("trufor_original_crop.png", "trufor_anomaly_map.png",
+                  "trufor_confidence_map.png", "probe_region.png"):
         if panel not in text:
             issues.append(f"page missing {panel}")
-    if "region_E-" not in text:
-        issues.append("page missing PROBE diagnostic crop")
     if record.get("page") and record["page"] not in text:
         pass  # page does not need to link itself
     if "候选样板：" not in text:
