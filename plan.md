@@ -2575,3 +2575,19 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   PROBE-only Glide 把毛发偏软写成弱线索、以 PROBE 0.9672 为主要支持。四条只改
   助手文字，工具输出、evidence_id、标签、certainty、框和调用顺序不变；页面与
   trace 同步更新，`AUDIT_REPORT.md` 26/26 pass、0 问题。
+
+### 13.10 2026-11-28 24 条 LoRA 小试（待确认）
+
+- **状态**：pending confirmation；尚未训练。选择清单
+  `sft_data/lora_small_20261128/TRAINING_CANDIDATES.md`、
+  `selection_pending.json`。
+- **训练数据**：从 26 条候选中提 24 条；已通过并直接复用 3 条（55310、65547、
+  single_trufor 54029），其余 21 条待用户确认。建议排除 67006（三维全 Uncertain）
+  和 ac71（whole/overall Uncertain、局部无 Tampered）。22 个唯一源图；两条单专家
+  与 54029/Glide 同源。
+- **确认后**：先用 3 条已通过样板跑 10 步 profiling（最长 65547 9019 token、5 图），
+  记录单步耗时/峰值显存并估算 250×2 epoch；再从原版 Qwen3-VL 开始 24 条 ×2 epoch
+  正式训练；保存 adapter。
+- **验证**：约 30 张未参与训练、与 22 个训练源不同源的图；原版 vs LoRA 同一自主
+  调用流程；汇报局部篡改检出、真图误报、两分项同时判对、弃权、调用次数和最大变化
+  案例。先不扩 250 条；OOM 先报告。
