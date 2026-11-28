@@ -2669,10 +2669,17 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   4. 生成图 whole 已判 AI-generated 时，TruFor 低分/无高响应仍被写成
      Not tampered/Uncertain，未写 Not applicable。
 - **最小修复**：
-  1. 无 bbox 的 TruFor 三图改为 full-frame（仍保留 score/map/conf 与同一内容尺寸）；
+  1. 无 bbox 的 TruFor 三图改为 high-response crop：取异常图 >=0.5 的
+     high-response 像素包围盒（加 5% 上下文；无高响应才回退 full-frame），
+     三图仍同内容尺寸；高响应像素少于 0.5% 的孤立小峰回退旧 peak crop，
      不改权重、阈值、模型或输入图。
-  2. 覆盖纠正：TruFor 可调用但未测时明确要求先 `<call_trufor>`；两位专家都已测时
-     明确不要重复调用；57143 的局部仅候选提示明确“whole=AI-generated 时总体必须
-     保持 Fake”；whole=Uncertain 且 PROBE 未测时要求补测 PROBE；whole=AI-generated
-     且 TruFor 低分/无高响应时要求 local=Not applicable。
-  3. 不重训、不扩 250 条；用同一批案例复验局部检出、真图误报、分项一致性。
+  2. 收紧 `local_tampered_candidate_only`：只有“仅候选/候选而非证明”等
+     明确表述且没有 `suspicious_regions` 定位时触发；“非证明”这种谨慎措辞，
+     或已给出同区域 bbox/content 的 Tampered，不再被改成 Uncertain
+     （43686/57143 的局部检出因此保留）。
+  3. 覆盖纠正：TruFor 可调用但未测（含 local=Uncertain）时明确要求先
+     `<call_trufor>`；两位专家都已测时明确不要重复调用；57143 的局部仅候选
+     提示明确“whole=AI-generated 时总体必须保持 Fake”；whole=AI-generated、
+     PROBE>=0.9 且 TruFor 低分/无高响应时要求 local=Not applicable（PROBE 中段
+     不触发，避免把 Real 的整图误判改写成 Not applicable）。
+  4. 不重训、不扩 250 条；用同一批案例复验局部检出、真图误报、分项一致性。

@@ -99,7 +99,7 @@ def main() -> int:
                              ground_truth=sample["ground_truth"])
             elapsed = time.perf_counter() - t0
             verdict = result.get("final_verdict") or {}
-            trace_path = Path(result["sft_data_path"])
+            trace_path = Path(result["sft_data_path"]).resolve()
             trace = json.loads(trace_path.read_text(encoding="utf-8"))
             record = {
                 "index": index,
@@ -116,6 +116,8 @@ def main() -> int:
                 "report": verdict.get("report"),
                 "primary_evidence": verdict.get("primary_evidence"),
                 "suspicious_regions": verdict.get("suspicious_regions"),
+                "coverage_check": verdict.get("coverage_check"),
+                "joint_verdict_issues": verdict.get("joint_verdict_issues") or [],
                 "halting_reason": result.get("halting_reason"),
                 "model_turns": result.get("model_turn_count"),
                 "expert_calls": result.get("expert_call_count"),
@@ -125,6 +127,7 @@ def main() -> int:
                     "source": token.get("source"),
                     "strength": token.get("strength"),
                     "raw_metric": token.get("raw_metric"),
+                    "model_image_layout": token.get("model_image_layout"),
                 } for token in result.get("evidence_chain") or []],
                 "trace_path": str(trace_path.relative_to(ROOT)),
                 "failed_experts": (trace.get("metadata") or {}).get(

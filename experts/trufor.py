@@ -610,10 +610,16 @@ class TruForExpert(ExternalScoreExpert):
         before cropping if TruFor returned a different map size.  No model
         call is made here: this is a view of `self._last`.
 
-        If `region_pixels` is None the trio is an anomaly-peak inspection crop
-        chosen from the existing map (source recorded as `anomaly_peak`), not
-        a second measurement and not a predicted bbox.  If there is no map it
-        falls back to the full frame (`full_frame`).
+        If `region_pixels` is None the trio is a high-response inspection crop
+        chosen from the existing map (source recorded as `anomaly_region`),
+        not a second measurement and not a predicted bbox.  The crop is the
+        bounding box of all map pixels >= 0.5 (plus a small context margin), so
+        it covers the response region instead of only the single peak.  A
+        high-response blob below 0.5% of the map is treated as a spurious peak
+        and falls back to the contextual peak crop (`anomaly_peak`); with no
+        high-response pixel at all it also keeps the old contextual peak crop,
+        so low-response/authentic cases do not silently switch to a full-frame
+        context view.  Only a missing map falls back to `full_frame`.
 
         Returns ``(artifacts, layout)``.  ``layout`` records the region in
         both coordinate systems and the map->source scale, so a reviewer can
@@ -643,18 +649,48 @@ class TruForExpert(ExternalScoreExpert):
 
         if region_pixels is None:
             if map_array is not None:
-                peak_y, peak_x = np.unravel_index(
-                    int(np.argmax(map_array)), map_array.shape)
-                # A local inspection window around the existing peak: half
-                # the shorter side, at least 128 px, clamped to the image.
-                side = max(128, int(round(min(source_h, source_w) * 0.5)))
-                side = max(1, min(side, source_h, source_w))
-                ymin = max(0, min(source_h - side,
-                                  int(round(peak_y - side / 2))))
-                xmin = max(0, min(source_w - side,
-                                  int(round(peak_x - side / 2))))
-                ymax, xmax = ymin + side, xmin + side
-                region_source = "anomaly_peak"
+                high_y, high_x = np.where(map_array >= 0.5)
+                high_fraction = (high_y.size / float(map_array.size)
+                                 if high_y.size else 0.0)
+                if high_y.size and high_fraction >= 0.005:
+                    # All high-response pixels, not just the single peak.
+                    # The 2026-11-28 validation showed that the old half-side
+                    # peak crop covered only 26-52% of the edited mask.
+                    ymin, ymax = int(high_y.min()), int(high_y.max()) + 1
+                    xmin, xmax = int(high_x.min()), int(high_x.max()) + 1
+                    pad = max(4, int(round(min(ymax - ymin, xmax - xmin) * 0.05)))
+                    ymin, xmin = max(0, ymin - pad), max(0, xmin - pad)
+                    ymax = min(source_h, ymax + pad)
+                    xmax = min(source_w, xmax + pad)
+                    region_source = "anomaly_region"
+                elif high_y.size:
+                    # A tiny high-response blob is more likely a spurious peak
+                    # than a localisation; keep the old contextual crop rather
+                    # than delivering a postage stamp far from the edit.
+                    peak_y, peak_x = np.unravel_index(
+                        int(np.argmax(map_array)), map_array.shape)
+                    side = max(128, int(round(min(source_h, source_w) * 0.5)))
+                    side = max(1, min(side, source_h, source_w))
+                    ymin = max(0, min(source_h - side,
+                                      int(round(peak_y - side / 2))))
+                    xmin = max(0, min(source_w - side,
+                                      int(round(peak_x - side / 2))))
+                    ymax, xmax = ymin + side, xmin + side
+                    region_source = "anomaly_peak"
+                else:
+                    # No high-response pixel: keep the historical contextual
+                    # peak crop instead of silently changing the view for
+                    # low-response/authentic images.
+                    peak_y, peak_x = np.unravel_index(
+                        int(np.argmax(map_array)), map_array.shape)
+                    side = max(128, int(round(min(source_h, source_w) * 0.5)))
+                    side = max(1, min(side, source_h, source_w))
+                    ymin = max(0, min(source_h - side,
+                                      int(round(peak_y - side / 2))))
+                    xmin = max(0, min(source_w - side,
+                                      int(round(peak_x - side / 2))))
+                    ymax, xmax = ymin + side, xmin + side
+                    region_source = "anomaly_peak"
             else:
                 ymin, xmin, ymax, xmax = 0, 0, source_h, source_w
                 region_source = "full_frame"
@@ -676,7 +712,7 @@ class TruForExpert(ExternalScoreExpert):
         full = (ymin, xmin, ymax, xmax) == (0, 0, source_h, source_w)
         if full:
             region_source = "full_frame"
-        if region_normalized is None or region_source == "anomaly_peak":
+        if region_normalized is None or region_source in ("anomaly_peak", "anomaly_region"):
             # Bbox edges divide by the image size; only a pixel *centre*
             # (the anomaly peak) uses size-1.  Using size-1 here made a full
             # 333x500 frame read as [0,0,1003,1002].
@@ -701,10 +737,10 @@ class TruForExpert(ExternalScoreExpert):
             title_suffix = "full frame"
             footer = ("full original-image frame; all three panels share the "
                       "same content size; do not use the frame as a local bbox")
-        elif region_source == "anomaly_peak":
-            area_label = "anomaly-peak inspection crop"
-            title_suffix = "anomaly-peak crop"
-            footer = ("anomaly-peak inspection crop from the existing map; "
+        elif region_source in ("anomaly_peak", "anomaly_region"):
+            area_label = "high-response inspection crop"
+            title_suffix = "high-response crop"
+            footer = ("high-response inspection crop from the existing map; "
                       "not a second measurement and not a predicted bbox")
         else:
             # Pixel bounds stay in the audit layout, not in the picture text:

@@ -367,15 +367,17 @@ class EvidenceTokenizer:
                             "not use [0,0,1000,1000] as a suspicious_regions "
                             "bbox; if you cannot localise, leave the list empty "
                             "and say so.")
-                    elif source == "anomaly_peak":
-                        content_area = "anomaly-peak inspection crop"
+                    elif source in ("anomaly_peak", "anomaly_region"):
+                        content_area = "high-response inspection crop"
                         visible_region = list(region)
                         inspection_note = (
                             "This crop was suggested by the existing anomaly "
-                            "map's peak; it is a candidate, not proof and not a "
-                            "second measurement. It may be used as a starting "
-                            "local region, but keep it distinct from the "
-                            "original-image content you describe.")
+                            "map's high-response region; it covers the map's "
+                            "high-response pixels (with a small context margin) "
+                            "and is a candidate, not proof and not a second "
+                            "measurement. It may be used as a starting local "
+                            "region, but keep it distinct from the original-"
+                            "image content you describe.")
                     else:
                         content_area = "requested inspection crop"
                         visible_region = list(region)
@@ -405,9 +407,10 @@ class EvidenceTokenizer:
                     "confidence-map crop. All three panels show the SAME "
                     "original-image region at the same content size; titles and "
                     "legends are outside the content. If the layout says the "
-                    "inspection source is `anomaly_peak`, the crop was suggested "
-                    "by the existing anomaly map's peak; it is not a new "
-                    "measurement and not a predicted bbox. In the anomaly map, blue = "
+                    "inspection source is `anomaly_peak` or `anomaly_region`, the "
+                    "crop was suggested by the existing anomaly map's response; "
+                    "it is not a new measurement and not a predicted bbox. In "
+                    "the anomaly map, blue = "
                     "low response and red = high response. In the confidence "
                     "map, blue = low reliability and red = high reliability. "
                     "For the SAME region, first say what is visible in the "

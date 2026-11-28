@@ -368,8 +368,12 @@ class ForensicStateMachine:
         untried_experts: List[str] = []
         failed_experts: List[str] = []
         abstention_cited_untried_expert: List[str] = []
-        # One evidence-coverage correction per session, with both sides kept.
+        # One evidence-coverage correction per session, plus one narrow
+        # follow-up after a newly executed measurement leaves only the
+        # generated-whole/local label relation unresolved.  Both sides kept.
         coverage_check_sent = False
+        coverage_check_count = 0
+        coverage_call_count = 0
         coverage_original_output: Optional[str] = None
         coverage_feedback: Optional[str] = None
         coverage_original_issues: List[dict] = []
@@ -686,10 +690,13 @@ class ForensicStateMachine:
                             render_region = getattr(
                                 expert, "render_region_artifacts", None)
                             if callable(render_region):
-                                # No bbox means no model-selected region:
-                                # let TruFor show an anomaly-peak inspection
-                                # crop from the existing map, not the full
-                                # frame (which the model copied as a bbox).
+                                # No bbox means no model-selected region.
+                                # Let TruFor choose a high-response crop from
+                                # the existing map.  The old peak-only crop
+                                # covered 26-52% of the edited mask in the
+                                # 2026-11-28 validation; the new crop covers
+                                # the high-response bounding box.  A model
+                                # bbox still selects its diagnostic crop.
                                 region_arg = (abs_bbox if rel_bbox is not None
                                               else None)
                                 normalized_arg = (
@@ -947,11 +954,22 @@ class ForensicStateMachine:
                         list(self._experts))
                     if HALTING_POLICY == "v3" and accepted else []
                 )
+                actionable_now = actionable_coverage(coverage_now)
+                second_label_only = (
+                    coverage_check_sent
+                    and coverage_check_count < 2
+                    and expert_call_count > coverage_call_count
+                    and actionable_now
+                    and all(issue.get("code") == "generated_whole_local_not_applicable"
+                            for issue in actionable_now)
+                )
                 if (HALTING_POLICY == "v3" and accepted
-                        and actionable_coverage(coverage_now)
-                        and not coverage_check_sent
+                        and actionable_now
+                        and (not coverage_check_sent or second_label_only)
                         and model_turn_count < MAX_MODEL_TURNS):
                     coverage_check_sent = True
+                    coverage_check_count += 1
+                    coverage_call_count = expert_call_count
                     coverage_original_output = raw_output
                     coverage_original_issues = coverage_now
                     coverage_feedback = coverage_note(coverage_now)

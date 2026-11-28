@@ -332,14 +332,15 @@ def test_coverage_correction_keeps_original_feedback_and_reanswer(tmp_path):
            ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
            ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
            ' "report": "整图 AI 生成；局部未发现篡改。"}</verdict>')
-    corrected = ('<reasoning>局部问题未测量。</reasoning>\n'
+    corrected = ('<reasoning>局部问题已补测。</reasoning>\n'
                  '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
                  ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
                  ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
-                 ' "report": "整图 AI 生成；TruFor 未测量，局部不确定。"}</verdict>')
+                 ' "report": "整图 AI 生成；TruFor 已测但局部不确定。"}</verdict>')
     fsm._mllm = ScriptedMLLM([
         "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
         bad,
+        "<planning>\nSuspected Region: none\n</planning>\n<call_trufor>",
         corrected,
     ])
     fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
@@ -398,7 +399,7 @@ def test_region_triptych_full_frame_uses_closed_normalized_edges():
     assert layout["anomaly_map"]["source_size"] == [64, 80]
 
 
-def test_region_triptych_without_bbox_uses_anomaly_peak_crop():
+def test_region_triptych_without_bbox_uses_high_response_crop():
     import numpy as np
 
     from experts.trufor import MockTruForExpert
@@ -408,8 +409,52 @@ def test_region_triptych_without_bbox_uses_anomaly_peak_crop():
     image = np.zeros((64, 80, 3), dtype=np.uint8)
     panels, layout = expert.render_region_artifacts(image, None, None)
     anomaly = layout["anomaly_map"]
-    assert anomaly["region_source"] == "anomaly_peak"
+    assert anomaly["region_source"] == "anomaly_region"
     assert anomaly["region_normalized_1000"] != [0, 0, 1000, 1000]
     assert anomaly["region_pixels"] != [0, 0, 64, 80]
     assert len({tuple(item["content_box"]) for item in layout.values()}) == 1
     assert set(panels) == {"original_crop", "anomaly_map", "confidence_map"}
+
+
+def test_second_label_correction_after_a_new_trufor_measurement(tmp_path):
+    """A call triggered by coverage may expose the generated/local label issue.
+
+    The session allows one narrow second correction only after the new
+    measurement exists; it must not be a general extra correction budget.
+    """
+    from main import build_pipeline
+    from experts.probe_dino import MockProbeExpert
+    from experts.trufor import MockTruForExpert
+    from tests.test_controller import ScriptedMLLM
+
+    image = tmp_path / "second-label.png"
+    Image.new("RGB", (64, 64), (90, 120, 60)).save(image)
+    fsm = build_pipeline("mock", mode="probe_then_trufor",
+                         tools=["probe", "trufor"])
+    fsm._experts["probe_dino_expert"] = MockProbeExpert(score=0.99)
+    fsm._experts["trufor_expert"] = MockTruForExpert(score=0.1, device="cpu")
+    fsm._mllm = ScriptedMLLM([
+        "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
+        '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
+        ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
+        ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
+        ' "report": "整图 AI；局部未测。"}</verdict>',
+        "<planning>\nSuspected Region: none\n</planning>\n<call_trufor>",
+        '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
+        ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
+        ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert",'
+        ' "trufor_expert"], "report": "整图 AI；TruFor 低分。"}</verdict>',
+        '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
+        ' "local_manipulation": "Not applicable", "suspicious_regions": [],'
+        ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert",'
+        ' "trufor_expert"], "report": "整图生成，局部不适用。"}</verdict>',
+    ])
+    fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
+    result = fsm.run(str(image), "Fake")
+    assert result["final_verdict"]["local_manipulation"] == "Not applicable"
+    check = result["final_verdict"]["coverage_check"]
+    assert check["status"] == "pass_after_correction"
+    assert check["remaining_issues"] == []
+    notes = [turn["value"] for turn in result["conversation"]
+             if turn["from"] == "user" and "证据覆盖检查" in turn["value"]]
+    assert len(notes) == 2
