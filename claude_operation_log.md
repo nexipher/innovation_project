@@ -1381,3 +1381,15 @@
 * **涉及/修改的文件清单**：新增 `scripts/verify_editbench_local_edit_samples.py`、`sft_data/editbench_verification_20261128/{manifest.json,report.md,sources.csv,previews/**,review/index.html}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：5/5 组 verified；审核页 5 张预览路径校验通过；raw 仅临时保留在 `/tmp/editbench_samples`，项目内只提交 preview/manifest/report。
 * **置信度或遗留待办（TODO）**：mask 外不是逐位相同（0.13–0.31% 像素 >5 级，均值 <1），若要求严格 bit-exact 则不满足；无独立 masked-input。等用户确认 5 组预览后，再决定是否扩到更多组或进入 TruFor/Agent。
+
+### [2026-11-28 20:53] - §13.18 EditBench 5 对：独立 TruFor
+
+* **当前操作动作**：复用 EditBench 5 对核验样本和现有 TruFor 适配器；把 reference 与 `im_generated_mask-rich_1` 统一转 JPEG q95，逐张跑完 10 张，按 mask 评估定位；未跑 Agent、未安装 PIM。
+* **对应计划锚点**：`plan.md` §13.18；`sft_data/editbench_verification_20261128/analysis/trufor/`。
+* **输入**：5 对、10 张；reference 1024×1024 RGBA→RGB，编辑版 1024×1024 RGB；Pillow quality=95, subsampling=2；两两 JPEG quantization tables 一致；mask 1024×1024 二值。原始 PNG 优先复用 `/tmp/editbench_samples`。
+* **运行**：TruFor 批量 10 张，第一次 batch 13.8 s（1.38 s/张）；分数缓存后重算指标。指标脚本首次因 mask 为 bool 触发 `cv2.resize` Bad argument；TruFor 10 张已完成并缓存，mask 转 uint8 后重算，模型分数未变。
+* **结果**：编辑图 score 检出 **1/5**（sawfish 0.601）；定位 IoU>=0.1 **4/5**（狗除外）；检出且定位 **1/5**；mask 高响应>=0.1 **4/5**。原图 score 误报 **1/5**（sawfish 0.947）；原图 score+定位误报 **0/5**；原图 mask IoU>=0.1/高响应>=0.1 各 **1/5**（three，原图 IoU 0.537、高响应 0.788）。
+* **低分但热图覆盖**：pig（0.115/IoU 0.187）、triangle（0.469/0.293）、three（0.336/0.420；原图已高响应，不能单独作为编辑证据）。dog score 0.473 但 IoU 0、mask 高响应 0，属于未定位。
+* **涉及/修改的文件清单**：新增 `scripts/analyze_trufor_editbench_pairs.py`；`sft_data/editbench_verification_20261128/analysis/trufor/{per_pair.csv,per_image.csv,trufor_analysis.json,report.md,inputs/**,trufor_maps/**,previews/**,representatives/index.html}`、`plan.md`、`claude_operation_log.md`。`trufor_raw/` 81 MB 缓存删除未提交；TruFor 输出合计约 16 MB。
+* **执行结果与验证状态**：10/10 完成，0 失败；5 张代表热图路径校验通过；CSV 5 行逐对、10 行逐图。
+* **置信度或遗留待办（TODO）**：小样本（5 对），不能当总体结论；sawfish 原图 score 高但原图热图不覆盖 mask，属于图级误报；three 原图已高响应，定位证据不纯。未改规则、未训练、未跑 Agent/PIM。

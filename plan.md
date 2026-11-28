@@ -2851,3 +2851,25 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   sources.csv,previews/**,review/index.html}`；`scripts/verify_editbench_local_edit_samples.py`。
 - **边界**：本轮只做数据核验，未跑 TruFor/Agent，未下载整包，未改规则/训练。
 
+
+### 13.18 2026-11-28 EditBench 5 对：独立 TruFor
+
+- **输入**：`sft_data/editbench_verification_20261128/manifest.json` 的 5 对
+  EditBench generated 样本；reference 与 `im_generated_mask-rich_1` 各自从 PNG
+  统一转成 JPEG q95（quality=95, subsampling=2），TruFor 只读 JPEG；mask 只用于
+  评估定位。沿用 score>=0.5、IoU>=0.1；未安装 PIM，未跑 Agent。
+- **结果**：
+  - 编辑图 score 检出 **1/5**（`eb_gen_015_sawfish` 0.601）；定位命中
+    **4/5**（除 `eb_gen_025_dog`）；检出且定位 **1/5**；mask 高响应>=0.1 **4/5**。
+  - 原图 score 误报 **1/5**（sawfish 0.947）；原图 score+定位误报 **0/5**；
+    原图 mask IoU>=0.1（不看 score）**1/5**、高响应>=0.1 **1/5**
+    （`eb_gen_114_three`，原图 IoU 0.537、高响应 0.788）。
+  - 低分但热图覆盖编辑区：`eb_gen_029_pig`（0.115，IoU 0.187）、
+    `eb_gen_064_triangle`（0.469，IoU 0.293）、`eb_gen_114_three`
+    （0.336，IoU 0.420；但原图同区域已高响应，不能单独当作编辑证据）。
+  - `eb_gen_025_dog` score 0.473 接近阈值，但 IoU 0、mask 高响应 0，属于未定位。
+- **产出**：`analysis/trufor/{per_pair.csv,per_image.csv,trufor_analysis.json,report.md,
+  inputs/,trufor_maps/,previews/,representatives/index.html}`；新增
+  `scripts/analyze_trufor_editbench_pairs.py`。`trufor_raw/` 81 MB npz 缓存未保留。
+- **边界**：只跑独立 TruFor；未跑 Agent/PIM，未改规则/训练。EditBench mask 外
+  非逐位 bit-exact，沿用上一轮核验结论。
