@@ -1,0 +1,211 @@
+{
+  "index": 7,
+  "sample_id": "p04_glide_556_text_add__original",
+  "pair_id": "p04_glide_556_text_add",
+  "variant": "original",
+  "edit_type": "add",
+  "edit_method": "copy_existing_text_block",
+  "source_id": "Glide/GLIDE_1000_200_05_556_glide_00127",
+  "generator": "Glide",
+  "group": "pair_original",
+  "family": "Glide",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 高分（0.872）表明整图为 AI 生成；主要限制：TruFor 低分（0.150）未发现局部篡改，但整图 AI 生成已足以支持整体 Fake。",
+  "primary_evidence": [
+    "E-9d1bf09db5",
+    "E-c5bc71512b"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "pass_after_correction",
+    "issues": [
+      {
+        "code": "local_uncertain_without_trufor",
+        "severity": "defect",
+        "field": "local_manipulation",
+        "value": "Uncertain",
+        "message": "local_manipulation is Uncertain while TruFor is still callable and unmeasured; the local question was not actually investigated"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；调用后若 TruFor 低分/无高响应，局部写 Not tampered；若有同区域高响应，按内容变化写 Tampered。不要在没有局部测量时把 Uncertain 当作已调查；整图 AI-generated 不会使局部变成 Not applicable。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nPROBE 返回的分数为 0.872，远高于其 0.5 的阈值，指向 AI 生成。该分数是模型对“AI 生成”类别的预测概率，未经校准，且仅用于支持整图生成判断。视觉上，图像呈现为浏览器截图，无明显 AI 生成或局部编辑的迹象，但 PROBE 的高分表明其模型认为该图像为 AI 生成。由于 TruFor 尚未测量，无法判断是否存在局部编辑。根据规则，若整图生成已确定为 AI 生成，则整体结论必须为 Fake，无论局部编辑状态如何。因此，尽管局部编辑尚未测量，但整图生成的高分已足以支持整体 Fake 的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-9d1bf09db5\"], \"report\": \"主要支持：PROBE 高分（0.872）表明整图为 AI 生成；主要限制：局部编辑未测量，无法确认是否被篡改。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nPROBE 返回的分数为 0.872，远高于其 0.5 的阈值，指向 AI 生成。TruFor 返回的局部篡改分数为 0.150，低于其 0.5 的诊断阈值，且其异常图和置信度图显示该区域响应较低，可靠性中等。这表明没有发现明显的局部篡改迹象。根据规则，整图生成为 AI 生成时，整体结论必须为 Fake，无论局部编辑状态如何。因此，尽管局部编辑未发现明显篡改，但整图生成的高分已足以支持整体 Fake 的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-9d1bf09db5\", \"E-c5bc71512b\"], \"report\": \"主要支持：PROBE 高分（0.872）表明整图为 AI 生成；主要限制：TruFor 低分（0.150）未发现局部篡改，但整图 AI 生成已足以支持整体 Fake。\"}\n</verdict>",
+    "remaining_issues": []
+  },
+  "joint_verdict_issues": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 45.0,
+  "evidence": [
+    {
+      "evidence_id": "E-9d1bf09db5",
+      "source": "probe_dino_expert",
+      "strength": 0.8721,
+      "raw_metric": 0.872057,
+      "model_image_layout": null
+    },
+    {
+      "evidence_id": "E-c5bc71512b",
+      "source": "trufor_expert",
+      "strength": 0.1503,
+      "raw_metric": 0.150256,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — high-response crop",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            49,
+            81,
+            177,
+            209
+          ],
+          "region_normalized_1000": [
+            191,
+            316,
+            691,
+            816
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_195039_original/model_original_crop_E-c5bc71512b.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            49,
+            81,
+            177,
+            209
+          ],
+          "region_normalized_1000": [
+            191,
+            316,
+            691,
+            816
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_195039_original/model_anomaly_map_E-c5bc71512b.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            49,
+            81,
+            177,
+            209
+          ],
+          "region_normalized_1000": [
+            191,
+            316,
+            691,
+            816
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_195039_original/model_confidence_map_E-c5bc71512b.png"
+        }
+      }
+    }
+  ],
+  "trace_path": "sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_195039_original.json",
+  "failed_experts": []
+}

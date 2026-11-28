@@ -1,0 +1,216 @@
+{
+  "index": 8,
+  "sample_id": "p04_glide_556_text_add__edited",
+  "pair_id": "p04_glide_556_text_add",
+  "variant": "edited",
+  "edit_type": "add",
+  "edit_method": "copy_existing_text_block",
+  "source_id": "Glide/GLIDE_1000_200_05_556_glide_00127",
+  "generator": "Glide",
+  "group": "pair_edited",
+  "family": "Glide",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "Medium",
+  "report": "主要支持：PROBE 高分（0.85）支持整图 AI 生成，TruFor 低分支持无局部篡改。主要限制：PROBE 未校准本项目数据，视觉证据支持真实来源，可能为误报。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "pass_after_correction",
+    "issues": [
+      {
+        "code": "overall_real_with_unmeasured_whole",
+        "severity": "defect",
+        "message": "overall verdict is Real while PROBE is unmeasured and still available; an absent local finding is not positive evidence of authentic capture"
+      },
+      {
+        "code": "whole_image_without_probe",
+        "severity": "defect",
+        "field": "whole_image_generation",
+        "value": "Real",
+        "message": "whole_image_generation is definite without a PROBE measurement; the whole-image question is unmeasured"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- 总体 verdict=Real，但 PROBE 仍可调用却未测量（整图分项可能写成了 Real 或 Uncertain）。局部“未发现篡改”只排除了一个方向，不能单独证明整图真实；请调用 PROBE，或说明已有的正向真实证据，或把总体改为 Uncertain。\n- whole_image_generation=Real，但本会话没有 PROBE 的有效测量。局部证据可以支持总体 Fake，但整图生成分项应写 Uncertain，或明确说明非 PROBE 的依据边界；不要把 TruFor 的局部高分改写成整图生成结论。整图生成与局部编辑独立，不要因为整图改为 Uncertain 就把局部分项改成 Not applicable；局部仍按 TruFor/同区域内容写 Tampered、Not tampered 或 Uncertain。若局部只是 Not tampered，总体 Real 也仍缺正向真实证据，必须同时改总体或补测 PROBE。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nThe TruFor expert returned a manipulation_anomaly_score of 0.147942, which is below its diagnostic threshold of 0.5. This score indicates no strong local manipulation response, and the anomaly map shows no high-response regions. The confidence map indicates high reliability in the inspected region [305, 180, 805, 680], but since the anomaly response is low, this does not support local tampering. The visual content in the original crop appears consistent with a standard browser screenshot, with no visible artifacts suggesting editing. The whole-image generation question (PROBE) has not been measured yet, but since the local question is resolved as Not tampered, and the visual evidence supports a real capture, the whole-image generation can be assessed independently. The PROBE expert is still callable and should be called to determine if the image is AI-generated. However, since the local question is already resolved and the visual evidence supports a real capture, calling PROBE would not materially change the conclusion that the image is not locally tampered. The overall verdict can be concluded based on the TruFor measurement and visual observation.\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"主要支持：TruFor 未检测到局部篡改，且图像外观符合真实截图。主要限制：尚未测量整图生成，但视觉证据支持真实来源。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nThe PROBE expert returned an aigi_discriminator_score of 0.853796, which is above its official threshold of 0.5, indicating a high likelihood of AI-generated content. The TruFor expert returned a manipulation_anomaly_score of 0.147942, which is below its diagnostic threshold, indicating no strong local manipulation response. The visual content appears consistent with a standard browser screenshot, with no visible artifacts suggesting editing. The whole-image generation question is now resolved by PROBE, and the local question is resolved by TruFor. The overall verdict must be Fake because the evidence supports at least one of whole-image generation or target local tampering. The local question is Not tampered, but the whole-image generation is AI-generated, which makes the overall verdict Fake. The certainty is Medium because the PROBE score is high but uncalibrated on this project's target data, and the visual evidence supports a real capture, which could be a false positive.\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"主要支持：PROBE 高分（0.85）支持整图 AI 生成，TruFor 低分支持无局部篡改。主要限制：PROBE 未校准本项目数据，视觉证据支持真实来源，可能为误报。\"}\n</verdict>",
+    "remaining_issues": []
+  },
+  "joint_verdict_issues": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 54.8,
+  "evidence": [
+    {
+      "evidence_id": "E-992ff3d02d",
+      "source": "trufor_expert",
+      "strength": 0.1479,
+      "raw_metric": 0.147942,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — high-response crop",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            78,
+            46,
+            206,
+            174
+          ],
+          "region_normalized_1000": [
+            305,
+            180,
+            805,
+            680
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_195124_edited/model_original_crop_E-992ff3d02d.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            78,
+            46,
+            206,
+            174
+          ],
+          "region_normalized_1000": [
+            305,
+            180,
+            805,
+            680
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_195124_edited/model_anomaly_map_E-992ff3d02d.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            78,
+            46,
+            206,
+            174
+          ],
+          "region_normalized_1000": [
+            305,
+            180,
+            805,
+            680
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_195124_edited/model_confidence_map_E-992ff3d02d.png"
+        }
+      }
+    },
+    {
+      "evidence_id": "E-0a8551cf06",
+      "source": "probe_dino_expert",
+      "strength": 0.8538,
+      "raw_metric": 0.853796,
+      "model_image_layout": null
+    }
+  ],
+  "trace_path": "sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_195124_edited.json",
+  "failed_experts": []
+}

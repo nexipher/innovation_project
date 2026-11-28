@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GenImage 配对代表案例 — TruFor / Agent</title>
+<style>
+body { font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+       max-width: 1500px; margin: 24px auto; padding: 0 20px; }
+h1 { margin-bottom: 4px; }
+.meta { color: #666; }
+article { border-top: 1px solid #bbb; padding: 16px 0; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+figure { margin: 0; }
+figure img { width: 100%; max-height: 60vh; object-fit: contain;
+             background: #111; border-radius: 4px; }
+figcaption { color: #666; font-size: 13px; margin-top: 4px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+</style></head><body>
+<h1>GenImage 配对代表案例 — TruFor / Agent</h1>
+<p class="meta">同一批 10 对、20 张图；TruFor 独立结果与 Agent 结案记录对照。
+异常图/可靠性图为编辑版整图；mask 单独展示。</p>
+
+<article id="p02_wukong_tag_add">
+<h2>p02_wukong_tag_add</h2>
+<p class="meta">Wukong · add ·
+在衣架右侧挂上 SIZE M 价格吊牌</p>
+<p><b>TruFor</b>：原图 score 0.060 → 编辑版 0.206
+（Δ +0.146）；mask mean 0.163 →
+0.569；编辑版 IoU 0.602，
+mask 高响应 0.602。
+<b>分类</b>：usable_but_missed。</p>
+<p><b>Agent 原图</b>：whole AI-generated / local
+Not tampered / overall Fake，
+calls 2，TruFor called True。</p>
+<p><b>Agent 编辑版</b>：whole AI-generated / local
+Not tampered / overall Fake，
+calls 2，TruFor called True
+(0.2061, metric
+0.20611)。</p>
+<p><b>结案报告</b>：主要支持：PROBE高分指向AI生成；主要限制：TruFor未发现局部篡改，但不否定AI生成。</p>
+<p class="meta">trace: <code>sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_194841_edited.json</code></p>
+<div class="grid">
+<figure><img src="../../../pairs/p02_wukong_tag_add/original.jpg" loading="lazy"><figcaption>原图</figcaption></figure>
+<figure><img src="../../../pairs/p02_wukong_tag_add/edited.jpg" loading="lazy"><figcaption>编辑版</figcaption></figure>
+<figure><img src="../../../pairs/p02_wukong_tag_add/mask.png" loading="lazy"><figcaption>mask（白色为编辑区域）</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p02_wukong_tag_add__edited__anomaly_map.png" loading="lazy"><figcaption>编辑版异常图</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p02_wukong_tag_add__edited__confidence_map.png" loading="lazy"><figcaption>编辑版可靠性图</figcaption></figure>
+</div>
+</article>
+<article id="p01_vqdm_box_label_add">
+<h2>p01_vqdm_box_label_add</h2>
+<p class="meta">VQDM · add ·
+在纸箱正面添加白色 FRAGILE 物流标签</p>
+<p><b>TruFor</b>：原图 score 0.317 → 编辑版 0.095
+（Δ -0.222）；mask mean 0.002 →
+0.205；编辑版 IoU 0.124，
+mask 高响应 0.124。
+<b>分类</b>：usable_but_missed。</p>
+<p><b>Agent 原图</b>：whole AI-generated / local
+Uncertain / overall Fake，
+calls 2，TruFor called True。</p>
+<p><b>Agent 编辑版</b>：whole AI-generated / local
+Not tampered / overall Fake，
+calls 2，TruFor called True
+(0.0949, metric
+0.094866)。</p>
+<p><b>结案报告</b>：主要支持：PROBE 高分（0.9963）支持 AI 生成；主要限制：TruFor 低分（0.0949）无强局部响应，不证明未被篡改，但也不支持局部篡改。</p>
+<p class="meta">trace: <code>sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_194733_edited.json</code></p>
+<div class="grid">
+<figure><img src="../../../pairs/p01_vqdm_box_label_add/original.jpg" loading="lazy"><figcaption>原图</figcaption></figure>
+<figure><img src="../../../pairs/p01_vqdm_box_label_add/edited.jpg" loading="lazy"><figcaption>编辑版</figcaption></figure>
+<figure><img src="../../../pairs/p01_vqdm_box_label_add/mask.png" loading="lazy"><figcaption>mask（白色为编辑区域）</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p01_vqdm_box_label_add__edited__anomaly_map.png" loading="lazy"><figcaption>编辑版异常图</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p01_vqdm_box_label_add__edited__confidence_map.png" loading="lazy"><figcaption>编辑版可靠性图</figcaption></figure>
+</div>
+</article>
+<article id="p05_biggan_stick_delete">
+<h2>p05_biggan_stick_delete</h2>
+<p class="meta">BigGAN · delete ·
+删除画面中央的细木棍</p>
+<p><b>TruFor</b>：原图 score 0.163 → 编辑版 0.307
+（Δ +0.144）；mask mean 0.017 →
+0.086；编辑版 IoU 0.000，
+mask 高响应 0.000。
+<b>分类</b>：trufor_not_localized。</p>
+<p><b>Agent 原图</b>：whole AI-generated / local
+Not tampered / overall Fake，
+calls 2，TruFor called True。</p>
+<p><b>Agent 编辑版</b>：whole Real / local
+Not tampered / overall Real，
+calls 2，TruFor called True
+(0.3073, metric
+0.307271)。</p>
+<p><b>结案报告</b>：PROBE 支持整图为 Real（0.490 &lt; 0.5）；TruFor 支持局部无篡改（0.307 &lt; 0.5）。两者测量不同问题，不能合并成相互验证。主要限制：PROBE 分数处于中间区间，但方向明确为 Real；TruFor 分数未达阈值，仅属候选，但无高响应区域。</p>
+<p class="meta">trace: <code>sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_195258_edited.json</code></p>
+<div class="grid">
+<figure><img src="../../../pairs/p05_biggan_stick_delete/original.jpg" loading="lazy"><figcaption>原图</figcaption></figure>
+<figure><img src="../../../pairs/p05_biggan_stick_delete/edited.jpg" loading="lazy"><figcaption>编辑版</figcaption></figure>
+<figure><img src="../../../pairs/p05_biggan_stick_delete/mask.png" loading="lazy"><figcaption>mask（白色为编辑区域）</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p05_biggan_stick_delete__edited__anomaly_map.png" loading="lazy"><figcaption>编辑版异常图</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p05_biggan_stick_delete__edited__confidence_map.png" loading="lazy"><figcaption>编辑版可靠性图</figcaption></figure>
+</div>
+</article>
+<article id="p07_glide_830_caption_delete">
+<h2>p07_glide_830_caption_delete</h2>
+<p class="meta">Glide · delete ·
+删除页面中部的说明文字块</p>
+<p><b>TruFor</b>：原图 score 0.184 → 编辑版 0.317
+（Δ +0.133）；mask mean 0.103 →
+0.041；编辑版 IoU 0.000，
+mask 高响应 0.000。
+<b>分类</b>：trufor_not_localized。</p>
+<p><b>Agent 原图</b>：whole Real / local
+Not tampered / overall Real，
+calls 2，TruFor called True。</p>
+<p><b>Agent 编辑版</b>：whole Real / local
+Not tampered / overall Real，
+calls 2，TruFor called True
+(0.3174, metric
+0.317441)。</p>
+<p><b>结案报告</b>：整图生成判别器得分低（0.25），支持真实图像；局部编辑检测无异常（0.32），支持未篡改。</p>
+<p class="meta">trace: <code>sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_195659_edited.json</code></p>
+<div class="grid">
+<figure><img src="../../../pairs/p07_glide_830_caption_delete/original.jpg" loading="lazy"><figcaption>原图</figcaption></figure>
+<figure><img src="../../../pairs/p07_glide_830_caption_delete/edited.jpg" loading="lazy"><figcaption>编辑版</figcaption></figure>
+<figure><img src="../../../pairs/p07_glide_830_caption_delete/mask.png" loading="lazy"><figcaption>mask（白色为编辑区域）</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p07_glide_830_caption_delete__edited__anomaly_map.png" loading="lazy"><figcaption>编辑版异常图</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p07_glide_830_caption_delete__edited__confidence_map.png" loading="lazy"><figcaption>编辑版可靠性图</figcaption></figure>
+</div>
+</article>
+<article id="p03_sd14_sphere_add">
+<h2>p03_sd14_sphere_add</h2>
+<p class="meta">SD14 · add ·
+把左下空白木纹处补入一颗同图白色球体（含阴影）</p>
+<p><b>TruFor</b>：原图 score 0.436 → 编辑版 0.446
+（Δ +0.011）；mask mean 0.000 →
+0.133；编辑版 IoU 0.036，
+mask 高响应 0.039。
+<b>分类</b>：trufor_not_localized。</p>
+<p><b>Agent 原图</b>：whole AI-generated / local
+Uncertain / overall Fake，
+calls 2，TruFor called True。</p>
+<p><b>Agent 编辑版</b>：whole AI-generated / local
+Not tampered / overall Fake，
+calls 2，TruFor called True
+(0.4465, metric
+0.446486)。</p>
+<p><b>结案报告</b>：主要支持：PROBE高分确认AI生成；主要限制：TruFor低分且无高响应区域，局部未被编辑。</p>
+<p class="meta">trace: <code>sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_194959_edited.json</code></p>
+<div class="grid">
+<figure><img src="../../../pairs/p03_sd14_sphere_add/original.jpg" loading="lazy"><figcaption>原图</figcaption></figure>
+<figure><img src="../../../pairs/p03_sd14_sphere_add/edited.jpg" loading="lazy"><figcaption>编辑版</figcaption></figure>
+<figure><img src="../../../pairs/p03_sd14_sphere_add/mask.png" loading="lazy"><figcaption>mask（白色为编辑区域）</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p03_sd14_sphere_add__edited__anomaly_map.png" loading="lazy"><figcaption>编辑版异常图</figcaption></figure>
+<figure><img src="../../trufor/trufor_maps/p03_sd14_sphere_add__edited__confidence_map.png" loading="lazy"><figcaption>编辑版可靠性图</figcaption></figure>
+</div>
+</article>
+</body></html>

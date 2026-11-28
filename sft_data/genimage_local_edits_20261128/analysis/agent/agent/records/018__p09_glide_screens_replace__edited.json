@@ -1,0 +1,202 @@
+{
+  "index": 18,
+  "sample_id": "p09_glide_screens_replace__edited",
+  "pair_id": "p09_glide_screens_replace",
+  "variant": "edited",
+  "edit_type": "replace",
+  "edit_method": "copy_existing_screen",
+  "source_id": "Glide/GLIDE_1000_200_04_466_glide_00039",
+  "generator": "Glide",
+  "group": "pair_edited",
+  "family": "Glide",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 高分（0.997）表明整图为AI生成；主要限制：TruFor 低分（0.128）表明无局部篡改，但不影响整体Fake结论。",
+  "primary_evidence": [
+    "probe_dino_expert"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "pass",
+    "issues": [],
+    "feedback": null,
+    "original_output": null,
+    "corrected_output": null,
+    "remaining_issues": []
+  },
+  "joint_verdict_issues": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 44.45,
+  "evidence": [
+    {
+      "evidence_id": "E-5f3fae8f69",
+      "source": "trufor_expert",
+      "strength": 0.1279,
+      "raw_metric": 0.127901,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — high-response crop",
+          "content_box": [
+            0,
+            38,
+            32,
+            71
+          ],
+          "canvas_size": [
+            237,
+            133
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_region",
+          "region_pixels": [
+            78,
+            12,
+            111,
+            44
+          ],
+          "region_normalized_1000": [
+            305,
+            47,
+            434,
+            172
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            33,
+            32
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_200123_edited/model_original_crop_E-5f3fae8f69.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            32,
+            71
+          ],
+          "canvas_size": [
+            237,
+            133
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_region",
+          "region_pixels": [
+            78,
+            12,
+            111,
+            44
+          ],
+          "region_normalized_1000": [
+            305,
+            47,
+            434,
+            172
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            33,
+            32
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_200123_edited/model_anomaly_map_E-5f3fae8f69.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            32,
+            71
+          ],
+          "canvas_size": [
+            237,
+            133
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_region",
+          "region_pixels": [
+            78,
+            12,
+            111,
+            44
+          ],
+          "region_normalized_1000": [
+            305,
+            47,
+            434,
+            172
+          ],
+          "source_size": [
+            256,
+            256
+          ],
+          "map_size": [
+            256,
+            256
+          ],
+          "crop_size": [
+            33,
+            32
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_200123_edited/model_confidence_map_E-5f3fae8f69.png"
+        }
+      }
+    },
+    {
+      "evidence_id": "E-9a24622241",
+      "source": "probe_dino_expert",
+      "strength": 0.997,
+      "raw_metric": 0.996955,
+      "model_image_layout": null
+    }
+  ],
+  "trace_path": "sft_data/genimage_local_edits_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_200123_edited.json",
+  "failed_experts": []
+}

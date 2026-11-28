@@ -1356,3 +1356,15 @@
 * **涉及/修改的文件清单**：`scripts/build_genimage_local_edit_pairs.py`、`tests/test_genimage_local_edit_pairs.py`、`sft_data/genimage_local_edits_20261128/{manifest.json,README.md,selection_audit.csv,encode_audit.csv,pairs/**,review/index.html}`、`plan.md`。
 * **执行结果与验证状态**：10 对、35 个数据文件；批量校验测试 2 passed；审核页 30 个图片引用全部存在；未使用 GPU。
 * **置信度或遗留待办（TODO）**：编辑自然度和 mask 对齐需人工复核；p03 球体、p09 屏幕替换、p10 文本块替换相对 subtle，复核不通过可丢弃/重做。未跑 TruFor/Agent/Qwen，未改专家或阈值，未制作新的训练/验证数据，未碰 test。
+
+### [2026-11-28 20:05] - §13.16 10 对生成/局部编辑：独立 TruFor + Agent
+
+* **当前操作动作**：用 `sft_data/genimage_local_edits_20261128/manifest.json` 的 10 对、20 张图，先独立跑 TruFor，再用当前 base Qwen3-VL Agent（PROBE+TruFor、high-response 裁剪、自主调用）跑同一批图；未改规则、未训练。
+* **对应计划锚点**：`plan.md` §13.16；`sft_data/genimage_local_edits_20261128/analysis/`。
+* **环境**：RTX 4080 SUPER 32760 MiB；cgroup 66.5 GB；TruFor/PROBE/Qwen 本地可用。TruFor 批量 20 张 cold 8.62 s（0.43 s/张），无失败；Agent 20/20、0 失败，1012.8 s，peak allocated 21.487 GB / reserved 22.630 GB。
+* **独立 TruFor**：编辑版 score>=0.5 **0/10**；IoU>=0.1 **2/10**（p01 0.124、p02 0.602）；mask 高响应>=0.1 **2/10**（同 p01、p02）；原图 score 误报 **0/10**、同区域定位误报 **0/10**。p05 mask 占 45.5% 面积，score 0.163→0.307、mask mean 0.017→0.086、IoU 0，单列。
+* **Agent**：整图 AI **17/20**（原图 9/10、编辑版 8/10）；错误为 p05 编辑版（PROBE 0.490→Real）、p07 原图/编辑版（PROBE 0.25→Real）。编辑版局部 Tampered **0/10**；both **0/10**；编辑版局部 Uncertain 0/10；原图局部误报 **0/10**；原图局部 Uncertain 2/10（p01、p03）；总体弃权 **0/20**；专家调用 40 次（2.0/图），TruFor 调用 20/20。
+* **错因分桶**：`usable_but_missed` 2（p01、p02：map 高响应 12.4%/60.2%、IoU 0.124/0.602，Agent 调用 TruFor 仍写 Not tampered）；`trufor_not_localized` 8（p03–p10；p03 score 0.446 但 IoU 0.036、高响应 3.9%）；`agent_not_called` 0；`detected` 0；`detected_without_trufor_evidence` 0。
+* **涉及/修改的文件清单**：新增 `scripts/{analyze_trufor_local_edit_pairs,run_local_edit_agent,compare_local_edit_pairs}.py`；`sft_data/genimage_local_edits_20261128/analysis/{trufor/**,agent/**,compare/**}`；`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：TruFor 20/20、Agent 20/20、0 失败；逐对 `per_pair.csv`、逐图 `per_image.csv`、合并 `report.md`、代表案例 `representatives/index.html` 已生成；页面图片路径已校验。
+* **置信度或遗留待办（TODO）**：TruFor 图像级 score 全部未过 0.5，只有 p01/p02 的 map 达到可用定位；Agent 局部分支 0/10，且 p01/p02 属于“有可用 map 证据但未采用”。p05/p07 的整图 Real 是 PROBE 整图分支错误，不是局部误报。未改规则/阈值/训练，未扩样。下一步是否调整 TruFor token 的 map 证据呈现或 Agent 的局部决策，需另行讨论。

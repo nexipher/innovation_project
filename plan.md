@@ -2779,3 +2779,38 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 - **边界**：本轮只交付数据、manifest、审核页；未跑 TruFor/Agent/Qwen，未改
   专家权重/阈值，未制作新的训练/验证数据，未碰 test。等人工复核配对效果后再
   跑 TruFor 和 Agent。
+
+### 13.16 2026-11-28 10 对生成/局部编辑：独立 TruFor + Agent
+
+- **输入**：`sft_data/genimage_local_edits_20261128/manifest.json` 的 10 对、
+  20 张图；固定当前 high-response 裁剪、PROBE + TruFor 和原版 Qwen3-VL，
+  不改规则、不训练。
+- **独立 TruFor**：一次批量 20 张，cold 8.62 s（0.43 s/张）；无失败。
+  - 编辑版图像级 score>=0.5：**0/10**；IoU>=0.1：**2/10**（p01 0.124、
+    p02 0.602）；mask 高响应>=0.1：**2/10**（同为 p01、p02）。
+  - 原图 score 误报 **0/10**；原图同 mask 区域定位误报 **0/10**。
+  - p05 单列：mask 覆盖 45.5% 面积，score 0.163→0.307，mask mean
+    0.017→0.086，IoU 0；大范围删除未形成高响应。
+- **Agent**：20/20，0 失败，1012.8 s，peak allocated 21.487 GB；
+  每图均调用 PROBE+TruFor（40 次，2.0/图），TruFor 调用 20/20，无“没调用”。
+  - 整图 AI-generated：**17/20**（原图 9/10，编辑版 8/10）；错误为 p05
+    编辑版（PROBE 0.490→Real）、p07 原图/编辑版（PROBE 0.25→Real）。
+  - 编辑版局部 Tampered：**0/10**；编辑版同时 whole AI + local Tampered：
+    **0/10**；编辑版局部 Uncertain 0/10。
+  - 未编辑原图局部误报：**0/10**；原图局部 Uncertain **2/10**（p01、p03）；
+    20 张总体弃权 **0/20**。
+- **错因分桶**：
+  - `usable_but_missed` **2**：p01（map 高响应 12.4%、IoU 0.124）、
+    p02（60.2%、0.602）；Agent 调用了 TruFor 但仍写 local Not tampered。
+  - `trufor_not_localized` **8**：p03–p10；其中 p03 score 0.446 接近阈值，
+    但 IoU 0.036、mask 高响应 3.9%，仍不足以定位。
+  - `agent_not_called` **0**、`detected` **0**、`detected_without_trufor_evidence` **0**。
+- **关键读法**：TruFor 的图像级 score 全部未过 0.5；局部 map 只在 p01/p02
+  达到可用定位。Agent 的原图/总体分支基本正常（17/20 整图 AI），但局部
+  分支 0/10，且 p01/p02 是“有 map 证据、调用了 TruFor、仍漏检”；p05/p07
+  是整图分支错误，不是局部误报。
+- **产出**：`analysis/trufor/{per_pair.csv,report.md,trufor_analysis.json,trufor_maps/}`；
+  `analysis/agent/agent/{records.json,run_end.json,traces/}`；
+  `analysis/compare/{per_pair.csv,per_image.csv,comparison.json,report.md,representatives/index.html}`。
+- **边界**：只跑独立 TruFor 和当前 base Agent；未改规则、未训练、未扩样。
+
