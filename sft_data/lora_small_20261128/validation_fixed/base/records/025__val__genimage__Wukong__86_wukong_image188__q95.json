@@ -1,0 +1,198 @@
+{
+  "index": 25,
+  "sample_id": "val__genimage__Wukong__86_wukong_image188__q95",
+  "source_id": "Wukong/86_wukong_image188",
+  "group": "Wukong",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 高分（0.99997）支持整图AI生成，TruFor 高分（0.9832）支持局部篡改。主要限制：TruFor 未指定具体编辑内容，PROBE 未校准于本项目数据。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "pass",
+    "issues": [],
+    "feedback": null,
+    "original_output": null,
+    "corrected_output": null,
+    "remaining_issues": []
+  },
+  "joint_verdict_issues": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 40.4,
+  "evidence": [
+    {
+      "evidence_id": "E-6757ff3bdb",
+      "source": "trufor_expert",
+      "strength": 0.9832,
+      "raw_metric": 0.983158,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — full frame",
+          "content_box": [
+            0,
+            38,
+            512,
+            550
+          ],
+          "canvas_size": [
+            717,
+            612
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            512,
+            512
+          ],
+          "map_size": [
+            512,
+            512
+          ],
+          "crop_size": [
+            512,
+            512
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_153046_86_wukong_image188/model_original_crop_E-6757ff3bdb.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — full frame",
+          "content_box": [
+            0,
+            38,
+            512,
+            550
+          ],
+          "canvas_size": [
+            717,
+            612
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            512,
+            512
+          ],
+          "map_size": [
+            512,
+            512
+          ],
+          "crop_size": [
+            512,
+            512
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_153046_86_wukong_image188/model_anomaly_map_E-6757ff3bdb.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — full frame",
+          "content_box": [
+            0,
+            38,
+            512,
+            550
+          ],
+          "canvas_size": [
+            717,
+            612
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            512,
+            512
+          ],
+          "map_size": [
+            512,
+            512
+          ],
+          "crop_size": [
+            512,
+            512
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_153046_86_wukong_image188/model_confidence_map_E-6757ff3bdb.png"
+        }
+      }
+    },
+    {
+      "evidence_id": "E-b996380041",
+      "source": "probe_dino_expert",
+      "strength": 1.0,
+      "raw_metric": 0.99997,
+      "model_image_layout": null
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation_fixed/base/traces/forensic_sft_session_20261128_153046_86_wukong_image188.json",
+  "failed_experts": []
+}

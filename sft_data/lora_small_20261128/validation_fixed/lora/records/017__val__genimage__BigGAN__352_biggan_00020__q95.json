@@ -1,0 +1,220 @@
+{
+  "index": 17,
+  "sample_id": "val__genimage__BigGAN__352_biggan_00020__q95",
+  "source_id": "BigGAN/352_biggan_00020",
+  "group": "BigGAN",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 低分支持整图真实，TruFor 低分支持无局部篡改；主要限制：无视觉异常，但专家测量结果未覆盖所有可能的生成或篡改形式。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "failed",
+    "issues": [
+      {
+        "code": "overall_real_with_unmeasured_whole",
+        "severity": "defect",
+        "message": "overall verdict is Real while PROBE is unmeasured and still available; an absent local finding is not positive evidence of authentic capture"
+      },
+      {
+        "code": "whole_image_without_probe",
+        "severity": "defect",
+        "field": "whole_image_generation",
+        "value": "Real",
+        "message": "whole_image_generation is definite without a PROBE measurement; the whole-image question is unmeasured"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- 总体 verdict=Real，但 PROBE 仍可调用却未测量（整图分项可能写成了 Real 或 Uncertain）。局部“未发现篡改”只排除了一个方向，不能单独证明整图真实；请调用 PROBE，或说明已有的正向真实证据，或把总体改为 Uncertain。\n- whole_image_generation=Real，但本会话没有 PROBE 的有效测量。局部证据可以支持总体 Fake，但整图生成分项应写 Uncertain，或明确说明非 PROBE 的依据边界；不要把 TruFor 的局部高分改写成整图生成结论。若因此把整图改为 Uncertain，local_manipulation 的 Not applicable 也必须改为 Uncertain（Not applicable 只在整图 AI-generated 时成立）；若局部只是 Not tampered，总体 Real 也仍缺正向真实证据，必须同时改总体或补测 PROBE。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nTruFor 的局部篡改检测分数为 0.1087，低于其诊断阈值 0.5，且其异常图与置信度图均为全图均匀分布，无局部高响应区域。这表明当前证据不足以支持图像存在局部篡改，但该分数并非“未篡改”的证明，仅表示无强局部异常。由于图像整体无明显AI生成或局部编辑迹象，且 TruFor 未发现异常，下一步需调用 PROBE 判断整图是否为AI生成。PROBE 作为整图生成判别器，其测量结果将决定是否需要进一步分析局部编辑的必要性。当前 TruFor 的低分与高置信度（全图红色）表明其测量可靠，但不足以独立支持“未篡改”结论，需结合 PROBE 的整图生成判断。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"主要支持：TruFor 未检测到局部篡改迹象，且整图无明显AI生成特征；主要限制：PROBE 未测量，无法排除整图AI生成可能性，但当前证据倾向真实拍摄。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nPROBE 的整图生成判别分数为 0.2905，低于其阈值 0.5，指向“Real”；TruFor 的局部篡改分数为 0.1087，低于阈值，未发现局部异常。两者均未支持图像为AI生成或局部篡改，且图像视觉上无明显异常。PROBE 的低分与 TruFor 的低分相互支持，共同指向图像为真实拍摄。由于 PROBE 已测量且结果支持 Real，局部编辑检测也未发现异常，因此可得出总体结论为 Real，且整图生成为 Real，局部未篡改。两个专家的测量结果一致，且均未发现矛盾，无需进一步调查。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"主要支持：PROBE 低分支持整图真实，TruFor 低分支持无局部篡改；主要限制：无视觉异常，但专家测量结果未覆盖所有可能的生成或篡改形式。\"}\n</verdict>",
+    "remaining_issues": [
+      {
+        "code": "cross_task_mutual_validation",
+        "severity": "wording",
+        "phrase": "相互支持",
+        "message": "PROBE and TruFor answer different questions; do not call their results mutual validation/support"
+      }
+    ]
+  },
+  "joint_verdict_issues": [
+    "coverage: cross_task_mutual_validation: PROBE and TruFor answer different questions; do not call their results mutual validation/support"
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 63.85,
+  "evidence": [
+    {
+      "evidence_id": "E-a819109bb9",
+      "source": "trufor_expert",
+      "strength": 0.1087,
+      "raw_metric": 0.108726,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — full frame",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            128,
+            128
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            128,
+            128
+          ],
+          "map_size": [
+            128,
+            128
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_155539_352_biggan_00020/model_original_crop_E-a819109bb9.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — full frame",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            128,
+            128
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            128,
+            128
+          ],
+          "map_size": [
+            128,
+            128
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_155539_352_biggan_00020/model_anomaly_map_E-a819109bb9.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — full frame",
+          "content_box": [
+            0,
+            38,
+            128,
+            166
+          ],
+          "canvas_size": [
+            333,
+            228
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            128,
+            128
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            128,
+            128
+          ],
+          "map_size": [
+            128,
+            128
+          ],
+          "crop_size": [
+            128,
+            128
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_155539_352_biggan_00020/model_confidence_map_E-a819109bb9.png"
+        }
+      }
+    },
+    {
+      "evidence_id": "E-aa26ba7328",
+      "source": "probe_dino_expert",
+      "strength": 0.2905,
+      "raw_metric": 0.290482,
+      "model_image_layout": null
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation_fixed/lora/traces/forensic_sft_session_20261128_155539_352_biggan_00020.json",
+  "failed_experts": []
+}

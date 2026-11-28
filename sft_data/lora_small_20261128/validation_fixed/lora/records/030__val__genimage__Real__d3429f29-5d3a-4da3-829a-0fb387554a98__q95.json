@@ -1,0 +1,204 @@
+{
+  "index": 30,
+  "sample_id": "val__genimage__Real__d3429f29-5d3a-4da3-829a-0fb387554a98__q95",
+  "source_id": "Real/d3429f29-5d3a-4da3-829a-0fb387554a98",
+  "group": "Real",
+  "family": "GenImage_q95",
+  "ground_truth": "Real",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 低分（0.0798）支持整图真实；TruFor 低分（0.2525）支持无局部篡改。主要限制：TruFor 分数未校准，不能排除所有局部编辑，但低于阈值且无高响应区域。",
+  "primary_evidence": [
+    "E-a9bd249b90",
+    "E-b7a80922fc"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "pass_after_correction",
+    "issues": [
+      {
+        "code": "not_applicable_without_generated_whole",
+        "severity": "defect",
+        "message": "local_manipulation = Not applicable requires whole_image_generation = AI-generated; use Not tampered or Uncertain for a real/uncertain whole image"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Not applicable 只允许在整图已判 AI-generated 时使用；若整体是 Real/Uncertain，局部应写 Not tampered（有 TruFor 且无足够证据）或 Uncertain（未测/仅候选），不能把 Not applicable 当作“无局部编辑”。若 TruFor 仍可调用，请先补测 TruFor；补测后低分/无高响应写 Not tampered，未测或仅候选写 Uncertain。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nThe PROBE expert returned a low score (0.0798) indicating the image is likely Real, based on its global assessment. No local manipulation evidence has been measured yet, as TruFor has not been called. Since the whole-image generation question is resolved (Real), the local tampering question is not applicable in the context of this project’s target (which is AI-generated or local content tampering). The absence of a TruFor measurement does not imply local tampering; it simply means the local question has not been investigated. Given that the whole image is judged Real, and no local tampering is suspected or supported by evidence, the overall verdict can be Real. The only limitation is the lack of local evidence, but since the whole image is Real, local tampering is not a concern.\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-a9bd249b90\"], \"report\": \"主要支持：PROBE 低分（0.0798）支持整图真实；主要限制：未测量局部编辑，但因整图真实，局部编辑不适用。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nPROBE returned a low score (0.0798) indicating the image is Real. TruFor returned a low anomaly score (0.2525), which is below its diagnostic threshold (0.5), and the anomaly map shows no strong local response. The confidence map indicates high reliability in the high-response region, but since the anomaly score is low, it does not support local tampering. The combination of PROBE’s Real judgment and TruFor’s low anomaly score supports the conclusion that the image is Real and not locally tampered. The only limitation is that TruFor’s score is not a calibrated probability and does not rule out all possible local edits, but the score is below the threshold and the map is not bright, so local tampering is not supported. The overall verdict is Real, with high certainty.\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-a9bd249b90\", \"E-b7a80922fc\"], \"report\": \"主要支持：PROBE 低分（0.0798）支持整图真实；TruFor 低分（0.2525）支持无局部篡改。主要限制：TruFor 分数未校准，不能排除所有局部编辑，但低于阈值且无高响应区域。\"}\n</verdict>",
+    "remaining_issues": []
+  },
+  "joint_verdict_issues": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 69.48,
+  "evidence": [
+    {
+      "evidence_id": "E-a9bd249b90",
+      "source": "probe_dino_expert",
+      "strength": 0.0798,
+      "raw_metric": 0.079761,
+      "model_image_layout": null
+    },
+    {
+      "evidence_id": "E-b7a80922fc",
+      "source": "trufor_expert",
+      "strength": 0.2525,
+      "raw_metric": 0.252513,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — high-response crop",
+          "content_box": [
+            0,
+            38,
+            250,
+            288
+          ],
+          "canvas_size": [
+            455,
+            350
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            223,
+            250,
+            473,
+            500
+          ],
+          "region_normalized_1000": [
+            251,
+            500,
+            532,
+            1000
+          ],
+          "source_size": [
+            889,
+            500
+          ],
+          "map_size": [
+            889,
+            500
+          ],
+          "crop_size": [
+            250,
+            250
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_161156_d3429f29-5d3a-4da3-829a-0fb387554a98/model_original_crop_E-b7a80922fc.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            250,
+            288
+          ],
+          "canvas_size": [
+            455,
+            350
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            223,
+            250,
+            473,
+            500
+          ],
+          "region_normalized_1000": [
+            251,
+            500,
+            532,
+            1000
+          ],
+          "source_size": [
+            889,
+            500
+          ],
+          "map_size": [
+            889,
+            500
+          ],
+          "crop_size": [
+            250,
+            250
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_161156_d3429f29-5d3a-4da3-829a-0fb387554a98/model_anomaly_map_E-b7a80922fc.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            250,
+            288
+          ],
+          "canvas_size": [
+            455,
+            350
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_peak",
+          "region_pixels": [
+            223,
+            250,
+            473,
+            500
+          ],
+          "region_normalized_1000": [
+            251,
+            500,
+            532,
+            1000
+          ],
+          "source_size": [
+            889,
+            500
+          ],
+          "map_size": [
+            889,
+            500
+          ],
+          "crop_size": [
+            250,
+            250
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_161156_d3429f29-5d3a-4da3-829a-0fb387554a98/model_confidence_map_E-b7a80922fc.png"
+        }
+      }
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation_fixed/lora/traces/forensic_sft_session_20261128_161156_d3429f29-5d3a-4da3-829a-0fb387554a98.json",
+  "failed_experts": []
+}

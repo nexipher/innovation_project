@@ -1,0 +1,231 @@
+[
+  {
+    "sample_id": "val__autosplice__41993__0__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_125913_41993_0.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/AutoSplice_q95/Forged_JPEG100/41993_0.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_125913_41993_0/model_original_crop_E-95bd974026.png",
+      "traces/evidence/session_20261128_125913_41993_0/model_anomaly_map_E-95bd974026.png",
+      "traces/evidence/session_20261128_125913_41993_0/model_confidence_map_E-95bd974026.png",
+      "traces/evidence/session_20261128_125913_41993_0/region_E-5a55ca9d55.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nPROBE 专家返回的 aigi_discriminator_score 为 0.8166，远高于其 0.5 的官方阈值，指向“AI-generated”（AI 生成）。TruFor 专家返回的 manipulation_anomaly_score 为 0.8163，同样高于其 0.5 的诊断阈值，表明存在“local manipulation candidate”（局部篡改候选），但该响应仅是候选，非证明，且未指向具体编辑内容。两个专家的高分在方向上一致（均指向“Fake”），但测量的是不同维度：PROBE 判定整图生成，TruFor 判定局部编辑。两者均未提供“Real”的证据。根据规则，整图生成为 AI 生成时，整体结论必须为 Fake；局部编辑为 Tampered 时，整体结论也必须为 Fake。当前证据支持整图生成（PROBE 高分），因此整体结论为 Fake。局部编辑虽有高响应，但未明确编辑内容，且 PROBE 的高分已足以支持整体 Fake 结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"主要支持：PROBE 专家高分（0.8166）判定整图为 AI 生成。主要限制：TruFor 专家高响应（0.8163）仅指向局部篡改候选，未明确编辑内容，且未提供整图真实性的证据。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE 专家高分（0.8166）判定整图为 AI 生成。主要限制：TruFor 专家高响应（0.8163）仅指向局部篡改候选，未明确编辑内容，且未提供整图真实性的证据。"
+  },
+  {
+    "sample_id": "val__autosplice__43686__1__q95",
+    "trace": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_123600_43686_1.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/AutoSplice_q95/Forged_JPEG100/43686_1.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_123600_43686_1/model_original_crop_E-936ef0f039.png",
+      "traces/evidence/session_20261128_123600_43686_1/model_anomaly_map_E-936ef0f039.png",
+      "traces/evidence/session_20261128_123600_43686_1/model_confidence_map_E-936ef0f039.png",
+      "traces/evidence/session_20261128_123600_43686_1/region_E-64ac0f9135.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nTruFor 的局部篡改检测分数为 0.5618，高于其诊断阈值 0.5，表明图像存在局部篡改的候选区域，但该分数并非证明，且不涉及整图生成判断。PROBE 的整图生成判别分数为 0.7215，高于其阈值 0.5，指向 AI 生成。两个专家的测量结果在逻辑上独立：TruFor 的局部编辑候选与 PROBE 的整图 AI 生成判断无直接冲突，但 PROBE 的高分支持整图为 AI 生成，而 TruFor 的高分支持局部编辑，两者可共存。由于 PROBE 的高分已明确指向 AI 生成，而 TruFor 的局部编辑候选未明确具体编辑内容，因此整体判断为 AI 生成，局部编辑的证据不足以改变整图生成的结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"主要支持：PROBE 高分（0.7215）指向 AI 生成；主要限制：TruFor 未明确局部编辑内容，仅提供候选区域。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.7215）指向 AI 生成；主要限制：TruFor 未明确局部编辑内容，仅提供候选区域。"
+  },
+  {
+    "sample_id": "val__autosplice__57143__0__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130457_57143_0.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/AutoSplice_q95/Forged_JPEG100/57143_0.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_130457_57143_0/region_E-6b7e2fb7f6.png",
+      "traces/evidence/session_20261128_130457_57143_0/model_original_crop_E-1a89dcf687.png",
+      "traces/evidence/session_20261128_130457_57143_0/model_anomaly_map_E-1a89dcf687.png",
+      "traces/evidence/session_20261128_130457_57143_0/model_confidence_map_E-1a89dcf687.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nPROBE 返回 0.981，指向 AI 生成；TruFor 返回 0.932，为局部篡改候选（高响应区域在蜗牛壳区域，但可靠性高）。两者均指向“非真实拍摄”，但 TruFor 的高响应区域与蜗牛壳图案一致，且可靠性高，支持局部编辑嫌疑。PROBE 的高分与 TruFor 的高响应区域在内容上一致，但 PROBE 未提供局部证据，TruFor 的高响应区域是局部编辑的候选。综合判断，图像为 AI 生成，且存在局部编辑嫌疑。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Tampered\", \"suspicious_regions\": [{\"bbox\": [195, 547, 695, 864], \"reason\": \"TruFor anomaly map显示高响应区域，且可靠性高，指向局部编辑嫌疑\", \"evidence\": [\"E-1a89dcf687\"]}], \"certainty\": \"High\", \"primary_evidence\": [\"E-6b7e2fb7f6\", \"E-1a89dcf687\"], \"report\": \"主要支持：PROBE高分（0.981）和TruFor高响应（0.932）均指向非真实拍摄和局部编辑。主要限制：TruFor的高响应区域未明确编辑内容，仅作为候选。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE高分（0.981）和TruFor高响应（0.932）均指向非真实拍摄和局部编辑。主要限制：TruFor的高响应区域未明确编辑内容，仅作为候选。"
+  },
+  {
+    "sample_id": "val__autosplice__73275__1__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131001_73275_1.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/AutoSplice_q95/Forged_JPEG100/73275_1.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_131001_73275_1/model_original_crop_E-1a4d989b71.png",
+      "traces/evidence/session_20261128_131001_73275_1/model_anomaly_map_E-1a4d989b71.png",
+      "traces/evidence/session_20261128_131001_73275_1/model_confidence_map_E-1a4d989b71.png",
+      "traces/evidence/session_20261128_131001_73275_1/region_E-3f3af483e9.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nPROBE 的全局分数为 0.9995，远高于 0.5 的阈值，指向“AI-generated”。TruFor 的局部编辑分数为 0.7857，高于其 0.5 的阈值，但其报告明确指出这是“局部篡改候选”，并非证明，且其可靠性图显示该区域可靠性较低。两者测量的是不同维度：PROBE 判定整图生成，TruFor 判定局部编辑。PROBE 的高分是整图生成的直接证据，而 TruFor 的高分仅是局部编辑的候选，且可靠性不足。因此，整图生成的证据（PROBE）是决定性证据，局部编辑的证据（TruFor）是补充性且不可靠的。综合判断，图像整体为AI生成，局部编辑证据不足。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"主要支持：PROBE 高分（0.9995）表明整图AI生成。主要限制：TruFor 未提供可靠局部篡改证据。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.9995）表明整图AI生成。主要限制：TruFor 未提供可靠局部篡改证据。"
+  },
+  {
+    "sample_id": "val__genimage__Real__d3429f29-5d3a-4da3-829a-0fb387554a98__q95",
+    "trace": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_125705_d3429f29-5d3a-4da3-829a-0fb387554a98.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/Real_q95/d3429f29-5d3a-4da3-829a-0fb387554a98.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_125705_d3429f29-5d3a-4da3-829a-0fb387554a98/model_original_crop_E-b7a80922fc.png",
+      "traces/evidence/session_20261128_125705_d3429f29-5d3a-4da3-829a-0fb387554a98/model_anomaly_map_E-b7a80922fc.png",
+      "traces/evidence/session_20261128_125705_d3429f29-5d3a-4da3-829a-0fb387554a98/model_confidence_map_E-b7a80922fc.png",
+      "traces/evidence/session_20261128_125705_d3429f29-5d3a-4da3-829a-0fb387554a98/region_E-a9bd249b90.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nThe TruFor expert returned a manipulation anomaly score of 0.2525, which is below its diagnostic threshold of 0.5, indicating no strong local manipulation evidence. The anomaly map shows a low response (blue to yellow) across the region, and the confidence map shows high reliability (red) in the same area, supporting the conclusion that no local tampering is evident. The PROBE expert returned a score of 0.0798, which is below its threshold of 0.5, indicating the image is likely Real. Both measurements are valid and consistent with each other. The evidence supports the conclusion that the image is authentic and not locally tampered with.\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"trufor_expert\", \"probe_dino_expert\"], \"report\": \"主要支持：TruFor 未检测到局部篡改，PROBE 判定为真实图像。主要限制：无局部可疑区域，且 PROBE 为外部判别器，未针对本项目数据校准。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：TruFor 未检测到局部篡改，PROBE 判定为真实图像。主要限制：无局部可疑区域，且 PROBE 为外部判别器，未针对本项目数据校准。"
+  },
+  {
+    "sample_id": "val__genimage__BigGAN__739_biggan_00039__q95",
+    "trace": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124742_739_biggan_00039.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_q95/BigGAN/739_biggan_00039.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_124742_739_biggan_00039/region_E-1f9bd5bf0b.png",
+      "traces/evidence/session_20261128_124742_739_biggan_00039/model_original_crop_E-5bf87cbcff.png",
+      "traces/evidence/session_20261128_124742_739_biggan_00039/model_anomaly_map_E-5bf87cbcff.png",
+      "traces/evidence/session_20261128_124742_739_biggan_00039/model_confidence_map_E-5bf87cbcff.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nPROBE的测量结果显示该图像的AI生成概率为0.9967，远高于0.5的阈值，表明模型高度倾向于该图像为AI生成。TruFor的测量结果显示局部篡改检测分数为0.3538，低于0.5的阈值，表明没有强局部篡改响应，但该分数不证明图像未被篡改，也不代表整图生成判断。综合来看，PROBE的高分支持图像为AI生成，而TruFor的低分未发现局部篡改，但无法排除局部编辑的可能性。由于PROBE的高分是整图生成判断的直接证据，且TruFor的低分未提供反证，因此整体判断为AI生成。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-1f9bd5bf0b\"], \"report\": \"主要支持：PROBE模型高分（0.9967）表明图像为AI生成。主要限制：TruFor未发现强局部篡改响应，但无法排除局部编辑。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE模型高分（0.9967）表明图像为AI生成。主要限制：TruFor未发现强局部篡改响应，但无法排除局部编辑。"
+  },
+  {
+    "sample_id": "val__genimage__ADM__860_adm_34__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131611_860_adm_34.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_q95/ADM/860_adm_34.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_131611_860_adm_34/model_original_crop_E-fc68c8cdad.png",
+      "traces/evidence/session_20261128_131611_860_adm_34/model_anomaly_map_E-fc68c8cdad.png",
+      "traces/evidence/session_20261128_131611_860_adm_34/model_confidence_map_E-fc68c8cdad.png",
+      "traces/evidence/session_20261128_131611_860_adm_34/region_E-a09f6ece48.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nPROBE 专家返回的 aigi_discriminator_score 为 0.999421，远高于其 0.5 的阈值，指向 AI 生成。TruFor 专家返回的 manipulation_anomaly_score 为 0.10104，低于其 0.5 阈值，且其异常图与置信度图显示该区域响应极低，表明无显著局部篡改迹象。两个测量结果相互独立：PROBE 判定整图生成，TruFor 判定无局部编辑。两者无冲突，且均有效。整体证据支持图像为 AI 生成，但无局部编辑痕迹。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"主要支持：PROBE 高分（0.9994）判定为 AI 生成；主要限制：TruFor 低分（0.1010）未发现局部编辑，但该结果不否定整图生成。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.9994）判定为 AI 生成；主要限制：TruFor 低分（0.1010）未发现局部编辑，但该结果不否定整图生成。"
+  },
+  {
+    "sample_id": "val__genimage__SD14__705_sdv4_00127__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132029_705_sdv4_00127.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_q95/SD14/705_sdv4_00127.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_132029_705_sdv4_00127/model_original_crop_E-20f1e27a36.png",
+      "traces/evidence/session_20261128_132029_705_sdv4_00127/model_anomaly_map_E-20f1e27a36.png",
+      "traces/evidence/session_20261128_132029_705_sdv4_00127/model_confidence_map_E-20f1e27a36.png",
+      "traces/evidence/session_20261128_132029_705_sdv4_00127/region_E-b996380041.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nTruFor专家（E-20f1e27a36）返回的局部篡改分数为0.0283，远低于其诊断阈值0.5，且其异常图与置信度图显示无高响应区域，表明图像未发现局部内容篡改的证据。PROBE专家（E-b996380041）返回的AI生成类预测概率为0.999955，远高于其官方分类阈值0.5，表明模型强烈倾向于该图像为AI生成。两个专家的测量结果在逻辑上独立：TruFor未发现局部篡改，PROBE却判定为AI生成，这在法证上是允许的，因为AI生成图像可以是未经局部编辑的原始生成。当前证据支持“整体为AI生成”，而“局部未篡改”是该结论的自然推论，但并非必须的佐证。由于PROBE的高分是图像级判别，且TruFor未发现任何局部异常，整体结论为“Fake”是合理的。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"主要支持：PROBE专家高分判定为AI生成；主要限制：TruFor未发现局部篡改，但该结果不否定整体AI生成结论。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE专家高分判定为AI生成；主要限制：TruFor未发现局部篡改，但该结果不否定整体AI生成结论。"
+  },
+  {
+    "sample_id": "val__genimage__VQDM__VQDM_1000_200_01_143_vqdm_00143__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132204_VQDM_1000_200_01_143_vqdm_00143.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_q95/VQDM/VQDM_1000_200_01_143_vqdm_00143.jpg",
+    "prefix_turns": 8,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_132204_VQDM_1000_200_01_143_vqdm_00143/model_original_crop_E-ca958c37c7.png",
+      "traces/evidence/session_20261128_132204_VQDM_1000_200_01_143_vqdm_00143/model_anomaly_map_E-ca958c37c7.png",
+      "traces/evidence/session_20261128_132204_VQDM_1000_200_01_143_vqdm_00143/model_confidence_map_E-ca958c37c7.png",
+      "traces/evidence/session_20261128_132204_VQDM_1000_200_01_143_vqdm_00143/region_E-8c35d5cc7a.png"
+    ],
+    "tool_images": 4,
+    "attempts": [
+      "<reasoning>\nPROBE专家返回的aigi_discriminator_score为0.9980，远高于0.5的阈值，指向AI生成。TruFor专家返回的manipulation_anomaly_score为0.4511，低于0.5的阈值，未发现强局部篡改迹象。两者测量独立：PROBE判断整图生成，TruFor判断局部编辑。PROBE的高分与TruFor的低分无直接冲突，因为AI生成图像可能未经过局部编辑。当前证据支持整图AI生成，但未发现局部篡改。结论基于PROBE的高分，TruFor的低分不削弱此结论，因AI生成无需局部编辑。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"主要支持：PROBE高分（0.998）指向AI生成；主要限制：TruFor未发现局部篡改，但AI生成无需局部编辑。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE高分（0.998）指向AI生成；主要限制：TruFor未发现局部篡改，但AI生成无需局部编辑。"
+  },
+  {
+    "sample_id": "val__genimage__Midjourney__487_midjourney_197__q95",
+    "trace": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131912_487_midjourney_197.json",
+    "cut": null,
+    "image_path": "/root/autodl-tmp/innovation_project/dataset/GenImage_q95/Midjourney/487_midjourney_197.jpg",
+    "prefix_turns": 5,
+    "prefix_tool_images": [
+      "traces/evidence/session_20261128_131912_487_midjourney_197/model_original_crop_E-550e3b616b.png",
+      "traces/evidence/session_20261128_131912_487_midjourney_197/model_anomaly_map_E-550e3b616b.png",
+      "traces/evidence/session_20261128_131912_487_midjourney_197/model_confidence_map_E-550e3b616b.png"
+    ],
+    "tool_images": 3,
+    "attempts": [
+      "<reasoning>\nTruFor 的局部篡改检测分数为 0.9101，远高于其 0.5 的诊断阈值，且其异常图在手机按键区域呈现高响应（红色），表明该区域存在局部篡改的候选证据。然而，其置信度图显示该区域可靠性为中等（黄色至红色过渡），且该高响应区域与原始图像内容（按键字符模糊）一致，未发现明确的编辑痕迹（如文字添加或删除）。因此，该高响应是局部编辑的候选，但不足以证明存在实际编辑。PROBE 未测量，无法判断整图是否为 AI 生成。由于局部编辑证据为候选且未确认，而整图生成证据缺失，无法得出明确结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Uncertain\", \"whole_image_generation\": \"Uncertain\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"Low\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"局部篡改检测分数高（0.91），但置信度中等且无明确编辑痕迹，整图生成未测量，证据不足。\"}\n</verdict>"
+    ],
+    "call_written": [],
+    "verdict": "Uncertain",
+    "whole_image_generation": "Uncertain",
+    "local_manipulation": "Uncertain",
+    "certainty": "Low",
+    "report": "局部篡改检测分数高（0.91），但置信度中等且无明确编辑痕迹，整图生成未测量，证据不足。"
+  }
+]

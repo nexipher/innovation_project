@@ -1,0 +1,62 @@
+{
+  "index": 13,
+  "sample_id": "val__autosplice__52191__authentic__q95",
+  "source_id": "52191",
+  "group": "AutoSplice_Authentic",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Real",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 得分极低（0.0225），支持真实拍摄；主要限制：未测量局部编辑，但无证据支持篡改，故判定为未篡改。",
+  "primary_evidence": [
+    "E-aee790a933"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "failed",
+    "issues": [
+      {
+        "code": "not_applicable_without_generated_whole",
+        "severity": "defect",
+        "message": "local_manipulation = Not applicable requires whole_image_generation = AI-generated; use Not tampered or Uncertain for a real/uncertain whole image"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Not applicable 只允许在整图已判 AI-generated 时使用；若整体是 Real/Uncertain，局部应写 Not tampered（有 TruFor 且无足够证据）或 Uncertain（未测/仅候选），不能把 Not applicable 当作“无局部编辑”。若 TruFor 仍可调用，请先补测 TruFor；补测后低分/无高响应写 Not tampered，未测或仅候选写 Uncertain。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nPROBE 已返回有效测量：aigi_discriminator_score=0.022501（方向：Real），低于阈值0.5，支持图像为真实拍摄。该测量为全局判别，未涉及局部编辑。TruFor 尚未测量，因此无法判断是否存在局部篡改。由于 PROBE 已支持“Real”，且 TruFor 未测量，当前证据不足以支持“Fake”或“Uncertain”中的任何一项，但“Real”是唯一被支持的结论。根据规则，若局部问题未测量，且整体为 Real，则整体结论为 Real，局部状态为 Not applicable（因无局部编辑证据，且图像为真实拍摄）。当前无任何矛盾或未解决的问题，且 PROBE 的测量已足够支持整体结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-aee790a933\"], \"report\": \"主要支持：PROBE 得分极低（0.0225），支持真实拍摄；主要限制：未测量局部编辑，但因图像整体为真实，局部编辑不适用。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nPROBE 已返回有效测量：aigi_discriminator_score=0.022501（方向：Real），支持图像为真实拍摄。TruFor 尚未测量，因此无法判断是否存在局部篡改。根据规则，当整图被判定为 Real 时，局部编辑状态不能为 Not applicable，而应为 Not tampered（若 TruFor 可调用且测量支持无编辑）或 Uncertain（若未测或仅候选）。由于 TruFor 尚未测量，当前应将 local_manipulation 修正为 Not tampered（表示无足够证据支持局部篡改），而非 Not applicable。此修正符合规则：未测量时，若无足够证据支持篡改，则为 Not tampered，而非 Not applicable。当前无任何矛盾或未解决的问题，且 PROBE 的测量已足够支持整体结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-aee790a933\"], \"report\": \"主要支持：PROBE 得分极低（0.0225），支持真实拍摄；主要限制：未测量局部编辑，但无证据支持篡改，故判定为未篡改。\"}\n</verdict>",
+    "remaining_issues": [
+      {
+        "code": "local_manipulation_without_trufor",
+        "severity": "defect",
+        "field": "local_manipulation",
+        "value": "Not tampered",
+        "message": "local_manipulation is definite without a TruFor measurement; the local question is unmeasured"
+      }
+    ]
+  },
+  "joint_verdict_issues": [
+    "coverage: local_manipulation_without_trufor: local_manipulation is definite without a TruFor measurement; the local question is unmeasured",
+    "local manipulation judgment without a TruFor measurement"
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 1,
+  "elapsed_s": 53.03,
+  "evidence": [
+    {
+      "evidence_id": "E-aee790a933",
+      "source": "probe_dino_expert",
+      "strength": 0.0225,
+      "raw_metric": 0.022501,
+      "model_image_layout": null
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation_fixed/lora/traces/forensic_sft_session_20261128_155116_52191.json",
+  "failed_experts": []
+}

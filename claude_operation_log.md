@@ -1280,3 +1280,30 @@
 * **涉及/修改的文件清单**：`scripts/{build_lora_validation_manifest,run_lora_validation,compare_lora_validation}.py`、`sft_data/lora_small_20261128/{adapter/**,run_manifest.json,validation_manifest.json,TRAINING_24x2.md,VALIDATION_SET.md,VALIDATION_SUMMARY.md,validation/**}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：训练 48/48、验证两臂各 30/30、0 失败；详细指标/案例见 `validation/report.md` 与 `VALIDATION_SUMMARY.md`。
 * **置信度或遗留待办（TODO）**：30 图样本小，不能作为最终结论；小试未显示局部/both 提升，反而少 1 条局部检出、少 1 条 both、多 2 条弃权。未扩 250 条、未碰 test。
+
+### [2026-11-28] - §13.12 局部漏检与结案修复复验
+
+* **当前操作动作**：基于 `f0ab9ce` 的 30 图验证，独立分析 TruFor 15 张 AutoSplice 图，做同证据复验，按最小修复改三图呈现与覆盖纠正，并用同一 30 图重跑 base/LoRA。
+* **对应计划锚点**：`plan.md` §13.12；`sft_data/lora_small_20261128/analysis/`。
+* **环境**：RTX 4080 vGPU 32760 MiB；`/root/autodl-tmp` 50G/47G 已用/3.6G 可用（93%）；模型/数据只读可用。
+* **诊断（f0ab9ce 基线）**：
+  1. 41993/43686/73275 的旧 anomaly-peak 裁剪只覆盖编辑 mask 的 26–52%；57143 覆盖 52%，接近但不足。
+  2. 67065/73275(base)/d3429f29(LoRA) 在 TruFor 可调用时提前结案；覆盖纠正只改文字，没有要求补测。
+  3. 57143 旧提示把“非证明/仅提供候选”当成降级理由，并写“没有其他 Fake 分项时总体…”，导致 LoRA 把 `AI-generated / Tampered / Fake` 改成 `AI-generated / Uncertain / Uncertain`；base 则因“可补测”重复调用触发 loop_protection。
+  4. 生成图 860/739/705/VQDM 等已经有 `whole=AI-generated`、TruFor 低分，但 local 仍写 Not tampered/Uncertain。
+* **代码修复**（commit `cf5d0db`）：
+  1. `TruForExpert.render_region_artifacts` 无 bbox 时取异常图 >=0.5 的 high-response 包围盒（5% 上下文）；高响应 <0.5% 的孤立小峰或没有高响应时保留旧 peak crop；只有缺 map 才 full-frame。三图仍同内容尺寸，不重跑 TruFor。
+  2. `utils/coverage.py`：未测 TruFor（包括 local=Uncertain）先补测；两位专家都已测时不再提示补测；局部已有 `suspicious_regions` 的 Tampered 不因“仅候选/非证明”降级；57143 提示明确 whole=AI-generated 时总体保持 Fake；whole=AI-generated + PROBE>=0.9 + TruFor 低分时 local 改 Not applicable；允许一次窄的第二纠正（仅新增测量后只剩 generated/local 标签关系时）。
+  3. 收紧 `LOCAL_CANDIDATE_ONLY`，去掉裸“非证明”触发；新增 `local_uncertain_without_trufor`、`generated_whole_local_not_applicable`。
+  4. `run_lora_validation.py` 记录 coverage/panel 元数据；新增 `analyze_trufor_validation.py`、`compare_fix_validation.py`、`compare_crop_coverage.py`、`replay_same_evidence.py`。
+* **独立 TruFor 15 张**：10 篡改、5 真图；真图全部 true negative。weak/mislocalized：40489 score .444/IoU .127、56086 .256/.362、57276 .164/0、60788 .413/.340；保留权重和阈值。
+* **30 图 base/LoRA 重跑**（同一 manifest、greedy/non-thinking）：
+  - base 30/30，1681.9 s，peak allocated 21.873 GB / reserved 23.868 GB。
+  - LoRA 30/30，2238.7 s，peak allocated 21.939 GB / reserved 24.522 GB。
+  - base before→after：局部检出 2→3；真图局部误报 0→0；真图整图/总体误报 2→2；both 8→12；生成图 local Not applicable 0→6；一致性 30→29；调用 54→58；弃权 0→3。
+  - LoRA before→after：局部检出 1→4；真图局部误报 0→0；真图整图/总体误报 2→2；both 7→14；生成图 local Not applicable 0→6；一致性 28→30；调用 49→56；弃权 2→1。
+  - base 唯一不一致：42958 local Uncertain + overall Fake，覆盖 failed；LoRA 覆盖 failed 2 条但标签本身正确（52191 只用 PROBE、352 跨任务措辞）。
+* **同证据复验**（baseline trace 的 clean prefix，不执行工具，10 条）：base/LoRA 9/10 标签完全相同；57143 两臂都 local Tampered，证明旧 LoRA 的丢失来自纠正轮而非读图；43686/73275/41993 两臂都 local Uncertain，自主流程的 Tampered 来自补测/纠正轮；生成图两臂也都不直接写 Not applicable，自主流程的 NA 来自覆盖纠正。
+* **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`utils/coverage.py`、`scripts/run_lora_validation.py`、`tests/test_coverage.py`、`tests/test_dual_expert_loop.py`、`plan.md`；新增 `scripts/{analyze_trufor_validation,compare_fix_validation,compare_crop_coverage,replay_same_evidence}.py`、`sft_data/lora_small_20261128/{replay_cases.json,replay_fixed/**,validation_fixed/**,analysis/**}`。
+* **执行结果与验证状态**：base/LoRA 各 30/30、0 失败；核心测试 838 passed；同证据复验 10/10 完成。
+* **置信度或遗留待办（TODO）**：30 图样本小；base 的局部净增益仅 +1（42958 被模型写成 Uncertain，43686/73275 新增）；41993/67065 高 TruFor 仍被模型保守写成 Uncertain；487/Wukong 生成图高 TruFor 导致 local Tampered；40489/60788 的生成图 NA 纠正对伪造图是语义副作用。未重训、未扩 250 条、未碰 test、未改专家权重/阈值。

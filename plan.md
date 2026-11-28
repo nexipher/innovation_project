@@ -2670,9 +2670,9 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
      Not tampered/Uncertain，未写 Not applicable。
 - **最小修复**：
   1. 无 bbox 的 TruFor 三图改为 high-response crop：取异常图 >=0.5 的
-     high-response 像素包围盒（加 5% 上下文；无高响应才回退 full-frame），
-     三图仍同内容尺寸；高响应像素少于 0.5% 的孤立小峰回退旧 peak crop，
-     不改权重、阈值、模型或输入图。
+     high-response 像素包围盒（加 5% 上下文），三图仍同内容尺寸；高响应像素
+     少于 0.5% 的孤立小峰回退旧 peak crop；没有高响应像素时也保留 peak crop，
+     只有缺 map 才回退 full-frame，不改权重/阈值。
   2. 收紧 `local_tampered_candidate_only`：只有“仅候选/候选而非证明”等
      明确表述且没有 `suspicious_regions` 定位时触发；“非证明”这种谨慎措辞，
      或已给出同区域 bbox/content 的 Tampered，不再被改成 Uncertain
@@ -2682,4 +2682,19 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
      提示明确“whole=AI-generated 时总体必须保持 Fake”；whole=AI-generated、
      PROBE>=0.9 且 TruFor 低分/无高响应时要求 local=Not applicable（PROBE 中段
      不触发，避免把 Real 的整图误判改写成 Not applicable）。
-  4. 不重训、不扩 250 条；用同一批案例复验局部检出、真图误报、分项一致性。
+  4. 一次窄的第二纠正：仅当第一次纠正后新增了专家测量、且第二次只剩
+     `generated_whole_local_not_applicable` 标签关系时触发；不做通用额外预算。
+  5. 不重训、不扩 250 条；用同一批案例复验局部检出、真图误报、分项一致性。
+- **复验结果**（同一 30 图，base/LoRA 各 30/30）：
+  - base：局部 2→3，真图局部误报 0→0，both 8→12，生成图 NA 0→6，
+    一致性 30→29（42958 的 local Uncertain + overall Fake 不一致）；调用 54→58，
+    弃权 0→3。
+  - LoRA：局部 1→4，真图局部误报 0→0，both 7→14，生成图 NA 0→6，
+    一致性 28→30；57143 保持 Tampered/Fake，不再局部 Uncertain 后总体弃权；
+    调用 49→56，弃权 2→1。
+  - 同证据复验 10 条：base/LoRA 9/10 标签相同；57143 两臂同证据都判
+    Tampered，说明旧 LoRA 丢失来自纠正轮；41993/43686/73275 同证据两臂都
+    写 Uncertain，自主流程的 Tampered 来自补测/纠正轮；生成图 NA 来自覆盖纠正。
+  - 遗留：41993/67065 高 TruFor 仍被模型保守写成 Uncertain；40489/60788 的
+    生成图 NA 纠正对伪造图是语义副作用；TruFor 弱/偏移 40489/56086/57276/60788
+    保留权重和阈值。
