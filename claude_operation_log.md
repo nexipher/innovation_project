@@ -1307,3 +1307,16 @@
 * **涉及/修改的文件清单**：`experts/trufor.py`、`state_machine/controller.py`、`state_machine/evidence_tokenizer.py`、`utils/coverage.py`、`scripts/run_lora_validation.py`、`tests/test_coverage.py`、`tests/test_dual_expert_loop.py`、`plan.md`；新增 `scripts/{analyze_trufor_validation,compare_fix_validation,compare_crop_coverage,replay_same_evidence}.py`、`sft_data/lora_small_20261128/{replay_cases.json,replay_fixed/**,validation_fixed/**,analysis/**}`。
 * **执行结果与验证状态**：base/LoRA 各 30/30、0 失败；核心测试 838 passed；同证据复验 10/10 完成。
 * **置信度或遗留待办（TODO）**：30 图样本小；base 的局部净增益仅 +1（42958 被模型写成 Uncertain，43686/73275 新增）；41993/67065 高 TruFor 仍被模型保守写成 Uncertain；487/Wukong 生成图高 TruFor 导致 local Tampered；40489/60788 的生成图 NA 纠正对伪造图是语义副作用。未重训、未扩 250 条、未碰 test、未改专家权重/阈值。
+
+### [2026-11-28] - §13.13 TruFor 裁剪 A/B/C 离线对照
+
+* **当前操作动作**：复用 15 张 AutoSplice validation 图的已有 TruFor map/conf，离线比较 A 当前 high-response 包围盒、B 连通分量 Top-1、C Top-2 并集；不跑 Qwen、不改 Agent。
+* **对应计划锚点**：`plan.md` §13.13；`sft_data/lora_small_20261128/analysis/crop_comparison_20261128/`。
+* **核心结果**：
+  1. A mean coverage 0.7866 / area 0.4751；B 0.4637 / 0.2452；C union 0.4675 / 0.2463。
+  2. B coverage 达到 A 95% 的 5 张中 4 张与 A 同框（41993/42958/57143/67065），只有 60788 略小；其余 5 张 B 面积小但 coverage 0.0016–0.192。
+  3. Top-2 仅 5 张新增覆盖，最大 56086 +2.61pp；C 无法补回 A。43686/73275 的高响应分别碎成 9/7 个分量，Top-2 仍很小。
+  4. 真图 A 窗口 4/5 触边、52191 高边缘；texture× 0.02–0.61，均未落在高纹理上。B/C 真图窗口也继续贴边（47630 edge× 1.84/1.88）。
+* **涉及文件**：`scripts/compare_trufor_crop_windows.py`、`sft_data/lora_small_20261128/analysis/crop_comparison_20261128/{per_image.csv,per_image.json,report.md,representative/*.png}`、`plan.md`、`claude_operation_log.md`。
+* **验证状态**：45 行（15×3）生成；代表图 11 张；未使用 GPU/Qwen/Agent，未改专家权重/阈值。
+* **遗留**：B/C 的排序分数是 `mean anomaly × mean confidence`，不是新专家分数；真图无 mask，只报告窗口触边/纹理。

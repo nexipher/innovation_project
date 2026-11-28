@@ -2698,3 +2698,21 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   - 遗留：41993/67065 高 TruFor 仍被模型保守写成 Uncertain；40489/60788 的
     生成图 NA 纠正对伪造图是语义副作用；TruFor 弱/偏移 40489/56086/57276/60788
     保留权重和阈值。
+
+### 13.13 2026-11-28 TruFor 裁剪 A/B/C 离线对照
+
+- **输入**：同一批 15 张 AutoSplice validation 图（10 篡改、5 真图），复用
+  `analysis/trufor_raw` 的整图异常图/可靠性图；不跑 Qwen、不改 Agent、不重跑 TruFor。
+- **窗口定义**：
+  - A：当前 high-response 包围盒，沿用峰值/无高响应回退。
+  - B：同一 high-response 像素连通分量，按 `mean anomaly × mean confidence`
+    排序的 Top-1。
+  - C：同一排序 Top-2 的两框并集；额外记录第二框面积及并集增量。
+  - mask 只用于评分，不参与选窗。
+- **结果**：A mean coverage 0.7866 / area 0.4751；B 0.4637 / 0.2452；
+  C union 0.4675 / 0.2463。B coverage 达到 A 的 95% 的 5 张里，4 张 B 与 A
+  同框，只有 60788 略小（0.418 vs 0.429 面积，0.487 vs 0.501 覆盖）；其余
+  B 面积小但覆盖塌。Top-2 只有 5 张有新增，最大 56086 +2.61 个百分点，
+  无法补回 A。真图 A 窗口 4/5 触边、1/5 高边缘，texture× 均 <1，不在高纹理上。
+- **结论**：A 仍是这批图上覆盖最稳的三图主裁剪；B/C 可作为更小的辅助定位，
+  不适合替代 A。输出 `analysis/crop_comparison_20261128/{per_image.csv,report.md,representative/}`。
