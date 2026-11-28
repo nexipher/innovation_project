@@ -2569,3 +2569,9 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   20.457 GB。详见 `DATA_AUDIT.md`、`TRAINING_NOTES.md`、`REAL_SESSION.md`、
   `run_manifest.json`、`real_session_summary.json`。不训练更多、不扩 250 条、
   不碰 test；等复看。
+- **二次文字微调（2026-11-28，标签不变）**：45749_1 的 TruFor 补测理由改为
+  “检查企鹅身体是否有局部篡改证据”；51186 的高响应描述限定在实际投递的裁剪内，
+  删除“画框边缘/原图右缘”的扩写；57332 删除“整图右缘”，只保留“整图底边”；
+  PROBE-only Glide 把毛发偏软写成弱线索、以 PROBE 0.9672 为主要支持。四条只改
+  助手文字，工具输出、evidence_id、标签、certainty、框和调用顺序不变；页面与
+  trace 同步更新，`AUDIT_REPORT.md` 26/26 pass、0 问题。

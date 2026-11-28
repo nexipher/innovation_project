@@ -1223,3 +1223,17 @@
 * **涉及/修改的文件清单**：`scripts/train_lora_candidate_smoke.py`、`scripts/run_lora_candidate_session.py`、`sft_data/lora_smoke_20261128/{DATA_AUDIT.md,TRAINING_NOTES.md,REAL_SESSION.md,run_manifest.json,real_session_summary.json,adapter/**,real_session/**}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：6/6 训练步完成；adapter 可被 Qwen3VLClient 加载；真实会话完成；审计/数据断言通过。没有扩到 250 条，没有训练更多。
 * **置信度或遗留待办（TODO）**：6 步只验证链路，不评价 adapter 质量；真实会话只调用 PROBE、未调用 TruFor，是实际行为，未强制。等复看后再决定是否扩样/调 LoRA 目标。
+
+### [2026-11-28] - §13.8 候选文字二次微调（标签不变）
+
+* **当前操作动作**：按用户确认的措辞微调 4 条候选轨迹，并同步 trace/records/页面；不重跑专家、不改标签。
+* **对应计划锚点**：`plan.md` §13.8；`sft_data/sft_candidates_20261127/`。
+* **核心变更说明**：
+  1. `45749_1` 的 TruFor 补测理由改为「检查企鹅身体是否有局部篡改证据」。
+  2. `51186` 的高响应描述限定在实际投递的裁剪内，删除“画框边缘/原图右缘”的扩写。
+  3. `57332` 删除“整图右缘”，只保留“整图底边”。
+  4. `single_probe__...Glide...` 把毛发偏软写成弱线索，PROBE 0.9672 作为主要支持。
+  5. 只改助手文字；工具输出、evidence_id、标签、certainty、框、调用顺序不变；`candidate_scripts.json`、4 条 trace、records、4 个页面和 `REVISION_NOTES.md` 同步。
+* **涉及/修改的文件清单**：`scripts/sft_candidate_cases.py`、`sft_data/sft_candidates_20261127/{candidate_scripts.json,records.json,batch_meta.json,REVISION_NOTES.md,003/006/009/012*.html,traces/...}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：`AUDIT_REPORT.md` 26/26 pass、0 问题；页面图片引用完整；提交 `07f0af9`。
+* **置信度或遗留待办（TODO）**：等复看这些措辞后再决定 LoRA 扩样；本轮未扩 250 条。
