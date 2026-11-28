@@ -1368,3 +1368,16 @@
 * **涉及/修改的文件清单**：新增 `scripts/{analyze_trufor_local_edit_pairs,run_local_edit_agent,compare_local_edit_pairs}.py`；`sft_data/genimage_local_edits_20261128/analysis/{trufor/**,agent/**,compare/**}`；`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：TruFor 20/20、Agent 20/20、0 失败；逐对 `per_pair.csv`、逐图 `per_image.csv`、合并 `report.md`、代表案例 `representatives/index.html` 已生成；页面图片路径已校验。
 * **置信度或遗留待办（TODO）**：TruFor 图像级 score 全部未过 0.5，只有 p01/p02 的 map 达到可用定位；Agent 局部分支 0/10，且 p01/p02 属于“有可用 map 证据但未采用”。p05/p07 的整图 Real 是 PROBE 整图分支错误，不是局部误报。未改规则/阈值/训练，未扩样。下一步是否调整 TruFor token 的 map 证据呈现或 Agent 的局部决策，需另行讨论。
+
+### [2026-11-28 20:33] - §13.17 EditBench 生成图局部编辑核验
+
+* **当前操作动作**：查 EditBench 官方页面、bucket 文件清单和在线样例；从公开 bucket 单取 5 组 generated 子集样本，核验编辑前生成图、实际 Imagen Editor 输出和 mask 是否一一对应；未下载整包。
+* **对应计划锚点**：`plan.md` §13.17；`sft_data/editbench_verification_20261128/`。
+* **官方清单**：项目页 `https://imagen.research.google/editor/`；整包 379 MB（bucket 397,810,521 B）；bucket 12,003 个对象、11,470,153,777 B；生成子集 120 个 item，`reference_generated`/`mask_generated` 各 120，`annotations_generated.csv` 120 行；`im_*`/`dl2_*`/`sd_*`/`imrm_*` 为各编辑器/提示类型输出。
+* **样本**：`eb_gen_029_pig`（row 29）、`eb_gen_025_dog`（row 25）、`eb_gen_015_sawfish`（row 15）、`eb_gen_064_triangle`（row 64）、`eb_gen_114_three`（row 114）；5 组均含 reference、mask、`im_generated_mask-rich_1` 实际输出。
+* **核验结果**：mask 外平均绝对差 0.58–0.93 级、>5 级像素 0.13–0.31%；mask 内平均差 50–124、>10 级像素 66–91%；变化区域与 mask IoU 0.66–0.91；5/5 通过“实际输出是对 reference 的局部编辑”。
+* **角色区分**：`reference_generated` 是完整编辑前生成底图/评分 reference，不是编辑后图；`im_generated_mask-rich_1` 是实际 Imagen Editor 输出；bucket 无单独 masked-input 文件，reference+mask 可重建但未单独发布。
+* **磁盘**：raw 14,160,918 B（15 个 PNG，`/tmp/editbench_samples`）+ preview 1,029,863 B（项目内）；合计约 15 MB，<100 MB；未下载 379 MB 整包。
+* **涉及/修改的文件清单**：新增 `scripts/verify_editbench_local_edit_samples.py`、`sft_data/editbench_verification_20261128/{manifest.json,report.md,sources.csv,previews/**,review/index.html}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：5/5 组 verified；审核页 5 张预览路径校验通过；raw 仅临时保留在 `/tmp/editbench_samples`，项目内只提交 preview/manifest/report。
+* **置信度或遗留待办（TODO）**：mask 外不是逐位相同（0.13–0.31% 像素 >5 级，均值 <1），若要求严格 bit-exact 则不满足；无独立 masked-input。等用户确认 5 组预览后，再决定是否扩到更多组或进入 TruFor/Agent。

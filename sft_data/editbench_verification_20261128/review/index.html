@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EditBench 生成图局部编辑核验</title>
+<style>
+body { font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+       max-width: 1500px; margin: 24px auto; padding: 0 20px; }
+h1 { margin-bottom: 4px; }
+.meta { color: #666; }
+article { border-top: 1px solid #bbb; padding: 18px 0; }
+figure { margin: 8px 0 0; }
+figure img { width: 100%; height: auto; border: 1px solid #ddd; }
+code { font-size: 12px; }
+</style></head><body>
+<h1>EditBench 生成图局部编辑核验</h1>
+<p class="meta">5 组 generated 子集；reference（编辑前底图）/ mask / Imagen Editor 实际输出
+（im_generated_mask-rich_1）。预览由 reference、实际输出、mask、mask overlay、diff ×3 五栏组成。</p>
+<p><b>结论</b>：5/5 组 mask 外近似不变、mask 内大幅变化；可用于“AI 生成图随后被局部编辑”的评测。
+但 reference 不是编辑后图，实际输出是 <code>im_generated_mask-rich_1</code>。</p>
+
+<article id="eb_gen_029_pig">
+<h2>eb_gen_029_pig</h2>
+<p class="meta">row 29 · color/common/outdoor
+· mask 0.354 · outside mean 0.71
+(>5 0.21%) · inside mean 50.3
+(>10 81.5%) · IoU 0.814</p>
+<p><b>mask-rich prompt</b>: a standing black pig with tiny hooves</p>
+<p class="meta">reference: <code>reference_generated/a=black_o=pig_s=outdoor.png</code><br>
+mask: <code>mask_generated/a=black_o=pig_s=outdoor.png</code><br>
+actual editor output: <code>im_generated_mask-rich_1/a=black_o=pig_s=outdoor.png</code></p>
+<figure><img loading="lazy" src="../previews/eb_gen_029_pig.jpg" alt="eb_gen_029_pig"></figure>
+</article>
+<article id="eb_gen_025_dog">
+<h2>eb_gen_025_dog</h2>
+<p class="meta">row 25 · color/common/painting
+· mask 0.377 · outside mean 0.71
+(>5 0.17%) · inside mean 106.0
+(>10 66.0%) · IoU 0.660</p>
+<p><b>mask-rich prompt</b>: a blue dog in a yellow vest with open arms, standing on its back paws</p>
+<p class="meta">reference: <code>reference_generated/a=blue_o=dog_s=painting.png</code><br>
+mask: <code>mask_generated/a=blue_o=dog_s=painting.png</code><br>
+actual editor output: <code>im_generated_mask-rich_1/a=blue_o=dog_s=painting.png</code></p>
+<figure><img loading="lazy" src="../previews/eb_gen_025_dog.jpg" alt="eb_gen_025_dog"></figure>
+</article>
+<article id="eb_gen_015_sawfish">
+<h2>eb_gen_015_sawfish</h2>
+<p class="meta">row 15 · material/uncommon/indoor
+· mask 0.169 · outside mean 0.58
+(>5 0.13%) · inside mean 107.5
+(>10 88.9%) · IoU 0.886</p>
+<p><b>mask-rich prompt</b>: a yellow cloth sawfish doll wearing a scarf</p>
+<p class="meta">reference: <code>reference_generated/a=cloth_o=sawfish_s=indoor.png</code><br>
+mask: <code>mask_generated/a=cloth_o=sawfish_s=indoor.png</code><br>
+actual editor output: <code>im_generated_mask-rich_1/a=cloth_o=sawfish_s=indoor.png</code></p>
+<figure><img loading="lazy" src="../previews/eb_gen_015_sawfish.jpg" alt="eb_gen_015_sawfish"></figure>
+</article>
+<article id="eb_gen_064_triangle">
+<h2>eb_gen_064_triangle</h2>
+<p class="meta">row 64 · shape/writing/real
+· mask 0.203 · outside mean 0.78
+(>5 0.21%) · inside mean 82.3
+(>10 74.8%) · IoU 0.745</p>
+<p><b>mask-rich prompt</b>: five triangle-shaped letters "A" standing side by side</p>
+<p class="meta">reference: <code>reference_generated/a=triangle_o=letter_style=real.png</code><br>
+mask: <code>mask_generated/a=triangle_o=letter_style=real.png</code><br>
+actual editor output: <code>im_generated_mask-rich_1/a=triangle_o=letter_style=real.png</code></p>
+<figure><img loading="lazy" src="../previews/eb_gen_064_triangle.jpg" alt="eb_gen_064_triangle"></figure>
+</article>
+<article id="eb_gen_114_three">
+<h2>eb_gen_114_three</h2>
+<p class="meta">row 114 · count/writing/painting
+· mask 0.330 · outside mean 0.93
+(>5 0.31%) · inside mean 123.9
+(>10 91.2%) · IoU 0.909</p>
+<p><b>mask-rich prompt</b>: three black letters "MZA"</p>
+<p class="meta">reference: <code>reference_generated/a=three_o=letter_style=painting.png</code><br>
+mask: <code>mask_generated/a=three_o=letter_style=painting.png</code><br>
+actual editor output: <code>im_generated_mask-rich_1/a=three_o=letter_style=painting.png</code></p>
+<figure><img loading="lazy" src="../previews/eb_gen_114_three.jpg" alt="eb_gen_114_three"></figure>
+</article>
+</body></html>

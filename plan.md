@@ -2814,3 +2814,40 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `analysis/compare/{per_pair.csv,per_image.csv,comparison.json,report.md,representatives/index.html}`。
 - **边界**：只跑独立 TruFor 和当前 base Agent；未改规则、未训练、未扩样。
 
+
+### 13.17 2026-11-28 EditBench 生成图局部编辑核验
+
+- **问题**：EditBench 能否用于“AI 生成图随后被局部编辑”的评测，且能配齐
+  编辑前生成图、实际编辑器输出和区域 mask；优先查官方说明/文件清单/在线样例，
+  新增磁盘 <100 MB。
+- **官方来源与清单**：
+  - 官方项目页 `https://imagen.research.google/editor/`；整包
+    `https://storage.cloud.google.com/editbench/editbench.tar.gz` 页面标 379 MB
+    （bucket 对象 397,810,521 B）。
+  - 公开 bucket `https://storage.googleapis.com/editbench` 共 12,003 个对象、
+    11,470,153,777 B；生成子集 120 个 item；`reference_generated` 120、
+    `mask_generated` 120；各编辑器/提示类型（`im_*`、`dl2_*`、`sd_*`、`imrm_*`）
+    各有输出；`annotations_generated.csv` 120 行。
+  - 未下载整包；从 bucket 单取 5 组（5 reference + 5 mask + 5
+    `im_generated_mask-rich_1` 输出），raw 14 MB、preview 1.1 MB，合计约 15 MB。
+- **角色区分**：`reference_generated` 是完整编辑前生成底图，同时是评分 reference，
+  不是编辑后图；`im_generated_mask-rich_1` 是实际 Imagen Editor 输出；`mask_generated`
+  是二值编辑 mask。bucket 没有单独的 masked-input 文件；reference + mask 可重建，
+  但官方未单独发布。
+- **5 组样本**（generated 子集）：
+  `eb_gen_029_pig`（row 29, color/common/outdoor）、
+  `eb_gen_025_dog`（row 25, color/common/painting）、
+  `eb_gen_015_sawfish`（row 15, material/uncommon/indoor）、
+  `eb_gen_064_triangle`（row 64, shape/writing/real）、
+  `eb_gen_114_three`（row 114, count/writing/painting）。
+- **局部编辑核验**：5/5 通过。mask 外平均绝对差 0.58–0.93 级，>5 级像素
+  0.13–0.31%；mask 内平均差 50–124，>10 级像素 66–91%；变化区域与 mask 的
+  IoU 0.66–0.91。说明实际输出确实是对 reference 的局部编辑，而不是独立样本。
+- **结论**：EditBench 可用于该评测，使用 `reference_generated` + `mask_generated`
+  + `im_generated_mask-rich_1` 三件套；不能把 reference 当编辑后图。若要求
+  mask 外严格 bit-exact，不满足（存在微小编码/边缘差异）；若必须要有独立
+  masked-input 文件，也不满足。
+- **产出**：`sft_data/editbench_verification_20261128/{manifest.json,report.md,
+  sources.csv,previews/**,review/index.html}`；`scripts/verify_editbench_local_edit_samples.py`。
+- **边界**：本轮只做数据核验，未跑 TruFor/Agent，未下载整包，未改规则/训练。
+

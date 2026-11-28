@@ -1,0 +1,250 @@
+{
+  "schema": "editbench_local_edit_verification/1",
+  "dataset": "EditBench (Google Research, CVPR 2023)",
+  "official_project": "https://imagen.research.google/editor/",
+  "bucket": "https://storage.googleapis.com/editbench",
+  "annotation_file": "https://storage.googleapis.com/editbench/annotations_generated.csv",
+  "subset": "generated",
+  "editor_output_used": "im_generated_mask-rich_1 (Imagen Editor, IM); base may be Imagen or Parti",
+  "reference_role": "reference_generated: complete pre-edit generated base / scoring reference",
+  "actual_output_role": "im_generated_mask-rich_1: actual Imagen Editor output",
+  "not_downloaded": "editbench.tar.gz (379 MB per page; 397.8 MB bucket object); only individual bucket objects used",
+  "file_inventory": {
+    "bucket_objects": 12003,
+    "bucket_total_bytes": 11470153777,
+    "generated_items": 120,
+    "annotations_generated_rows": 120,
+    "official_tarball_bytes": 397810521
+  },
+  "samples": [
+    {
+      "sample_id": "eb_gen_029_pig",
+      "annotation_row": 29,
+      "file_stem": "a=black_o=pig_s=outdoor",
+      "generated_subset": true,
+      "attribute": "color",
+      "object_type": "common",
+      "scene_type": "outdoor",
+      "prompts": {
+        "full": "a black pig is standing on a bowling lane in the mountains",
+        "mask-simple": "a black pig",
+        "mask-rich": "a standing black pig with tiny hooves"
+      },
+      "reference_path": "reference_generated/a=black_o=pig_s=outdoor.png",
+      "mask_path": "mask_generated/a=black_o=pig_s=outdoor.png",
+      "actual_editor_output_path": "im_generated_mask-rich_1/a=black_o=pig_s=outdoor.png",
+      "reference_url": "https://storage.googleapis.com/editbench/reference_generated/a%3Dblack_o%3Dpig_s%3Doutdoor.png",
+      "mask_url": "https://storage.googleapis.com/editbench/mask_generated/a%3Dblack_o%3Dpig_s%3Doutdoor.png",
+      "actual_editor_output_url": "https://storage.googleapis.com/editbench/im_generated_mask-rich_1/a%3Dblack_o%3Dpig_s%3Doutdoor.png",
+      "reference_role": "pre-edit generated base / scoring reference",
+      "actual_output_role": "actual Imagen Editor output",
+      "metrics": {
+        "width": 1024,
+        "height": 1024,
+        "mask_fraction": 0.354347,
+        "mask_bbox_xyxy": [
+          195,
+          283,
+          857,
+          886
+        ],
+        "outside_mean_abs": 0.713719,
+        "outside_p99_9_abs": 9.0,
+        "outside_max_abs": 43,
+        "outside_fraction_gt5": 0.002059,
+        "inside_mean_abs": 50.335757,
+        "inside_fraction_gt10": 0.815349,
+        "changed_vs_mask_iou": 0.81405,
+        "changed_pixels": 303544,
+        "inside_changed_pixels": 302951
+      },
+      "local_edit_verified": true,
+      "preview_path": "previews/eb_gen_029_pig.jpg"
+    },
+    {
+      "sample_id": "eb_gen_025_dog",
+      "annotation_row": 25,
+      "file_stem": "a=blue_o=dog_s=painting",
+      "generated_subset": true,
+      "attribute": "color",
+      "object_type": "common",
+      "scene_type": "painting",
+      "prompts": {
+        "full": "the sketch of a blue dog on a stage singing, standing on its back paws",
+        "mask-simple": "a blue dog",
+        "mask-rich": "a blue dog in a yellow vest with open arms, standing on its back paws"
+      },
+      "reference_path": "reference_generated/a=blue_o=dog_s=painting.png",
+      "mask_path": "mask_generated/a=blue_o=dog_s=painting.png",
+      "actual_editor_output_path": "im_generated_mask-rich_1/a=blue_o=dog_s=painting.png",
+      "reference_url": "https://storage.googleapis.com/editbench/reference_generated/a%3Dblue_o%3Ddog_s%3Dpainting.png",
+      "mask_url": "https://storage.googleapis.com/editbench/mask_generated/a%3Dblue_o%3Ddog_s%3Dpainting.png",
+      "actual_editor_output_url": "https://storage.googleapis.com/editbench/im_generated_mask-rich_1/a%3Dblue_o%3Ddog_s%3Dpainting.png",
+      "reference_role": "pre-edit generated base / scoring reference",
+      "actual_output_role": "actual Imagen Editor output",
+      "metrics": {
+        "width": 1024,
+        "height": 1024,
+        "mask_fraction": 0.377299,
+        "mask_bbox_xyxy": [
+          166,
+          183,
+          820,
+          921
+        ],
+        "outside_mean_abs": 0.713722,
+        "outside_p99_9_abs": 8.0,
+        "outside_max_abs": 32,
+        "outside_fraction_gt5": 0.001674,
+        "inside_mean_abs": 106.016478,
+        "inside_fraction_gt10": 0.660458,
+        "changed_vs_mask_iou": 0.659836,
+        "changed_pixels": 261668,
+        "inside_changed_pixels": 261295
+      },
+      "local_edit_verified": true,
+      "preview_path": "previews/eb_gen_025_dog.jpg"
+    },
+    {
+      "sample_id": "eb_gen_015_sawfish",
+      "annotation_row": 15,
+      "file_stem": "a=cloth_o=sawfish_s=indoor",
+      "generated_subset": true,
+      "attribute": "material",
+      "object_type": "uncommon",
+      "scene_type": "indoor",
+      "prompts": {
+        "full": "a cloth sawfish doll hung between two alleys in a large shopping mall",
+        "mask-simple": "a cloth sawfish doll",
+        "mask-rich": "a yellow cloth sawfish doll wearing a scarf"
+      },
+      "reference_path": "reference_generated/a=cloth_o=sawfish_s=indoor.png",
+      "mask_path": "mask_generated/a=cloth_o=sawfish_s=indoor.png",
+      "actual_editor_output_path": "im_generated_mask-rich_1/a=cloth_o=sawfish_s=indoor.png",
+      "reference_url": "https://storage.googleapis.com/editbench/reference_generated/a%3Dcloth_o%3Dsawfish_s%3Dindoor.png",
+      "mask_url": "https://storage.googleapis.com/editbench/mask_generated/a%3Dcloth_o%3Dsawfish_s%3Dindoor.png",
+      "actual_editor_output_url": "https://storage.googleapis.com/editbench/im_generated_mask-rich_1/a%3Dcloth_o%3Dsawfish_s%3Dindoor.png",
+      "reference_role": "pre-edit generated base / scoring reference",
+      "actual_output_role": "actual Imagen Editor output",
+      "metrics": {
+        "width": 1024,
+        "height": 1024,
+        "mask_fraction": 0.168809,
+        "mask_bbox_xyxy": [
+          239,
+          344,
+          937,
+          645
+        ],
+        "outside_mean_abs": 0.577904,
+        "outside_p99_9_abs": 7.0,
+        "outside_max_abs": 31,
+        "outside_fraction_gt5": 0.001324,
+        "inside_mean_abs": 107.469609,
+        "inside_fraction_gt10": 0.888633,
+        "changed_vs_mask_iou": 0.88625,
+        "changed_pixels": 157772,
+        "inside_changed_pixels": 157296
+      },
+      "local_edit_verified": true,
+      "preview_path": "previews/eb_gen_015_sawfish.jpg"
+    },
+    {
+      "sample_id": "eb_gen_064_triangle",
+      "annotation_row": 64,
+      "file_stem": "a=triangle_o=letter_style=real",
+      "generated_subset": true,
+      "attribute": "shape",
+      "object_type": "writing",
+      "scene_type": "real",
+      "prompts": {
+        "full": "a few triangle-shaped letters are standing on the fence of a large house",
+        "mask-simple": "a few triangle-shaped letters",
+        "mask-rich": "five triangle-shaped letters \"A\" standing side by side"
+      },
+      "reference_path": "reference_generated/a=triangle_o=letter_style=real.png",
+      "mask_path": "mask_generated/a=triangle_o=letter_style=real.png",
+      "actual_editor_output_path": "im_generated_mask-rich_1/a=triangle_o=letter_style=real.png",
+      "reference_url": "https://storage.googleapis.com/editbench/reference_generated/a%3Dtriangle_o%3Dletter_style%3Dreal.png",
+      "mask_url": "https://storage.googleapis.com/editbench/mask_generated/a%3Dtriangle_o%3Dletter_style%3Dreal.png",
+      "actual_editor_output_url": "https://storage.googleapis.com/editbench/im_generated_mask-rich_1/a%3Dtriangle_o%3Dletter_style%3Dreal.png",
+      "reference_role": "pre-edit generated base / scoring reference",
+      "actual_output_role": "actual Imagen Editor output",
+      "metrics": {
+        "width": 1024,
+        "height": 1024,
+        "mask_fraction": 0.202756,
+        "mask_bbox_xyxy": [
+          9,
+          504,
+          1024,
+          719
+        ],
+        "outside_mean_abs": 0.784201,
+        "outside_p99_9_abs": 11.0,
+        "outside_max_abs": 52,
+        "outside_fraction_gt5": 0.002145,
+        "inside_mean_abs": 82.34415,
+        "inside_fraction_gt10": 0.748421,
+        "changed_vs_mask_iou": 0.745189,
+        "changed_pixels": 160040,
+        "inside_changed_pixels": 159118
+      },
+      "local_edit_verified": true,
+      "preview_path": "previews/eb_gen_064_triangle.jpg"
+    },
+    {
+      "sample_id": "eb_gen_114_three",
+      "annotation_row": 114,
+      "file_stem": "a=three_o=letter_style=painting",
+      "generated_subset": true,
+      "attribute": "count",
+      "object_type": "writing",
+      "scene_type": "painting",
+      "prompts": {
+        "full": "the painting of three letters on a pizza under a tree on the porch",
+        "mask-simple": "three letters",
+        "mask-rich": "three black letters \"MZA\""
+      },
+      "reference_path": "reference_generated/a=three_o=letter_style=painting.png",
+      "mask_path": "mask_generated/a=three_o=letter_style=painting.png",
+      "actual_editor_output_path": "im_generated_mask-rich_1/a=three_o=letter_style=painting.png",
+      "reference_url": "https://storage.googleapis.com/editbench/reference_generated/a%3Dthree_o%3Dletter_style%3Dpainting.png",
+      "mask_url": "https://storage.googleapis.com/editbench/mask_generated/a%3Dthree_o%3Dletter_style%3Dpainting.png",
+      "actual_editor_output_url": "https://storage.googleapis.com/editbench/im_generated_mask-rich_1/a%3Dthree_o%3Dletter_style%3Dpainting.png",
+      "reference_role": "pre-edit generated base / scoring reference",
+      "actual_output_role": "actual Imagen Editor output",
+      "metrics": {
+        "width": 1024,
+        "height": 1024,
+        "mask_fraction": 0.329679,
+        "mask_bbox_xyxy": [
+          69,
+          423,
+          916,
+          945
+        ],
+        "outside_mean_abs": 0.9306,
+        "outside_p99_9_abs": 12.0,
+        "outside_max_abs": 52,
+        "outside_fraction_gt5": 0.003144,
+        "inside_mean_abs": 123.917664,
+        "inside_fraction_gt10": 0.911589,
+        "changed_vs_mask_iou": 0.909207,
+        "changed_pixels": 316037,
+        "inside_changed_pixels": 315131
+      },
+      "local_edit_verified": true,
+      "preview_path": "previews/eb_gen_114_three.jpg"
+    }
+  ],
+  "downloaded": {
+    "raw_files": 15,
+    "raw_bytes": 14160918,
+    "preview_bytes": 1029863
+  },
+  "counts": {
+    "samples": 5,
+    "verified": 5
+  }
+}
