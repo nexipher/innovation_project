@@ -2499,3 +2499,29 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   均指向 `review_assets/` 且文件存在；`audit.json`/`AUDIT_REPORT.md` 仍为 24/24
   pass、0 问题。打包后从提交重建干净目录，确认 `index.html` 能打开 24 条且图片
   引用全部存在（见 `review_assets/ASSET_MANIFEST.json`）。
+
+### 13.8 2026-11-28 按已确认判例修订候选轨迹
+
+- **判例 1（整图/局部分开）**：PROBE 高分、局部证据充分，但整图来源没有独立支撑的
+  AutoSplice 篡改图，写「整图 Uncertain、局部 Tampered、总体 Fake」。据此修订
+  `54029_1`、`45749_1`、`69868_0`、`48251_0`、`72548_1`、`64223_2`、`45914_2`；
+  `55310_1` 因 PROBE 0.0782 低于阈值、支持整图 Real，保留「整图 Real + 局部
+  Tampered」作为对照。整图 Real 不再仅凭原图照片连续性推断；视觉连续性只作为限制
+  写入报告。
+- **判例 2（边缘响应 vs 内容异常）**：TruFor 高响应落在整图边缘、不在内容区时，
+  不写局部 Tampered。`51186` 保留局部 Not tampered、总体 Real，certainty 改为
+  Medium；核对 `57332` 的裁剪布局 [500,122,1000,494] 后确认高响应在整图底边/右缘，
+  按同一口径改为局部 Not tampered、总体 Real、certainty Medium。`65547`、`52769`
+  的高响应在内容区但解释不唯一，保留局部 Uncertain。所有 PROBE 的调用理由只写
+  整图来源判断，不再写“补测以区分局部/整图”。
+- **判例 3（补单专家样板）**：新增 2 条补充样板，用现有控制器和真实 PROBE/TruFor
+  重放：
+  - `single_probe__genimage__Glide__...`：PROBE 充分，直接判整图 AI-generated、
+    局部 Not applicable、总体 Fake，停止原因 `model_concluded`；
+  - `single_trufor__autosplice__54029__1__q95`：TruFor 充分，判局部 Tampered、
+    总体 Fake，整图留 Uncertain，停止原因 `model_concluded`。
+  两条不替代 24 条主样板，单独列在工作台“单专家样板”区。
+- **输出**：`manifest.json` 26 条（8 key + 2 single + 16 remaining），
+  `candidate_scripts.json` 76 轮；重跑真实工具并重写 records/traces/pages/
+  review_assets；更新 `CANDIDATE_CASES.md`、`SUMMARY.md`、`REVIEW_QUESTIONS.md`、
+  `AUDIT_REPORT.md`。不训练、不转 final_v2、不碰 test；等复看后再做 LoRA 冒烟。

@@ -98,14 +98,22 @@ def main() -> int:
                 name = panel_name(path)
                 if name and name not in panels:
                     panels[name] = copy_one(path, dest, name)
-        for required in ("trufor_original_crop.png", "trufor_anomaly_map.png",
-                         "trufor_confidence_map.png", "probe_region.png"):
-            if required not in panels:
-                raise SystemExit(f"{sid}: missing {required} in trace image_paths")
-        entries["trufor_original_crop"] = panels["trufor_original_crop.png"]
-        entries["trufor_anomaly_map"] = panels["trufor_anomaly_map.png"]
-        entries["trufor_confidence_map"] = panels["trufor_confidence_map.png"]
-        entries["probe_region"] = panels["probe_region.png"]
+        order = record.get("call_order") or []
+        required = []
+        if "trufor" in order:
+            required += ["trufor_original_crop.png", "trufor_anomaly_map.png",
+                         "trufor_confidence_map.png"]
+        if "probe" in order:
+            required += ["probe_region.png"]
+        for name in required:
+            if name not in panels:
+                raise SystemExit(f"{sid}: missing {name} in trace image_paths")
+        for name, key in (("trufor_original_crop.png", "trufor_original_crop"),
+                          ("trufor_anomaly_map.png", "trufor_anomaly_map"),
+                          ("trufor_confidence_map.png", "trufor_confidence_map"),
+                          ("probe_region.png", "probe_region")):
+            if name in panels:
+                entries[key] = panels[name]
 
         overlays = []
         for index, overlay in enumerate(record.get("review_overlays") or [], 1):
@@ -134,9 +142,11 @@ def main() -> int:
     replacements.sort(key=lambda pair: len(pair[0]), reverse=True)
 
     pages = sorted(out.glob("[0-9][0-9][0-9]__*.html"))
-    if len(pages) != 24:
-        raise SystemExit(f"expected 24 pages, got {len(pages)}")
+    if len(pages) != len(records):
+        raise SystemExit(f"expected {len(records)} pages, got {len(pages)}")
+    record_by_page = {record["page"]: record for record in records}
     for page in pages:
+        record = record_by_page[page.name]
         text = page.read_text(encoding="utf-8")
         for old, new in replacements:
             text = text.replace(old, new)
@@ -148,12 +158,15 @@ def main() -> int:
         wrong = [src for src in srcs if not src.startswith("review_assets/")]
         if wrong:
             raise SystemExit(f"{page.name}: non-packaged src {wrong[:5]}")
-        if len(srcs) < 6:
+        if len(srcs) < 3:
             raise SystemExit(f"{page.name}: only {len(srcs)} images")
         for required in ("trufor_original_crop", "trufor_anomaly_map",
                          "trufor_confidence_map", "probe_region"):
-            if not any(required in src for src in srcs):
-                raise SystemExit(f"{page.name}: missing {required}")
+            if record.get("call_order") and (
+                    ("trufor" in record["call_order"] and required.startswith("trufor"))
+                    or ("probe" in record["call_order"] and required == "probe_region")):
+                if not any(required in src for src in srcs):
+                    raise SystemExit(f"{page.name}: missing {required}")
 
     (assets_root / "ASSET_MANIFEST.json").write_text(
         json.dumps({"schema": "sft_review_assets/1", "samples": manifest},
@@ -164,7 +177,7 @@ def main() -> int:
     lines = [
         "# 审核图片包",
         "",
-        f"- 24 条案例，逐条目录；共 {sum(len(item['assets']) for item in manifest)} 类图片。",
+        f"- {len(manifest)} 条案例，逐条目录；共 {sum(len(item['assets']) for item in manifest)} 类图片。",
         f"- 总字节：{total_bytes}（约 {total_bytes / 1e6:.1f} MB）。",
         "- 文件按 `original` 路径从运行环境复制，未重新生成、未重新测量。",
         "- 页面里的原图、源图、TruFor 原图裁剪/异常图/可靠性图、PROBE 裁剪、预测框叠加",

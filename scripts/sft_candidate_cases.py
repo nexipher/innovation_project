@@ -25,9 +25,9 @@ CASES = {
             "anomalies": "TruFor 分数 0.9995，异常图的高响应集中在右侧白色衣物的一条竖直区域，可靠性图在同一区域为高可靠；响应没有落在树干或草地上。整图来源仍未测量。",
             "target": "probe — 局部高响应已经出现，但整图是否 AI 生成仍无测量；PROBE 是唯一的整图见证，补测后才能把整图来源和局部篡改分开写。",
         },
-        "reasoning": "TruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图也显示该衣物下缘与背景的分界较直；这支持局部内容变化。PROBE 0.7219 高于 0.5，但它是整图判别器的原始分数，不定位、也不是校准概率；原图其余场景（树冠、草地、水面）保持照片连续性，因此不把整图写成 AI 生成。两个专家回答不同问题：局部证据支持 Tampered，整图证据不足以支持整图生成，总体由局部篡改支撑为 Fake。",
+        "reasoning": "TruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图也显示该衣物下缘与背景的分界较直；这支持局部内容变化。PROBE 0.7219 高于 0.5，但它是整图判别器的原始分数，不定位、也不是校准概率；原图其余场景的照片连续性只是视觉观察，不能替代独立的整图来源测量。整图来源因此保留 Uncertain，不写成 Real；局部 Tampered 支撑总体 Fake。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [300, 760, 935, 910],
@@ -36,7 +36,7 @@ CASES = {
             }],
             "certainty": "High",
             "primary_evidence": ["trufor_expert"],
-            "report": "TruFor 的高响应局限在右侧白色衣物且可靠性高，支持局部篡改；PROBE 的整图高分不能定位，原图其余场景保持照片连续性，故整图仍判 Real。",
+            "report": "TruFor 高响应局限在右侧白色衣物且可靠，支持局部篡改；PROBE 只有整图高分、没有独立的整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
     "autosplice__55310__1__q95": {
@@ -81,9 +81,9 @@ CASES = {
             "anomalies": "PROBE 0.9994 很高，倾向 AI-generated；但它是整图分数、不定位。为判断高分是否来自企鹅这一局部对象，补测 TruFor。",
             "target": "trufor — PROBE 的高分不能说明响应来自哪里；用局部定位检查企鹅身体是否有集中响应，以区分整图生成和局部内容变化。",
         },
-        "reasoning": "PROBE 0.9994 是整图判别器的原始分数，高于阈值但不定位；它不能区分“整张图生成”和“照片中插入了生成对象”。TruFor 0.9983，异常图的高响应集中在企鹅身体，可靠性图同区域高可靠，冰面和雪地没有同等响应；原图冰面纹理、雪地阴影保持连续。局部证据支持企鹅这一内容块的变化，整图其余部分仍是照片，因此整图判 Real、局部判 Tampered，总体 Fake；PROBE 的高分更可能是对局部生成对象的整图响应，而不是整图生成的证明。",
+        "reasoning": "PROBE 0.9994 是整图判别器的原始分数，高于阈值但不定位；它既不能证明整张图生成，也不能被局部证据自动解释成整图来源。TruFor 0.9983，异常图的高响应集中在企鹅身体，可靠性图同区域高可靠，冰面和雪地没有同等响应；原图冰面纹理、雪地阴影保持连续，但这只是视觉观察，不能替代独立的整图来源测量。局部证据支持企鹅这一内容块的变化，局部判 Tampered；整图来源仍缺独立支撑，判 Uncertain；总体由局部篡改支撑为 Fake。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [315, 330, 730, 650],
@@ -92,7 +92,7 @@ CASES = {
             }],
             "certainty": "High",
             "primary_evidence": ["trufor_expert"],
-            "report": "PROBE 高分不定位；TruFor 高响应局限在企鹅身体且可靠，冰面背景连续，支持照片中的局部内容变化。",
+            "report": "TruFor 高响应局限在企鹅身体且可靠，支持局部篡改；PROBE 高分没有独立整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
     "autosplice__69868__0__q95": {
@@ -109,9 +109,9 @@ CASES = {
             "anomalies": "TruFor 0.9952，异常图的高响应覆盖老虎身体大部，可靠性图在该区域较高；背景植被没有同等响应。整图来源仍未测量。",
             "target": "probe — 局部响应明确，但整图是否生成仍空白；补测 PROBE 以完成整图来源判断。",
         },
-        "reasoning": "TruFor 0.9952，异常图高响应覆盖老虎身体，可靠性图在该区域较高，原图老虎轮廓与背景过渡偏硬，支持局部内容变化。PROBE 0.8101 高于阈值，但它是整图分数、不能定位；背景植被和地面保持照片连续性，故不把整图写成 AI 生成。整图 Real、局部 Tampered、总体 Fake；局部框较宽，定位精度有限，但内容层面有支持。",
+        "reasoning": "TruFor 0.9952，异常图高响应覆盖老虎身体，可靠性图在该区域较高，原图老虎轮廓与背景过渡偏硬，支持局部内容变化。PROBE 0.8101 高于阈值，但它是整图分数、不能定位；背景植被和地面的照片连续性只是视觉观察，不能替代独立的整图来源测量。局部判 Tampered；整图来源缺独立支撑，判 Uncertain；总体由局部篡改支撑为 Fake。局部框较宽，定位精度有限，certainty 取 Medium。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [100, 360, 1000, 720],
@@ -120,7 +120,7 @@ CASES = {
             }],
             "certainty": "Medium",
             "primary_evidence": ["trufor_expert"],
-            "report": "TruFor 高响应覆盖老虎身体且可靠性较高，支持局部篡改；PROBE 高分不定位，背景连续，整图仍判 Real。",
+            "report": "TruFor 高响应覆盖老虎身体且可靠性较高，支持局部篡改；PROBE 高分没有独立整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
     "autosplice__48251__0__q95": {
@@ -137,9 +137,9 @@ CASES = {
             "anomalies": "PROBE 0.9308 高于阈值，倾向 AI-generated；但它不定位。为判断高分是否来自人物头部/肩部这一局部区域，补测 TruFor。",
             "target": "trufor — PROBE 的整图高分无法说明局部来源；检查人物头部和肩部是否有集中响应。",
         },
-        "reasoning": "PROBE 0.9308 高于阈值，但它是整图判别器的原始分数，不定位，不能单独证明整图生成。TruFor 0.9934，异常图高响应覆盖人物头部和肩部，可靠性图在该区域较高；背景墙面和左侧设备没有同等响应，原图人物边缘与背景过渡偏硬。局部证据支持人物这一内容块的变化，整图其余部分仍是照片，故整图 Real、局部 Tampered、总体 Fake；局部框较宽，定位只到头部/肩部范围，精确边界仍有限。",
+        "reasoning": "PROBE 0.9308 高于阈值，但它是整图判别器的原始分数，不定位，不能单独证明整图生成。TruFor 0.9934，异常图高响应覆盖人物头部和肩部，可靠性图在该区域较高；背景墙面和左侧设备没有同等响应，原图人物边缘与背景过渡偏硬。局部证据支持人物这一内容块的变化，局部判 Tampered；整图来源缺独立支撑，判 Uncertain；总体由局部篡改支撑为 Fake。局部框较宽，定位只到头部/肩部范围，精确边界仍有限。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [30, 310, 1000, 730],
@@ -148,7 +148,7 @@ CASES = {
             }],
             "certainty": "Medium",
             "primary_evidence": ["trufor_expert"],
-            "report": "TruFor 高响应集中在人物头部和肩部，支持局部篡改；PROBE 高分不定位，背景连续，整图仍判 Real。",
+            "report": "TruFor 高响应集中在人物头部和肩部，支持局部篡改；PROBE 高分没有独立整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
     "autosplice__72548__1__q95": {
@@ -165,9 +165,9 @@ CASES = {
             "anomalies": "TruFor 0.9942，异常图的高响应沿舞者身体分布，可靠性图在身体区域中等偏高；响应范围较宽，定位不够精确。整图来源尚未测量。",
             "target": "probe — 局部响应存在但定位较宽，仍需整图来源判断；补测 PROBE。",
         },
-        "reasoning": "TruFor 0.9942，异常图高响应沿舞者身体分布，可靠性图在身体区域中等偏高；原图舞者轮廓与墙面之间过渡较硬。该响应支持局部内容变化，但范围宽、定位精度有限。PROBE 0.8643 高于阈值，但它是整图分数、不定位；墙面和地面的光影保持照片连续性，故整图判 Real。局部 Tampered、总体 Fake，certainty 取 Medium 以反映定位限制。",
+        "reasoning": "TruFor 0.9942，异常图高响应沿舞者身体分布，可靠性图在身体区域中等偏高；原图舞者轮廓与墙面之间过渡较硬。该响应支持局部内容变化，但范围宽、定位精度有限。PROBE 0.8643 高于阈值，但它是整图分数、不定位；墙面和地面的光影连续性只是视觉观察，不能替代独立的整图来源测量。局部判 Tampered；整图来源缺独立支撑，判 Uncertain；总体由局部篡改支撑为 Fake。certainty 取 Medium 以反映定位限制。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [60, 100, 950, 620],
@@ -176,7 +176,7 @@ CASES = {
             }],
             "certainty": "Medium",
             "primary_evidence": ["trufor_expert"],
-            "report": "TruFor 高响应沿舞者身体分布，支持局部篡改，但范围较宽；PROBE 高分不定位，墙面光影连续，整图判 Real。",
+            "report": "TruFor 高响应沿舞者身体分布，支持局部篡改，但范围较宽；PROBE 高分没有独立整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
     "autosplice__64223__2__q95": {
@@ -193,9 +193,9 @@ CASES = {
             "anomalies": "TruFor 0.9934，异常图的高响应覆盖容器和物件区域，可靠性图在该区域较高；周围泥土和枯枝没有同等响应。整图来源尚未测量。",
             "target": "probe — 局部证据明确，但整图来源仍空白；补测 PROBE 以判断是否为整图生成。",
         },
-        "reasoning": "TruFor 0.9934，异常图高响应覆盖容器和蓝色物件，可靠性图在该区域较高，原图该内容块与泥土、枯枝的过渡较硬，支持局部内容变化。PROBE 0.5434 仅略高于阈值，是整图分数且不定位；周围地面纹理保持照片连续性，故整图判 Real。局部 Tampered、总体 Fake；PROBE 的边界高分作为限制写入报告，不把它当作整图生成的证明。",
+        "reasoning": "TruFor 0.9934，异常图高响应覆盖容器和蓝色物件，可靠性图在该区域较高，原图该内容块与泥土、枯枝的过渡较硬，支持局部内容变化。PROBE 0.5434 仅略高于阈值，是整图分数且不定位；周围地面纹理的照片连续性只是视觉观察，不能替代独立的整图来源测量。局部判 Tampered；整图来源缺独立支撑，判 Uncertain；总体由局部篡改支撑为 Fake。PROBE 的边界高分作为限制写入报告，不把它当作整图生成的证明。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [45, 265, 930, 755],
@@ -204,7 +204,7 @@ CASES = {
             }],
             "certainty": "Medium",
             "primary_evidence": ["trufor_expert"],
-            "report": "TruFor 高响应覆盖容器和物件区域且可靠，支持局部篡改；PROBE 仅略高于阈值且不定位，整图仍判 Real。",
+            "report": "TruFor 高响应覆盖容器和物件区域且可靠，支持局部篡改；PROBE 仅略高于阈值且无独立整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
     "autosplice__45914__2__q95": {
@@ -221,9 +221,9 @@ CASES = {
             "anomalies": "PROBE 0.9899 高于阈值，倾向 AI-generated，但不定位；为判断高分是否来自公交车这一内容块，补测 TruFor。",
             "target": "trufor — 检查公交车车身是否有集中高响应，以区分整图生成和局部内容变化。",
         },
-        "reasoning": "PROBE 0.9899 是整图分数，高于阈值但不定位，不能区分整图生成与照片中的局部内容变化。TruFor 0.9928，异常图高响应覆盖公交车车身，可靠性图在该区域较高；土路、树木和电线杆没有同等响应，原图这些背景保持照片连续性。局部证据支持公交车这一内容块的变化，整图其余部分仍是照片，故整图 Real、局部 Tampered、总体 Fake；PROBE 高分更可能是对局部对象的整图响应。",
+        "reasoning": "PROBE 0.9899 是整图分数，高于阈值但不定位，不能证明整图生成，也不能被局部证据自动解释成整图来源。TruFor 0.9928，异常图高响应覆盖公交车车身，可靠性图在该区域较高；土路、树木和电线杆没有同等响应，原图这些背景保持照片连续性，但这只是视觉观察，不能替代独立的整图来源测量。局部判 Tampered；整图来源缺独立支撑，判 Uncertain；总体由局部篡改支撑为 Fake。",
         "verdict": {
-            "verdict": "Fake", "whole_image_generation": "Real",
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
             "suspicious_regions": [{
                 "bbox": [200, 190, 735, 945],
@@ -232,7 +232,7 @@ CASES = {
             }],
             "certainty": "High",
             "primary_evidence": ["trufor_expert"],
-            "report": "PROBE 高分不定位；TruFor 高响应集中在公交车车身且可靠，背景连续，支持照片中的局部内容变化。",
+            "report": "TruFor 高响应集中在公交车车身且可靠，支持局部篡改；PROBE 高分没有独立整图来源支撑，整图 Uncertain，总体由局部篡改判 Fake。",
         },
     },
 
@@ -253,14 +253,14 @@ CASES = {
             "anomalies": "TruFor 0.9723 很高，但异常图的高响应只出现在最右侧一条窄边，可靠性图在该窄边为高可靠；乌鸦本体、岩石和水面没有高响应。整图来源尚未测量。",
             "target": "probe — 局部高分落在画框边缘而不是内容上；补测 PROBE 以确认整图来源，并判断该高分是否只是边缘响应。",
         },
-        "reasoning": "TruFor 0.9723 高于阈值，但异常图的高响应只出现在最右侧一条窄边，可靠性图在同一条边缘为高可靠；乌鸦本体、岩石、水面和文字区域都没有高响应。原图右缘就是画框边界，该响应不落在内容变化上。PROBE 0.0008 低于阈值，支持整图 Real。局部不写 Tampered：高分有，但支持它的响应在画框边缘而非内容；局部判 Not tampered，整图 Real，总体 Real。报告保留“TruFor 高分来自边缘响应”这一限制。",
+        "reasoning": "TruFor 0.9723 高于阈值，但异常图的高响应只出现在最右侧一条窄边，可靠性图在同一条边缘为高可靠；乌鸦本体、岩石、水面和文字区域都没有高响应。原图右缘就是画框边界，该响应不落在内容变化上。PROBE 0.0008 低于阈值，支持整图 Real。局部不写 Tampered：高分有，但支持它的响应在画框边缘而非内容；局部判 Not tampered，整图 Real，总体 Real。certainty 取 Medium：结论有支持，但 TruFor 高分本身仍是残余限制。",
         "verdict": {
             "verdict": "Real", "whole_image_generation": "Real",
             "local_manipulation": "Not tampered",
             "suspicious_regions": [],
-            "certainty": "High",
+            "certainty": "Medium",
             "primary_evidence": ["probe_dino_expert", "trufor_expert"],
-            "report": "TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered。",
+            "report": "TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered，certainty Medium。",
         },
     },
     "autosplice__65547__authentic__q95": {
@@ -302,17 +302,17 @@ CASES = {
         "second": {
             "region": "none",
             "visual": "同一张枪械部件照片；金属划痕、反光和混凝土地面保持连续。",
-            "anomalies": "TruFor 0.6269 高于阈值，但异常图只在画面最右侧出现一个很小的响应条，高响应占比很低；可靠性图整体较高，响应并不在枪械主体上。整图来源尚未测量。",
-            "target": "probe — 局部高分很小且位于画面边缘，先补测 PROBE 确认整图来源，再判断该响应是否支持局部篡改。",
+            "anomalies": "TruFor 0.6269 高于阈值，但异常图的高响应只出现在画面底边和右缘的窄条；裁剪布局显示底边响应落在画面下半部裁剪的底边，对应整图底边；可靠性图整体较高，响应不在枪械主体上。整图来源尚未测量。",
+            "target": "probe — 整图来源尚未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。",
         },
-        "reasoning": "TruFor 0.6269 高于阈值，但异常图的高响应只是画面最右侧一个很小的条带，未落在枪械主体或地面内容上；可靠性图整体较高并不能把边缘条带变成内容证据。按协议，分数高于阈值但只有候选、没有内容层面的支持时，局部应写 Uncertain，而不是 Tampered。PROBE 0.4577 低于阈值，倾向整图 Real。总体因局部未解决判 Uncertain，certainty 为 null。",
+        "reasoning": "核对裁剪布局：面板显示的是画面下半部区域 [500,122,1000,494]，高响应落在裁剪底边，也就是整图底边；另一个小响应在整图右缘。两者都是整图边缘，不是内容区的异常。按与 51186 相同的口径，边缘响应不作为局部篡改证据；局部判 Not tampered。PROBE 0.4577 低于阈值，倾向整图 Real，整图判 Real；总体 Real。certainty 取 Medium：TruFor 分数仍高于阈值，边缘响应是残余限制。",
         "verdict": {
-            "verdict": "Uncertain", "whole_image_generation": "Real",
-            "local_manipulation": "Uncertain",
+            "verdict": "Real", "whole_image_generation": "Real",
+            "local_manipulation": "Not tampered",
             "suspicious_regions": [],
-            "certainty": None,
+            "certainty": "Medium",
             "primary_evidence": ["probe_dino_expert", "trufor_expert"],
-            "report": "PROBE 略低于阈值、倾向整图 Real；TruFor 虽高于阈值，但高响应只是画面右缘的小条带，局部缺少内容证据，保留 Uncertain。",
+            "report": "TruFor 高分只落在整图底边和右缘，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。",
         },
     },
     "autosplice__70684__authentic__q95": {
@@ -645,6 +645,52 @@ CASES = {
             "certainty": "Medium",
             "primary_evidence": ["probe_dino_expert", "trufor_expert"],
             "report": "PROBE 低分支持整图 Real；TruFor 低于阈值，狐猴身上的宽响应可靠性低且无内容边界，局部 Not tampered。",
+        },
+    },
+
+    # ------------------------------------------------------------------
+    # Supplementary single-expert exemplars
+    # ------------------------------------------------------------------
+    "single_probe__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95": {
+        "call_order": ["probe"],
+        "first": {
+            "region": "none",
+            "visual": "狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。",
+            "anomalies": "毛发走向和口鼻边缘略显过度平滑，先测量整图来源。",
+            "target": "probe — 整图来源尚未测量；PROBE 是整图来源的判别器。",
+        },
+        "second": None,
+        "reasoning": "PROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable；TruFor 即使给出局部响应，也不会改变整图结论，因此不再补测，直接结案。总体 Fake，certainty High。",
+        "verdict": {
+            "verdict": "Fake", "whole_image_generation": "AI-generated",
+            "local_manipulation": "Not applicable",
+            "suspicious_regions": [],
+            "certainty": "High",
+            "primary_evidence": ["probe_dino_expert"],
+            "report": "PROBE 0.9672 支持整图 AI-generated，毛发整体过度平滑；局部问题 Not applicable，单专家直接结案。",
+        },
+    },
+    "single_trufor__autosplice__54029__1__q95": {
+        "call_order": ["trufor"],
+        "first": {
+            "region": "[300, 760, 935, 910]",
+            "visual": "户外树荫下的晾衣绳，挂着多件衣物；右侧一件白色衣物表面很亮，下缘与背景的分界较直。",
+            "anomalies": "右侧白色衣物的亮度和边界与周围柔软布料不一致，先做局部测量。",
+            "target": "trufor — 右侧白色衣物是主要局部候选，先确认异常响应和可靠性。",
+        },
+        "second": None,
+        "reasoning": "TruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图该处内容边界较直；局部证据支持 Tampered。整图来源尚未测量，PROBE 没有调用，因此不能把整图判成 Real 或 AI-generated，整图保留 Uncertain。局部 Tampered 足以支撑总体 Fake；certainty 取 Medium，因为整图来源仍未解决。",
+        "verdict": {
+            "verdict": "Fake", "whole_image_generation": "Uncertain",
+            "local_manipulation": "Tampered",
+            "suspicious_regions": [{
+                "bbox": [300, 760, 935, 910],
+                "reason": "TruFor 高响应集中在右侧白色衣物，可靠性图同区域可靠，原图该处内容边界较直",
+                "evidence": ["{{TRUFOR_ID}}"],
+            }],
+            "certainty": "Medium",
+            "primary_evidence": ["trufor_expert"],
+            "report": "TruFor 高响应集中在右侧白色衣物且可靠，局部 Tampered 支撑总体 Fake；整图来源未测，保留 Uncertain。",
         },
     },
 }

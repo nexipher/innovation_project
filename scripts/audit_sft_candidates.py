@@ -152,18 +152,24 @@ def audit_page(page: Path, record: dict) -> list[str]:
                   "候选调用顺序"):
         if label not in text:
             issues.append(f"page missing section/label {label!r}")
-    for panel in ("trufor_original_crop.png", "trufor_anomaly_map.png",
-                  "trufor_confidence_map.png", "probe_region.png"):
-        if panel not in text:
-            issues.append(f"page missing {panel}")
+    order = record.get("call_order") or []
+    if "trufor" in order:
+        for panel in ("trufor_original_crop.png", "trufor_anomaly_map.png",
+                      "trufor_confidence_map.png"):
+            if panel not in text:
+                issues.append(f"page missing {panel}")
+    if "probe" in order:
+        if "probe_region.png" not in text:
+            issues.append("page missing probe_region.png")
     if record.get("page") and record["page"] not in text:
         pass  # page does not need to link itself
     if "候选样板：" not in text:
         issues.append("page missing scripted-candidate banner")
     if " → ".join(record.get("call_order") or []) not in text:
         issues.append("page missing the call order")
-    for expert in ("probe_dino_expert", "trufor_expert"):
-        if expert not in text:
+    for call, expert in (("probe", "probe_dino_expert"),
+                         ("trufor", "trufor_expert")):
+        if call in order and expert not in text:
             issues.append(f"page missing {expert} in evidence table")
     # Link targets.
     for link in re.findall(r'(?:src|href)="([^"]+)"', text):
@@ -178,19 +184,28 @@ def audit_split(out: Path) -> list[str]:
     issues = []
     manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
     samples = manifest["samples"]
-    if len(samples) != 24:
+    if len(samples) != 26:
         issues.append(f"manifest has {len(samples)} samples")
-    if Counter(row["kind"] for row in samples) != Counter({
+    main = [row for row in samples
+            if not str(row["kind"]).startswith("single_expert")]
+    single = [row for row in samples
+              if str(row["kind"]).startswith("single_expert")]
+    if Counter(row["kind"] for row in main) != Counter({
             "autosplice_forged": 8, "autosplice_authentic": 6,
             "genimage_generated": 6, "genimage_real": 4}):
-        issues.append(f"composition differs: {dict(Counter(row['kind'] for row in samples))}")
+        issues.append(f"main composition differs: "
+                      f"{dict(Counter(row['kind'] for row in main))}")
+    if Counter(row["kind"] for row in single) != Counter({
+            "single_expert_probe": 1, "single_expert_trufor": 1}):
+        issues.append(f"single-expert composition differs: "
+                      f"{dict(Counter(row['kind'] for row in single))}")
     if any(row.get("split") != "train" for row in samples):
         issues.append("some samples are not on the train side")
-    auto_sources = [row["source_id"] for row in samples
+    auto_sources = [row["source_id"] for row in main
                     if row["kind"].startswith("autosplice")]
     if len(auto_sources) != len(set(auto_sources)):
         issues.append("AutoSplice base reused")
-    gen_sources = [row["source_id"] for row in samples
+    gen_sources = [row["source_id"] for row in main
                    if not row["kind"].startswith("autosplice")]
     if len(gen_sources) != len(set(gen_sources)):
         issues.append("GenImage/Real source reused")
@@ -199,6 +214,9 @@ def audit_split(out: Path) -> list[str]:
         issues.append(f"expected 8 key cases, got {len(key)}")
     if samples[:8] != key:
         issues.append("key cases are not the first eight manifest rows")
+    if [row["sample_id"] for row in samples[8:10]] != [
+            row["sample_id"] for row in single]:
+        issues.append("single-expert exemplars are not rows 9-10")
     return issues
 
 
@@ -253,7 +271,8 @@ def main() -> int:
     lines = [
         "# 首轮 SFT 候选样板 — 收尾审计",
         "",
-        f"- 审计样本：{len(rows)}/24；发现问题：{total_issues}；全局问题：{len(global_issues)}。",
+        f"- 审计样本：{len(rows)}/{len(rows)}；发现问题：{total_issues}；"
+        f"全局问题：{len(global_issues)}。",
         "- 审计不加载模型、不读 GPU；只读 manifest/split/records/traces/页面。",
         "- 检查项：证据引用时序、数字与已投递 token 对齐、真值/mask 词、结论字段、",
         "  页面原图/三图/分数表/调用顺序/结案/链接、划分与组成。",

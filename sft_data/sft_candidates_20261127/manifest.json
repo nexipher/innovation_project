@@ -9,7 +9,12 @@
    "autosplice_forged": 8,
    "autosplice_authentic": 6,
    "genimage_generated": 6,
-   "genimage_real": 4
+   "genimage_real": 4,
+   "total": 26,
+   "single_expert": {
+    "probe_only": 1,
+    "trufor_only": 1
+   }
   },
   "forged": "distinct bases; TruFor score>=0.99, high-response region present; mix of PROBE low/mid/high",
   "authentic": "distinct bases; include two TruFor-high false positives, two borderline/mid, one low-reliability, one PROBE-high",
@@ -18,14 +23,17 @@
   "key_cases": "strong local evidence, TruFor-high real, PROBE-high local edit; 8 cases listed first"
  },
  "counts": {
-  "total": 24,
+  "total": 26,
   "by_kind": {
    "autosplice_forged": 8,
    "autosplice_authentic": 6,
    "genimage_generated": 6,
+   "single_expert_probe": 1,
+   "single_expert_trufor": 1,
    "genimage_real": 4
   },
-  "key_cases": 8
+  "key_cases": 8,
+  "single_expert_exemplars": 2
  },
  "split": {
   "path": "sft_data/sft_candidates_20261127/split.json",
@@ -408,6 +416,105 @@
    "condition": "jpeg_q95",
    "treatment": "jpeg_q95",
    "encoder": "jpeg"
+  },
+  {
+   "kind": "single_expert_probe",
+   "source_id": "Glide/GLIDE_1000_200_01_185_glide_00020",
+   "variant_id": "single_probe__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95",
+   "variant": "q95",
+   "path": "dataset/GenImage_q95/Glide/GLIDE_1000_200_01_185_glide_00020.jpg",
+   "source_path": "dataset/GenImage_Test/Glide/GLIDE_1000_200_01_185_glide_00020.png",
+   "q95_sha256": "3459ea69d4b5417ced450847ae73af1e507b7c054900b275baa7d5d9f3beb19e",
+   "source_sha256": "f4171f92ea30215f5e7a507b957f84b0193234ef7c92876653124bb3358521c7",
+   "mask_path": null,
+   "mask_sha256": null,
+   "split": "train",
+   "group": "Glide",
+   "ground_truth": "Fake",
+   "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+   },
+   "sample_id": "single_probe__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95",
+   "selection_role": "probe_only",
+   "risk_tags": [
+    "single_expert",
+    "probe_only",
+    "whole_generated"
+   ],
+   "key_case": false,
+   "key_case_rank": null,
+   "screening_review_only": {
+    "probe_score": 0.967244,
+    "trufor_score": 0.148888,
+    "trufor_map_high_fraction": 0.191849,
+    "trufor_confidence_mean": 0.79394,
+    "trufor_low_confidence_fraction": 0.173248,
+    "trufor_iou": null
+   },
+   "usage_flags": [
+    "sft_candidate_round1",
+    "probe_only"
+   ],
+   "usage_roles": [
+    "sft_candidate_review"
+   ],
+   "no_known_use": false,
+   "condition": "jpeg_q95",
+   "treatment": "jpeg_q95",
+   "encoder": "jpeg",
+   "single_expert": true,
+   "note": "supplementary single-expert exemplar; same image and source identity as genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95"
+  },
+  {
+   "kind": "single_expert_trufor",
+   "source_id": "54029",
+   "variant_id": "single_trufor__autosplice__54029__1__q95",
+   "variant": "1",
+   "path": "dataset/AutoSplice_q95/Forged_JPEG100/54029_1.jpg",
+   "source_path": "dataset/AutoSplice/Forged_JPEG100/54029_1.jpg",
+   "q95_sha256": "e09deb0653142b84020e0e818672fb027a50787d9e8d7a60ce4c55431ed1008f",
+   "mask_path": "dataset/AutoSplice/Mask/54029_mask.png",
+   "mask_sha256": "0289ebb107f7c82f055068712539bba4e5deba1da14670ee5b8a5989447c953b",
+   "split": "train",
+   "group": "AutoSplice_Forged",
+   "ground_truth": "Fake",
+   "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+   },
+   "sample_id": "single_trufor__autosplice__54029__1__q95",
+   "base_variant_count": 4,
+   "mask_shared_by_base": true,
+   "selection_role": "trufor_only",
+   "risk_tags": [
+    "single_expert",
+    "trufor_only",
+    "strong_local_evidence"
+   ],
+   "key_case": false,
+   "key_case_rank": null,
+   "screening_review_only": {
+    "probe_score": 0.721901,
+    "trufor_score": 0.999517,
+    "trufor_map_high_fraction": 0.091042,
+    "trufor_confidence_mean": 0.936411,
+    "trufor_low_confidence_fraction": 0.000117,
+    "trufor_iou": 0.393387
+   },
+   "usage_flags": [
+    "sft_candidate_round1",
+    "trufor_only"
+   ],
+   "usage_roles": [
+    "sft_candidate_review"
+   ],
+   "no_known_use": false,
+   "condition": "jpeg_q95",
+   "treatment": "jpeg_q95",
+   "encoder": "jpeg",
+   "single_expert": true,
+   "note": "supplementary single-expert exemplar; same image and source identity as autosplice__54029__1__q95"
   },
   {
    "kind": "autosplice_authentic",
@@ -1143,5 +1250,12 @@
    "treatment": "jpeg_q95",
    "encoder": "jpeg"
   }
- ]
+ ],
+ "supplementary": {
+  "purpose": "single-expert exemplars: one PROBE-only conclusion and one TruFor-only overall Fake with whole Uncertain",
+  "samples": [
+   "single_probe__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95",
+   "single_trufor__autosplice__54029__1__q95"
+  ]
+ }
 }

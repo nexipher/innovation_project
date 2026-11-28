@@ -24,13 +24,21 @@ DEFAULT_OUT = ROOT / "sft_data/sft_candidates_20261127"
 FORBIDDEN = ("交叉验证", "相互验证", "共同支持", "相互支持")
 
 
-def planning_text(entry: dict) -> str:
+def planning_text(entry: dict, call: str, first: bool) -> str:
+    target = entry["target"]
+    if call == "probe":
+        # Confirmed rule: the PROBE call reason states the whole-image origin
+        # question only; it must not be phrased as a local-tampering check.
+        target = ("probe — 整图来源尚未测量；PROBE 是整图来源的判别器。"
+                  if first else
+                  "probe — 整图来源仍未测量；PROBE 是整图来源的判别器，"
+                  "补测以完成整图来源判断。")
     return (
         "<planning>\n"
         f"Suspected Region: {entry['region']}\n"
         f"Visual Observation: {entry['visual']}\n"
         f"Suspected Anomalies: {entry['anomalies']}\n"
-        f"Expert Target & Hypothesis: {entry['target']}\n"
+        f"Expert Target & Hypothesis: {target}\n"
         "</planning>"
     )
 
@@ -46,12 +54,12 @@ def build_outputs(case: dict) -> list[str]:
     calls = case["call_order"]
     if not calls:
         raise SystemExit("empty call order")
-    outputs.append(planning_text(case["first"]) + "\n" +
+    outputs.append(planning_text(case["first"], calls[0], True) + "\n" +
                    call_text(calls[0], case["first"]["region"]))
     if len(calls) == 2:
         if not case.get("second"):
             raise SystemExit("two calls but no second planning block")
-        outputs.append(planning_text(case["second"]) + "\n" +
+        outputs.append(planning_text(case["second"], calls[1], False) + "\n" +
                        call_text(calls[1], case["second"]["region"]))
     elif len(calls) > 2:
         raise SystemExit("at most two expert calls are supported")

@@ -1,4 +1,4 @@
-"""Run the 24 first-round SFT candidate trajectories.
+"""Run the revised SFT candidate trajectories (24 main + 2 single-expert).
 
 The assistant turns come from `candidate_scripts.json` (scripted candidate
 writer, not Qwen).  PROBE and TruFor are the real adapters, and the controller,
@@ -214,7 +214,11 @@ def write_csv(path: Path, records: list[dict]) -> None:
 def build_index(out: Path, records: list[dict], batch_meta: dict) -> None:
     key = [row for row in records if row.get("key_case")]
     key.sort(key=lambda row: row.get("key_case_rank") or 99)
-    rest = [row for row in records if not row.get("key_case")]
+    single = [row for row in records
+              if str(row.get("kind", "")).startswith("single_expert")]
+    rest = [row for row in records
+            if not row.get("key_case")
+            and not str(row.get("kind", "")).startswith("single_expert")]
 
     def table(rows):
         body = []
@@ -250,15 +254,20 @@ th{{background:#f4f4f4;text-align:left}} .muted{{color:#666}}
 <div class="banner"><b>候选样板，不是训练数据。</b>助手文本由候选写手按当前协议拟写，
 不是 Qwen 原始输出；PROBE/TruFor 的调用、证据 token、三图和控制器检查都是真实运行。
 真值与 mask 只用于审核，助手每一步只引用当时已收到的证据。通过审核不代表自动进入训练。</div>
-<p class="muted">24 条：8 张 AutoSplice 局部篡改、6 张 AutoSplice 真图、6 张 GenImage
-整图生成、4 张 GenImage Real。全部来自 split.json 的训练侧；同源变体同划分。重点案例
-按讨论价值排在前面。</p>
+<p class="muted">{len(records)} 条：24 条主样板（8 张 AutoSplice 局部篡改、6 张 AutoSplice
+真图、6 张 GenImage 整图生成、4 张 GenImage Real）+ 2 条单专家样板（1 条 PROBE-only、
+1 条 TruFor-only）。全部来自 split.json 的训练侧；同源变体同划分。重点案例按讨论价值
+排在前面。</p>
 <p>配置 <code>{html.escape(batch_meta.get('config_sha256', ''))}</code>；manifest
 <code>{html.escape(batch_meta.get('manifest', {}).get('sha256', ''))}</code>；
 system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</code>。</p>
 <p class="muted">审核图片已打包在 <code>review_assets/</code>；每条页面里的原图、源图、TruFor 三图、PROBE 裁剪和预测框叠加都使用批次内相对路径，拉取仓库后可直接打开。原始 trace 仍保留运行时的路径，作为审计出处。</p>
 <h2>重点案例（{len(key)}）</h2>
 {table(key)}
+<h2>单专家样板（{len(single)}）</h2>
+<p class="muted">这两条只调用一个专家并直接结案：一条 PROBE-only，一条 TruFor-only
+（总体 Fake、整图 Uncertain）。它们用于示范“证据够时不再补测”，不计入 24 条主样板。</p>
+{table(single)}
 <h2>其余候选（{len(rest)}）</h2>
 {table(rest)}
 <p><a href="records.json" download>下载 records.json</a> ·
@@ -269,7 +278,7 @@ system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</c
 <a href="TEST_STATUS.md" download>下载测试状态（Markdown）</a> ·
 <a href="REVIEW_QUESTIONS.md" download>下载待定判例问题（Markdown）</a> ·
 <a href="POST_RUN_PATCHES.md" download>下载文字补丁说明（Markdown）</a></p>
-<p class="muted">收尾审计 24/24 pass、0 问题；一处未投递数字的补丁不影响工具输出、证据 ID、框或结论。</p>
+<p class="muted">收尾审计 {len(records)}/{len(records)} pass、0 问题；一处未投递数字的补丁不影响工具输出、证据 ID、框或结论。</p>
 <p class="muted">每条会话页顶部有“通过 / 待修 / 拒绝”审核控件；决定先存浏览器草稿，
 导出后用 <code>python scripts/g8_review_import.py &lt;文件&gt;</code> 写回仓库。</p>
 </body></html>"""
@@ -279,10 +288,13 @@ system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</c
 def build_candidate_cases(out: Path, records: list[dict]) -> None:
     key = [row for row in records if row.get("key_case")]
     key.sort(key=lambda row: row.get("key_case_rank") or 99)
+    single = [row for row in records
+              if str(row.get("kind", "")).startswith("single_expert")]
+    total = len(records)
     lines = [
-        "# 首轮 SFT 候选样板：重点案例清单",
+        "# 首轮 SFT 候选样板：重点案例与修订清单",
         "",
-        "这 8 条按讨论价值排在审核工作台最前面；完整 24 条见 `index.html`。",
+        f"完整 {total} 条（24 条主样板 + 2 条单专家样板）见 `index.html`。",
         "助手文本是候选写手拟写，不是 Qwen 输出；PROBE/TruFor 与三图是真实运行。",
         "真值和 mask 只用于审核，助手每一步只引用当时已收到的证据。",
         "",
@@ -292,14 +304,14 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
         "|---|---|---|---|---|---:|---:|---|",
     ]
     notes = {
-        "autosplice__54029__1__q95": "强局部证据；PROBE 中高分但局部高响应只在右侧白色衣物，示范整图与局部分开。",
-        "autosplice__55310__1__q95": "PROBE 低分不能清除局部高响应；报纸矩形与高响应重合。",
-        "autosplice__45749__1__q95": "PROBE 接近 1 但实际是局部编辑；示范不要把整图高分直接写成整图生成。",
-        "autosplice__69868__0__q95": "强局部证据、局部框较宽；适合讨论定位精度和 certainty。",
-        "autosplice__48251__0__q95": "PROBE 高分的人像局部编辑；局部响应覆盖头部/肩部，框较宽。",
-        "autosplice__51186__authentic__q95": "TruFor 0.97 但高响应只在画框右缘；示范读可靠性图后不写 Tampered。",
+        "autosplice__54029__1__q95": "强局部证据；PROBE 中高分但整图来源无独立支撑，整图 Uncertain、局部 Tampered。",
+        "autosplice__55310__1__q95": "对照：PROBE 低分支持整图 Real，局部 Tampered；保留 Real + Tampered。",
+        "autosplice__45749__1__q95": "企鹅：PROBE 接近 1 但整图来源缺独立支撑；整图 Uncertain、局部 Tampered、总体 Fake。",
+        "autosplice__69868__0__q95": "强局部证据、局部框较宽；整图 Uncertain + 局部 Tampered + 总体 Fake。",
+        "autosplice__48251__0__q95": "PROBE 高分的人像局部编辑；整图 Uncertain，局部框较宽。",
+        "autosplice__51186__authentic__q95": "TruFor 0.97 但高响应只在画框右缘；局部 Not tampered，certainty Medium。",
         "autosplice__65547__authentic__q95": "TruFor 0.90 的真图；高响应在肩部/衣领，内容解释不唯一，保留 Uncertain。",
-        "genimage__SD15__459_sdv5_00195__q95": "整图生成 + TruFor 0.98 局部高响应；示范整图 AI-generated 后局部 Not applicable。",
+        "genimage__SD15__459_sdv5_00195__q95": "整图生成 + TruFor 0.98 局部高响应；整图 AI-generated 后局部 Not applicable。",
     }
     for row in key:
         screen = row.get("screening_review_only") or {}
@@ -314,7 +326,20 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
             f"{notes.get(row['sample_id'], '')} |")
     lines += [
         "",
-        "## 全部 24 条",
+        "## 单专家样板",
+        "",
+        "| # | sample | 调用 | 真值 overall | 候选 whole/local/overall | 审核页 |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in single:
+        lines.append(
+            f"| {row['index']} | `{row['sample_id']}` | "
+            f"{' → '.join(row.get('call_order') or [])} | {row.get('ground_truth')} | "
+            f"{row.get('whole_image_generation')} / {row.get('local_manipulation')} / "
+            f"{row.get('final_verdict')} | [{row['page']}]({row['page']}) |")
+    lines += [
+        "",
+        f"## 全部 {total} 条",
         "",
         "| # | sample | 类型 | 真值 overall | 候选 overall | calls | 审核页 |",
         "|---|---|---|---|---|---|---|",
@@ -326,39 +351,38 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
             f"{' → '.join(row.get('call_order') or [])} | "
             f"[{row['page']}]({row['page']}) |")
     uncertain = [row for row in records if row.get("final_verdict") == "Uncertain"]
+    calls = {row["counters"]["expert_calls"] for row in records}
     lines += [
         "",
         "## 候选结论分布（审核用）",
         "",
-        f"- 24 条全部完成；每会话 2 次专家调用、3 轮助手输出；证据/覆盖/certainty 检查均为 pass。",
-        f"- 总体与真值一致 {sum(1 for row in records if row.get('final_verdict') == row.get('ground_truth'))}/24；"
-        f"整图维度 {sum(1 for row in records if row.get('whole_image_generation') == (row.get('task_truth') or {}).get('whole_image_generation'))}/24；"
-        f"局部维度 {sum(1 for row in records if row.get('local_manipulation') == (row.get('task_truth') or {}).get('local_manipulation'))}/24。"
+        f"- {total} 条全部完成；专家调用次数分布 {sorted(calls)}；证据/覆盖/certainty 检查均为 pass。",
+        f"- 总体与真值一致 {sum(1 for row in records if row.get('final_verdict') == row.get('ground_truth'))}/{total}；"
+        f"整图维度 {sum(1 for row in records if row.get('whole_image_generation') == (row.get('task_truth') or {}).get('whole_image_generation'))}/{total}；"
+        f"局部维度 {sum(1 for row in records if row.get('local_manipulation') == (row.get('task_truth') or {}).get('local_manipulation'))}/{total}。"
         "这是审核对照，不是验收分数。",
         f"- 总体 Uncertain 共 {len(uncertain)} 条："
         + "、".join(f"`{row['sample_id']}`" for row in uncertain) + "。",
-        "- 其中 5 条 AutoSplice 真图和 1 条 Real 是有意选入的 TruFor 高分/边界/低可靠讨论案例；"
-        "候选按协议把“分数高于阈值但只有候选”或“局部图低可靠”写成 Uncertain，未硬写 Not tampered。"
-        "请审核这些案例该维持 Uncertain，还是应判 Real/Not tampered。",
+        "- 已确认判例：PROBE 高分 + 局部证据充分但整图来源无独立支撑 → 整图 Uncertain、局部 Tampered、总体 Fake；"
+        "55310 因 PROBE 低分保留整图 Real 作对照。",
+        "- 已确认判例：TruFor 响应在整图边缘而非内容区 → 局部 Not tampered；51186、57332 按此口径。",
+        "- 65547、52769 保留局部 Uncertain；70684、67006 等仍按原候选保留。",
         "",
         "## 审核时请重点判断",
         "",
         "1. 每一步是否只引用了该轮之前已经投递的证据；有没有提前使用真值或 mask。",
         "2. 整图来源与局部篡改是否分开写；PROBE 高分是否被错误写成整图生成。",
-        "3. TruFor 高分真图是否被写成 Tampered；可靠性图低的区域是否被当成证据。",
-        "4. 补测时机是否合理：是否在整图或局部仍未解决时才补测；有没有为凑双调用而补测，或该补测时提前结案。",
+        "3. TruFor 高分真图是否被写成 Tampered；边缘响应是否被当成内容异常。",
+        "4. 单专家样板是否真的“证据够就停”：PROBE-only 是否不需要局部；TruFor-only 是否把整图留 Uncertain。",
         "5. 局部框是否与异常图/可靠性图所示区域一致；框过宽时 certainty 是否降级。",
         "",
         "## 边界",
         "",
-        "- 待定判例 `REVIEW_QUESTIONS.md`：TruFor 高分真图何时写 Not tampered、",
-        "  PROBE 高分的局部编辑整图维度怎么写、调用顺序/是否保留单专家样板。",
+        "- `REVIEW_QUESTIONS.md` 记录本轮已确认判例和剩余复核点。",
         "- 审核图片 `review_assets/`：逐条复制运行时的输入图、源图、TruFor 三图、",
         "  PROBE 裁剪和预测框叠加；页面改为批次内相对路径，拉取仓库后可直接打开。",
-        "- 收尾审计 `AUDIT_REPORT.md`：24/24 pass，0 问题（证据引用时序、数字出处、",
+        f"- 收尾审计 `AUDIT_REPORT.md`：{total}/{total} pass，0 问题（证据引用时序、数字出处、",
         "  真值/mask 词、页面结构、链接、划分与组成）。",
-        "- 文字补丁 `POST_RUN_PATCHES.md`：Midjourney 229 的推理去掉了未投递的",
-        "  0.39 数字，改为定性读可靠性图；不影响工具输出、证据 ID、框或结论。",
         "- 候选文本是拟写稿，不是 Qwen 原始输出；运行记录明确标注 `sft_candidate_scripted`。",
         "- 真值与 mask 只在审核侧；助手上下文没有它们。",
         "- 本轮不扩样、不训练、不转 final_v2、不碰 test。",
@@ -376,19 +400,20 @@ def build_summary(out: Path, records: list[dict], batch_meta: dict,
     whole_ok = sum(1 for row in records
                    if row.get("whole_image_generation")
                    == (row.get("task_truth") or {}).get("whole_image_generation"))
+    total = len(records)
     lines = [
         f"# 首轮 SFT 候选样板 — {batch_meta['batch_id']}",
         "",
-        f"- 候选会话：{len(records)}/24 完成；失败 {len(failures)}；wall {elapsed:.1f}s。",
+        f"- 候选会话：{total}/{total} 完成（24 条主样板 + 2 条单专家样板）；"
+        f"失败 {len(failures)}；wall {elapsed:.1f}s。",
         f"- assistant：候选写手拟写（`sft_candidate_scripted`），不是 Qwen 原始输出。",
         f"- 工具：真实 PROBE + TruFor；配置 `{batch_meta.get('config_sha256', '')}`；",
         f"  manifest `{batch_meta.get('manifest', {}).get('sha256', '')}`。",
         f"- 审核入口：`index.html`；重点案例：`CANDIDATE_CASES.md`。",
-        f"- 审核图片：`review_assets/`（24 条，原图/源图/TruFor 三图/PROBE 裁剪/叠加；",
-        f"  页面使用批次内相对路径；共 15.0 MB）。",
-        f"- 收尾审计：`AUDIT_REPORT.md`（24/24 pass，0 问题，2026-11-28）。",
-        f"- 待定判例：`REVIEW_QUESTIONS.md`（TruFor 高分真图、PROBE 高分的局部编辑、",
-        f"  调用顺序与是否保留单专家样板）。",
+        f"- 审核图片：`review_assets/`（逐条原图/源图/可用的专家图/叠加；",
+        f"  页面使用批次内相对路径）。",
+        f"- 收尾审计：`AUDIT_REPORT.md`（{total}/{total} pass，0 问题）。",
+        f"- 已确认判例与复核点：`REVIEW_QUESTIONS.md`。",
         f"- 文字补丁：`POST_RUN_PATCHES.md`（Midjourney 一条去掉未投递的 0.39 数字；",
         f"  不影响工具输出、证据 ID、框或标签）。",
         "",
@@ -411,7 +436,7 @@ def build_summary(out: Path, records: list[dict], batch_meta: dict,
         "",
         "## 运行与审核边界",
         "",
-        "- 24 条全部来自 split.json 的训练侧；同源变体同划分；未读取 test。",
+        f"- {total} 条全部来自 split.json 的训练侧；同源变体同划分；未读取 test。",
         "- 真值和 mask 只写在 record/页面/本汇总，不进助手上下文。",
         "- 候选文本仍需人工审核；通过审核不等于进入训练，也不等于 final_v2 准入。",
         "- 本轮不扩样、不训练、不改原 200/24 批次。",
@@ -447,8 +472,11 @@ def main() -> int:
         raise SystemExit("unexpected manifest schema")
     if scripts.get("schema") != "sft_candidate_scripts/1":
         raise SystemExit("unexpected scripts schema")
-    if len(manifest["samples"]) != 24 or len(scripts["samples"]) != 24:
-        raise SystemExit("expected 24 candidate samples")
+    expected_count = len(manifest["samples"])
+    if expected_count < 24 or len(scripts["samples"]) != expected_count:
+        raise SystemExit(
+            f"expected the manifest and scripts to agree (got "
+            f"{expected_count} / {len(scripts['samples'])})")
     script_by_id = {row["sample_id"]: row for row in scripts["samples"]}
     if set(script_by_id) != {row["sample_id"] for row in manifest["samples"]}:
         raise SystemExit("manifest/scripts sample mismatch")
@@ -515,7 +543,7 @@ def main() -> int:
 
     records, failures = [], []
     started = time.time()
-    print(json.dumps({"samples": 24, "config_sha256": config_sha,
+    print(json.dumps({"samples": expected_count, "config_sha256": config_sha,
                       "out": str(out)}, ensure_ascii=False, indent=2), flush=True)
     for index, sample in enumerate(manifest["samples"], 1):
         sid = sample["sample_id"]
@@ -571,7 +599,7 @@ def main() -> int:
             record["page"] = page
             write_json_atomic(out / "records" / f"{index:03d}__{sid}.json", record)
             records.append(record)
-            print(f"[{index}/24] {sid} overall={record['final_verdict']} "
+            print(f"[{index}/{expected_count}] {sid} overall={record['final_verdict']} "
                   f"whole={record['whole_image_generation']} "
                   f"local={record['local_manipulation']} "
                   f"calls={record['counters']['expert_calls']} "
@@ -597,7 +625,7 @@ def main() -> int:
             }
             write_json_atomic(out / "failures" / f"{index:03d}__{sid}.json", failure)
             failures.append(failure)
-            print(f"[{index}/24] {sid} FAILED: {failure['error']}", flush=True)
+            print(f"[{index}/{expected_count}] {sid} FAILED: {failure['error']}", flush=True)
             break
 
     write_json_atomic(out / "records.json", records)
@@ -614,14 +642,14 @@ def main() -> int:
     build_summary(out, records, batch_meta, failures, time.time() - started)
     end = {
         "finished_at": datetime.now().isoformat(timespec="seconds"),
-        "completed": len(records), "expected": 24, "failed": len(failures),
+        "completed": len(records), "expected": expected_count, "failed": len(failures),
         "config_sha256": config_sha, "dialogue_mode": "sft_candidate_scripted",
         "elapsed_s": round(time.time() - started, 1),
         "failures": failures,
     }
     write_json_atomic(out / "run_end.json", end)
     print(json.dumps(end, ensure_ascii=False, indent=2), flush=True)
-    return 0 if len(records) == 24 and not failures else 1
+    return 0 if len(records) == expected_count and not failures else 1
 
 
 if __name__ == "__main__":
