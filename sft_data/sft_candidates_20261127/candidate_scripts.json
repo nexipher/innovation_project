@@ -302,7 +302,7 @@
    ],
    "outputs": [
     "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向和口鼻边缘略显过度平滑，先测量整图来源。\nExpert Target & Hypothesis: probe — 整图来源尚未测量；PROBE 是整图来源的判别器。\n</planning>\n<call_probe></call_probe>",
-    "<reasoning>\nPROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable；TruFor 即使给出局部响应，也不会改变整图结论，因此不再补测，直接结案。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 0.9672 支持整图 AI-generated，毛发整体过度平滑；局部问题 Not applicable，单专家直接结案。\"}\n</verdict>"
+    "<reasoning>\nPROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要局部测量；本会话只用 PROBE 完成整图来源判断，直接结案。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 0.9672 支持整图 AI-generated，毛发整体过度平滑；局部问题 Not applicable，单专家直接结案。\"}\n</verdict>"
    ],
    "verdict": {
     "verdict": "Fake",
@@ -326,7 +326,7 @@
    ],
    "outputs": [
     "<planning>\nSuspected Region: [300, 760, 935, 910]\nVisual Observation: 户外树荫下的晾衣绳，挂着多件衣物；右侧一件白色衣物表面很亮，下缘与背景的分界较直。\nSuspected Anomalies: 右侧白色衣物的亮度和边界与周围柔软布料不一致，先做局部测量。\nExpert Target & Hypothesis: trufor — 右侧白色衣物是主要局部候选，先确认异常响应和可靠性。\n</planning>\n<call_trufor>[300, 760, 935, 910]</call_trufor>",
-    "<reasoning>\nTruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图该处内容边界较直；局部证据支持 Tampered。整图来源尚未测量，PROBE 没有调用，因此不能把整图判成 Real 或 AI-generated，整图保留 Uncertain。局部 Tampered 足以支撑总体 Fake；certainty 取 Medium，因为整图来源仍未解决。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"Uncertain\", \"local_manipulation\": \"Tampered\", \"suspicious_regions\": [{\"bbox\": [300, 760, 935, 910], \"reason\": \"TruFor 高响应集中在右侧白色衣物，可靠性图同区域可靠，原图该处内容边界较直\", \"evidence\": [\"{{TRUFOR_ID}}\"]}], \"certainty\": \"Medium\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"TruFor 高响应集中在右侧白色衣物且可靠，局部 Tampered 支撑总体 Fake；整图来源未测，保留 Uncertain。\"}\n</verdict>"
+    "<reasoning>\nTruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图该处内容边界较直；局部证据支持 Tampered。整图来源尚未测量，不能把整图判成 Real 或 AI-generated，整图保留 Uncertain。局部 Tampered 足以支撑总体 Fake；certainty 取 Medium，因为整图来源仍未解决。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"Uncertain\", \"local_manipulation\": \"Tampered\", \"suspicious_regions\": [{\"bbox\": [300, 760, 935, 910], \"reason\": \"TruFor 高响应集中在右侧白色衣物，可靠性图同区域可靠，原图该处内容边界较直\", \"evidence\": [\"{{TRUFOR_ID}}\"]}], \"certainty\": \"Medium\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"TruFor 高响应集中在右侧白色衣物且可靠，局部 Tampered 支撑总体 Fake；整图来源未测，保留 Uncertain。\"}\n</verdict>"
    ],
    "verdict": {
     "verdict": "Fake",

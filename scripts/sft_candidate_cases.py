@@ -660,7 +660,7 @@ CASES = {
             "target": "probe — 整图来源尚未测量；PROBE 是整图来源的判别器。",
         },
         "second": None,
-        "reasoning": "PROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable；TruFor 即使给出局部响应，也不会改变整图结论，因此不再补测，直接结案。总体 Fake，certainty High。",
+        "reasoning": "PROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要局部测量；本会话只用 PROBE 完成整图来源判断，直接结案。总体 Fake，certainty High。",
         "verdict": {
             "verdict": "Fake", "whole_image_generation": "AI-generated",
             "local_manipulation": "Not applicable",
@@ -679,7 +679,7 @@ CASES = {
             "target": "trufor — 右侧白色衣物是主要局部候选，先确认异常响应和可靠性。",
         },
         "second": None,
-        "reasoning": "TruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图该处内容边界较直；局部证据支持 Tampered。整图来源尚未测量，PROBE 没有调用，因此不能把整图判成 Real 或 AI-generated，整图保留 Uncertain。局部 Tampered 足以支撑总体 Fake；certainty 取 Medium，因为整图来源仍未解决。",
+        "reasoning": "TruFor 0.9995，异常图的高响应落在右侧白色衣物，可靠性图在同一区域为高可靠，原图该处内容边界较直；局部证据支持 Tampered。整图来源尚未测量，不能把整图判成 Real 或 AI-generated，整图保留 Uncertain。局部 Tampered 足以支撑总体 Fake；certainty 取 Medium，因为整图来源仍未解决。",
         "verdict": {
             "verdict": "Fake", "whole_image_generation": "Uncertain",
             "local_manipulation": "Tampered",
