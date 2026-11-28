@@ -1,0 +1,35 @@
+{
+  "index": 18,
+  "sample_id": "val__genimage__BigGAN__739_biggan_00039__q95",
+  "source_id": "BigGAN/739_biggan_00039",
+  "group": "BigGAN",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Uncertain",
+  "certainty": "High",
+  "report": "主要支持：PROBE模型高分（0.9967）与图像低分辨率、模糊、像素化特征一致，支持AI生成；主要限制：未检测局部编辑，但该缺失不影响整体AI生成结论。",
+  "primary_evidence": [
+    "E-1f9bd5bf0b"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 2,
+  "expert_calls": 1,
+  "elapsed_s": 37.2,
+  "evidence": [
+    {
+      "evidence_id": "E-1f9bd5bf0b",
+      "source": "probe_dino_expert",
+      "strength": 0.9967,
+      "raw_metric": 0.996711
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131735_739_biggan_00039.json",
+  "failed_experts": []
+}

@@ -1,0 +1,35 @@
+{
+  "index": 10,
+  "sample_id": "val__autosplice__73275__1__q95",
+  "source_id": "73275",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Uncertain",
+  "certainty": "High",
+  "report": "主要支持：PROBE 高分（0.9995）表明整图AI生成；主要限制：TruFor 未测量，无法判断局部编辑。",
+  "primary_evidence": [
+    "E-3f3af483e9"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 2,
+  "expert_calls": 1,
+  "elapsed_s": 19.04,
+  "evidence": [
+    {
+      "evidence_id": "E-3f3af483e9",
+      "source": "probe_dino_expert",
+      "strength": 0.9995,
+      "raw_metric": 0.999516
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124157_73275_1.json",
+  "failed_experts": []
+}

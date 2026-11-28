@@ -1,0 +1,49 @@
+{
+  "index": 25,
+  "sample_id": "val__genimage__Wukong__86_wukong_image188__q95",
+  "source_id": "Wukong/86_wukong_image188",
+  "group": "Wukong",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "Uncertain",
+  "local_manipulation": "Tampered",
+  "certainty": "High",
+  "report": "主要支持：TruFor 高异常分数（0.9832）和高可靠性地图支持局部篡改；主要限制：整图生成状态未测量，但局部篡改已足够判定为 Fake。",
+  "primary_evidence": [
+    "E-6757ff3bdb"
+  ],
+  "suspicious_regions": [
+    {
+      "bbox": [
+        500,
+        66,
+        1000,
+        566
+      ],
+      "scope": "local_candidate",
+      "reason": "TruFor anomaly map shows high response (red) in this region, with high reliability (red), indicating local manipulation; visually, this corresponds to the inset image in the upper right corner.",
+      "evidence": [
+        "E-6757ff3bdb"
+      ]
+    }
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 2,
+  "expert_calls": 1,
+  "elapsed_s": 42.65,
+  "evidence": [
+    {
+      "evidence_id": "E-6757ff3bdb",
+      "source": "trufor_expert",
+      "strength": 0.9832,
+      "raw_metric": 0.983158
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132310_86_wukong_image188.json",
+  "failed_experts": []
+}

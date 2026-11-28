@@ -1,0 +1,42 @@
+{
+  "index": 7,
+  "sample_id": "val__autosplice__57276__0__q95",
+  "source_id": "57276",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 判定为真实拍摄（0.4952 < 0.5），TruFor 未检测到局部篡改；主要限制：无局部编辑迹象，但图像内容未提供额外上下文。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 48.1,
+  "evidence": [
+    {
+      "evidence_id": "E-cec115c2aa",
+      "source": "trufor_expert",
+      "strength": 0.1637,
+      "raw_metric": 0.16367
+    },
+    {
+      "evidence_id": "E-37c7a60ce1",
+      "source": "probe_dino_expert",
+      "strength": 0.4952,
+      "raw_metric": 0.4952
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124002_57276_0.json",
+  "failed_experts": []
+}

@@ -1,0 +1,56 @@
+{
+  "index": 3,
+  "sample_id": "val__autosplice__42958__1__q95",
+  "source_id": "42958",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Tampered",
+  "certainty": "High",
+  "report": "主要支持：TruFor 高异常响应（高可靠性）表明局部篡改；主要限制：PROBE 低分支持整图真实，但局部篡改已足够使整体判定为假。",
+  "primary_evidence": [
+    "E-d95cbe9c72",
+    "E-47e61605e2"
+  ],
+  "suspicious_regions": [
+    {
+      "bbox": [
+        8,
+        370,
+        508,
+        703
+      ],
+      "scope": "local_candidate",
+      "reason": "high anomaly response in TruFor map with high reliability, indicating a local manipulation candidate in the region of the Russian flag and adjacent structure",
+      "evidence": [
+        "E-d95cbe9c72"
+      ]
+    }
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 55.96,
+  "evidence": [
+    {
+      "evidence_id": "E-d95cbe9c72",
+      "source": "trufor_expert",
+      "strength": 0.9991,
+      "raw_metric": 0.999071
+    },
+    {
+      "evidence_id": "E-47e61605e2",
+      "source": "probe_dino_expert",
+      "strength": 0.0262,
+      "raw_metric": 0.026185
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130251_42958_1.json",
+  "failed_experts": []
+}

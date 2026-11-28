@@ -1,0 +1,42 @@
+{
+  "index": 13,
+  "sample_id": "val__autosplice__52191__authentic__q95",
+  "source_id": "52191",
+  "group": "AutoSplice_Authentic",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Real",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 低分（0.0225）支持整图真实，TruFor 低分（0.0699）支持无局部篡改。主要限制：PROBE 为外部判别器，未校准本项目数据；TruFor 低分不构成绝对证明，仅表明无强编辑证据。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 38.96,
+  "evidence": [
+    {
+      "evidence_id": "E-6deb890452",
+      "source": "trufor_expert",
+      "strength": 0.0699,
+      "raw_metric": 0.069942
+    },
+    {
+      "evidence_id": "E-aee790a933",
+      "source": "probe_dino_expert",
+      "strength": 0.0225,
+      "raw_metric": 0.022501
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124355_52191.json",
+  "failed_experts": []
+}

@@ -1,0 +1,41 @@
+{
+  "index": 24,
+  "sample_id": "val__genimage__VQDM__VQDM_1000_200_01_143_vqdm_00143__q95",
+  "source_id": "VQDM/VQDM_1000_200_01_143_vqdm_00143",
+  "group": "VQDM",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Uncertain",
+  "certainty": "High",
+  "report": "主要支持：PROBE 专家高分（0.998）支持整图 AI 生成。主要限制：TruFor 专家未发现局部篡改证据，但其低分不等于未篡改，局部状态为 Uncertain。",
+  "primary_evidence": [
+    "probe_dino_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 39.98,
+  "evidence": [
+    {
+      "evidence_id": "E-ca958c37c7",
+      "source": "trufor_expert",
+      "strength": 0.4511,
+      "raw_metric": 0.451075
+    },
+    {
+      "evidence_id": "E-8c35d5cc7a",
+      "source": "probe_dino_expert",
+      "strength": 0.998,
+      "raw_metric": 0.998018
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_125141_VQDM_1000_200_01_143_vqdm_00143.json",
+  "failed_experts": []
+}

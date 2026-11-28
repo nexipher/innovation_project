@@ -1,0 +1,1221 @@
+[
+  {
+    "index": 1,
+    "sample_id": "val__autosplice__40489__2__q95",
+    "source_id": "40489",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.9982）表明整图为 AI 生成；主要限制：TruFor 未发现局部篡改，但该结果不否定整图生成。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 81.14,
+    "evidence": [
+      {
+        "evidence_id": "E-35e6a919b8",
+        "source": "trufor_expert",
+        "strength": 0.4436,
+        "raw_metric": 0.443609
+      },
+      {
+        "evidence_id": "E-e1ccf5a0a4",
+        "source": "probe_dino_expert",
+        "strength": 0.9982,
+        "raw_metric": 0.998196
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_125752_40489_2.json",
+    "failed_experts": []
+  },
+  {
+    "index": 2,
+    "sample_id": "val__autosplice__41993__0__q95",
+    "source_id": "41993",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "整图生成检测分数高，支持 AI 生成；局部编辑检测分数高但未明确具体编辑内容，故局部编辑为不确定。整体结论为 Fake。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 217.09,
+    "evidence": [
+      {
+        "evidence_id": "E-95bd974026",
+        "source": "trufor_expert",
+        "strength": 0.8163,
+        "raw_metric": 0.816312
+      },
+      {
+        "evidence_id": "E-5a55ca9d55",
+        "source": "probe_dino_expert",
+        "strength": 0.8166,
+        "raw_metric": 0.816577
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_125913_41993_0.json",
+    "failed_experts": []
+  },
+  {
+    "index": 3,
+    "sample_id": "val__autosplice__42958__1__q95",
+    "source_id": "42958",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered",
+    "certainty": "High",
+    "report": "主要支持：TruFor 高异常响应（高可靠性）表明局部篡改；主要限制：PROBE 低分支持整图真实，但局部篡改已足够使整体判定为假。",
+    "primary_evidence": [
+      "E-d95cbe9c72",
+      "E-47e61605e2"
+    ],
+    "suspicious_regions": [
+      {
+        "bbox": [
+          8,
+          370,
+          508,
+          703
+        ],
+        "scope": "local_candidate",
+        "reason": "high anomaly response in TruFor map with high reliability, indicating a local manipulation candidate in the region of the Russian flag and adjacent structure",
+        "evidence": [
+          "E-d95cbe9c72"
+        ]
+      }
+    ],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 55.96,
+    "evidence": [
+      {
+        "evidence_id": "E-d95cbe9c72",
+        "source": "trufor_expert",
+        "strength": 0.9991,
+        "raw_metric": 0.999071
+      },
+      {
+        "evidence_id": "E-47e61605e2",
+        "source": "probe_dino_expert",
+        "strength": 0.0262,
+        "raw_metric": 0.026185
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130251_42958_1.json",
+    "failed_experts": []
+  },
+  {
+    "index": 4,
+    "sample_id": "val__autosplice__43686__1__q95",
+    "source_id": "43686",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE高分（0.7215）表明图像为AI生成；主要限制：未测量局部编辑，无法确认是否存在局部篡改。",
+    "primary_evidence": [
+      "E-64ac0f9135"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 35.56,
+    "evidence": [
+      {
+        "evidence_id": "E-64ac0f9135",
+        "source": "probe_dino_expert",
+        "strength": 0.7215,
+        "raw_metric": 0.721479
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130347_43686_1.json",
+    "failed_experts": []
+  },
+  {
+    "index": 5,
+    "sample_id": "val__autosplice__56086__0__q95",
+    "source_id": "56086",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE高分（0.74）支持AI生成；主要限制：局部编辑未测量，无法确认是否被篡改。",
+    "primary_evidence": [
+      "E-b8b98fb905"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 33.92,
+    "evidence": [
+      {
+        "evidence_id": "E-b8b98fb905",
+        "source": "probe_dino_expert",
+        "strength": 0.7449,
+        "raw_metric": 0.744899
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130423_56086_0.json",
+    "failed_experts": []
+  },
+  {
+    "index": 6,
+    "sample_id": "val__autosplice__57143__0__q95",
+    "source_id": "57143",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Uncertain",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": null,
+    "report": "主要支持：PROBE 高分（0.981）支持整图AI生成。主要限制：TruFor 仅提供局部篡改候选，未提供具体内容变化，故 local_manipulation 为 Uncertain；AI生成与局部篡改候选共存，但局部证据不足，故整体为 Uncertain。",
+    "primary_evidence": [
+      "E-6b7e2fb7f6",
+      "E-1a89dcf687"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 76.92,
+    "evidence": [
+      {
+        "evidence_id": "E-6b7e2fb7f6",
+        "source": "probe_dino_expert",
+        "strength": 0.981,
+        "raw_metric": 0.981047
+      },
+      {
+        "evidence_id": "E-1a89dcf687",
+        "source": "trufor_expert",
+        "strength": 0.9324,
+        "raw_metric": 0.932441
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130457_57143_0.json",
+    "failed_experts": []
+  },
+  {
+    "index": 7,
+    "sample_id": "val__autosplice__57276__0__q95",
+    "source_id": "57276",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "Medium",
+    "report": "PROBE 分数 0.4952（低于阈值）与 TruFor 分数 0.1637（低于阈值）均支持图像为真实拍摄且无局部篡改，但 PROBE 分数处于中间区间，未校准，限制了结论确定性。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 87.36,
+    "evidence": [
+      {
+        "evidence_id": "E-cec115c2aa",
+        "source": "trufor_expert",
+        "strength": 0.1637,
+        "raw_metric": 0.16367
+      },
+      {
+        "evidence_id": "E-37c7a60ce1",
+        "source": "probe_dino_expert",
+        "strength": 0.4952,
+        "raw_metric": 0.4952
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130614_57276_0.json",
+    "failed_experts": []
+  },
+  {
+    "index": 8,
+    "sample_id": "val__autosplice__60788__0__q95",
+    "source_id": "60788",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "整图生成检测分数高（0.9679），指向AI生成；局部篡改检测分数低（0.4128），无法支持局部篡改，但也不能证明未篡改，因此局部状态为Uncertain。整体结论为Fake，因为证据支持至少一个目标（AI生成）。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 85.29,
+    "evidence": [
+      {
+        "evidence_id": "E-06774d0ae3",
+        "source": "trufor_expert",
+        "strength": 0.4128,
+        "raw_metric": 0.412761
+      },
+      {
+        "evidence_id": "E-d6e732adac",
+        "source": "probe_dino_expert",
+        "strength": 0.9679,
+        "raw_metric": 0.967948
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130742_60788_0.json",
+    "failed_experts": []
+  },
+  {
+    "index": 9,
+    "sample_id": "val__autosplice__67065__0__q95",
+    "source_id": "67065",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE 得分极低（0.0027）且视觉无异常，支持整图真实；主要限制：局部编辑未测量，无法判断是否被编辑，故判定为 Uncertain。",
+    "primary_evidence": [
+      "E-996f63a05e"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 1,
+    "elapsed_s": 52.66,
+    "evidence": [
+      {
+        "evidence_id": "E-996f63a05e",
+        "source": "probe_dino_expert",
+        "strength": 0.0027,
+        "raw_metric": 0.002669
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130908_67065_0.json",
+    "failed_experts": []
+  },
+  {
+    "index": 10,
+    "sample_id": "val__autosplice__73275__1__q95",
+    "source_id": "73275",
+    "group": "AutoSplice_Forged",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "整图生成检测分数极高（0.9995），指向AI生成；局部编辑检测为候选但不可靠，故整体判定为Fake。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 72.21,
+    "evidence": [
+      {
+        "evidence_id": "E-1a4d989b71",
+        "source": "trufor_expert",
+        "strength": 0.7857,
+        "raw_metric": 0.785686
+      },
+      {
+        "evidence_id": "E-3f3af483e9",
+        "source": "probe_dino_expert",
+        "strength": 0.9995,
+        "raw_metric": 0.999516
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131001_73275_1.json",
+    "failed_experts": []
+  },
+  {
+    "index": 11,
+    "sample_id": "val__autosplice__42307__authentic__q95",
+    "source_id": "42307",
+    "group": "AutoSplice_Authentic",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 显示整图生成分数极低（0.0024），指向真实；TruFor 显示无局部篡改迹象。主要限制：无其他测量可进一步验证，但现有证据充分支持真实结论。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 67.87,
+    "evidence": [
+      {
+        "evidence_id": "E-139747478a",
+        "source": "trufor_expert",
+        "strength": 0.3646,
+        "raw_metric": 0.364614
+      },
+      {
+        "evidence_id": "E-87a1a61eb6",
+        "source": "probe_dino_expert",
+        "strength": 0.0024,
+        "raw_metric": 0.002444
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131113_42307.json",
+    "failed_experts": []
+  },
+  {
+    "index": 12,
+    "sample_id": "val__autosplice__47630__authentic__q95",
+    "source_id": "47630",
+    "group": "AutoSplice_Authentic",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 判定为真实（0.0217），TruFor 未发现局部篡改（0.1514）。主要限制：PROBE 为外部判别器，未针对本项目数据校准，但其在本项目验证集上表现良好。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 41.9,
+    "evidence": [
+      {
+        "evidence_id": "E-a667991c69",
+        "source": "trufor_expert",
+        "strength": 0.1514,
+        "raw_metric": 0.151429
+      },
+      {
+        "evidence_id": "E-65e4a20a2e",
+        "source": "probe_dino_expert",
+        "strength": 0.0217,
+        "raw_metric": 0.021687
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131221_47630.json",
+    "failed_experts": []
+  },
+  {
+    "index": 13,
+    "sample_id": "val__autosplice__52191__authentic__q95",
+    "source_id": "52191",
+    "group": "AutoSplice_Authentic",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 得分极低（0.0225），支持真实拍摄；主要限制：未测量局部编辑，但无证据支持篡改，故判定为未篡改。",
+    "primary_evidence": [
+      "E-aee790a933"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 1,
+    "elapsed_s": 50.23,
+    "evidence": [
+      {
+        "evidence_id": "E-aee790a933",
+        "source": "probe_dino_expert",
+        "strength": 0.0225,
+        "raw_metric": 0.022501
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131303_52191.json",
+    "failed_experts": []
+  },
+  {
+    "index": 14,
+    "sample_id": "val__autosplice__65749__authentic__q95",
+    "source_id": "65749",
+    "group": "AutoSplice_Authentic",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "图像被判定为 AI 生成，但未发现局部篡改痕迹。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 77.45,
+    "evidence": [
+      {
+        "evidence_id": "E-a01a82fd54",
+        "source": "trufor_expert",
+        "strength": 0.1172,
+        "raw_metric": 0.117181
+      },
+      {
+        "evidence_id": "E-c5ed7cba5e",
+        "source": "probe_dino_expert",
+        "strength": 0.6309,
+        "raw_metric": 0.63086
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131354_65749.json",
+    "failed_experts": []
+  },
+  {
+    "index": 15,
+    "sample_id": "val__autosplice__70102__authentic__q95",
+    "source_id": "70102",
+    "group": "AutoSplice_Authentic",
+    "family": "AutoSplice_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "Medium",
+    "report": "主要支持：PROBE 判定整图生成（0.506145 > 0.5）；主要限制：PROBE 未校准，且其性能基于验证数据，不保证当前图像的准确性。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 58.73,
+    "evidence": [
+      {
+        "evidence_id": "E-c4f590c041",
+        "source": "trufor_expert",
+        "strength": 0.1856,
+        "raw_metric": 0.18563
+      },
+      {
+        "evidence_id": "E-9d88ff461f",
+        "source": "probe_dino_expert",
+        "strength": 0.5061,
+        "raw_metric": 0.506145
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131512_70102.json",
+    "failed_experts": []
+  },
+  {
+    "index": 16,
+    "sample_id": "val__genimage__ADM__860_adm_34__q95",
+    "source_id": "ADM/860_adm_34",
+    "group": "ADM",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.9994）表明整图为 AI 生成；主要限制：TruFor 未发现局部篡改，但该结果不否定整图生成。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 42.22,
+    "evidence": [
+      {
+        "evidence_id": "E-fc68c8cdad",
+        "source": "trufor_expert",
+        "strength": 0.101,
+        "raw_metric": 0.10104
+      },
+      {
+        "evidence_id": "E-a09f6ece48",
+        "source": "probe_dino_expert",
+        "strength": 0.9994,
+        "raw_metric": 0.999421
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131611_860_adm_34.json",
+    "failed_experts": []
+  },
+  {
+    "index": 17,
+    "sample_id": "val__genimage__BigGAN__352_biggan_00020__q95",
+    "source_id": "BigGAN/352_biggan_00020",
+    "group": "BigGAN",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 低分（0.29）支持真实拍摄，TruFor 低分（0.11）支持无局部篡改。主要限制：PROBE 未校准，仅作参考；TruFor 无局部高响应，不等于未篡改。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 41.85,
+    "evidence": [
+      {
+        "evidence_id": "E-a819109bb9",
+        "source": "trufor_expert",
+        "strength": 0.1087,
+        "raw_metric": 0.108726
+      },
+      {
+        "evidence_id": "E-aa26ba7328",
+        "source": "probe_dino_expert",
+        "strength": 0.2905,
+        "raw_metric": 0.290482
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131653_352_biggan_00020.json",
+    "failed_experts": []
+  },
+  {
+    "index": 18,
+    "sample_id": "val__genimage__BigGAN__739_biggan_00039__q95",
+    "source_id": "BigGAN/739_biggan_00039",
+    "group": "BigGAN",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE模型高分（0.9967）与图像低分辨率、模糊、像素化特征一致，支持AI生成；主要限制：未检测局部编辑，但该缺失不影响整体AI生成结论。",
+    "primary_evidence": [
+      "E-1f9bd5bf0b"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 37.2,
+    "evidence": [
+      {
+        "evidence_id": "E-1f9bd5bf0b",
+        "source": "probe_dino_expert",
+        "strength": 0.9967,
+        "raw_metric": 0.996711
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131735_739_biggan_00039.json",
+    "failed_experts": []
+  },
+  {
+    "index": 19,
+    "sample_id": "val__genimage__Glide__GLIDE_1000_200_08_806_glide_00039__q95",
+    "source_id": "Glide/GLIDE_1000_200_08_806_glide_00039",
+    "group": "Glide",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "Medium",
+    "report": "主要支持：PROBE 高分（0.8377）提示整图可能为AI生成；主要限制：局部编辑尚未测量，无法确认是否存在局部篡改。",
+    "primary_evidence": [
+      "E-b4c58f0d47"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 26.45,
+    "evidence": [
+      {
+        "evidence_id": "E-b4c58f0d47",
+        "source": "probe_dino_expert",
+        "strength": 0.8377,
+        "raw_metric": 0.837702
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131813_GLIDE_1000_200_08_806_glide_00039.json",
+    "failed_experts": []
+  },
+  {
+    "index": 20,
+    "sample_id": "val__genimage__Midjourney__191_midjourney_198__q95",
+    "source_id": "Midjourney/191_midjourney_198",
+    "group": "Midjourney",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.9998）指向 AI 生成；主要限制：局部编辑未测量，无法确认是否被篡改。",
+    "primary_evidence": [
+      "E-9cd887aa4a"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 31.89,
+    "evidence": [
+      {
+        "evidence_id": "E-9cd887aa4a",
+        "source": "probe_dino_expert",
+        "strength": 0.9998,
+        "raw_metric": 0.999804
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131839_191_midjourney_198.json",
+    "failed_experts": []
+  },
+  {
+    "index": 21,
+    "sample_id": "val__genimage__Midjourney__487_midjourney_197__q95",
+    "source_id": "Midjourney/487_midjourney_197",
+    "group": "Midjourney",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "Uncertain",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：TruFor检测到局部篡改候选（高响应+高可靠性）；主要限制：未提供具体编辑内容，因此局部编辑状态为Uncertain，但整体仍为Fake",
+    "primary_evidence": [
+      "E-550e3b616b"
+    ],
+    "suspicious_regions": [
+      {
+        "bbox": [
+          446,
+          274,
+          946,
+          774
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor anomaly map显示高响应（红色），且confidence map显示高可靠性（红色），表明该区域存在局部篡改候选；原图显示按键字符模糊，可能为编辑痕迹",
+        "evidence": [
+          "E-550e3b616b"
+        ]
+      }
+    ],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 1,
+    "elapsed_s": 76.7,
+    "evidence": [
+      {
+        "evidence_id": "E-550e3b616b",
+        "source": "trufor_expert",
+        "strength": 0.9101,
+        "raw_metric": 0.910103
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131912_487_midjourney_197.json",
+    "failed_experts": []
+  },
+  {
+    "index": 22,
+    "sample_id": "val__genimage__SD14__705_sdv4_00127__q95",
+    "source_id": "SD14/705_sdv4_00127",
+    "group": "SD14",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "整图AI生成分数极高，局部无篡改，因此判定为AI生成图像。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 68.76,
+    "evidence": [
+      {
+        "evidence_id": "E-20f1e27a36",
+        "source": "trufor_expert",
+        "strength": 0.0283,
+        "raw_metric": 0.028299
+      },
+      {
+        "evidence_id": "E-b996380041",
+        "source": "probe_dino_expert",
+        "strength": 1.0,
+        "raw_metric": 0.999955
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132029_705_sdv4_00127.json",
+    "failed_experts": []
+  },
+  {
+    "index": 23,
+    "sample_id": "val__genimage__SD15__998_sdv5_00135__q95",
+    "source_id": "SD15/998_sdv5_00135",
+    "group": "SD15",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Uncertain",
+    "certainty": "Medium",
+    "report": "主要支持：PROBE 高分指向 AI 生成；主要限制：局部编辑未测量，无法确认是否被篡改。",
+    "primary_evidence": [
+      "E-b996380041"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 26.32,
+    "evidence": [
+      {
+        "evidence_id": "E-b996380041",
+        "source": "probe_dino_expert",
+        "strength": 1.0,
+        "raw_metric": 0.999971
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132138_998_sdv5_00135.json",
+    "failed_experts": []
+  },
+  {
+    "index": 24,
+    "sample_id": "val__genimage__VQDM__VQDM_1000_200_01_143_vqdm_00143__q95",
+    "source_id": "VQDM/VQDM_1000_200_01_143_vqdm_00143",
+    "group": "VQDM",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 高分（0.998）支持AI生成；主要限制：TruFor 未发现局部篡改，但不影响整体AI生成判断。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 4,
+    "expert_calls": 2,
+    "elapsed_s": 65.2,
+    "evidence": [
+      {
+        "evidence_id": "E-ca958c37c7",
+        "source": "trufor_expert",
+        "strength": 0.4511,
+        "raw_metric": 0.451075
+      },
+      {
+        "evidence_id": "E-8c35d5cc7a",
+        "source": "probe_dino_expert",
+        "strength": 0.998,
+        "raw_metric": 0.998018
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132204_VQDM_1000_200_01_143_vqdm_00143.json",
+    "failed_experts": []
+  },
+  {
+    "index": 25,
+    "sample_id": "val__genimage__Wukong__86_wukong_image188__q95",
+    "source_id": "Wukong/86_wukong_image188",
+    "group": "Wukong",
+    "family": "GenImage_q95",
+    "ground_truth": "Fake",
+    "task_truth": {
+      "whole_image_generation": "AI-generated",
+      "local_manipulation": "Not applicable"
+    },
+    "final_verdict": "Fake",
+    "whole_image_generation": "Uncertain",
+    "local_manipulation": "Tampered",
+    "certainty": "High",
+    "report": "主要支持：TruFor 高异常分数（0.9832）和高可靠性地图支持局部篡改；主要限制：整图生成状态未测量，但局部篡改已足够判定为 Fake。",
+    "primary_evidence": [
+      "E-6757ff3bdb"
+    ],
+    "suspicious_regions": [
+      {
+        "bbox": [
+          500,
+          66,
+          1000,
+          566
+        ],
+        "scope": "local_candidate",
+        "reason": "TruFor anomaly map shows high response (red) in this region, with high reliability (red), indicating local manipulation; visually, this corresponds to the inset image in the upper right corner.",
+        "evidence": [
+          "E-6757ff3bdb"
+        ]
+      }
+    ],
+    "halting_reason": "model_concluded",
+    "model_turns": 2,
+    "expert_calls": 1,
+    "elapsed_s": 42.65,
+    "evidence": [
+      {
+        "evidence_id": "E-6757ff3bdb",
+        "source": "trufor_expert",
+        "strength": 0.9832,
+        "raw_metric": 0.983158
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132310_86_wukong_image188.json",
+    "failed_experts": []
+  },
+  {
+    "index": 26,
+    "sample_id": "val__genimage__Real__70638ca2-6197-419c-a3f6-529ef9c0d7e1__q95",
+    "source_id": "Real/70638ca2-6197-419c-a3f6-529ef9c0d7e1",
+    "group": "Real",
+    "family": "GenImage_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 低分（0.052122）支持整图真实；主要限制：TruFor 低分（0.1675）未排除局部编辑，但不足以支持该结论。",
+    "primary_evidence": [
+      "probe_dino_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 52.84,
+    "evidence": [
+      {
+        "evidence_id": "E-bd59342b67",
+        "source": "probe_dino_expert",
+        "strength": 0.0521,
+        "raw_metric": 0.052122
+      },
+      {
+        "evidence_id": "E-f23ff7a3fa",
+        "source": "trufor_expert",
+        "strength": 0.1675,
+        "raw_metric": 0.1675
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132353_70638ca2-6197-419c-a3f6-529ef9c0d7e1.json",
+    "failed_experts": []
+  },
+  {
+    "index": 27,
+    "sample_id": "val__genimage__Real__8ddb765c-2cbb-417f-900b-abaa759095c9__q95",
+    "source_id": "Real/8ddb765c-2cbb-417f-900b-abaa759095c9",
+    "group": "Real",
+    "family": "GenImage_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 专家分数低（0.0266）支持真实拍摄；TruFor 专家分数低（0.3055）支持无局部篡改。主要限制：PROBE 为外部判别器，未校准本项目数据；TruFor 为局部编辑检测，不适用于整图生成判断。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 46.9,
+    "evidence": [
+      {
+        "evidence_id": "E-81e2e40590",
+        "source": "trufor_expert",
+        "strength": 0.3055,
+        "raw_metric": 0.305494
+      },
+      {
+        "evidence_id": "E-7b5297bde9",
+        "source": "probe_dino_expert",
+        "strength": 0.0266,
+        "raw_metric": 0.026608
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132446_8ddb765c-2cbb-417f-900b-abaa759095c9.json",
+    "failed_experts": []
+  },
+  {
+    "index": 28,
+    "sample_id": "val__genimage__Real__a383729c-0308-49c0-a7e0-8655dc90092a__q95",
+    "source_id": "Real/a383729c-0308-49c0-a7e0-8655dc90092a",
+    "group": "Real",
+    "family": "GenImage_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered",
+    "certainty": "High",
+    "report": "主要支持：PROBE 低分（0.0057）支持整图真实，TruFor 低分（0.2699）支持无局部篡改。主要限制：PROBE 为外部判别器，未校准本项目数据；TruFor 未证明“未篡改”，仅无强异常。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 2,
+    "elapsed_s": 47.47,
+    "evidence": [
+      {
+        "evidence_id": "E-f6b26a5856",
+        "source": "trufor_expert",
+        "strength": 0.2699,
+        "raw_metric": 0.269944
+      },
+      {
+        "evidence_id": "E-a34451afb5",
+        "source": "probe_dino_expert",
+        "strength": 0.0057,
+        "raw_metric": 0.005698
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132533_a383729c-0308-49c0-a7e0-8655dc90092a.json",
+    "failed_experts": []
+  },
+  {
+    "index": 29,
+    "sample_id": "val__genimage__Real__d1b49378-c9ac-40d2-b520-d16ce16d3805__q95",
+    "source_id": "Real/d1b49378-c9ac-40d2-b520-d16ce16d3805",
+    "group": "Real",
+    "family": "GenImage_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Uncertain",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "certainty": null,
+    "report": "整图生成判断为 Real，但局部操纵候选区域存在，因此整体结论为 Uncertain。",
+    "primary_evidence": [
+      "probe_dino_expert",
+      "trufor_expert"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 5,
+    "expert_calls": 2,
+    "elapsed_s": 100.66,
+    "evidence": [
+      {
+        "evidence_id": "E-4ad4aa3bda",
+        "source": "trufor_expert",
+        "strength": 0.5338,
+        "raw_metric": 0.533803
+      },
+      {
+        "evidence_id": "E-10faf21263",
+        "source": "probe_dino_expert",
+        "strength": 0.0026,
+        "raw_metric": 0.002584
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132621_d1b49378-c9ac-40d2-b520-d16ce16d3805.json",
+    "failed_experts": []
+  },
+  {
+    "index": 30,
+    "sample_id": "val__genimage__Real__d3429f29-5d3a-4da3-829a-0fb387554a98__q95",
+    "source_id": "Real/d3429f29-5d3a-4da3-829a-0fb387554a98",
+    "group": "Real",
+    "family": "GenImage_q95",
+    "ground_truth": "Real",
+    "task_truth": {
+      "whole_image_generation": "Real",
+      "local_manipulation": "Not tampered"
+    },
+    "final_verdict": "Real",
+    "whole_image_generation": "Real",
+    "local_manipulation": "Uncertain",
+    "certainty": "High",
+    "report": "主要支持：PROBE 低分（0.0798）支持整图真实；主要限制：未测量局部编辑，故局部状态为 Uncertain。",
+    "primary_evidence": [
+      "E-a9bd249b90"
+    ],
+    "suspicious_regions": [],
+    "halting_reason": "model_concluded",
+    "model_turns": 3,
+    "expert_calls": 1,
+    "elapsed_s": 52.2,
+    "evidence": [
+      {
+        "evidence_id": "E-a9bd249b90",
+        "source": "probe_dino_expert",
+        "strength": 0.0798,
+        "raw_metric": 0.079761
+      }
+    ],
+    "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_132802_d3429f29-5d3a-4da3-829a-0fb387554a98.json",
+    "failed_experts": []
+  }
+]

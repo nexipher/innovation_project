@@ -1264,3 +1264,19 @@
 * **涉及/修改的文件清单**：`sft_data/lora_small_20261128/{PROFILE_OOM_REPORT.md,profile_10step_oom.log}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：已停止；GPU 已释放；未启动正式训练/验证对照。
 * **置信度或遗留待办（TODO）**：等用户决定完整轨迹下的显存处理（去系统状态消息/缩小图像/量化或 offload/去掉 Midjourney/截断）；本轮不扩 250 条。
+
+### [2026-11-28] - §13.11 vGPU-32G 24×2 LoRA 训练与 30 图对照
+
+* **当前操作动作**：在 32G vGPU 上完成 10 步预检、24 条 ×2 epoch 正式训练和 30 图原版 vs LoRA 自主调用对照。
+* **对应计划锚点**：`plan.md` §13.11；`sft_data/lora_small_20261128/`。
+* **环境**：RTX 4080 vGPU 32760 MiB；`/root/autodl-tmp` 50G/47G/3.9G 可用（93%）；模型/数据可读。
+* **训练**：
+  1. 10 步预检（Midjourney 229、SD15 459、Real e4ce）：mean 8.282 s/step、max 10.437 s、peak allocated 24.881 GB / reserved 25.287 GB；250×2 估算 69.0/87.0 min。
+  2. 24 条 ×2 epoch = 48/48 步，从原版 Qwen3-VL 重载；loss 1.729107→1.527636；mean 6.774 s/step、max 9.526 s，48 步合计 325.17 s；peak allocated 24.881 GB / reserved 25.313 GB；adapter 保存 59 MB 权重。
+* **验证**：30 张 validation 侧、与训练 22 源无交集：10 AutoSplice 篡改、5 真图、10 生成、5 Real。
+  - base 30/30，1488.7 s，peak 21.371 GB；局部检出 2/10、真图局部误报 0/10、整图/总体误报 2/2、both 8/30、弃权 0、调用 54。
+  - LoRA 30/30，1862.0 s，peak 21.481 GB；局部检出 1/10、真图局部误报 0/10、整图/总体误报 2/2、both 7/30、弃权 2、调用 49。
+  - 无 both 增益；失去 1 条 both（Real d3429f29）和 1 条局部检出（AutoSplice 57143_0）；生成图两臂 both 0/10（均未写 local Not applicable）。
+* **涉及/修改的文件清单**：`scripts/{build_lora_validation_manifest,run_lora_validation,compare_lora_validation}.py`、`sft_data/lora_small_20261128/{adapter/**,run_manifest.json,validation_manifest.json,TRAINING_24x2.md,VALIDATION_SET.md,VALIDATION_SUMMARY.md,validation/**}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：训练 48/48、验证两臂各 30/30、0 失败；详细指标/案例见 `validation/report.md` 与 `VALIDATION_SUMMARY.md`。
+* **置信度或遗留待办（TODO）**：30 图样本小，不能作为最终结论；小试未显示局部/both 提升，反而少 1 条局部检出、少 1 条 both、多 2 条弃权。未扩 250 条、未碰 test。

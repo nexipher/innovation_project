@@ -1,0 +1,49 @@
+{
+  "index": 25,
+  "sample_id": "val__genimage__Wukong__86_wukong_image188__q95",
+  "source_id": "Wukong/86_wukong_image188",
+  "group": "Wukong",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "Uncertain",
+  "local_manipulation": "Tampered",
+  "certainty": "High",
+  "report": "Main support: TruFor detected a high local manipulation score (0.9832) with high reliability in the upper right region, indicating a composited element. Main limitation: Whole-image generation status is not measured, but local tampering alone is sufficient to classify the image as Fake.",
+  "primary_evidence": [
+    "E-6757ff3bdb"
+  ],
+  "suspicious_regions": [
+    {
+      "bbox": [
+        500,
+        66,
+        1000,
+        566
+      ],
+      "scope": "local_candidate",
+      "reason": "The anomaly map shows a high response in this region, which corresponds to a smaller bird perched on a plant with purple flowers, appearing to be a separate composited element with different lighting and background.",
+      "evidence": [
+        "E-6757ff3bdb"
+      ]
+    }
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 1,
+  "elapsed_s": 54.2,
+  "evidence": [
+    {
+      "evidence_id": "E-6757ff3bdb",
+      "source": "trufor_expert",
+      "strength": 0.9832,
+      "raw_metric": 0.983158
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_125221_86_wukong_image188.json",
+  "failed_experts": []
+}

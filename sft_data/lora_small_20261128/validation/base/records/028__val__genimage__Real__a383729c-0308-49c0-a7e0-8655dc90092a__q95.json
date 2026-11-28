@@ -1,0 +1,42 @@
+{
+  "index": 28,
+  "sample_id": "val__genimage__Real__a383729c-0308-49c0-a7e0-8655dc90092a__q95",
+  "source_id": "Real/a383729c-0308-49c0-a7e0-8655dc90092a",
+  "group": "Real",
+  "family": "GenImage_q95",
+  "ground_truth": "Real",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Not tampered"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "PROBE 支持整图真实（0.0057），TruFor 支持局部无篡改（0.2699）；两者测量不同问题，不能合并成相互验证。主要限制：PROBE 未校准，TruFor 未检测整图生成，但二者独立测量结果一致支持真实。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 57.96,
+  "evidence": [
+    {
+      "evidence_id": "E-f6b26a5856",
+      "source": "trufor_expert",
+      "strength": 0.2699,
+      "raw_metric": 0.269944
+    },
+    {
+      "evidence_id": "E-a34451afb5",
+      "source": "probe_dino_expert",
+      "strength": 0.0057,
+      "raw_metric": 0.005698
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_125500_a383729c-0308-49c0-a7e0-8655dc90092a.json",
+  "failed_experts": []
+}

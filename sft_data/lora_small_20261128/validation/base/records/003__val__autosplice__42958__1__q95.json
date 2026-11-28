@@ -1,0 +1,41 @@
+{
+  "index": 3,
+  "sample_id": "val__autosplice__42958__1__q95",
+  "source_id": "42958",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Tampered",
+  "certainty": "Medium",
+  "report": "主要支持：TruFor 检测到局部篡改候选（高响应区域，高可靠性），尽管未明确编辑内容。主要限制：该候选未确认具体篡改，且整图生成判为真实，但局部篡改仍支持整体为假。",
+  "primary_evidence": [
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 44.91,
+  "evidence": [
+    {
+      "evidence_id": "E-d95cbe9c72",
+      "source": "trufor_expert",
+      "strength": 0.9991,
+      "raw_metric": 0.999071
+    },
+    {
+      "evidence_id": "E-47e61605e2",
+      "source": "probe_dino_expert",
+      "strength": 0.0262,
+      "raw_metric": 0.026185
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_123515_42958_1.json",
+  "failed_experts": []
+}

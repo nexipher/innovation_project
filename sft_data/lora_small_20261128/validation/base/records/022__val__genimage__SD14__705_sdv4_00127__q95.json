@@ -1,0 +1,42 @@
+{
+  "index": 22,
+  "sample_id": "val__genimage__SD14__705_sdv4_00127__q95",
+  "source_id": "SD14/705_sdv4_00127",
+  "group": "SD14",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "整图生成被判定为AI生成（PROBE分数0.999955），局部无篡改（TruFor分数0.0283），故整体为Fake。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 66.04,
+  "evidence": [
+    {
+      "evidence_id": "E-20f1e27a36",
+      "source": "trufor_expert",
+      "strength": 0.0283,
+      "raw_metric": 0.028299
+    },
+    {
+      "evidence_id": "E-b996380041",
+      "source": "probe_dino_expert",
+      "strength": 1.0,
+      "raw_metric": 0.999955
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_125017_705_sdv4_00127.json",
+  "failed_experts": []
+}

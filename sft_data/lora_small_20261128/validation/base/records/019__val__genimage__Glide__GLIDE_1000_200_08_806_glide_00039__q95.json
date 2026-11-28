@@ -1,0 +1,42 @@
+{
+  "index": 19,
+  "sample_id": "val__genimage__Glide__GLIDE_1000_200_08_806_glide_00039__q95",
+  "source_id": "Glide/GLIDE_1000_200_08_806_glide_00039",
+  "group": "Glide",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Uncertain",
+  "certainty": "Medium",
+  "report": "PROBE 高分（0.8377）支持AI生成，TruFor 候选分数（0.6297）指向局部篡改，但视觉无异常，故整体结论为Fake，因整图生成已确定为AI生成。",
+  "primary_evidence": [
+    "E-b4c58f0d47",
+    "E-4db9e1cad8"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 5,
+  "expert_calls": 2,
+  "elapsed_s": 66.17,
+  "evidence": [
+    {
+      "evidence_id": "E-b4c58f0d47",
+      "source": "probe_dino_expert",
+      "strength": 0.8377,
+      "raw_metric": 0.837702
+    },
+    {
+      "evidence_id": "E-4db9e1cad8",
+      "source": "trufor_expert",
+      "strength": 0.6297,
+      "raw_metric": 0.629695
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124817_GLIDE_1000_200_08_806_glide_00039.json",
+  "failed_experts": []
+}

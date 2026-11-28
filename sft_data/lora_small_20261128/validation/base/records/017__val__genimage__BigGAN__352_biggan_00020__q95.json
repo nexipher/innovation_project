@@ -1,0 +1,42 @@
+{
+  "index": 17,
+  "sample_id": "val__genimage__BigGAN__352_biggan_00020__q95",
+  "source_id": "BigGAN/352_biggan_00020",
+  "group": "BigGAN",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Real",
+  "whole_image_generation": "Real",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "PROBE 分数低（0.2905）支持真实拍摄，TruFor 分数低（0.1087）支持无局部篡改，两者独立且一致，故整体判定为真实。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 53.7,
+  "evidence": [
+    {
+      "evidence_id": "E-a819109bb9",
+      "source": "trufor_expert",
+      "strength": 0.1087,
+      "raw_metric": 0.108726
+    },
+    {
+      "evidence_id": "E-aa26ba7328",
+      "source": "probe_dino_expert",
+      "strength": 0.2905,
+      "raw_metric": 0.290482
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124648_352_biggan_00020.json",
+  "failed_experts": []
+}

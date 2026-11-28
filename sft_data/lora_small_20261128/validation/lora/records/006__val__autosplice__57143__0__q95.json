@@ -1,0 +1,42 @@
+{
+  "index": 6,
+  "sample_id": "val__autosplice__57143__0__q95",
+  "source_id": "57143",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Uncertain",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Uncertain",
+  "certainty": null,
+  "report": "主要支持：PROBE 高分（0.981）支持整图AI生成。主要限制：TruFor 仅提供局部篡改候选，未提供具体内容变化，故 local_manipulation 为 Uncertain；AI生成与局部篡改候选共存，但局部证据不足，故整体为 Uncertain。",
+  "primary_evidence": [
+    "E-6b7e2fb7f6",
+    "E-1a89dcf687"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 76.92,
+  "evidence": [
+    {
+      "evidence_id": "E-6b7e2fb7f6",
+      "source": "probe_dino_expert",
+      "strength": 0.981,
+      "raw_metric": 0.981047
+    },
+    {
+      "evidence_id": "E-1a89dcf687",
+      "source": "trufor_expert",
+      "strength": 0.9324,
+      "raw_metric": 0.932441
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130457_57143_0.json",
+  "failed_experts": []
+}

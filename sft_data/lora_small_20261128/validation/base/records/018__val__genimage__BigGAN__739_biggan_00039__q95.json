@@ -1,0 +1,42 @@
+{
+  "index": 18,
+  "sample_id": "val__genimage__BigGAN__739_biggan_00039__q95",
+  "source_id": "BigGAN/739_biggan_00039",
+  "group": "BigGAN",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE高分（0.9967）表明图像为AI生成；主要限制：TruFor未发现局部编辑痕迹，但其低分不构成未编辑的证明，仅表明无明显局部篡改。",
+  "primary_evidence": [
+    "E-1f9bd5bf0b",
+    "E-5bf87cbcff"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 35.62,
+  "evidence": [
+    {
+      "evidence_id": "E-1f9bd5bf0b",
+      "source": "probe_dino_expert",
+      "strength": 0.9967,
+      "raw_metric": 0.996711
+    },
+    {
+      "evidence_id": "E-5bf87cbcff",
+      "source": "trufor_expert",
+      "strength": 0.3538,
+      "raw_metric": 0.353848
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124742_739_biggan_00039.json",
+  "failed_experts": []
+}

@@ -1,0 +1,41 @@
+{
+  "index": 8,
+  "sample_id": "val__autosplice__60788__0__q95",
+  "source_id": "60788",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Uncertain",
+  "certainty": "High",
+  "report": "整图生成检测分数高（0.9679），指向AI生成；局部篡改检测分数低（0.4128），无法支持局部篡改，但也不能证明未篡改，因此局部状态为Uncertain。整体结论为Fake，因为证据支持至少一个目标（AI生成）。",
+  "primary_evidence": [
+    "probe_dino_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 85.29,
+  "evidence": [
+    {
+      "evidence_id": "E-06774d0ae3",
+      "source": "trufor_expert",
+      "strength": 0.4128,
+      "raw_metric": 0.412761
+    },
+    {
+      "evidence_id": "E-d6e732adac",
+      "source": "probe_dino_expert",
+      "strength": 0.9679,
+      "raw_metric": 0.967948
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_130742_60788_0.json",
+  "failed_experts": []
+}

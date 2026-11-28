@@ -1,0 +1,41 @@
+{
+  "index": 16,
+  "sample_id": "val__genimage__ADM__860_adm_34__q95",
+  "source_id": "ADM/860_adm_34",
+  "group": "ADM",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 高分（0.9994）表明整图为 AI 生成；主要限制：TruFor 未发现局部篡改，但该结果不否定整图生成。",
+  "primary_evidence": [
+    "probe_dino_expert"
+  ],
+  "suspicious_regions": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 2,
+  "elapsed_s": 37.38,
+  "evidence": [
+    {
+      "evidence_id": "E-fc68c8cdad",
+      "source": "trufor_expert",
+      "strength": 0.101,
+      "raw_metric": 0.10104
+    },
+    {
+      "evidence_id": "E-a09f6ece48",
+      "source": "probe_dino_expert",
+      "strength": 0.9994,
+      "raw_metric": 0.999421
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_124610_860_adm_34.json",
+  "failed_experts": []
+}

@@ -1,0 +1,49 @@
+{
+  "index": 21,
+  "sample_id": "val__genimage__Midjourney__487_midjourney_197__q95",
+  "source_id": "Midjourney/487_midjourney_197",
+  "group": "Midjourney",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not applicable"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "Uncertain",
+  "local_manipulation": "Uncertain",
+  "certainty": "High",
+  "report": "主要支持：TruFor检测到局部篡改候选（高响应+高可靠性）；主要限制：未提供具体编辑内容，因此局部编辑状态为Uncertain，但整体仍为Fake",
+  "primary_evidence": [
+    "E-550e3b616b"
+  ],
+  "suspicious_regions": [
+    {
+      "bbox": [
+        446,
+        274,
+        946,
+        774
+      ],
+      "scope": "local_candidate",
+      "reason": "TruFor anomaly map显示高响应（红色），且confidence map显示高可靠性（红色），表明该区域存在局部篡改候选；原图显示按键字符模糊，可能为编辑痕迹",
+      "evidence": [
+        "E-550e3b616b"
+      ]
+    }
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 1,
+  "elapsed_s": 76.7,
+  "evidence": [
+    {
+      "evidence_id": "E-550e3b616b",
+      "source": "trufor_expert",
+      "strength": 0.9101,
+      "raw_metric": 0.910103
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/lora/traces/forensic_sft_session_20261128_131912_487_midjourney_197.json",
+  "failed_experts": []
+}

@@ -1,0 +1,56 @@
+{
+  "index": 6,
+  "sample_id": "val__autosplice__57143__0__q95",
+  "source_id": "57143",
+  "group": "AutoSplice_Forged",
+  "family": "AutoSplice_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "Real",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE和TruFor均指向Fake（整图AI生成和局部篡改候选）。主要限制：TruFor为候选，非证明；PROBE为未校准概率。",
+  "primary_evidence": [
+    "E-6b7e2fb7f6",
+    "E-1a89dcf687"
+  ],
+  "suspicious_regions": [
+    {
+      "bbox": [
+        195,
+        547,
+        695,
+        864
+      ],
+      "scope": "local_candidate",
+      "reason": "TruFor检测到该区域存在局部篡改候选，且可靠性高，对应蜗牛壳图案部分",
+      "evidence": [
+        "E-1a89dcf687"
+      ]
+    }
+  ],
+  "halting_reason": "loop_protection",
+  "model_turns": 6,
+  "expert_calls": 2,
+  "elapsed_s": 132.89,
+  "evidence": [
+    {
+      "evidence_id": "E-1a89dcf687",
+      "source": "trufor_expert",
+      "strength": 0.9324,
+      "raw_metric": 0.932441
+    },
+    {
+      "evidence_id": "E-6b7e2fb7f6",
+      "source": "probe_dino_expert",
+      "strength": 0.981,
+      "raw_metric": 0.981047
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation/base/traces/forensic_sft_session_20261128_123749_57143_0.json",
+  "failed_experts": []
+}

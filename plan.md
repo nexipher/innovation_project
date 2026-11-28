@@ -2641,3 +2641,14 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   清单 `sft_data/lora_small_20261128/validation_manifest.json`，q95 哈希已校验。
   两臂同清单、同系统提示、同 PROBE/TruFor、同贪心 non-thinking 自主流程；仅是否
   加载 LoRA 不同。结果待回填。
+- **30 图验证结果（2026-11-28）**：两臂均 30/30、0 失败；base 1488.7 s /
+  peak allocated 21.371 GB，LoRA 1862.0 s / peak 21.481 GB。base 局部检出
+  **2/10**、真图局部误报 **0/10**、真图整图误报 **2**、真图总体误报 **2**、
+  两分项同时判对 **8/30**（篡改 1、生成 0、真图 7）、弃权 **0**、调用 **54**
+  （均 1.8，`{2:24,1:6}`）。LoRA 局部检出 **1/10**、真图局部误报 **0/10**、
+  整图误报 **2**、总体误报 **2**、两分项同时判对 **7/30**（篡改 1、生成 0、
+  真图 6）、弃权 **2**、调用 **49**（均 1.633，`{2:19,1:11}`）。
+  无 both-correct 增益；失去 1 条 both（Real d3429f29）和 1 条局部检出
+  （AutoSplice 57143_0）；生成图两臂 both 均 0/10（都未写 local Not applicable）。
+  详见 `VALIDATION_SUMMARY.md`、`validation/report.md`、`validation/comparison.json`。
+  小试对照结束；不扩 250 条。
