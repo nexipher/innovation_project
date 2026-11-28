@@ -2652,3 +2652,27 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   （AutoSplice 57143_0）；生成图两臂 both 均 0/10（都未写 local Not applicable）。
   详见 `VALIDATION_SUMMARY.md`、`validation/report.md`、`validation/comparison.json`。
   小试对照结束；不扩 250 条。
+
+### 13.12 2026-11-28 局部漏检与结案修复
+
+- **诊断输入**：f0ab9ce 的 30 图验证；10 张 AutoSplice 篡改 + 5 张 AutoSplice 真图
+  独立跑 TruFor，比较 score、异常图/mask IoU/recall、三图裁剪对 mask 的覆盖率；
+  并复查 57143_0、41993_0、73275_1、d3429f29 和生成图局部标签。
+- **诊断结论**：
+  1. 41993、43686、73275 的 anomaly-peak 裁剪只覆盖 mask 的 26–44%，三图漏掉
+     编辑区域；57143 覆盖 52%，接近但不足。
+  2. 67065、73275(base)、d3429f29(LoRA) 在 TruFor 仍可调用时提前结案，
+     local 写 Not tampered/Uncertain/Not applicable；覆盖纠正只改文字、没有要求补测。
+  3. 57143_0 的覆盖提示“若把局部改为 Uncertain，且没有其他 Fake 分项时总体…”
+     被模型误读：whole=AI-generated 本身就是 Fake 分项，但模型把总体改成 Uncertain；
+     同时提示“可先补测”诱发了重复调用，base 触发 loop_protection。
+  4. 生成图 whole 已判 AI-generated 时，TruFor 低分/无高响应仍被写成
+     Not tampered/Uncertain，未写 Not applicable。
+- **最小修复**：
+  1. 无 bbox 的 TruFor 三图改为 full-frame（仍保留 score/map/conf 与同一内容尺寸）；
+     不改权重、阈值、模型或输入图。
+  2. 覆盖纠正：TruFor 可调用但未测时明确要求先 `<call_trufor>`；两位专家都已测时
+     明确不要重复调用；57143 的局部仅候选提示明确“whole=AI-generated 时总体必须
+     保持 Fake”；whole=Uncertain 且 PROBE 未测时要求补测 PROBE；whole=AI-generated
+     且 TruFor 低分/无高响应时要求 local=Not applicable。
+  3. 不重训、不扩 250 条；用同一批案例复验局部检出、真图误报、分项一致性。
