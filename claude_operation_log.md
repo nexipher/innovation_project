@@ -1209,3 +1209,17 @@
 * **涉及/修改的文件清单**：`scripts/sft_candidate_cases.py`、`scripts/draft_sft_candidates.py`、`scripts/build_review2_manifest.py`、`scripts/run_sft_candidates.py`、`scripts/audit_sft_candidates.py`、`scripts/package_sft_review_assets.py`、`sft_data/sft_candidates_20261127/{manifest.json,manifest_round1.json,candidate_scripts.json,candidate_scripts_round1.json,records.json,traces/**,001..026*.html,index.html,SUMMARY.md,CANDIDATE_CASES.md,REVIEW_QUESTIONS.md,AUDIT_REPORT.md,audit.json,review_records.csv,review_assets/**}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：26/26 完成、0 失败；两条单专家停止理由均为 model_concluded；审计 0 问题；未改专家/阈值/输入，未训练、未碰 test。
 * **置信度或遗留待办（TODO）**：等用户复看 7 张整图 Uncertain、57332 边缘口径、51186 Medium，以及两条单专家样板；确认后再做 LoRA 冒烟。
+
+### [2026-11-28] - §13.9 Qwen3-VL LoRA 冒烟与真实会话
+
+* **当前操作动作**：按 3 条已通过轨迹组装 Qwen3-VL SFT 数据，跑 6 步 LoRA，保存 adapter，并用现有 Agent 加载 adapter 跑一条真实会话。
+* **对应计划锚点**：`plan.md` §13.9；`sft_data/lora_smoke_20261128/`。
+* **核心变更说明**：
+  1. 新增 `scripts/train_lora_candidate_smoke.py`：原图在首条 user turn，TruFor 三图在 TruFor 调用后的 tool turn，PROBE 裁剪在 PROBE 调用后的 turn；`assistant_spans` 监督全部助手调用轮和结案轮，工具/系统消息 labels=-100。
+  2. 数据审计：55310 8853 tokens / 3 监督轮 / 606 监督 token；65547 9019 / 3 / 686；54029 7669 / 2 / 423。原图与三图轮次逐条断言通过。
+  3. 训练：Qwen3-VL-8B-Instruct `0c351dd0`，bf16，gradient checkpointing，LoRA rank16/alpha32 attention-only，SGD lr1e-3，6 steps；losses 1.404611/1.331620/1.371110/1.408393/1.333055/1.370175；峰值 allocated 23.176 GB、reserved 23.530 GB；adapter 保存 59 MB。
+  4. OOM 调整：AdamW+全部 target step1 OOM（352 MiB）；SGD+全部 target step2 OOM（424 MiB）；attention-only + 直接取 decoder last hidden 后 6/6 完成。未改模型/精度/输入图/loss 掩码。
+  5. 新增 `scripts/run_lora_candidate_session.py`：现有 Agent 加载 adapter，在 45749_1 上真实会话，`model_concluded`，2 轮 / 1 次 PROBE / 未调用 TruFor，结案 Fake/AI-generated/Uncertain/High，44.57 s，峰值 allocated 20.457 GB。
+* **涉及/修改的文件清单**：`scripts/train_lora_candidate_smoke.py`、`scripts/run_lora_candidate_session.py`、`sft_data/lora_smoke_20261128/{DATA_AUDIT.md,TRAINING_NOTES.md,REAL_SESSION.md,run_manifest.json,real_session_summary.json,adapter/**,real_session/**}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：6/6 训练步完成；adapter 可被 Qwen3VLClient 加载；真实会话完成；审计/数据断言通过。没有扩到 250 条，没有训练更多。
+* **置信度或遗留待办（TODO）**：6 步只验证链路，不评价 adapter 质量；真实会话只调用 PROBE、未调用 TruFor，是实际行为，未强制。等复看后再决定是否扩样/调 LoRA 目标。

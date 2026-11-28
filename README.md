@@ -32,14 +32,20 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 候选写手按当前协议拟写（`sft_candidate_scripted`，不是 Qwen 原始输出）；24/24
 > 完成、0 工具失败、48 次专家调用，证据/覆盖/certainty 检查均 pass。真值/mask
 > 只用于审核；**状态 pending human review，不训练、不转 final_v2、不碰 test**。
-> 2026-11-28 收尾审计 `AUDIT_REPORT.md`：24/24 pass、0 问题；一处未投递数字已按
+> 2026-11-28 收尾审计 `AUDIT_REPORT.md`：26/26 pass、0 问题；一处未投递数字已按
 > `POST_RUN_PATCHES.md` 改为定性表述（不影响工具输出/证据/结论）。`core` 834 passed；
-> `module` 5 个既有失败见 `TEST_STATUS.md`；待定判例问题见 `REVIEW_QUESTIONS.md`。
+> `module` 5 个既有失败见 `TEST_STATUS.md`；已确认判例与复核点见 `REVIEW_QUESTIONS.md`。
 > 2026-11-28 已将页面实际使用的输入图、源图、TruFor 三图、PROBE 裁剪和预测框
 > 叠加打包到 `review_assets/`（约 15.7 MB），页面改为批次内相对路径，拉取仓库后可直接
 > 打开。同日按确认判例修订：7 张 PROBE 高分的局部篡改图改为「整图 Uncertain + 局部
 > Tampered + 总体 Fake」，55310 保留 Real 对照；51186/57332 边缘响应判 Not tampered、
 > certainty Medium；新增 2 条单专家样板，共 26 条。详见 `plan.md` §13.6–13.8。
+> **2026-11-28 LoRA 冒烟**：用 3 条已通过轨迹（55310、65547、TruFor-only 54029）
+> 在 Qwen3-VL-8B-Instruct 上跑 6 步 attention-only LoRA；loss 1.4046→1.3702，峰值
+> allocated 23.176 GB，adapter 59 MB。加载 adapter 的现有 Agent 在 45749_1 上完成
+> 真实会话：2 轮 / 1 次 PROBE / 未调用 TruFor，`model_concluded`，结案
+> Fake / AI-generated / Uncertain。详见 `sft_data/lora_smoke_20261128/` 与
+> `plan.md` §13.9；不扩 250 条、不训练更多、不碰 test。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/
 > content_box，并可生成原图与异常图上的预测框叠加。同一 24 输入的规则复验写在

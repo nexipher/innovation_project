@@ -1,0 +1,142 @@
+{
+  "schema": "lora_smoke/1",
+  "generated_at": "2026-11-28T11:41:41",
+  "model": {
+    "id": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b"
+  },
+  "data": {
+    "sample_ids": [
+      "autosplice__55310__1__q95",
+      "autosplice__65547__authentic__q95",
+      "single_trufor__autosplice__54029__1__q95"
+    ],
+    "system_prompt_sha256": "6b4756ca21bc7a63325236f2f5dea52bfb1100b8e7ffb480c20fdeded527a102",
+    "samples": [
+      {
+        "sample_id": "autosplice__55310__1__q95",
+        "assistant_turns": 3,
+        "tool_turns": 2,
+        "images_per_tool_turn": [
+          3,
+          1
+        ],
+        "total_pil_images": 5,
+        "calls": [
+          "trufor",
+          "probe"
+        ],
+        "input_tokens": 8853,
+        "supervised_turns": 3,
+        "supervised_tokens": 606,
+        "masked_tokens": 8247
+      },
+      {
+        "sample_id": "autosplice__65547__authentic__q95",
+        "assistant_turns": 3,
+        "tool_turns": 2,
+        "images_per_tool_turn": [
+          3,
+          1
+        ],
+        "total_pil_images": 5,
+        "calls": [
+          "trufor",
+          "probe"
+        ],
+        "input_tokens": 9019,
+        "supervised_turns": 3,
+        "supervised_tokens": 686,
+        "masked_tokens": 8333
+      },
+      {
+        "sample_id": "single_trufor__autosplice__54029__1__q95",
+        "assistant_turns": 2,
+        "tool_turns": 1,
+        "images_per_tool_turn": [
+          3
+        ],
+        "total_pil_images": 4,
+        "calls": [
+          "trufor"
+        ],
+        "input_tokens": 7669,
+        "supervised_turns": 2,
+        "supervised_tokens": 423,
+        "masked_tokens": 7246
+      }
+    ]
+  },
+  "training": {
+    "max_steps": 6,
+    "lr": 0.001,
+    "rank": 16,
+    "alpha": 32,
+    "max_length": 10000,
+    "optimizer": "sgd",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj"
+    ],
+    "cuda_alloc_conf": "expandable_segments:True"
+  },
+  "result": {
+    "steps": 6,
+    "losses": [
+      1.404611,
+      1.33162,
+      1.37111,
+      1.408393,
+      1.333055,
+      1.370175
+    ],
+    "loss_first": 1.404611,
+    "loss_last": 1.370175,
+    "peak_allocated_gb": 23.176,
+    "peak_reserved_gb": 23.53,
+    "adapter": "/root/autodl-tmp/innovation_project/sft_data/lora_smoke_20261128/adapter"
+  },
+  "training_attempts": [
+    {
+      "attempt": 1,
+      "optimizer": "adamw",
+      "target_modules": [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj"
+      ],
+      "result": "OOM at step 1 cross_entropy (tried 352 MiB; 22.44 GB allocated)"
+    },
+    {
+      "attempt": 2,
+      "optimizer": "sgd",
+      "target_modules": [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj"
+      ],
+      "result": "OOM at step 2 forward dropout (tried 424 MiB)"
+    },
+    {
+      "attempt": 3,
+      "optimizer": "sgd",
+      "target_modules": [
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj"
+      ],
+      "result": "6/6 steps completed; peak allocated 23.176 GB / reserved 23.530 GB"
+    }
+  ]
+}

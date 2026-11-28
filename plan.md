@@ -2542,3 +2542,30 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   - 审核对照（非验收）：总体 21/26、整图 16/26、局部 22/26；整体 Uncertain 5 条。
     `review_assets/` 已按 26 条重打包（约 15.7 MB）；`AUDIT_REPORT.md` 26/26 pass、
     0 问题。相关测试 107 passed；core 834 passed, 1 skipped。
+
+### 13.9 2026-11-28 Qwen3-VL LoRA 冒烟
+
+- **目的**：用 3 条已通过轨迹验证 Qwen3-VL-8B-Instruct 的数据组装、loss 掩码、
+  LoRA 保存和 Agent 加载链路；不评价 adapter 质量，不扩到 250 条。
+- **数据**：`autosplice__55310__1__q95`（TruFor→PROBE，3 助手轮）、
+  `autosplice__65547__authentic__q95`（TruFor→PROBE，3 助手轮）、
+  `single_trufor__autosplice__54029__1__q95`（TruFor only，2 助手轮）。
+  原图在第一条 user turn；TruFor 三图（原图裁剪/异常图/可靠性图）在 TruFor 调用后的
+  tool/user turn；PROBE 裁剪在 PROBE 调用后的 turn。token 数 8853/9019/7669，
+  监督轮 3/3/2，监督 token 606/686/423，工具结果与系统状态全部 mask。
+- **模型/训练**：Qwen3-VL-8B-Instruct revision `0c351dd0`，bf16，梯度检查点，
+  vision tower 冻结；LoRA rank 16/alpha 32，**attention-only**
+  (`q_proj,k_proj,v_proj,o_proj`)，SGD lr 1e-3，6 steps，
+  `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`。
+- **OOM 记录**：AdamW + 全部 target 在 step 1 OOM（352 MiB）；SGD + 全部 target
+  在 step 2 OOM（424 MiB）；改为 attention-only 并直接取 decoder last hidden state
+  后 6/6 完成。未改模型、精度、输入图或 loss 掩码规则。
+- **结果（2026-11-28）**：losses `1.404611, 1.331620, 1.371110, 1.408393,
+  1.333055, 1.370175`；峰值 allocated **23.176 GB**、reserved **23.530 GB**；
+  adapter 保存到 `sft_data/lora_smoke_20261128/adapter/`（59 MB）。
+  加载 adapter 的现有 Agent 在 `autosplice__45749__1__q95` 上跑真实会话：
+  `model_concluded`，2 模型轮 / 1 次 PROBE 调用 / 未调用 TruFor，结案
+  `Fake / AI-generated / Uncertain / High`，耗时 44.57 s，峰值 allocated
+  20.457 GB。详见 `DATA_AUDIT.md`、`TRAINING_NOTES.md`、`REAL_SESSION.md`、
+  `run_manifest.json`、`real_session_summary.json`。不训练更多、不扩 250 条、
+  不碰 test；等复看。
