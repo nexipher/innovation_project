@@ -2616,3 +2616,10 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   LoRA 同一自主调用流程；汇报局部篡改检出、真图误报、两分项同时判对、弃权、
   调用次数和变化最大案例。
 - **边界**：本轮不扩 250 条；不改候选标签；不碰 test。
+- **10 步 profiling 结果（2026-11-28）**：`max_length=12000`、完整轨迹下，在第 1 步
+  backward OOM：尝试分配 274 MiB；23.48 GiB 在用、22.90 GiB allocated、
+  32.69 MiB free。未完成任何 step、未保存 adapter，已停止；未启动 24×2 epoch
+  和验证对照。磁盘 `/root/autodl-tmp` 50G/47G 已用/3.9G 可用（93%）。候选处理
+  （去系统状态消息、缩小图像输入、量化/offload、去掉 Midjourney、截断）均未执行，
+  等用户决定。详见 `sft_data/lora_small_20261128/PROFILE_OOM_REPORT.md` 与
+  `profile_10step_oom.log`。

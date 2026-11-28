@@ -1251,3 +1251,16 @@
 * **涉及/修改的文件清单**：`scripts/train_lora_candidate_smoke.py`、`scripts/build_lora_small_review.py`、`sft_data/lora_small_20261128/{TRAINING_CANDIDATES.md,DRY_RUN.md,dry_run.json,selection_pending.json}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：24/24 dry-run 通过；标签/统计断言通过；未加载模型、未使用 GPU、未训练。
 * **置信度或遗留待办（TODO）**：等确认 21 条清单和 max_length 处理后再启动 10 步 profiling / 24×2 epoch；不扩 250 条。
+
+### [2026-11-28] - §13.11 24 条 LoRA 10 步 profiling — OOM 停止
+
+* **当前操作动作**：按用户确认的 24 条清单，用最长/图最多的 Midjourney 229、SD15 459、Real e4ce 跑 10 步 profiling（max_length=12000，attention-only LoRA + SGD）；第 1 步 backward OOM，按要求停止并报告。
+* **对应计划锚点**：`plan.md` §13.11；`sft_data/lora_small_20261128/`。
+* **核心变更说明**：
+  1. 记录磁盘：`/root/autodl-tmp` 50G/47G 已用/3.9G 可用（93%）；`/` 30G/14G/17G。
+  2. profiling 3 条 token：Midjourney 229 11677、SD15 459 9608、Real e4ce 9420；均 5 图；attention-only LoRA rank16/alpha32、SGD lr1e-3、bf16、gradient checkpointing、max_length 12000。
+  3. 第 1 步 backward OOM：尝试分配 274 MiB；23.48 GiB 在用、22.90 GiB allocated、32.69 MiB free；0 step 完成、无 adapter。
+  4. 与上次 6 步冒烟（最长 9019 token、peak 23.176 GB）对比：+2658 token 超出 24GB 卡。
+* **涉及/修改的文件清单**：`sft_data/lora_small_20261128/{PROFILE_OOM_REPORT.md,profile_10step_oom.log}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：已停止；GPU 已释放；未启动正式训练/验证对照。
+* **置信度或遗留待办（TODO）**：等用户决定完整轨迹下的显存处理（去系统状态消息/缩小图像/量化或 offload/去掉 Midjourney/截断）；本轮不扩 250 条。
