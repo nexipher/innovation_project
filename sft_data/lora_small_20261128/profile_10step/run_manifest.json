@@ -1,0 +1,136 @@
+{
+  "schema": "lora_smoke/1",
+  "generated_at": "2026-11-28T12:25:25",
+  "model": {
+    "id": "Qwen/Qwen3-VL-8B-Instruct",
+    "revision": "0c351dd01ed87e9c1b53cbc748cba10e6187ff3b"
+  },
+  "data": {
+    "sample_ids": [
+      "genimage__Midjourney__229_midjourney_197__q95",
+      "genimage__SD15__459_sdv5_00195__q95",
+      "genimage__Real__e4ce4d06-00f7-456f-a17e-6049516d9668__q95"
+    ],
+    "system_prompt_sha256": "6b4756ca21bc7a63325236f2f5dea52bfb1100b8e7ffb480c20fdeded527a102",
+    "samples": [
+      {
+        "sample_id": "genimage__Midjourney__229_midjourney_197__q95",
+        "assistant_turns": 3,
+        "tool_turns": 2,
+        "images_per_tool_turn": [
+          1,
+          3
+        ],
+        "total_pil_images": 5,
+        "calls": [
+          "probe",
+          "trufor"
+        ],
+        "input_tokens": 11677,
+        "supervised_turns": 3,
+        "supervised_tokens": 468,
+        "masked_tokens": 11209,
+        "span_token_lengths": [
+          118,
+          136,
+          214
+        ]
+      },
+      {
+        "sample_id": "genimage__SD15__459_sdv5_00195__q95",
+        "assistant_turns": 3,
+        "tool_turns": 2,
+        "images_per_tool_turn": [
+          3,
+          1
+        ],
+        "total_pil_images": 5,
+        "calls": [
+          "trufor",
+          "probe"
+        ],
+        "input_tokens": 9608,
+        "supervised_turns": 3,
+        "supervised_tokens": 554,
+        "masked_tokens": 9054,
+        "span_token_lengths": [
+          167,
+          151,
+          236
+        ]
+      },
+      {
+        "sample_id": "genimage__Real__e4ce4d06-00f7-456f-a17e-6049516d9668__q95",
+        "assistant_turns": 3,
+        "tool_turns": 2,
+        "images_per_tool_turn": [
+          3,
+          1
+        ],
+        "total_pil_images": 5,
+        "calls": [
+          "trufor",
+          "probe"
+        ],
+        "input_tokens": 9420,
+        "supervised_turns": 3,
+        "supervised_tokens": 560,
+        "masked_tokens": 8860,
+        "span_token_lengths": [
+          155,
+          163,
+          242
+        ]
+      }
+    ]
+  },
+  "training": {
+    "max_steps": 10,
+    "lr": 0.001,
+    "rank": 16,
+    "alpha": 32,
+    "max_length": 12000,
+    "optimizer": "sgd",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj"
+    ],
+    "cuda_alloc_conf": "expandable_segments:True"
+  },
+  "result": {
+    "steps": 10,
+    "losses": [
+      1.56994,
+      1.537181,
+      1.555736,
+      1.56899,
+      1.535043,
+      1.55141,
+      1.570178,
+      1.537898,
+      1.552958,
+      1.569105
+    ],
+    "step_seconds": [
+      10.437,
+      7.406,
+      7.187,
+      9.5,
+      7.421,
+      7.19,
+      9.526,
+      7.432,
+      7.198,
+      9.519
+    ],
+    "mean_step_seconds": 8.282,
+    "max_step_seconds": 10.437,
+    "loss_first": 1.56994,
+    "loss_last": 1.569105,
+    "peak_allocated_gb": 24.881,
+    "peak_reserved_gb": 25.287,
+    "adapter": "sft_data/lora_small_20261128/profile_10step/adapter"
+  }
+}

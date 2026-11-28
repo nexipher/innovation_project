@@ -2623,3 +2623,21 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   （去系统状态消息、缩小图像输入、量化/offload、去掉 Midjourney、截断）均未执行，
   等用户决定。详见 `sft_data/lora_small_20261128/PROFILE_OOM_REPORT.md` 与
   `profile_10step_oom.log`。
+- **vGPU-32G 环境（2026-11-28）**：`nvidia-smi` 显示 RTX 4080 vGPU，32760 MiB
+  （约 32.8 GB）空闲；`df -h` 仍为 `/root/autodl-tmp` 50G/47G/3.9G 可用（93%），
+  `/` 30G/14G/17G。模型 snapshot、config、26 条 records 和 24 条 selection 均可读。
+  按用户要求重跑 10 步预检（BF16、attention-only rank16/alpha32、SGD lr1e-3、
+  max_length=12000、完整轨迹）。
+- **vGPU-32G 预检与正式训练（2026-11-28）**：10 步预检（Midjourney 229、
+  SD15 459、Real e4ce）10/10 完成，平均 8.282 s/step、最大 10.437 s，峰值
+  allocated **24.881 GB**、reserved **25.287 GB**；250×2=500 步按均值约 69.0 min、
+  按最大约 87.0 min。随后从原版 Qwen3-VL 跑 24 条 ×2 epoch = 48/48 步，loss
+  1.729107→1.527636，平均 6.774 s/step、最大 9.526 s，48 步合计 325.17 s，
+  峰值 allocated **24.881 GB**、reserved **25.313 GB**；adapter 保存到
+  `sft_data/lora_small_20261128/adapter/`（59 MB 权重）。按 48 步实际均值估算
+  250×2 约 56.5 min 计算；按预检均值/最大为 69/87 min，wall 建议按 60–90 min。
+- **验证集（2026-11-28）**：从 `split.json` validation 侧选 30 张，与训练 22 个
+  唯一源图无交集：10 AutoSplice 篡改、5 AutoSplice 真图、10 GenImage 生成、5 Real；
+  清单 `sft_data/lora_small_20261128/validation_manifest.json`，q95 哈希已校验。
+  两臂同清单、同系统提示、同 PROBE/TruFor、同贪心 non-thinking 自主流程；仅是否
+  加载 LoRA 不同。结果待回填。
