@@ -2753,3 +2753,29 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   结案一致性，但 base 局部检出未升反降（3/10→2/10）；60788 的 NA 变为
   `Not tampered` 是局部漏检而非 schema 问题。产出
   `analysis/rule_update_20261128/{report.md,per_sample.csv,comparison.json,truth_provenance.csv}`。
+
+### 13.15 2026-11-28 GenImage 整图生成 / 后续局部编辑配对
+
+- **目标**：制作 10 对「整图生成原图 / 后续局部编辑版」，两图整图真值均为
+  AI-generated；原图局部真值 Not tampered，编辑版局部真值 Tampered；保留实际
+  编辑区域 mask，供后续 TruFor/Agent 验证。
+- **选源**：`dataset/GenImage_q95/eval_dev_manifest_20261102.json` 中 dev split、
+  `no_known_use=true` 的生成图；排除近期训练、验证、SFT、固定对照 manifests
+  使用的 135 个 GenImage 源；不使用 test split。10 个源图均不同源。
+- **配对**：添加 4、删除 3、替换 3；生成器分布 ADM 1、BigGAN 1、Glide 4、
+  SD14 1、VQDM 2、Wukong 1。
+  - 添加：VQDM 纸箱 FRAGILE 标签、Wukong 衣架价格吊牌、SD14 同图球体裁切、
+    Glide 网页正文文本块复制。
+  - 删除：BigGAN 细木棍、Glide 文档右栏段落、Glide 页面中部说明块。
+  - 替换：ADM 通知单覆盖橙色标签、Glide 左屏替换为中间屏画面、VQDM 文档
+    左侧文本块替换右侧文本块。
+- **编码/校验**：原图与编辑版都从同一份解码源图出发，Pillow
+  `quality=95, subsampling=2, optimize=False, progressive=False`；两图 JPEG
+  quantization tables 一致；mask 由编码前逐像素差异生成，mask 外像素变化 0。
+- **产出**：`sft_data/genimage_local_edits_20261128/{manifest.json,README.md,
+  selection_audit.csv,encode_audit.csv,pairs/**,review/index.html}`；审核页并排
+  展示原图、编辑版、mask。新增 `scripts/build_genimage_local_edit_pairs.py` 和
+  `tests/test_genimage_local_edit_pairs.py`。
+- **边界**：本轮只交付数据、manifest、审核页；未跑 TruFor/Agent/Qwen，未改
+  专家权重/阈值，未制作新的训练/验证数据，未碰 test。等人工复核配对效果后再
+  跑 TruFor 和 Agent。

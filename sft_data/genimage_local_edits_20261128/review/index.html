@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GenImage 整图生成 / 局部编辑配对审核</title>
+<style>
+:root { color-scheme: light dark; }
+body { font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+       max-width: 1500px; margin: 24px auto; padding: 0 20px; }
+h1 { margin-bottom: 4px; }
+.sub { color: #666; margin-top: 0; }
+nav ul { columns: 2; padding-left: 20px; }
+article { border-top: 1px solid #bbb; padding: 18px 0 8px; }
+.meta { color: #555; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+figure { margin: 0; }
+figure img { width: 100%; height: auto; max-height: 72vh; object-fit: contain;
+             background: #111; border-radius: 4px; }
+figure.mask img { image-rendering: pixelated; }
+figcaption { font-size: 13px; color: #666; margin-top: 4px; }
+code { font-size: 12px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; }
+  nav ul { columns: 1; } }
+</style></head><body>
+<h1>GenImage 整图生成 / 局部编辑配对审核</h1>
+<p class="sub">共 10 对：添加 4、
+删除 3、替换 3。
+两图整图真值均为 AI-generated；原图局部 Not tampered，编辑版局部 Tampered。
+mask 为编码前实际变化像素。</p>
+<p class="sub">本轮只交付数据、manifest 和审核页；尚未运行 TruFor / Agent。
+编辑是否自然、mask 是否对齐，请按对检查。</p>
+<nav><ul><li><a href="#p01_vqdm_box_label_add">p01_vqdm_box_label_add</a> — VQDM / 添加</li><li><a href="#p02_wukong_tag_add">p02_wukong_tag_add</a> — Wukong / 添加</li><li><a href="#p03_sd14_sphere_add">p03_sd14_sphere_add</a> — SD14 / 添加</li><li><a href="#p04_glide_556_text_add">p04_glide_556_text_add</a> — Glide / 添加</li><li><a href="#p05_biggan_stick_delete">p05_biggan_stick_delete</a> — BigGAN / 删除</li><li><a href="#p06_glide_922_paragraph_delete">p06_glide_922_paragraph_delete</a> — Glide / 删除</li><li><a href="#p07_glide_830_caption_delete">p07_glide_830_caption_delete</a> — Glide / 删除</li><li><a href="#p08_adm_notice_replace">p08_adm_notice_replace</a> — ADM / 替换</li><li><a href="#p09_glide_screens_replace">p09_glide_screens_replace</a> — Glide / 替换</li><li><a href="#p10_vqdm_document_replace">p10_vqdm_document_replace</a> — VQDM / 替换</li></ul></nav>
+
+<article id="p01_vqdm_box_label_add">
+  <h2>p01_vqdm_box_label_add</h2>
+  <p class="meta"><b>VQDM</b> · 添加 ·
+  在纸箱正面添加白色 FRAGILE 物流标签<br>
+  源：<code>VQDM/VQDM_1000_200_08_844_vqdm_00143</code> · mask 像素 8184 ·
+  bbox [64, 92, 196, 154]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p01_vqdm_box_label_add/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p01_vqdm_box_label_add/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p01_vqdm_box_label_add/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p02_wukong_tag_add">
+  <h2>p02_wukong_tag_add</h2>
+  <p class="meta"><b>Wukong</b> · 添加 ·
+  在衣架右侧挂上 SIZE M 价格吊牌<br>
+  源：<code>Wukong/841_wukong_image61</code> · mask 像素 3109 ·
+  bbox [382, 52, 428, 124]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p02_wukong_tag_add/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p02_wukong_tag_add/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p02_wukong_tag_add/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p03_sd14_sphere_add">
+  <h2>p03_sd14_sphere_add</h2>
+  <p class="meta"><b>SD14</b> · 添加 ·
+  把左下空白木纹处补入一颗同图白色球体（含阴影）<br>
+  源：<code>SD14/722_sdv4_00039</code> · mask 像素 14917 ·
+  bbox [3, 393, 146, 512]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p03_sd14_sphere_add/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p03_sd14_sphere_add/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p03_sd14_sphere_add/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p04_glide_556_text_add">
+  <h2>p04_glide_556_text_add</h2>
+  <p class="meta"><b>Glide</b> · 添加 ·
+  在网页右侧空白处复制一段正文文本块<br>
+  源：<code>Glide/GLIDE_1000_200_05_556_glide_00127</code> · mask 像素 4146 ·
+  bbox [178, 85, 238, 160]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p04_glide_556_text_add/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p04_glide_556_text_add/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p04_glide_556_text_add/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p05_biggan_stick_delete">
+  <h2>p05_biggan_stick_delete</h2>
+  <p class="meta"><b>BigGAN</b> · 删除 ·
+  删除画面中央的细木棍<br>
+  源：<code>BigGAN/623_biggan_00127</code> · mask 像素 7450 ·
+  bbox [0, 35, 128, 101]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p05_biggan_stick_delete/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p05_biggan_stick_delete/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p05_biggan_stick_delete/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p06_glide_922_paragraph_delete">
+  <h2>p06_glide_922_paragraph_delete</h2>
+  <p class="meta"><b>Glide</b> · 删除 ·
+  删除右栏一段正文<br>
+  源：<code>Glide/GLIDE_1000_200_09_922_glide_00035</code> · mask 像素 1816 ·
+  bbox [160, 105, 216, 160]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p06_glide_922_paragraph_delete/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p06_glide_922_paragraph_delete/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p06_glide_922_paragraph_delete/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p07_glide_830_caption_delete">
+  <h2>p07_glide_830_caption_delete</h2>
+  <p class="meta"><b>Glide</b> · 删除 ·
+  删除页面中部的说明文字块<br>
+  源：<code>Glide/GLIDE_1000_200_08_830_glide_00035</code> · mask 像素 7593 ·
+  bbox [76, 78, 229, 174]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p07_glide_830_caption_delete/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p07_glide_830_caption_delete/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p07_glide_830_caption_delete/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p08_adm_notice_replace">
+  <h2>p08_adm_notice_replace</h2>
+  <p class="meta"><b>ADM</b> · 替换 ·
+  用白色通知单覆盖右下橙色警示标签<br>
+  源：<code>ADM/916_adm_85</code> · mask 像素 9999 ·
+  bbox [153, 125, 253, 225]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p08_adm_notice_replace/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p08_adm_notice_replace/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p08_adm_notice_replace/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p09_glide_screens_replace">
+  <h2>p09_glide_screens_replace</h2>
+  <p class="meta"><b>Glide</b> · 替换 ·
+  把左侧手机屏幕替换为中间屏幕的画面<br>
+  源：<code>Glide/GLIDE_1000_200_04_466_glide_00039</code> · mask 像素 9055 ·
+  bbox [0, 55, 65, 195]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p09_glide_screens_replace/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p09_glide_screens_replace/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p09_glide_screens_replace/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+<article id="p10_vqdm_document_replace">
+  <h2>p10_vqdm_document_replace</h2>
+  <p class="meta"><b>VQDM</b> · 替换 ·
+  用左侧文本块替换右侧文本块<br>
+  源：<code>VQDM/VQDM_1000_200_09_916_vqdm_00035</code> · mask 像素 3509 ·
+  bbox [165, 105, 245, 150]</p>
+  <div class="grid">
+    <figure><img loading="lazy" src="../pairs/p10_vqdm_document_replace/original.jpg" alt="original">
+      <figcaption>原图 · 整图 AI-generated / 局部 Not tampered</figcaption></figure>
+    <figure><img loading="lazy" src="../pairs/p10_vqdm_document_replace/edited.jpg" alt="edited">
+      <figcaption>编辑版 · 整图 AI-generated / 局部 Tampered</figcaption></figure>
+    <figure><img loading="lazy" class="mask" src="../pairs/p10_vqdm_document_replace/mask.png" alt="mask">
+      <figcaption>mask · 白色为编辑区域</figcaption></figure>
+  </div>
+</article>
+</body></html>

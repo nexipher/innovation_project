@@ -1341,3 +1341,18 @@
 * **涉及/修改的文件清单**：`mllm/{message_builder,mock_client}.py`、`utils/{joint_verdict,coverage}.py`、`state_machine/controller.py`、4 个测试文件、`scripts/{build_independent_truth_manifest,compare_independent_rule_run}.py`、`sft_data/lora_small_20261128/{validation_manifest_independent_20261128.json,validation_independent_20261128/**,analysis/rule_update_20261128/**}`、`plan.md`。
 * **执行结果与验证状态**：核心测试 837 passed, 1 skipped；新 base 30/30、0 失败；对照/逐图 CSV/报告已生成。历史 `validation_fixed` 文件未改。
 * **置信度或遗留待办（TODO）**：新规则修复 NA/弃权/57143·41993 一致性，但 base 局部检出 3/10→2/10，未提升召回；60788 由 NA 变 Not tampered 是局部漏检而非 schema；42958 覆盖仍 failed。未重训、未扩 250 条、未做新配对数据、未碰 test，未改专家权重/阈值。
+
+### [2026-11-28 18:02] - §13.15 GenImage 整图生成 / 后续局部编辑配对
+
+* **当前操作动作**：从 GenImage dev/no_known_use 源图制作 10 对「纯生成原图 / 后续局部编辑版」，记录编辑类型、两图路径和实际变化 mask，并生成并排审核页；未跑 TruFor/Agent。
+* **对应计划锚点**：`plan.md` §13.15；`sft_data/genimage_local_edits_20261128/`。
+* **选源审计**：读取 `dataset/GenImage_q95/eval_dev_manifest_20261102.json`，要求 `new_split=dev`、`no_known_use=true`；从 8 个近期 manifest 收集 135 个已用 GenImage 源并全部排除；test split 未使用。10 个源图互不相同。
+* **配对内容**：添加 4、删除 3、替换 3；ADM 1、BigGAN 1、Glide 4、SD14 1、VQDM 2、Wukong 1。
+  1. 添加：VQDM 纸箱 FRAGILE 标签、Wukong 衣架价格吊牌、SD14 同图球体裁切、Glide 网页正文文本块复制。
+  2. 删除：BigGAN 细木棍、Glide 文档右栏段落、Glide 页面中部说明块。
+  3. 替换：ADM 白色通知单覆盖橙色标签、Glide 左屏替换为中间屏画面、VQDM 文档左侧文本块替换右侧文本块。
+* **真值**：两图 `whole_image_generation=AI-generated`；原图 `local_manipulation=Not tampered`；编辑版 `local_manipulation=Tampered`。原图为 GenImage generator-only q95 派生；编辑版由本批次施加一次局部编辑。
+* **编码/校验**：Pillow 11.0.0，`quality=95, subsampling=2, optimize=False, progressive=False`；两图从同一解码源图出发；逐对校验 JPEG quantization tables 一致、尺寸一致、mask 外编码前变化为 0；mask 为编码前逐像素差异。
+* **涉及/修改的文件清单**：`scripts/build_genimage_local_edit_pairs.py`、`tests/test_genimage_local_edit_pairs.py`、`sft_data/genimage_local_edits_20261128/{manifest.json,README.md,selection_audit.csv,encode_audit.csv,pairs/**,review/index.html}`、`plan.md`。
+* **执行结果与验证状态**：10 对、35 个数据文件；批量校验测试 2 passed；审核页 30 个图片引用全部存在；未使用 GPU。
+* **置信度或遗留待办（TODO）**：编辑自然度和 mask 对齐需人工复核；p03 球体、p09 屏幕替换、p10 文本块替换相对 subtle，复核不通过可丢弃/重做。未跑 TruFor/Agent/Qwen，未改专家或阈值，未制作新的训练/验证数据，未碰 test。
