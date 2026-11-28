@@ -1,0 +1,217 @@
+{
+  "index": 8,
+  "sample_id": "eb_gen_064_triangle__edited",
+  "pair_id": "eb_gen_064_triangle",
+  "variant": "edited",
+  "edit_type": "editbench_imagen_mask-rich",
+  "file_stem": "a=triangle_o=letter_style=real",
+  "annotation_row": 64,
+  "source_id": "a=triangle_o=letter_style=real",
+  "generator": "EditBench",
+  "group": "editbench_edited",
+  "family": "EditBench",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "AI-generated",
+  "local_manipulation": "Not tampered",
+  "certainty": "High",
+  "report": "主要支持：PROBE 显示图像为 AI 生成（分数 0.9188），TruFor 未检测到局部篡改（分数 0.4686）。主要限制：局部编辑结论基于 TruFor 的低响应，但图像存在不自然感，可能暗示生成过程中的合成痕迹。",
+  "primary_evidence": [
+    "probe_dino_expert",
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "pass_after_correction",
+    "issues": [
+      {
+        "code": "overall_real_with_unmeasured_whole",
+        "severity": "defect",
+        "message": "overall verdict is Real while PROBE is unmeasured and still available; an absent local finding is not positive evidence of authentic capture"
+      },
+      {
+        "code": "whole_image_without_probe",
+        "severity": "defect",
+        "field": "whole_image_generation",
+        "value": "Real",
+        "message": "whole_image_generation is definite without a PROBE measurement; the whole-image question is unmeasured"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- 总体 verdict=Real，但 PROBE 仍可调用却未测量（整图分项可能写成了 Real 或 Uncertain）。局部“未发现篡改”只排除了一个方向，不能单独证明整图真实；请调用 PROBE，或说明已有的正向真实证据，或把总体改为 Uncertain。\n- whole_image_generation=Real，但本会话没有 PROBE 的有效测量。局部证据可以支持总体 Fake，但整图生成分项应写 Uncertain，或明确说明非 PROBE 的依据边界；不要把 TruFor 的局部高分改写成整图生成结论。整图生成与局部编辑独立，不要因为整图改为 Uncertain 就把局部分项改成 Not applicable；局部仍按 TruFor/同区域内容写 Tampered、Not tampered 或 Uncertain。若局部只是 Not tampered，总体 Real 也仍缺正向真实证据，必须同时改总体或补测 PROBE。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nTruFor 的局部篡改检测分数为 0.4686，低于其诊断阈值 0.5，且其异常图与置信度图显示在三角形装饰区域存在中等响应（红色区域），但置信度图显示该区域可靠性较高（红色区域）。这表明该区域存在局部异常，但不足以达到“篡改”的诊断标准。结合原始图像观察，三角形装饰边缘过于平滑，缺乏真实金属材质的微小瑕疵或磨损痕迹，这与 TruFor 的异常响应区域吻合，但不足以证明是后期编辑。由于 TruFor 的分数未达到阈值，且无高响应区域，局部编辑结论为“Not tampered”是合理的。然而，由于该区域的置信度较高，且视觉上存在不自然感，局部编辑结论仍存在不确定性。整图生成（PROBE）尚未测量，但根据当前证据，局部编辑问题已得到解答，且不影响整体结论。由于 TruFor 的测量结果未达到阈值，且无高响应区域，局部编辑结论为“Not tampered”是合理的。然而，由于该区域的置信度较高，且视觉上存在不自然感，局部编辑结论仍存在不确定性。整图生成（PROBE）尚未测量，但根据当前证据，局部编辑问题已得到解答，且不影响整体结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"主要支持：TruFor 未检测到局部篡改（分数低于阈值），图像整体未显示明显AI生成特征。主要限制：三角形装饰边缘过于平滑，缺乏真实金属材质的微小瑕疵或磨损痕迹，存在视觉不自然感，但不足以证明局部编辑。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nPROBE 的整图生成检测分数为 0.9188，远高于其阈值 0.5，表明模型高度倾向于该图像为 AI 生成。TruFor 的局部篡改检测分数为 0.4686，低于其阈值 0.5，且其异常图与置信度图显示在三角形装饰区域存在中等响应，但置信度较高，表明该区域存在局部异常，但不足以达到“篡改”的诊断标准。结合原始图像观察，三角形装饰边缘过于平滑，缺乏真实金属材质的微小瑕疵或磨损痕迹，这与 TruFor 的异常响应区域吻合，但不足以证明是后期编辑。由于 PROBE 的分数远高于阈值，且 TruFor 未检测到局部篡改，整体结论应为“Fake”，因为整图生成检测结果明确支持 AI 生成，而局部编辑结论不影响整体判断。由于 PROBE 的分数远高于阈值，且 TruFor 未检测到局部篡改，整体结论应为“Fake”，因为整图生成检测结果明确支持 AI 生成，而局部编辑结论不影响整体判断。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"主要支持：PROBE 显示图像为 AI 生成（分数 0.9188），TruFor 未检测到局部篡改（分数 0.4686）。主要限制：局部编辑结论基于 TruFor 的低响应，但图像存在不自然感，可能暗示生成过程中的合成痕迹。\"}\n</verdict>",
+    "remaining_issues": []
+  },
+  "joint_verdict_issues": [],
+  "halting_reason": "model_concluded",
+  "model_turns": 4,
+  "expert_calls": 2,
+  "elapsed_s": 72.66,
+  "evidence": [
+    {
+      "evidence_id": "E-6f619865b6",
+      "source": "trufor_expert",
+      "strength": 0.4686,
+      "raw_metric": 0.468612,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — high-response crop",
+          "content_box": [
+            0,
+            38,
+            1024,
+            268
+          ],
+          "canvas_size": [
+            1229,
+            330
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_region",
+          "region_pixels": [
+            495,
+            0,
+            725,
+            1024
+          ],
+          "region_normalized_1000": [
+            483,
+            0,
+            708,
+            1000
+          ],
+          "source_size": [
+            1024,
+            1024
+          ],
+          "map_size": [
+            1024,
+            1024
+          ],
+          "crop_size": [
+            230,
+            1024
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_210814_eb_gen_064_triangle__edited/model_original_crop_E-6f619865b6.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            1024,
+            268
+          ],
+          "canvas_size": [
+            1229,
+            330
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_region",
+          "region_pixels": [
+            495,
+            0,
+            725,
+            1024
+          ],
+          "region_normalized_1000": [
+            483,
+            0,
+            708,
+            1000
+          ],
+          "source_size": [
+            1024,
+            1024
+          ],
+          "map_size": [
+            1024,
+            1024
+          ],
+          "crop_size": [
+            230,
+            1024
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_210814_eb_gen_064_triangle__edited/model_anomaly_map_E-6f619865b6.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — high-response crop",
+          "content_box": [
+            0,
+            38,
+            1024,
+            268
+          ],
+          "canvas_size": [
+            1229,
+            330
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "high-response inspection crop",
+          "region_source": "anomaly_region",
+          "region_pixels": [
+            495,
+            0,
+            725,
+            1024
+          ],
+          "region_normalized_1000": [
+            483,
+            0,
+            708,
+            1000
+          ],
+          "source_size": [
+            1024,
+            1024
+          ],
+          "map_size": [
+            1024,
+            1024
+          ],
+          "crop_size": [
+            230,
+            1024
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_210814_eb_gen_064_triangle__edited/model_confidence_map_E-6f619865b6.png"
+        }
+      }
+    },
+    {
+      "evidence_id": "E-b1b57278b0",
+      "source": "probe_dino_expert",
+      "strength": 0.9188,
+      "raw_metric": 0.918773,
+      "model_image_layout": null
+    }
+  ],
+  "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210814_eb_gen_064_triangle__edited.json",
+  "failed_experts": []
+}

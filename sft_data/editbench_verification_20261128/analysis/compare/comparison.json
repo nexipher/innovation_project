@@ -1,0 +1,530 @@
+{
+  "schema": "editbench_agent_comparison/1",
+  "trufor": "sft_data/editbench_verification_20261128/analysis/trufor/per_image.csv",
+  "agent": "sft_data/editbench_verification_20261128/analysis/agent/agent/records.json",
+  "aggregate": {
+    "images": 10,
+    "whole_ai_correct": 7,
+    "edited_whole_ai": 3,
+    "original_whole_ai": 4,
+    "edited_local_tampered": 1,
+    "edited_both": 0,
+    "edited_local_uncertain": 2,
+    "original_local_fp": 1,
+    "original_local_uncertain": 1,
+    "overall_uncertain": 0,
+    "edited_overall_uncertain": 0,
+    "original_overall_uncertain": 0,
+    "trufor_called": 10,
+    "calls_total": 19,
+    "calls_mean": 1.9,
+    "edited_tf_low_score_heatmap": [
+      "eb_gen_029_pig",
+      "eb_gen_064_triangle",
+      "eb_gen_114_three"
+    ]
+  },
+  "rows": [
+    {
+      "pair_id": "eb_gen_015_sawfish",
+      "variant": "edited",
+      "local_truth": "Tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.600919,
+      "tf_mask_mean": 0.592861,
+      "tf_mask_high_fraction": 0.622415,
+      "tf_iou": 0.600725,
+      "tf_localized": true,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "Uncertain",
+        "local": "Tampered",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 1,
+        "trufor_called": true,
+        "trufor_strength": 0.6009,
+        "trufor_metric": 0.600919,
+        "probe_called": false,
+        "probe_metric": null,
+        "report": "主要支持：TruFor 检测到高响应异常，表明存在局部篡改候选，且可靠性高。主要限制：整图生成尚未测量，无法判断是否为 AI 生成。",
+        "suspicious_regions": [
+          {
+            "bbox": [
+              0,
+              0,
+              1000,
+              1000
+            ],
+            "scope": "global_range",
+            "reason": "TruFor 检测到高响应异常，表明存在局部篡改候选，且可靠性高",
+            "evidence": [
+              "E-df6271baf1"
+            ]
+          }
+        ],
+        "coverage_check": {
+          "status": "pass",
+          "issues": [],
+          "feedback": null,
+          "original_output": null,
+          "corrected_output": null,
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210632_eb_gen_015_sawfish__edited.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": false,
+      "local_correct": true,
+      "local_tampered": true,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_015_sawfish",
+      "variant": "original",
+      "local_truth": "Not tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.946601,
+      "tf_mask_mean": 0.000369,
+      "tf_mask_high_fraction": 0.0,
+      "tf_iou": 0.0,
+      "tf_localized": false,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Tampered",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.9466,
+        "trufor_metric": 0.946601,
+        "probe_called": true,
+        "probe_metric": 0.951103,
+        "report": "主要支持：PROBE高分（0.9511）指向AI生成，TruFor高分（0.9466）支持局部篡改；主要限制：TruFor高响应区域位于水印，非中央悬浮物体，但足以支持局部编辑。",
+        "suspicious_regions": [
+          {
+            "bbox": [
+              944,
+              851,
+              1000,
+              994
+            ],
+            "scope": "local_candidate",
+            "reason": "TruFor高响应区域与“Imagen”水印重合，且可靠性高，支持局部篡改",
+            "evidence": [
+              "E-804228842f"
+            ]
+          }
+        ],
+        "coverage_check": {
+          "status": "pass_after_correction",
+          "issues": [
+            {
+              "code": "local_uncertain_without_trufor",
+              "severity": "defect",
+              "field": "local_manipulation",
+              "value": "Uncertain",
+              "message": "local_manipulation is Uncertain while TruFor is still callable and unmeasured; the local question was not actually investigated"
+            }
+          ],
+          "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；调用后若 TruFor 低分/无高响应，局部写 Not tampered；若有同区域高响应，按内容变化写 Tampered。不要在没有局部测量时把 Uncertain 当作已调查；整图 AI-generated 不会使局部变成 Not applicable。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+          "original_output": "<reasoning>\nPROBE 返回高分（0.9511），指向整图AI生成，且其测量范围为全局，与图像中悬浮的异常黄色物体形态相符。该物体的不自然形态和与环境的物理不协调性，是AI生成的典型特征。目前尚未调用TruFor进行局部编辑检测，但PROBE的高分已足以支持“整图AI生成”的结论。由于局部编辑检测（TruFor）尚未执行，无法判断是否存在局部篡改，但根据规则，整图AI生成已足以使整体结论为Fake，无需依赖局部编辑结果。因此，无需再调用TruFor，可直接下结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-144092fb01\"], \"report\": \"主要支持：PROBE高分（0.9511）指向AI生成；主要限制：未测量局部编辑，无法确认是否局部篡改。\"}\n</verdict>",
+          "corrected_output": "<reasoning>\nPROBE 返回高分（0.9511），指向整图AI生成；TruFor 返回高分（0.9466），其异常响应区域（[944,851,1000,994]）与图像右下角“Imagen”水印区域重合，且该区域在可靠性图中为高可靠性（红色），表明该水印区域存在局部篡改嫌疑。虽然TruFor的高响应区域并非图像中央的悬浮物体，但其高分和高可靠性支持局部编辑的存在。因此，局部编辑应判定为“Tampered”。整图AI生成与局部编辑独立，两者均支持“Fake”结论。两个专家均已测量，且结果一致支持Fake，无需再调用其他工具。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Tampered\", \"suspicious_regions\": [{\"bbox\": [944, 851, 1000, 994], \"reason\": \"TruFor高响应区域与“Imagen”水印重合，且可靠性高，支持局部篡改\", \"evidence\": [\"E-804228842f\"]}], \"certainty\": \"High\", \"primary_evidence\": [\"E-144092fb01\", \"E-804228842f\"], \"report\": \"主要支持：PROBE高分（0.9511）指向AI生成，TruFor高分（0.9466）支持局部篡改；主要限制：TruFor高响应区域位于水印，非中央悬浮物体，但足以支持局部编辑。\"}\n</verdict>",
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210533_eb_gen_015_sawfish__original.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": false,
+      "local_tampered": true,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_025_dog",
+      "variant": "edited",
+      "local_truth": "Tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.47338,
+      "tf_mask_mean": 0.015626,
+      "tf_mask_high_fraction": 0.0,
+      "tf_iou": 0.0,
+      "tf_localized": false,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.4734,
+        "trufor_metric": 0.47338,
+        "probe_called": true,
+        "probe_metric": 0.86748,
+        "report": "主要支持：PROBE 高分（0.8675）表明整图为AI生成；主要限制：TruFor 低分（0.4734）未发现局部篡改。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass_after_correction",
+          "issues": [
+            {
+              "code": "local_uncertain_without_trufor",
+              "severity": "defect",
+              "field": "local_manipulation",
+              "value": "Uncertain",
+              "message": "local_manipulation is Uncertain while TruFor is still callable and unmeasured; the local question was not actually investigated"
+            }
+          ],
+          "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；调用后若 TruFor 低分/无高响应，局部写 Not tampered；若有同区域高响应，按内容变化写 Tampered。不要在没有局部测量时把 Uncertain 当作已调查；整图 AI-generated 不会使局部变成 Not applicable。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+          "original_output": "<reasoning>\nPROBE returned a high score (0.8675, \"high\" band) indicating strong evidence for AI-generated whole-image generation. The watermark \"Imagen\" further supports this. TruFor has not been called yet, so local manipulation status is unresolved. Since the whole-image generation is strongly indicated by PROBE, and local tampering is independent, the overall verdict must be Fake if local is Tampered, Not tampered, or Uncertain. However, local tampering cannot be confirmed without TruFor. The PROBE score is uncalibrated and not guaranteed to be accurate for this specific image, but it is the only available evidence for whole-image generation. The lack of TruFor measurement means we cannot confirm whether local tampering occurred, but the whole-image AI-generated status is sufficient to classify the overall verdict as Fake. The main limitation is the absence of local evidence, but the whole-image evidence is strong and conclusive.\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-07493d1ad7\"], \"report\": \"主要支持：PROBE 高分（0.8675）表明整图为AI生成；主要限制：未测量局部编辑，无法确认是否被篡改。\"}\n</verdict>",
+          "corrected_output": "<reasoning>\nPROBE returned a high score (0.8675) indicating AI-generated whole-image generation. TruFor returned a score of 0.4734, which is below its diagnostic threshold (0.5), and the anomaly map shows no strong local response. The confidence map indicates high reliability in the inspected region, but the anomaly response is low. Since the whole-image generation is confirmed and local tampering is not indicated by TruFor, the overall verdict is Fake. The main support is the high PROBE score for AI generation, and the main limitation is the absence of strong local manipulation evidence, though TruFor's low score supports \"Not tampered\" for local content.\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-07493d1ad7\", \"E-dcfc464220\"], \"report\": \"主要支持：PROBE 高分（0.8675）表明整图为AI生成；主要限制：TruFor 低分（0.4734）未发现局部篡改。\"}\n</verdict>",
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210438_eb_gen_025_dog__edited.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": false,
+      "local_tampered": false,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_025_dog",
+      "variant": "original",
+      "local_truth": "Not tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.275033,
+      "tf_mask_mean": 0.031087,
+      "tf_mask_high_fraction": 0.00067,
+      "tf_iou": 0.000655,
+      "tf_localized": false,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.275,
+        "trufor_metric": 0.275033,
+        "probe_called": true,
+        "probe_metric": 0.885262,
+        "report": "主要支持：PROBE 高分（0.885）指向 AI 生成，TruFor 低分（0.275）支持无局部篡改；主要限制：局部编辑未发现明显篡改，但整图生成已确认为 AI 生成。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass_after_correction",
+          "issues": [
+            {
+              "code": "local_uncertain_without_trufor",
+              "severity": "defect",
+              "field": "local_manipulation",
+              "value": "Uncertain",
+              "message": "local_manipulation is Uncertain while TruFor is still callable and unmeasured; the local question was not actually investigated"
+            }
+          ],
+          "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；调用后若 TruFor 低分/无高响应，局部写 Not tampered；若有同区域高响应，按内容变化写 Tampered。不要在没有局部测量时把 Uncertain 当作已调查；整图 AI-generated 不会使局部变成 Not applicable。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+          "original_output": "<reasoning>\nPROBE 返回高分（0.885），指向 AI 生成，且其测量范围为全局，与图像整体风格一致。图像中“Imagen”水印进一步支持其为 AI 生成内容。TruFor 尚未测量，因此无法判断是否存在局部编辑。由于 PROBE 已提供明确的 AI 生成证据，且 TruFor 的测量对局部编辑的判断是独立的，当前证据足以支持“Fake”整体结论，无需等待 TruFor 测量。局部编辑问题因无测量而保持“Uncertain”，但整体结论为“Fake”。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-9f2d7d6d7c\"], \"report\": \"主要支持：PROBE 高分（0.885）指向 AI 生成；主要限制：局部编辑未测量，无法确认是否被篡改。\"}\n</verdict>",
+          "corrected_output": "<reasoning>\nPROBE 返回高分（0.885），明确指向 AI 生成。TruFor 返回局部篡改分数 0.275，低于其诊断阈值（0.5），且其异常图和置信度图显示无高响应区域，因此无法支持局部篡改。由于 TruFor 分数低且无高响应区域，局部编辑判断为“Not tampered”。整体结论为“Fake”，因为整图生成已确认为 AI 生成，而局部编辑未被证实。两个专家的测量结果一致支持“Fake”整体结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-9f2d7d6d7c\", \"E-f9d2dcd352\"], \"report\": \"主要支持：PROBE 高分（0.885）指向 AI 生成，TruFor 低分（0.275）支持无局部篡改；主要限制：局部编辑未发现明显篡改，但整图生成已确认为 AI 生成。\"}\n</verdict>",
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210344_eb_gen_025_dog__original.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": true,
+      "local_tampered": false,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_029_pig",
+      "variant": "edited",
+      "local_truth": "Tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.114912,
+      "tf_mask_mean": 0.2763,
+      "tf_mask_high_fraction": 0.190674,
+      "tf_iou": 0.187157,
+      "tf_localized": true,
+      "tf_low_score_heatmap": true,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.1149,
+        "trufor_metric": 0.114912,
+        "probe_called": true,
+        "probe_metric": 0.917128,
+        "report": "主要支持：PROBE 高分（0.917）支持整图 AI 生成；主要限制：TruFor 分数低（0.115）且高响应区域可靠性低，无法确认局部编辑。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass_after_correction",
+          "issues": [
+            {
+              "code": "local_uncertain_without_trufor",
+              "severity": "defect",
+              "field": "local_manipulation",
+              "value": "Uncertain",
+              "message": "local_manipulation is Uncertain while TruFor is still callable and unmeasured; the local question was not actually investigated"
+            }
+          ],
+          "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；调用后若 TruFor 低分/无高响应，局部写 Not tampered；若有同区域高响应，按内容变化写 Tampered。不要在没有局部测量时把 Uncertain 当作已调查；整图 AI-generated 不会使局部变成 Not applicable。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+          "original_output": "<reasoning>\nPROBE 已返回测量值 0.917128（高分指向 AI 生成），其方向为“AI-generated”，且该分数为模型对生成类的预测概率（非校准概率），阈值为 0.5。该测量支持整图生成为 AI 生成。TruFor 尚未测量，因此无法判断局部编辑情况。由于 PROBE 已支持整图 AI 生成，且局部编辑尚未测量，根据规则，若整图生成为 AI 生成，则整体结论必须为 Fake，无论局部编辑如何。因此，无需等待 TruFor 测量即可得出结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-fba7c0cb94\"], \"report\": \"主要支持：PROBE 高分（0.917）支持整图 AI 生成；主要限制：局部编辑未测量，无法确认是否被篡改。\"}\n</verdict>",
+          "corrected_output": "<reasoning>\nPROBE 已返回高分 0.917128，支持整图 AI 生成。TruFor 返回局部篡改分数 0.114912，低于其诊断阈值 0.5，且其异常图和置信度图显示在猪体表区域（如耳朵、鼻子）存在局部高响应，但置信度图显示这些区域可靠性较低（蓝色区域）。由于 TruFor 分数低于阈值，且无高响应区域的高可靠性支持，无法确认存在局部编辑。根据规则，整图 AI 生成已支持，因此整体结论必须为 Fake，无论局部编辑如何。局部编辑状态为 Uncertain，因为 TruFor 未提供足够证据支持或排除局部编辑。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-fba7c0cb94\", \"E-10cbb0309e\"], \"report\": \"主要支持：PROBE 高分（0.917）支持整图 AI 生成；主要限制：TruFor 分数低（0.115）且高响应区域可靠性低，无法确认局部编辑。\"}\n</verdict>",
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210249_eb_gen_029_pig__edited.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": false,
+      "local_tampered": false,
+      "local_uncertain": true,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_029_pig",
+      "variant": "original",
+      "local_truth": "Not tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.159591,
+      "tf_mask_mean": 0.038235,
+      "tf_mask_high_fraction": 0.000436,
+      "tf_iou": 0.000428,
+      "tf_localized": false,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.1596,
+        "trufor_metric": 0.159591,
+        "probe_called": true,
+        "probe_metric": 0.909162,
+        "report": "主要支持：PROBE高分（0.909）支持整图AI生成，TruFor低分（0.159）支持无显著局部篡改；主要限制：TruFor低分不证明未被篡改，仅表示无强响应。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass_after_correction",
+          "issues": [
+            {
+              "code": "local_uncertain_without_trufor",
+              "severity": "defect",
+              "field": "local_manipulation",
+              "value": "Uncertain",
+              "message": "local_manipulation is Uncertain while TruFor is still callable and unmeasured; the local question was not actually investigated"
+            }
+          ],
+          "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；调用后若 TruFor 低分/无高响应，局部写 Not tampered；若有同区域高响应，按内容变化写 Tampered。不要在没有局部测量时把 Uncertain 当作已调查；整图 AI-generated 不会使局部变成 Not applicable。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+          "original_output": "<reasoning>\nPROBE 已返回有效测量：aigi_discriminator_score=0.9092（高值，指向 AI-generated），且其测量范围为全局，符合整图生成判断。该分数未经过本项目校准，但其高值（>0.5阈值）在历史验证中表现良好（AUROC 0.986），支持图像为AI生成的判断。局部编辑（TruFor）尚未测量，因此无法判断是否存在局部篡改。由于整图生成已明确为AI-generated，根据规则，整体结论必须为Fake，无论局部是否测量或结果如何。局部问题仍为Uncertain，因无TruFor测量支持。当前证据支持整图AI生成，但局部编辑状态未知，因此整体结论为Fake，局部为Uncertain。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Uncertain\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-76d146657d\"], \"report\": \"主要支持：PROBE高分（0.909）支持整图AI生成；主要限制：局部编辑未测量，无法判断是否被篡改。\"}\n</verdict>",
+          "corrected_output": "<reasoning>\nPROBE 已返回有效测量：aigi_discriminator_score=0.9092（高值，指向 AI-generated），支持整图生成为AI-generated。TruFor 已返回有效测量：manipulation_anomaly_score=0.1596（低值，低于诊断阈值0.5），表明无强局部篡改响应，但该分数不证明未被篡改，仅表示无显著局部编辑证据。根据规则，整图AI-generated已确定，整体结论必须为Fake，无论局部状态如何。局部编辑状态为Not tampered，因TruFor分数低于阈值且无高响应区域，支持无显著局部篡改。整体结论为Fake，局部为Not tampered，二者一致。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"E-76d146657d\", \"E-bcf60a6ce6\"], \"report\": \"主要支持：PROBE高分（0.909）支持整图AI生成，TruFor低分（0.159）支持无显著局部篡改；主要限制：TruFor低分不证明未被篡改，仅表示无强响应。\"}\n</verdict>",
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210117_eb_gen_029_pig__original.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": true,
+      "local_tampered": false,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_064_triangle",
+      "variant": "edited",
+      "local_truth": "Tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.468612,
+      "tf_mask_mean": 0.33189,
+      "tf_mask_high_fraction": 0.292829,
+      "tf_iou": 0.292565,
+      "tf_localized": true,
+      "tf_low_score_heatmap": true,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Not tampered",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.4686,
+        "trufor_metric": 0.468612,
+        "probe_called": true,
+        "probe_metric": 0.918773,
+        "report": "主要支持：PROBE 显示图像为 AI 生成（分数 0.9188），TruFor 未检测到局部篡改（分数 0.4686）。主要限制：局部编辑结论基于 TruFor 的低响应，但图像存在不自然感，可能暗示生成过程中的合成痕迹。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass_after_correction",
+          "issues": [
+            {
+              "code": "overall_real_with_unmeasured_whole",
+              "severity": "defect",
+              "message": "overall verdict is Real while PROBE is unmeasured and still available; an absent local finding is not positive evidence of authentic capture"
+            },
+            {
+              "code": "whole_image_without_probe",
+              "severity": "defect",
+              "field": "whole_image_generation",
+              "value": "Real",
+              "message": "whole_image_generation is definite without a PROBE measurement; the whole-image question is unmeasured"
+            }
+          ],
+          "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- 总体 verdict=Real，但 PROBE 仍可调用却未测量（整图分项可能写成了 Real 或 Uncertain）。局部“未发现篡改”只排除了一个方向，不能单独证明整图真实；请调用 PROBE，或说明已有的正向真实证据，或把总体改为 Uncertain。\n- whole_image_generation=Real，但本会话没有 PROBE 的有效测量。局部证据可以支持总体 Fake，但整图生成分项应写 Uncertain，或明确说明非 PROBE 的依据边界；不要把 TruFor 的局部高分改写成整图生成结论。整图生成与局部编辑独立，不要因为整图改为 Uncertain 就把局部分项改成 Not applicable；局部仍按 TruFor/同区域内容写 Tampered、Not tampered 或 Uncertain。若局部只是 Not tampered，总体 Real 也仍缺正向真实证据，必须同时改总体或补测 PROBE。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+          "original_output": "<reasoning>\nTruFor 的局部篡改检测分数为 0.4686，低于其诊断阈值 0.5，且其异常图与置信度图显示在三角形装饰区域存在中等响应（红色区域），但置信度图显示该区域可靠性较高（红色区域）。这表明该区域存在局部异常，但不足以达到“篡改”的诊断标准。结合原始图像观察，三角形装饰边缘过于平滑，缺乏真实金属材质的微小瑕疵或磨损痕迹，这与 TruFor 的异常响应区域吻合，但不足以证明是后期编辑。由于 TruFor 的分数未达到阈值，且无高响应区域，局部编辑结论为“Not tampered”是合理的。然而，由于该区域的置信度较高，且视觉上存在不自然感，局部编辑结论仍存在不确定性。整图生成（PROBE）尚未测量，但根据当前证据，局部编辑问题已得到解答，且不影响整体结论。由于 TruFor 的测量结果未达到阈值，且无高响应区域，局部编辑结论为“Not tampered”是合理的。然而，由于该区域的置信度较高，且视觉上存在不自然感，局部编辑结论仍存在不确定性。整图生成（PROBE）尚未测量，但根据当前证据，局部编辑问题已得到解答，且不影响整体结论。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"主要支持：TruFor 未检测到局部篡改（分数低于阈值），图像整体未显示明显AI生成特征。主要限制：三角形装饰边缘过于平滑，缺乏真实金属材质的微小瑕疵或磨损痕迹，存在视觉不自然感，但不足以证明局部编辑。\"}\n</verdict>",
+          "corrected_output": "<reasoning>\nPROBE 的整图生成检测分数为 0.9188，远高于其阈值 0.5，表明模型高度倾向于该图像为 AI 生成。TruFor 的局部篡改检测分数为 0.4686，低于其阈值 0.5，且其异常图与置信度图显示在三角形装饰区域存在中等响应，但置信度较高，表明该区域存在局部异常，但不足以达到“篡改”的诊断标准。结合原始图像观察，三角形装饰边缘过于平滑，缺乏真实金属材质的微小瑕疵或磨损痕迹，这与 TruFor 的异常响应区域吻合，但不足以证明是后期编辑。由于 PROBE 的分数远高于阈值，且 TruFor 未检测到局部篡改，整体结论应为“Fake”，因为整图生成检测结果明确支持 AI 生成，而局部编辑结论不影响整体判断。由于 PROBE 的分数远高于阈值，且 TruFor 未检测到局部篡改，整体结论应为“Fake”，因为整图生成检测结果明确支持 AI 生成，而局部编辑结论不影响整体判断。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"主要支持：PROBE 显示图像为 AI 生成（分数 0.9188），TruFor 未检测到局部篡改（分数 0.4686）。主要限制：局部编辑结论基于 TruFor 的低响应，但图像存在不自然感，可能暗示生成过程中的合成痕迹。\"}\n</verdict>",
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210814_eb_gen_064_triangle__edited.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": false,
+      "local_tampered": false,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_064_triangle",
+      "variant": "original",
+      "local_truth": "Not tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.152387,
+      "tf_mask_mean": 0.153427,
+      "tf_mask_high_fraction": 0.072176,
+      "tf_iou": 0.069658,
+      "tf_localized": false,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "AI-generated",
+        "local": "Uncertain",
+        "overall": "Fake",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.1524,
+        "trufor_metric": 0.152387,
+        "probe_called": true,
+        "probe_metric": 0.976834,
+        "report": "PROBE 高分判定整图为 AI 生成，故整体为 Fake；TruFor 低分且置信度低，局部编辑状态为 Uncertain，但不影响整体结论。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass",
+          "issues": [],
+          "feedback": null,
+          "original_output": null,
+          "corrected_output": null,
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210708_eb_gen_064_triangle__original.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": true,
+      "local_correct": false,
+      "local_tampered": false,
+      "local_uncertain": true,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_114_three",
+      "variant": "edited",
+      "local_truth": "Tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.335581,
+      "tf_mask_mean": 0.514893,
+      "tf_mask_high_fraction": 0.582796,
+      "tf_iou": 0.419678,
+      "tf_localized": true,
+      "tf_low_score_heatmap": true,
+      "agent": {
+        "whole": "Real",
+        "local": "Uncertain",
+        "overall": "Real",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.3356,
+        "trufor_metric": 0.335581,
+        "probe_called": true,
+        "probe_metric": 0.148205,
+        "report": "整图生成检测分数低（0.1482），指向Real；局部编辑检测未发现强篡改证据，但无法排除局部编辑可能性。",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass",
+          "issues": [],
+          "feedback": null,
+          "original_output": null,
+          "corrected_output": null,
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_211019_eb_gen_114_three__edited.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": false,
+      "local_correct": false,
+      "local_tampered": false,
+      "local_uncertain": true,
+      "overall_uncertain": false,
+      "both_correct": false
+    },
+    {
+      "pair_id": "eb_gen_114_three",
+      "variant": "original",
+      "local_truth": "Not tampered",
+      "whole_truth": "AI-generated",
+      "tf_score": 0.265464,
+      "tf_mask_mean": 0.575662,
+      "tf_mask_high_fraction": 0.788281,
+      "tf_iou": 0.537054,
+      "tf_localized": true,
+      "tf_low_score_heatmap": false,
+      "agent": {
+        "whole": "Real",
+        "local": "Not tampered",
+        "overall": "Real",
+        "certainty": "High",
+        "calls": 2,
+        "trufor_called": true,
+        "trufor_strength": 0.2655,
+        "trufor_metric": 0.265464,
+        "probe_called": true,
+        "probe_metric": 0.090811,
+        "report": "主要支持：PROBE 低分（0.0908）和 TruFor 低异常分（0.2655）；主要限制：PROBE 未在本项目数据上校准",
+        "suspicious_regions": [],
+        "coverage_check": {
+          "status": "pass",
+          "issues": [],
+          "feedback": null,
+          "original_output": null,
+          "corrected_output": null,
+          "remaining_issues": []
+        },
+        "trace_path": "sft_data/editbench_verification_20261128/analysis/agent/agent/traces/forensic_sft_session_20261128_210926_eb_gen_114_three__original.json",
+        "halting_reason": "model_concluded"
+      },
+      "whole_correct": false,
+      "local_correct": true,
+      "local_tampered": false,
+      "local_uncertain": false,
+      "overall_uncertain": false,
+      "both_correct": false
+    }
+  ]
+}

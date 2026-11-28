@@ -2873,3 +2873,41 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `scripts/analyze_trufor_editbench_pairs.py`。`trufor_raw/` 81 MB npz 缓存未保留。
 - **边界**：只跑独立 TruFor；未跑 Agent/PIM，未改规则/训练。EditBench mask 外
   非逐位 bit-exact，沿用上一轮核验结论。
+
+### 13.19 2026-11-28 EditBench 5 对：base Agent 对照
+
+- **输入**：同一批 10 张 JPEG-q95（5 reference + 5 `im_generated_mask-rich_1`）；
+  当前 base Qwen3-VL Agent，PROBE + TruFor、high-response 裁剪和自主调用不变，
+  未改规则、未训练、未安装 PIM。mask 只用于离线评估。
+- **运行**：10/10、0 失败，615.6 s；peak allocated 22.723 GB / reserved 23.863 GB；
+  专家调用 19 次（9 张 2 次，sawfish 编辑版只调 TruFor 1 次）；TruFor 调用 10/10。
+- **结果**：
+  - 整图 AI-generated 判对 **7/10**（原图 4/5、编辑版 3/5）；错误 3 张：
+    sawfish 编辑版 whole=Uncertain（只调 TruFor），three 原图/编辑版 whole=Real
+    （PROBE 0.0908 / 0.1482）。
+  - 编辑图局部 Tampered **1/5**（仅 sawfish 编辑版）；编辑图 both **0/5**
+    （sawfish 编辑版整图 Uncertain，所以 both 不成立）；编辑图局部 Uncertain
+    2/5（pig、three）。
+  - 未编辑原图局部误报 **1/5**（sawfish 原图，local Tampered）；原图局部
+    Uncertain 1/5（triangle）；其余 3/5 Not tampered。
+  - 总体弃权 **0/10**；局部 Uncertain 共 3/10（pig 编辑、triangle 原图、
+    three 编辑）。
+- **重点案例**：
+  - pig 编辑版：TruFor score 0.115、IoU 0.187、mask high 0.191；Agent 仍写
+    local Uncertain，报告称“TruFor 分数低且高响应区域可靠性低”，注意到了
+    高响应但没有转成 Tampered。
+  - triangle 编辑版：TruFor score 0.469、IoU 0.293、mask high 0.293；Agent 写
+    local Not tampered，报告称“TruFor 未检测到局部篡改（0.4686）”，没有利用
+    热图覆盖。
+  - sawfish 原图：TruFor 0.947；Agent 写 local Tampered，报告明确说高响应在
+    “Imagen”水印，仍称“足以支持局部编辑”；suspicious_regions 为底部水印
+    [944,851,1000,994]，是对未编辑图的局部误报。
+  - sawfish 编辑版：local Tampered，但只调 TruFor、whole Uncertain、overall Fake；
+    局部正确但没有 both。
+  - three 原图/编辑版：PROBE 0.0908/0.1482，整图均 Real；原图局部 Not tampered，
+    编辑版局部 Uncertain；是整图分支错误，不是局部误报。
+- **产出**：`analysis/agent/agent/{records.json,run_end.json,traces/}`；
+  `analysis/compare/{per_image.csv,comparison.json,report.md}`；新增
+  `scripts/{run_editbench_agent,compare_editbench_agent}.py`。
+  `/tmp/editbench_agent_trufor_raw` 81 MB 缓存删除；项目内 Agent/对比产物约 2 MB。
+- **边界**：只跑 base Agent；未改规则/训练/PIM。小样本 5 对，不能当总体结论。
