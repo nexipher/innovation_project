@@ -396,10 +396,10 @@ class MockMLLMClient(BaseMLLMClient):
             report = ("整图来源未见 AI 生成证据，但局部区域存在篡改候选；"
                       "将整图生成与局部篡改分开记录。")
         elif self._image_label == "Fake":
-            whole, local = "AI-generated", "Not applicable"
+            whole, local = "AI-generated", "Not tampered"
             regions = []
             verdict = "Fake"
-            report = "整图呈现 AI 生成特征；局部篡改判断不适用。"
+            report = "整图呈现 AI 生成特征；局部未见明确的后续编辑证据。"
         else:
             whole, local = "Real", "Not tampered"
             regions = []

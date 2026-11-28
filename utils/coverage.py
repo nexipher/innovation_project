@@ -4,10 +4,11 @@ The rule is narrow and does not choose a label:
 
 * a definite ``whole_image_generation`` needs a served PROBE measurement;
 * a definite ``local_manipulation`` needs a served TruFor measurement;
+* whole-image generation and local editing are independent: a generated image
+  can also be locally tampered.  There is no ``Not applicable`` local value;
+  the local answer is Tampered / Not tampered / Uncertain from local evidence;
 * ``whole_image_generation = Uncertain`` / ``local_manipulation = Uncertain``
-  are always allowed, so a single-expert conclusion (for example, TruFor-local
-  evidence supporting an overall Fake while the whole-image question stays
-  Uncertain) remains legal;
+  are always allowed, so a single-expert conclusion remains legal;
 * cross-expert "mutually supports / cross-validates" wording is recorded when
   both measurements exist, unless the sentence negates it;
 * a definite edit-process claim (for example "text was added later") is
@@ -42,14 +43,13 @@ LOCAL_CANDIDATE_ONLY = re.compile(
 
 ACTIONABLE = ("whole_image_without_probe", "local_manipulation_without_trufor",
               "local_uncertain_without_trufor",
-              "generated_whole_local_not_applicable",
+              "local_not_applicable_removed",
               "cross_task_mutual_validation", "edit_process_claim",
               "overall_real_with_fake_dimension",
               "overall_fake_without_fake_dimension",
               "overall_uncertain_with_fake_dimension",
               "overall_real_with_unmeasured_whole",
-              "local_tampered_candidate_only",
-              "not_applicable_without_generated_whole")
+              "local_tampered_candidate_only")
 
 
 def _measured_sources(evidence_chain: Iterable[dict]) -> set:
@@ -130,13 +130,16 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
                         "still available; an absent local finding is not "
                         "positive evidence of authentic capture"),
         })
-    if local == "Not applicable" and whole != "AI-generated":
+    if local == "Not applicable":
         issues.append({
-            "code": "not_applicable_without_generated_whole",
+            "code": "local_not_applicable_removed",
             "severity": "defect",
-            "message": ("local_manipulation = Not applicable requires "
-                        "whole_image_generation = AI-generated; use Not tampered "
-                        "or Uncertain for a real/uncertain whole image"),
+            "field": "local_manipulation",
+            "value": local,
+            "message": ("local_manipulation = Not applicable is no longer a "
+                        "legal answer; whole-image generation and local editing "
+                        "are independent. Use Tampered, Not tampered or "
+                        "Uncertain from the local evidence."),
         })
     if (whole in ("Real", "AI-generated")
             and "probe_dino_expert" in served
@@ -172,43 +175,6 @@ def coverage_issues(candidate: dict, text: str, evidence_chain: Iterable[dict],
                         "still callable and unmeasured; the local question "
                         "was not actually investigated"),
         })
-    trufor_token = next(
-        (token for token in evidence_chain or []
-         if token.get("source") == "trufor_expert"
-         and token.get("status", "measured") != "failed"), None)
-    probe_token = next(
-        (token for token in evidence_chain or []
-         if token.get("source") == "probe_dino_expert"
-         and token.get("status", "measured") != "failed"), None)
-
-    def _raw_metric(token):
-        try:
-            return float(token.get("raw_metric"))
-        except (AttributeError, TypeError, ValueError):
-            return None
-
-    probe_score = _raw_metric(probe_token)
-    # "Whole is generated" is itself a model judgement and is wrong on some
-    # AutoSplice/Real images.  Only remap the local field to Not applicable
-    # when PROBE is in its high-response region (>= 0.9); the 2026-11-28
-    # validation's two false whole-image AI calls on Real images had PROBE
-    # 0.63 and 0.51, while every generated image that reached this rule had
-    # PROBE >= 0.99.
-    if (whole == "AI-generated" and local in ("Not tampered", "Uncertain")
-            and trufor_token is not None and probe_score is not None
-            and probe_score >= 0.9):
-        trufor_score = _raw_metric(trufor_token)
-        if trufor_score is not None and trufor_score < 0.5:
-            issues.append({
-                "code": "generated_whole_local_not_applicable",
-                "severity": "defect",
-                "field": "local_manipulation",
-                "value": local,
-                "message": ("whole_image_generation is AI-generated and the "
-                            "measured TruFor response is weak (raw_metric < "
-                            "0.5); the local edit question is Not applicable "
-                            "for a generated whole image"),
-            })
     if ("probe_dino_expert" in measured and "trufor_expert" in measured
             and text):
         for match in MUTUAL_STRONG.finditer(text):
@@ -281,33 +247,33 @@ def coverage_note(issues: Iterable[dict]) -> str:
                 f"- whole_image_generation={issue.get('value')}，但本会话没有 "
                 "PROBE 的有效测量。局部证据可以支持总体 Fake，但整图生成分项"
                 "应写 Uncertain，或明确说明非 PROBE 的依据边界；不要把 TruFor "
-                "的局部高分改写成整图生成结论。若因此把整图改为 Uncertain，"
-                "local_manipulation 的 Not applicable 也必须改为 Uncertain"
-                "（Not applicable 只在整图 AI-generated 时成立）；若局部只是 "
-                "Not tampered，总体 Real 也仍缺正向真实证据，必须同时改总体"
-                "或补测 PROBE。")
+                "的局部高分改写成整图生成结论。整图生成与局部编辑独立，"
+                "不要因为整图改为 Uncertain 就把局部分项改成 Not applicable；"
+                "局部仍按 TruFor/同区域内容写 Tampered、Not tampered 或 Uncertain。"
+                "若局部只是 Not tampered，总体 Real 也仍缺正向真实证据，"
+                "必须同时改总体或补测 PROBE。")
         elif code == "local_manipulation_without_trufor":
             lines.append(
                 f"- local_manipulation={issue.get('value')}，但本会话没有 "
                 "TruFor 的有效测量。TruFor 仍可调用：请先输出 <call_trufor>；"
                 "局部问题未测时应写 Uncertain。调用后若 TruFor 高分且同区域有"
-                "高响应，局部写 Tampered 并说明响应区域与内容；若整图已判 "
-                "AI-generated 且 TruFor 低分/无高响应，局部写 Not applicable。")
+                "高响应，局部写 Tampered 并说明响应区域与内容；若 TruFor 低分/"
+                "无高响应，局部写 Not tampered（不是 Not applicable）。"
+                "整图是否 AI-generated 由 PROBE 单独回答。")
         elif code == "local_uncertain_without_trufor":
             lines.append(
                 "- local_manipulation=Uncertain，但本会话没有 TruFor 的有效测量，"
                 "而 TruFor 仍可调用。请先输出 <call_trufor> 再结案；"
-                "调用后若整图已判 AI-generated 且 TruFor 低分/无高响应，"
-                "局部写 Not applicable；若有同区域高响应，按内容变化写 Tampered。"
-                "不要在没有局部测量时把 Uncertain 当作已调查。")
-        elif code == "generated_whole_local_not_applicable":
+                "调用后若 TruFor 低分/无高响应，局部写 Not tampered；"
+                "若有同区域高响应，按内容变化写 Tampered。"
+                "不要在没有局部测量时把 Uncertain 当作已调查；"
+                "整图 AI-generated 不会使局部变成 Not applicable。")
+        elif code == "local_not_applicable_removed":
             lines.append(
-                "- whole_image_generation=AI-generated，且已测 TruFor 为低分/"
-                "无高响应，但 local_manipulation 写成了 Not tampered 或 Uncertain。"
-                "整图生成的问题属于 Not applicable，不是“未发现局部篡改”；"
-                "请把 local_manipulation 改为 Not applicable，并保持总体 Fake。"
-                "若 TruFor 实际上有同区域高响应，则保留对应局部分项并在报告中"
-                "说明冲突，不要仅因低分改写整图。")
+                "- local_manipulation=Not applicable 已不再是合法输出。整图生成"
+                "与局部编辑是两个独立问题，生成图也可能被后续局部篡改。"
+                "请只按 TruFor/同区域内容写 Tampered、Not tampered 或 Uncertain；"
+                "若 whole=AI-generated，总体仍必须是 Fake。")
         elif code == "cross_task_mutual_validation":
             lines.append(
                 f"- “{issue.get('phrase')}”把 PROBE 和 TruFor 写成相互验证/"
@@ -344,14 +310,7 @@ def coverage_note(issues: Iterable[dict]) -> str:
                 "写成了 Real 或 Uncertain）。局部“未发现篡改”只排除了一个"
                 "方向，不能单独证明整图真实；请调用 PROBE，或说明已有的"
                 "正向真实证据，或把总体改为 Uncertain。")
-        elif code == "not_applicable_without_generated_whole":
-            lines.append(
-                "- local_manipulation=Not applicable 只允许在整图已判 "
-                "AI-generated 时使用；若整体是 Real/Uncertain，局部应写 "
-                "Not tampered（有 TruFor 且无足够证据）或 Uncertain（未测/仅候选），"
-                "不能把 Not applicable 当作“无局部编辑”。"
-                "若 TruFor 仍可调用，请先补测 TruFor；补测后低分/无高响应写 "
-                "Not tampered，未测或仅候选写 Uncertain。")
+
         elif code == "local_tampered_candidate_only":
             lines.append(
                 f"- “{issue.get('phrase')}”说明你把局部证据当作“仅候选/非证明”，"

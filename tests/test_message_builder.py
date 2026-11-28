@@ -317,8 +317,11 @@ class TestToolPolicies:
         2026-11-08 revision added PROBE class semantics, five raw-score bands,
         explicit Uncertain conditions and final-verdict confidence wording.
         The certainty_v1 revision made the overall label semantics explicit and
-        moved the default prompt to a2620b1e1c72fe18.  Anything that moves it
-        again has to say so in a commit.
+        moved the default prompt to a2620b1e1c72fe18.  The 2026-11-28
+        joint-independence revision removed local `Not applicable`, made the
+        local answer depend only on TruFor/local evidence, and moved it to
+        a0518194b103297a.  Anything that moves it again has to say so in a
+        commit.
         """
         import hashlib
 
@@ -327,7 +330,7 @@ class TestToolPolicies:
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(None)
         assert FORENSIC_SYSTEM_PROMPT == build_forensic_prompt(list(TOOL_ORDER))
         assert hashlib.sha256(FORENSIC_SYSTEM_PROMPT.encode()).hexdigest()[:16] == \
-            "a2620b1e1c72fe18"
+            "a0518194b103297a"
 
     def test_probe_leads_the_tool_list(self):
         from mllm.message_builder import TOOL_ORDER

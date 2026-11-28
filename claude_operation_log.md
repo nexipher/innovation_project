@@ -1320,3 +1320,24 @@
 * **涉及文件**：`scripts/compare_trufor_crop_windows.py`、`sft_data/lora_small_20261128/analysis/crop_comparison_20261128/{per_image.csv,per_image.json,report.md,representative/*.png}`、`plan.md`、`claude_operation_log.md`。
 * **验证状态**：45 行（15×3）生成；代表图 11 张；未使用 GPU/Qwen/Agent，未改专家权重/阈值。
 * **遗留**：B/C 的排序分数是 `mean anomaly × mean confidence`，不是新专家分数；真图无 mask，只报告窗口触边/纹理。
+
+### [2026-11-28] - §13.14 联合规则：整图与局部独立
+
+* **当前操作动作**：取消从整图 AI-generated / PROBE 高分推导局部 Not applicable；把整图来源与局部编辑改为独立分项，更新提示、schema、coverage 和测试；用构造记录重建 30 图局部真值，固定裁剪/专家/原版 Qwen 重跑并与 `validation_fixed/base` 逐图对照。
+* **对应计划锚点**：`plan.md` §13.14；`sft_data/lora_small_20261128/{validation_manifest_independent_20261128.json,validation_independent_20261128/,analysis/rule_update_20261128/}`。
+* **环境**：RTX 4080 vGPU 32760 MiB；运行 30/30，1469.7 s，peak allocated 21.767 GB / reserved 22.832 GB；无 OOM/失败。
+* **规则/代码变更**：
+  1. `mllm/message_builder.py`：joint schema 的 local 只允许 `Tampered|Not tampered|Uncertain`；JOINT_GUIDANCE 和规则 9 明确整图/局部独立、生成图也可局部篡改、局部只依据 TruFor 同区域证据、禁止由整图 AI 或 PROBE 高分推出 NA；整图 AI 时总体必须 Fake。
+  2. `utils/joint_verdict.py`：`LOCAL_VALUES` 去掉 Not applicable，新增 `LEGACY_LOCAL_VALUES`；`extract` 默认拒绝 NA，历史转换用 `allow_not_applicable=True` 保留旧值。
+  3. `utils/coverage.py`：删除 `generated_whole_local_not_applicable` / `not_applicable_without_generated_whole` 及第二纠正；新增可执行的 `local_not_applicable_removed`；注记改为低 TruFor→Not tampered、同区域高响应→Tampered、否则 Uncertain。
+  4. `state_machine/controller.py`：移除 `coverage_check_count`/`coverage_call_count`/`second_label_only`，恢复一次覆盖纠正；状态提示与结案提示同步三值口径。
+  5. `mllm/mock_client.py` 与 `tests/{test_joint_verdict,test_coverage,test_dual_expert_loop,test_message_builder}.py` 同步；默认 prompt hash 更新为 `a0518194b103297a`。
+* **真值口径**：`scripts/build_independent_truth_manifest.py` 生成新 30 图 manifest。AutoSplice forged→Tampered/forged_positive（10）；AutoSplice authentic + Real→Not tampered/real_negative（10）；GenImage 生成图→Not tampered/generated_negative（10），依据 `dataset/GenImage_q95/manifest.json` 的 generator-only q95 记录（无局部编辑步骤/mask）。旧局部真值保留在 `local_truth_old`；`truth_provenance.csv` 逐图列出构造路径。10/10 生成图均有构造记录，无未确认单列。
+* **复验结果**（旧 base → 新 base，`scripts/compare_independent_rule_run.py`）：
+  1. 局部篡改检出 3→2（丢 43686、57143；新增 67065）；真图局部误报 0→0；生成图局部误报 2→2（487、Wukong）。
+  2. 真图局部 Uncertain 2→3；生成图局部 Uncertain 2→1；局部 Uncertain 总数 7→10；新局部分布 Unc 10 / Not tampered 16 / Tampered 4。
+  3. 总体弃权 3→0；总体正确 23→26；分项/总体一致 29→29；调用 58→59；coverage failed 1→2（42958、Wukong）。
+  4. 40489：`AI-generated/NA/Fake`→`AI-generated/Uncertain/Fake`，无 NA、局部仍漏、结案一致。60788：`AI-generated/NA/Fake`→`AI-generated/Not tampered/Fake`，无 NA 但伪造图局部硬负例。57143：`AI-generated/Tampered/Fake`→`AI-generated/Uncertain/Fake`，总体 Fake 且一致但局部丢失。41993 三 Uncertain→一致 Fake；67065 `Real/Uncertain/Real`→`Real/Tampered/Fake`；42958 仍唯一不一致。
+* **涉及/修改的文件清单**：`mllm/{message_builder,mock_client}.py`、`utils/{joint_verdict,coverage}.py`、`state_machine/controller.py`、4 个测试文件、`scripts/{build_independent_truth_manifest,compare_independent_rule_run}.py`、`sft_data/lora_small_20261128/{validation_manifest_independent_20261128.json,validation_independent_20261128/**,analysis/rule_update_20261128/**}`、`plan.md`。
+* **执行结果与验证状态**：核心测试 837 passed, 1 skipped；新 base 30/30、0 失败；对照/逐图 CSV/报告已生成。历史 `validation_fixed` 文件未改。
+* **置信度或遗留待办（TODO）**：新规则修复 NA/弃权/57143·41993 一致性，但 base 局部检出 3/10→2/10，未提升召回；60788 由 NA 变 Not tampered 是局部漏检而非 schema；42958 覆盖仍 failed。未重训、未扩 250 条、未做新配对数据、未碰 test，未改专家权重/阈值。

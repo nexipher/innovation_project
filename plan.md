@@ -2716,3 +2716,40 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   无法补回 A。真图 A 窗口 4/5 触边、1/5 高边缘，texture× 均 <1，不在高纹理上。
 - **结论**：A 仍是这批图上覆盖最稳的三图主裁剪；B/C 可作为更小的辅助定位，
   不适合替代 A。输出 `analysis/crop_comparison_20261128/{per_image.csv,report.md,representative/}`。
+
+### 13.14 2026-11-28 联合规则：整图与局部独立
+
+- **规则变更**：整图来源（whole_image_generation）与后续局部编辑
+  （local_manipulation）是两个独立分项；生成图也可能被后续局部篡改。
+  取消从 whole=AI-generated / PROBE 高分推导局部 Not applicable 的规则。
+  局部只输出 Tampered / Not tampered / Uncertain；whole=AI-generated 时即使
+  局部 Uncertain/Not tampered，总体仍为 Fake。历史结果保留原口径，不重写。
+- **提示/结案检查**：更新 JSON schema、JOINT_GUIDANCE、规则 9、状态提示、
+  coverage 检查；新增 `local_not_applicable_removed`；移除生成图 NA 规则和
+  只服务于该规则的第二纠正。`joint_verdict` 新会话默认拒绝 Not applicable，
+  历史转换显式 `allow_not_applicable=True`。
+- **真值口径**：`scripts/build_independent_truth_manifest.py` 生成新 30 图 manifest：
+  AutoSplice forged 局部 Tampered；AutoSplice authentic/Real 局部 Not tampered；
+  GenImage 生成图仅在 GenImage manifest 的 generator-only q95 构造记录（无局部
+  编辑步骤/mask）下计为 Not tampered；旧 NA 保留在 `local_truth_old` 和
+  `truth_provenance.csv`。本轮 10/10 生成图均有构造记录，无未确认单列。
+- **复验**：固定当前 high-response 裁剪、PROBE/TruFor 和原版 Qwen，用新 30 图
+  manifest 跑 `validation_independent_20261128/base`（30/30，1469.7 s，peak
+  allocated 21.767 GB），与 `validation_fixed/base` 对照，重点 40489、60788、
+  57143_0。未重训、未扩样、未碰 test。
+- **结果（旧 base → 新 base）**：局部篡改检出 3→2（丢 43686、57143，新增 67065）；
+  真图局部误报 0→0；生成图局部误报 2→2（487、Wukong）；真图局部 Uncertain
+  2→3；生成图局部 Uncertain 2→1；局部 Uncertain 总数 7→10；总体弃权 3→0；
+  分项/总体一致 29→29；总体正确 23→26；调用 58→59；coverage failed 1→2。
+  新局部分布 Unc 10 / Not tampered 16 / Tampered 4，总体 Fake 20 / Real 10。
+- **重点案例**：40489 旧 `AI-generated/Not applicable/Fake` → 新
+  `AI-generated/Uncertain/Fake`（无 NA，局部仍漏，结案一致）；60788 旧 NA →
+  新 `AI-generated/Not tampered/Fake`（无 NA，但伪造图局部写成硬负例）；
+  57143 旧 `AI-generated/Tampered/Fake` → 新 `AI-generated/Uncertain/Fake`
+  （总体 Fake 且一致，但局部丢 Tampered）。41993 由三 Uncertain → 一致 Fake；
+  67065 由 `Real/Uncertain/Real` → `Real/Tampered/Fake`。42958 仍是唯一
+  不一致（`Real/Uncertain/Fake`，overall_fake_without_fake_dimension）。
+- **结论**：新规则消除了新会话 `Not applicable`，修复弃权与 57143/41993 的
+  结案一致性，但 base 局部检出未升反降（3/10→2/10）；60788 的 NA 变为
+  `Not tampered` 是局部漏检而非 schema 问题。产出
+  `analysis/rule_update_20261128/{report.md,per_sample.csv,comparison.json,truth_provenance.csv}`。

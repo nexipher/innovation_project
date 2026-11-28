@@ -10,20 +10,29 @@ pytestmark = pytest.mark.core
 def test_two_dimensions_are_kept_separate_without_a_mechanical_overall():
     fields, issues = extract({
         "whole_image_generation": "AI-generated",
-        "local_manipulation": "Not applicable",
+        "local_manipulation": "Not tampered",
         "suspicious_regions": [],
     })
     assert issues == []
     assert fields["whole_image_generation"] == "AI-generated"
-    assert fields["local_manipulation"] == "Not applicable"
+    assert fields["local_manipulation"] == "Not tampered"
     # The overall verdict belongs to the model; the schema module must not
     # derive it mechanically from the two dimensions.
     assert "overall_from_dimensions" not in fields
+    # Generated whole-image does not make the local question Not applicable.
     _fields, issues = extract({
-        "whole_image_generation": "Real",
+        "whole_image_generation": "AI-generated",
         "local_manipulation": "Not applicable",
     })
-    assert any("Not applicable" in issue for issue in issues)
+    assert any("no longer legal" in issue for issue in issues)
+    assert "local_manipulation" not in _fields
+    # Historical record conversion may explicitly keep the old value.
+    legacy, legacy_issues = extract({
+        "whole_image_generation": "AI-generated",
+        "local_manipulation": "Not applicable",
+    }, allow_not_applicable=True)
+    assert legacy_issues == []
+    assert legacy["local_manipulation"] == "Not applicable"
 
 
 def test_regions_require_bounds_reason_and_real_evidence():

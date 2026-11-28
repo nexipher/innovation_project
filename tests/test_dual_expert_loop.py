@@ -58,7 +58,8 @@ def test_state_note_says_local_evidence_is_missing_before_trufor():
         {"probe_dino_expert": "E-probe"})
     assert "局部编辑（TruFor）：尚未测量" in note
     assert "整图生成（PROBE）：已测量" in note
-    assert "Not applicable" in note
+    assert "局部输出只能是 Tampered、Not tampered 或 Uncertain" in note
+    assert "不会使局部变成 Not applicable" in note
     # Once TruFor has measured, the hint must be gone.
     note = ForensicStateMachine._state_note(
         [], ["probe_dino_expert", "trufor_expert"],
@@ -136,7 +137,7 @@ def test_dual_mock_executes_both_experts_and_keeps_maps(tmp_path):
     assert sum(block["type"] == "image" for block in trufor_turn["content"]) == 3
     verdict = result["final_verdict"]
     assert verdict["whole_image_generation"] == "AI-generated"
-    assert verdict["local_manipulation"] == "Not applicable"
+    assert verdict["local_manipulation"] == "Not tampered"
     assert verdict["primary_evidence"] == ["probe", "trufor"]
 
 
@@ -416,45 +417,4 @@ def test_region_triptych_without_bbox_uses_high_response_crop():
     assert set(panels) == {"original_crop", "anomaly_map", "confidence_map"}
 
 
-def test_second_label_correction_after_a_new_trufor_measurement(tmp_path):
-    """A call triggered by coverage may expose the generated/local label issue.
 
-    The session allows one narrow second correction only after the new
-    measurement exists; it must not be a general extra correction budget.
-    """
-    from main import build_pipeline
-    from experts.probe_dino import MockProbeExpert
-    from experts.trufor import MockTruForExpert
-    from tests.test_controller import ScriptedMLLM
-
-    image = tmp_path / "second-label.png"
-    Image.new("RGB", (64, 64), (90, 120, 60)).save(image)
-    fsm = build_pipeline("mock", mode="probe_then_trufor",
-                         tools=["probe", "trufor"])
-    fsm._experts["probe_dino_expert"] = MockProbeExpert(score=0.99)
-    fsm._experts["trufor_expert"] = MockTruForExpert(score=0.1, device="cpu")
-    fsm._mllm = ScriptedMLLM([
-        "<planning>\nSuspected Region: none\n</planning>\n<call_probe>",
-        '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
-        ' "local_manipulation": "Uncertain", "suspicious_regions": [],'
-        ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert"],'
-        ' "report": "整图 AI；局部未测。"}</verdict>',
-        "<planning>\nSuspected Region: none\n</planning>\n<call_trufor>",
-        '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
-        ' "local_manipulation": "Not tampered", "suspicious_regions": [],'
-        ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert",'
-        ' "trufor_expert"], "report": "整图 AI；TruFor 低分。"}</verdict>',
-        '<verdict>{"verdict": "Fake", "whole_image_generation": "AI-generated",'
-        ' "local_manipulation": "Not applicable", "suspicious_regions": [],'
-        ' "certainty": "Medium", "primary_evidence": ["probe_dino_expert",'
-        ' "trufor_expert"], "report": "整图生成，局部不适用。"}</verdict>',
-    ])
-    fsm._logger = SessionLogger(sft_dir=str(tmp_path / "traces"))
-    result = fsm.run(str(image), "Fake")
-    assert result["final_verdict"]["local_manipulation"] == "Not applicable"
-    check = result["final_verdict"]["coverage_check"]
-    assert check["status"] == "pass_after_correction"
-    assert check["remaining_issues"] == []
-    notes = [turn["value"] for turn in result["conversation"]
-             if turn["from"] == "user" and "证据覆盖检查" in turn["value"]]
-    assert len(notes) == 2

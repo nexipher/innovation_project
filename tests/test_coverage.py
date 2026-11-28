@@ -120,17 +120,17 @@ def test_local_tampered_with_only_candidate_wording_is_actionable():
                    for item in localised)
 
 
-def test_not_applicable_requires_generated_whole():
-    issues = coverage_issues(
-        {"verdict": "Real", "whole_image_generation": "Real",
-         "local_manipulation": "Not applicable"}, "", [], [])
-    assert any(item["code"] == "not_applicable_without_generated_whole"
-               for item in actionable(issues))
-    generated = coverage_issues(
-        {"verdict": "Fake", "whole_image_generation": "AI-generated",
-         "local_manipulation": "Not applicable"}, "", [], [])
-    assert not any(item["code"] == "not_applicable_without_generated_whole"
-                   for item in generated)
+def test_not_applicable_is_removed_for_all_whole_labels():
+    for whole in ("Real", "AI-generated"):
+        issues = coverage_issues(
+            {"verdict": "Fake" if whole == "AI-generated" else "Real",
+             "whole_image_generation": whole,
+             "local_manipulation": "Not applicable"}, "", [], [])
+        assert any(item["code"] == "local_not_applicable_removed"
+                   for item in actionable(issues)), whole
+    note = coverage_note([{"code": "local_not_applicable_removed"}])
+    assert "局部编辑是两个独立问题" in note
+    assert "Tampered、Not tampered 或 Uncertain" in note
 
 
 def test_real_35b3b70e_and_39890_0_coverage_failures():
@@ -225,34 +225,30 @@ def test_local_uncertain_without_trufor_forces_measurement():
                for item in actionable(issues))
 
 
-def test_generated_whole_with_weak_trufor_requires_not_applicable():
+def test_generated_whole_does_not_change_the_local_answer():
     evidence = [
         {"source": "probe_dino_expert", "status": "measured",
          "evidence_id": "E-probe", "raw_metric": 0.99},
         {"source": "trufor_expert", "status": "measured",
          "evidence_id": "E-trufor", "raw_metric": 0.35},
     ]
+    # A generated whole image may still have a local answer; low TruFor
+    # supports Not tampered, and it must not be converted to Not applicable.
+    for local in ("Not tampered", "Uncertain", "Tampered"):
+        issues = coverage_issues(
+            {"verdict": "Fake", "whole_image_generation": "AI-generated",
+             "local_manipulation": local},
+            "", evidence, SERVED)
+        assert not any(item["code"] == "local_not_applicable_removed"
+                       for item in issues)
+        assert not any(item["code"].startswith("generated_whole")
+                       for item in issues)
+    # Whole=AI-generated + local Uncertain is still overall Fake (no issue).
     issues = coverage_issues(
         {"verdict": "Fake", "whole_image_generation": "AI-generated",
-         "local_manipulation": "Not tampered"},
+         "local_manipulation": "Uncertain"},
         "", evidence, SERVED)
-    assert any(item["code"] == "generated_whole_local_not_applicable"
-               for item in actionable(issues))
-    strong = [dict(evidence[0]), dict(evidence[1], raw_metric=0.82)]
-    issues = coverage_issues(
-        {"verdict": "Fake", "whole_image_generation": "AI-generated",
-         "local_manipulation": "Not tampered"},
-        "", strong, SERVED)
-    assert not any(item["code"] == "generated_whole_local_not_applicable"
-                   for item in issues)
-    # A false whole-image AI call on a Real image can have a low TruFor score
-    # too; a mid-band PROBE must not relabel its local field as Not applicable.
-    real_like = [dict(evidence[0], raw_metric=0.63), dict(evidence[1])]
-    issues = coverage_issues(
-        {"verdict": "Fake", "whole_image_generation": "AI-generated",
-         "local_manipulation": "Not tampered"},
-        "", real_like, SERVED)
-    assert not any(item["code"] == "generated_whole_local_not_applicable"
+    assert not any(item["code"] == "overall_uncertain_with_fake_dimension"
                    for item in issues)
 
 

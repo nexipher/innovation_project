@@ -4,7 +4,10 @@ The legacy ``verdict`` field answers one question.  The dual-expert loop needs
 two answers that must not overwrite each other:
 
 * ``whole_image_generation``: Real / AI-generated / Uncertain
-* ``local_manipulation``: Tampered / Not tampered / Uncertain / Not applicable
+* ``local_manipulation``: Tampered / Not tampered / Uncertain.  Whole-image
+  generation and local editing are independent; a generated image may also be
+  locally tampered.  ``Not applicable`` is accepted only by the legacy
+  conversion path so historical records remain readable.
 * ``suspicious_regions``: bbox + reason + evidence ids, in original-image
   normalized [0,1000] coordinates.
 
@@ -20,7 +23,8 @@ from __future__ import annotations
 from typing import Iterable, Optional
 
 WHOLE_IMAGE_VALUES = ("Real", "AI-generated", "Uncertain")
-LOCAL_VALUES = ("Tampered", "Not tampered", "Uncertain", "Not applicable")
+LOCAL_VALUES = ("Tampered", "Not tampered", "Uncertain")
+LEGACY_LOCAL_VALUES = LOCAL_VALUES + ("Not applicable",)
 
 WHOLE_ALIASES = {
     "real": "Real",
@@ -94,8 +98,13 @@ def _normalise_region(region, evidence_ids: Optional[Iterable[str]]):
     }, issues
 
 
-def extract(candidate: dict, evidence_ids: Optional[Iterable[str]] = None):
+def extract(candidate: dict, evidence_ids: Optional[Iterable[str]] = None,
+            allow_not_applicable: bool = False):
     """Return (legal joint fields, issues) from a model verdict JSON object.
+
+    New sessions use the three independent local values.  The legacy
+    ``Not applicable`` value is preserved only when the caller explicitly
+    opts in (historical record conversion).
 
     Missing fields are *not* invented.  A partial object returns what was
     present plus an issue, which is the caller's signal to record a missing
@@ -117,6 +126,10 @@ def extract(candidate: dict, evidence_ids: Optional[Iterable[str]] = None):
         canonical = _canonical(local, LOCAL_ALIASES)
         if canonical is None:
             issues.append(f"illegal local_manipulation: {local!r}")
+        elif canonical == "Not applicable" and not allow_not_applicable:
+            issues.append(
+                "local_manipulation = Not applicable is no longer legal; use "
+                "Tampered, Not tampered or Uncertain from the local evidence")
         else:
             fields["local_manipulation"] = canonical
     if "suspicious_regions" in candidate:
@@ -133,21 +146,19 @@ def extract(candidate: dict, evidence_ids: Optional[Iterable[str]] = None):
             fields["suspicious_regions"] = legal
     if ("whole_image_generation" in candidate) != ("local_manipulation" in candidate):
         issues.append("joint verdict is partial: both dimensions must be present")
-    if (fields.get("local_manipulation") == "Not applicable"
-            and fields.get("whole_image_generation") != "AI-generated"):
-        issues.append(
-            "local_manipulation = Not applicable requires "
-            "whole_image_generation = AI-generated")
     return fields, issues
 
 
-def legal_model_fields(candidate: dict, evidence_ids: Optional[Iterable[str]] = None):
+def legal_model_fields(candidate: dict, evidence_ids: Optional[Iterable[str]] = None,
+                       allow_not_applicable: bool = True):
     """Fields to preserve verbatim in the supervised answer.
 
     Only fields the model actually wrote, and only when they are legal.  The
-    converter must not fill a missing field with a default.
+    converter must not fill a missing field with a default.  Historical
+    ``Not applicable`` is accepted by default for legacy record conversion.
     """
-    fields, _issues = extract(candidate, evidence_ids)
+    fields, _issues = extract(candidate, evidence_ids,
+                              allow_not_applicable=allow_not_applicable)
     out = {}
     report = candidate.get("report") if isinstance(candidate, dict) else None
     if isinstance(report, str) and report.strip():

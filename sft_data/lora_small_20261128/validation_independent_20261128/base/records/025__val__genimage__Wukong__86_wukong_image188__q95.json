@@ -1,0 +1,206 @@
+{
+  "index": 25,
+  "sample_id": "val__genimage__Wukong__86_wukong_image188__q95",
+  "source_id": "Wukong/86_wukong_image188",
+  "group": "Wukong",
+  "family": "GenImage_q95",
+  "ground_truth": "Fake",
+  "task_truth": {
+    "whole_image_generation": "AI-generated",
+    "local_manipulation": "Not tampered"
+  },
+  "final_verdict": "Fake",
+  "whole_image_generation": "Uncertain",
+  "local_manipulation": "Tampered",
+  "certainty": "High",
+  "report": "主要支持：TruFor 高分（0.9832）和高可靠性图显示局部篡改候选；主要限制：未测量整图生成，但局部篡改已足够判定整体为 Fake。",
+  "primary_evidence": [
+    "trufor_expert"
+  ],
+  "suspicious_regions": [],
+  "coverage_check": {
+    "status": "failed",
+    "issues": [
+      {
+        "code": "edit_process_claim",
+        "severity": "wording",
+        "phrase": "composited",
+        "message": "an anomaly map is a response, not an edit history; do not assert which edit was performed"
+      }
+    ],
+    "feedback": "[System: 证据覆盖检查：以下分项、总体标签关系或措辞没有得到本会话的测量支持。请保留由证据支持的总体结论，修正这些分项/措辞后重新输出 <verdict>。若确有尚未测量的专家且它能回答该缺口，只输出一个 <call_x>；两位专家都已测量时，重复调用不会产生新的测量，不要再补测；任何一轮都不要同时给调用和 verdict，也不要伪造专家分数。\n- “composited”从异常图断言了具体编辑过程。异常图只是响应候选，不是编辑历史；请改为描述响应位置/强度及其局限。\n如果某维确实无法测量，如实写 Uncertain 并说明是工具失败、未调用还是没有适用工具；不要为了保持原结论而编造测量。]",
+    "original_output": "<reasoning>\nThe TruFor expert returned a high anomaly score (0.9832) with high reliability across the entire image, indicating a strong candidate for local manipulation. The anomaly map shows high response (red) across the entire frame, including the main bird and the inset image in the upper right. The confidence map confirms high reliability (red) in these regions. This suggests the image may have been composited or layered, particularly around the inset region, which visually appears as a separate element pasted into the main image. However, TruFor’s score is not a whole-image AI-generation judgment; it only indicates local manipulation. The whole-image generation question (PROBE) remains unmeasured, and PROBE is still callable. Since the local manipulation evidence is strong and the whole-image generation question is independent, calling PROBE would not materially change the local conclusion. The high TruFor score supports local tampering, and since the overall verdict must be Fake if local_manipulation is Tampered, the conclusion is clear without needing PROBE.\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"Uncertain\", \"local_manipulation\": \"Tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"主要支持：TruFor 高分（0.9832）和高可靠性图显示局部篡改候选；主要限制：未测量整图生成，但局部篡改已足够判定整体为 Fake。\"}\n</verdict>",
+    "corrected_output": "<reasoning>\nThe TruFor expert returned a high anomaly score (0.9832) with high reliability across the entire image, indicating a strong candidate for local manipulation. The anomaly map shows high response (red) across the entire frame, including the main bird and the inset image in the upper right. The confidence map confirms high reliability (red) in these regions. This suggests the image may have been composited or layered, particularly around the inset region, which visually appears as a separate element pasted into the main image. However, TruFor’s score is not a whole-image AI-generation judgment; it only indicates local manipulation. The whole-image generation question (PROBE) remains unmeasured, and PROBE is still callable. Since the local manipulation evidence is strong and the whole-image generation question is independent, calling PROBE would not materially change the local conclusion. The high TruFor score supports local tampering, and since the overall verdict must be Fake if local_manipulation is Tampered, the conclusion is clear without needing PROBE.\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"Uncertain\", \"local_manipulation\": \"Tampered\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"trufor_expert\"], \"report\": \"主要支持：TruFor 高分（0.9832）和高可靠性图显示局部篡改候选；主要限制：未测量整图生成，但局部篡改已足够判定整体为 Fake。\"}\n</verdict>",
+    "remaining_issues": [
+      {
+        "code": "edit_process_claim",
+        "severity": "wording",
+        "phrase": "composited",
+        "message": "an anomaly map is a response, not an edit history; do not assert which edit was performed"
+      }
+    ]
+  },
+  "joint_verdict_issues": [
+    "coverage: edit_process_claim: an anomaly map is a response, not an edit history; do not assert which edit was performed"
+  ],
+  "halting_reason": "model_concluded",
+  "model_turns": 3,
+  "expert_calls": 1,
+  "elapsed_s": 43.13,
+  "evidence": [
+    {
+      "evidence_id": "E-6757ff3bdb",
+      "source": "trufor_expert",
+      "strength": 0.9832,
+      "raw_metric": 0.983158,
+      "model_image_layout": {
+        "original_crop": {
+          "title": "Original image — full frame",
+          "content_box": [
+            0,
+            38,
+            512,
+            550
+          ],
+          "canvas_size": [
+            717,
+            612
+          ],
+          "low_colour": null,
+          "high_colour": null,
+          "low_label": "SAME CROP",
+          "high_label": "ORIGINAL",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            512,
+            512
+          ],
+          "map_size": [
+            512,
+            512
+          ],
+          "crop_size": [
+            512,
+            512
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_173218_86_wukong_image188/model_original_crop_E-6757ff3bdb.png"
+        },
+        "anomaly_map": {
+          "title": "TruFor anomaly map — full frame",
+          "content_box": [
+            0,
+            38,
+            512,
+            550
+          ],
+          "canvas_size": [
+            717,
+            612
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW response (blue)",
+          "high_label": "HIGH response (red)",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            512,
+            512
+          ],
+          "map_size": [
+            512,
+            512
+          ],
+          "crop_size": [
+            512,
+            512
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_173218_86_wukong_image188/model_anomaly_map_E-6757ff3bdb.png"
+        },
+        "confidence_map": {
+          "title": "TruFor confidence map — full frame",
+          "content_box": [
+            0,
+            38,
+            512,
+            550
+          ],
+          "canvas_size": [
+            717,
+            612
+          ],
+          "low_colour": "blue",
+          "high_colour": "red",
+          "low_label": "LOW reliability (blue)",
+          "high_label": "HIGH reliability (red)",
+          "content_area": "full original-image frame",
+          "region_source": "full_frame",
+          "region_pixels": [
+            0,
+            0,
+            512,
+            512
+          ],
+          "region_normalized_1000": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "source_size": [
+            512,
+            512
+          ],
+          "map_size": [
+            512,
+            512
+          ],
+          "crop_size": [
+            512,
+            512
+          ],
+          "scale_map_to_source": [
+            1.0,
+            1.0
+          ],
+          "path": "traces/evidence/session_20261128_173218_86_wukong_image188/model_confidence_map_E-6757ff3bdb.png"
+        }
+      }
+    }
+  ],
+  "trace_path": "sft_data/lora_small_20261128/validation_independent_20261128/base/traces/forensic_sft_session_20261128_173218_86_wukong_image188.json",
+  "failed_experts": []
+}

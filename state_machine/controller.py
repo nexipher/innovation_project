@@ -368,12 +368,8 @@ class ForensicStateMachine:
         untried_experts: List[str] = []
         failed_experts: List[str] = []
         abstention_cited_untried_expert: List[str] = []
-        # One evidence-coverage correction per session, plus one narrow
-        # follow-up after a newly executed measurement leaves only the
-        # generated-whole/local label relation unresolved.  Both sides kept.
+        # One evidence-coverage correction per session, with both sides kept.
         coverage_check_sent = False
-        coverage_check_count = 0
-        coverage_call_count = 0
         coverage_original_output: Optional[str] = None
         coverage_feedback: Optional[str] = None
         coverage_original_issues: List[dict] = []
@@ -954,22 +950,11 @@ class ForensicStateMachine:
                         list(self._experts))
                     if HALTING_POLICY == "v3" and accepted else []
                 )
-                actionable_now = actionable_coverage(coverage_now)
-                second_label_only = (
-                    coverage_check_sent
-                    and coverage_check_count < 2
-                    and expert_call_count > coverage_call_count
-                    and actionable_now
-                    and all(issue.get("code") == "generated_whole_local_not_applicable"
-                            for issue in actionable_now)
-                )
                 if (HALTING_POLICY == "v3" and accepted
-                        and actionable_now
-                        and (not coverage_check_sent or second_label_only)
+                        and actionable_coverage(coverage_now)
+                        and not coverage_check_sent
                         and model_turn_count < MAX_MODEL_TURNS):
                     coverage_check_sent = True
-                    coverage_check_count += 1
-                    coverage_call_count = expert_call_count
                     coverage_original_output = raw_output
                     coverage_original_issues = coverage_now
                     coverage_feedback = coverage_note(coverage_now)
@@ -1592,8 +1577,10 @@ class ForensicStateMachine:
         if "trufor_expert" in (served or []):
             local_note = (
                 "\n局部问题只能用 TruFor 的测量回答；尚未测量时不要写成 "
-                "Not tampered 或 Not applicable。若 TruFor 尚未尝试且预算允许，"
-                "先补测；若已失败，说明缺失测量，并检查其他工具能否回答部分问题。")
+                "Not tampered。局部输出只能是 Tampered、Not tampered 或 Uncertain；"
+                "整图 AI-generated 不会使局部变成 Not applicable。"
+                "若 TruFor 尚未尝试且预算允许，先补测；若已失败，说明缺失测量，"
+                "并检查其他工具能否回答部分问题。")
         return (
             "[System: 本会话状态 —— 已执行的专家：\n" + "\n".join(lines) +
             status_block +
