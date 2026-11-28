@@ -2602,3 +2602,17 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   SD15 459、Real e4ce。**Midjourney 229 超过当前 max_length 10000**，正式
   profiling/训练前需把 max_length 提到至少 12000 或决定截断策略；本次未改训练
   参数、未开 GPU 训练。
+
+### 13.11 2026-11-28 24 条 LoRA 小试与对照（执行）
+
+- **已确认**：使用 `e0b7578` 的 24 条清单；保持 attention-only LoRA + SGD；
+  `max_length=12000`，保留完整轨迹。`df -h /root/autodl-tmp /` 记录：
+  `/root/autodl-tmp` 50G、已用 47G、可用 **3.9G（93%）**；`/` 30G、可用 17G。
+- **10 步 profiling**：Midjourney 229（11677 token、5 图）、SD15 459（9608/5）、
+  Real e4ce（9420/5）；记录单步耗时、峰值 allocated/reserved；按 250×2=500 步
+  线性估算。OOM/运行错误先停止报告。
+- **正式训练**：从原版 Qwen3-VL 重新加载，24 条 × 2 epoch = 48 步；保存 adapter。
+- **验证对照**：约 30 张与 22 个训练源不同源的图（优先 split val 侧），原版 vs
+  LoRA 同一自主调用流程；汇报局部篡改检出、真图误报、两分项同时判对、弃权、
+  调用次数和变化最大案例。
+- **边界**：本轮不扩 250 条；不改候选标签；不碰 test。

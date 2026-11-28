@@ -24,6 +24,7 @@ import gc
 import json
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -290,17 +291,24 @@ def train(samples: list[dict], steps: int, lr: float, rank: int, alpha: int,
         encoded.append((sample["id"], {k: v for k, v in batch.items()}))
 
     torch.cuda.reset_peak_memory_stats()
-    losses = []
+    losses, step_seconds = [], []
     for step in range(steps):
         sid, batch = encoded[step % len(encoded)]
         batch = {k: (v.to(model.device) if hasattr(v, "to") else v)
                  for k, v in batch.items()}
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        step_started = time.perf_counter()
         loss = _compute_loss(model, batch)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        step_seconds.append(round(time.perf_counter() - step_started, 3))
         losses.append(round(float(loss.detach()), 6))
-        print(f"[step {step + 1}/{steps}] {sid} loss {losses[-1]:.6f}")
+        print(f"[step {step + 1}/{steps}] {sid} loss {losses[-1]:.6f} "
+              f"time {step_seconds[-1]:.3f}s", flush=True)
         del batch
         gc.collect()
 
@@ -312,7 +320,9 @@ def train(samples: list[dict], steps: int, lr: float, rank: int, alpha: int,
     processor.save_pretrained(adapter)
     print(f"[train] adapter saved to {adapter}")
     return {
-        "steps": steps, "losses": losses,
+        "steps": steps, "losses": losses, "step_seconds": step_seconds,
+        "mean_step_seconds": round(sum(step_seconds) / len(step_seconds), 3),
+        "max_step_seconds": max(step_seconds),
         "loss_first": losses[0], "loss_last": losses[-1],
         "peak_allocated_gb": peak_alloc, "peak_reserved_gb": peak_reserved,
         "adapter": str(adapter), "data": infos,
