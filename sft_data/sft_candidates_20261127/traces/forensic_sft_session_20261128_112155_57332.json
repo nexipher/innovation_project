@@ -8,7 +8,7 @@
     "verdict_status": "model_concluded",
     "certainty": "Medium",
     "verdict_schema": "certainty_v1",
-    "report": "TruFor 高分只落在整图底边和右缘，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。",
+    "report": "TruFor 高分只落在整图底边，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。",
     "whole_image_generation": "Real",
     "local_manipulation": "Not tampered",
     "suspicious_regions": [],
@@ -75,7 +75,7 @@
     },
     {
       "from": "gpt",
-      "value": "<planning>\nSuspected Region: none\nVisual Observation: 同一张枪械部件照片；金属划痕、反光和混凝土地面保持连续。\nSuspected Anomalies: TruFor 0.6269 高于阈值，但异常图的高响应只出现在画面底边和右缘的窄条；裁剪布局显示底边响应落在画面下半部裁剪的底边，对应整图底边；可靠性图整体较高，响应不在枪械主体上。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>"
+      "value": "<planning>\nSuspected Region: none\nVisual Observation: 同一张枪械部件照片；金属划痕、反光和混凝土地面保持连续。\nSuspected Anomalies: TruFor 0.6269 高于阈值，但异常图的高响应只出现在实际裁剪的底边；裁剪布局显示该裁剪是画面下半部 [500,122,1000,494]，底边对应整图底边；可靠性图整体较高，响应不在枪械主体上。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>"
     },
     {
       "from": "user",
@@ -90,7 +90,7 @@
     },
     {
       "from": "gpt",
-      "value": "<reasoning>\n核对裁剪布局：面板显示的是画面下半部区域 [500,122,1000,494]，高响应落在裁剪底边，也就是整图底边；另一个小响应在整图右缘。两者都是整图边缘，不是内容区的异常。按与 51186 相同的口径，边缘响应不作为局部篡改证据；局部判 Not tampered。PROBE 0.4577 低于阈值，倾向整图 Real，整图判 Real；总体 Real。certainty 取 Medium：TruFor 分数仍高于阈值，边缘响应是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"TruFor 高分只落在整图底边和右缘，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。\"}\n</verdict>"
+      "value": "<reasoning>\n核对裁剪布局：面板显示的是画面下半部区域 [500,122,1000,494]，高响应落在裁剪底边，也就是整图底边；这是画面边界，不是内容区的异常。按与 51186 相同的口径，边缘响应不作为局部篡改证据；局部判 Not tampered。PROBE 0.4577 低于阈值，倾向整图 Real，整图判 Real；总体 Real。certainty 取 Medium：TruFor 分数仍高于阈值，边缘响应是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"TruFor 高分只落在整图底边，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。\"}\n</verdict>"
     }
   ],
   "evidence_chain": [
@@ -426,12 +426,12 @@
       },
       {
         "turn": 2,
-        "output": "<planning>\nSuspected Region: none\nVisual Observation: 同一张枪械部件照片；金属划痕、反光和混凝土地面保持连续。\nSuspected Anomalies: TruFor 0.6269 高于阈值，但异常图的高响应只出现在画面底边和右缘的窄条；裁剪布局显示底边响应落在画面下半部裁剪的底边，对应整图底边；可靠性图整体较高，响应不在枪械主体上。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>",
+        "output": "<planning>\nSuspected Region: none\nVisual Observation: 同一张枪械部件照片；金属划痕、反光和混凝土地面保持连续。\nSuspected Anomalies: TruFor 0.6269 高于阈值，但异常图的高响应只出现在实际裁剪的底边；裁剪布局显示该裁剪是画面下半部 [500,122,1000,494]，底边对应整图底边；可靠性图整体较高，响应不在枪械主体上。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>",
         "history_len": 3
       },
       {
         "turn": 3,
-        "output": "<reasoning>\n核对裁剪布局：面板显示的是画面下半部区域 [500,122,1000,494]，高响应落在裁剪底边，也就是整图底边；另一个小响应在整图右缘。两者都是整图边缘，不是内容区的异常。按与 51186 相同的口径，边缘响应不作为局部篡改证据；局部判 Not tampered。PROBE 0.4577 低于阈值，倾向整图 Real，整图判 Real；总体 Real。certainty 取 Medium：TruFor 分数仍高于阈值，边缘响应是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"TruFor 高分只落在整图底边和右缘，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。\"}\n</verdict>",
+        "output": "<reasoning>\n核对裁剪布局：面板显示的是画面下半部区域 [500,122,1000,494]，高响应落在裁剪底边，也就是整图底边；这是画面边界，不是内容区的异常。按与 51186 相同的口径，边缘响应不作为局部篡改证据；局部判 Not tampered。PROBE 0.4577 低于阈值，倾向整图 Real，整图判 Real；总体 Real。certainty 取 Medium：TruFor 分数仍高于阈值，边缘响应是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"TruFor 高分只落在整图底边，不是内容区；PROBE 低于阈值支持整图 Real，局部 Not tampered，certainty Medium。\"}\n</verdict>",
         "history_len": 6
       }
     ],

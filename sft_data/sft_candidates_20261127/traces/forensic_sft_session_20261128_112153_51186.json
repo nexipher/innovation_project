@@ -8,7 +8,7 @@
     "verdict_status": "model_concluded",
     "certainty": "Medium",
     "verdict_schema": "certainty_v1",
-    "report": "TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered，certainty Medium。",
+    "report": "实际投递的裁剪内，TruFor 高分只对应裁剪右缘窄带，裁剪内乌鸦和背景无高响应；PROBE 低分支持整图 Real，局部 Not tampered，certainty Medium。",
     "whole_image_generation": "Real",
     "local_manipulation": "Not tampered",
     "suspicious_regions": [],
@@ -58,7 +58,7 @@
     },
     {
       "from": "gpt",
-      "value": "<planning>\nSuspected Region: none\nVisual Observation: 海边岩石上的乌鸦，背景是水面、远山和天空；画面右侧有文字“Canuck the Crow / Vancouver, B.C. Canada”，右下角有日期水印。\nSuspected Anomalies: 乌鸦本体和背景没有明显异常，但画面右缘有一条亮边，先做局部测量确认它是否是内容变化。\nExpert Target & Hypothesis: trufor — 先检查右缘亮边和乌鸦本体是否有局部高响应；整图来源稍后补测。\n</planning>\n<call_trufor></call_trufor>"
+      "value": "<planning>\nSuspected Region: none\nVisual Observation: 海边岩石上的乌鸦，背景是水面、远山和天空；画面右侧有文字“Canuck the Crow / Vancouver, B.C. Canada”，右下角有日期水印。\nSuspected Anomalies: 乌鸦本体和背景没有明显异常，但画面右侧区域有一条亮边，先做局部测量确认它是否是内容变化。\nExpert Target & Hypothesis: trufor — 先检查右侧亮边和乌鸦本体是否有局部高响应；整图来源稍后补测。\n</planning>\n<call_trufor></call_trufor>"
     },
     {
       "from": "user",
@@ -75,7 +75,7 @@
     },
     {
       "from": "gpt",
-      "value": "<planning>\nSuspected Region: none\nVisual Observation: 同一张乌鸦照片；乌鸦、水面和远山保持自然连续，右缘是画框边缘。\nSuspected Anomalies: TruFor 0.9723 很高，但异常图的高响应只出现在最右侧一条窄边，可靠性图在该窄边为高可靠；乌鸦本体、岩石和水面没有高响应。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>"
+      "value": "<planning>\nSuspected Region: none\nVisual Observation: 同一张乌鸦照片；乌鸦、水面和远山保持自然连续，右侧区域较亮。\nSuspected Anomalies: 在实际投递的裁剪内，TruFor 0.9723 很高，但异常图的高响应只出现在裁剪右缘的一条窄带；裁剪内乌鸦主体、岩石和水面没有对应高响应。该裁剪之外的画面不在本面板内，不能据此扩大判断。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>"
     },
     {
       "from": "user",
@@ -90,7 +90,7 @@
     },
     {
       "from": "gpt",
-      "value": "<reasoning>\nTruFor 0.9723 高于阈值，但异常图的高响应只出现在最右侧一条窄边，可靠性图在同一条边缘为高可靠；乌鸦本体、岩石、水面和文字区域都没有高响应。原图右缘就是画框边界，该响应不落在内容变化上。PROBE 0.0008 低于阈值，支持整图 Real。局部不写 Tampered：高分有，但支持它的响应在画框边缘而非内容；局部判 Not tampered，整图 Real，总体 Real。certainty 取 Medium：结论有支持，但 TruFor 高分本身仍是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered，certainty Medium。\"}\n</verdict>"
+      "value": "<reasoning>\n在实际投递的裁剪内，TruFor 0.9723 高于阈值，但异常图的高响应只出现在裁剪右缘的一条窄带，可靠性图在同一窄带为高可靠；裁剪内的乌鸦主体、岩石、水面和文字区域没有对应高响应。裁剪之外的画面不在本面板内，不能据此扩大判断。PROBE 0.0008 低于阈值，支持整图 Real。局部结论只针对这批实际投递的裁剪：裁剪内没有内容区高响应，因此不写 Tampered；局部判 Not tampered，整图 Real，总体 Real。certainty 取 Medium：结论有支持，但 TruFor 高分和裁剪外不确定性仍是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"实际投递的裁剪内，TruFor 高分只对应裁剪右缘窄带，裁剪内乌鸦和背景无高响应；PROBE 低分支持整图 Real，局部 Not tampered，certainty Medium。\"}\n</verdict>"
     }
   ],
   "evidence_chain": [
@@ -427,17 +427,17 @@
     "model_calls": [
       {
         "turn": 1,
-        "output": "<planning>\nSuspected Region: none\nVisual Observation: 海边岩石上的乌鸦，背景是水面、远山和天空；画面右侧有文字“Canuck the Crow / Vancouver, B.C. Canada”，右下角有日期水印。\nSuspected Anomalies: 乌鸦本体和背景没有明显异常，但画面右缘有一条亮边，先做局部测量确认它是否是内容变化。\nExpert Target & Hypothesis: trufor — 先检查右缘亮边和乌鸦本体是否有局部高响应；整图来源稍后补测。\n</planning>\n<call_trufor></call_trufor>",
+        "output": "<planning>\nSuspected Region: none\nVisual Observation: 海边岩石上的乌鸦，背景是水面、远山和天空；画面右侧有文字“Canuck the Crow / Vancouver, B.C. Canada”，右下角有日期水印。\nSuspected Anomalies: 乌鸦本体和背景没有明显异常，但画面右侧区域有一条亮边，先做局部测量确认它是否是内容变化。\nExpert Target & Hypothesis: trufor — 先检查右侧亮边和乌鸦本体是否有局部高响应；整图来源稍后补测。\n</planning>\n<call_trufor></call_trufor>",
         "history_len": 0
       },
       {
         "turn": 2,
-        "output": "<planning>\nSuspected Region: none\nVisual Observation: 同一张乌鸦照片；乌鸦、水面和远山保持自然连续，右缘是画框边缘。\nSuspected Anomalies: TruFor 0.9723 很高，但异常图的高响应只出现在最右侧一条窄边，可靠性图在该窄边为高可靠；乌鸦本体、岩石和水面没有高响应。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>",
+        "output": "<planning>\nSuspected Region: none\nVisual Observation: 同一张乌鸦照片；乌鸦、水面和远山保持自然连续，右侧区域较亮。\nSuspected Anomalies: 在实际投递的裁剪内，TruFor 0.9723 很高，但异常图的高响应只出现在裁剪右缘的一条窄带；裁剪内乌鸦主体、岩石和水面没有对应高响应。该裁剪之外的画面不在本面板内，不能据此扩大判断。整图来源尚未测量。\nExpert Target & Hypothesis: probe — 整图来源仍未测量；PROBE 是整图来源的判别器，补测以完成整图来源判断。\n</planning>\n<call_probe></call_probe>",
         "history_len": 3
       },
       {
         "turn": 3,
-        "output": "<reasoning>\nTruFor 0.9723 高于阈值，但异常图的高响应只出现在最右侧一条窄边，可靠性图在同一条边缘为高可靠；乌鸦本体、岩石、水面和文字区域都没有高响应。原图右缘就是画框边界，该响应不落在内容变化上。PROBE 0.0008 低于阈值，支持整图 Real。局部不写 Tampered：高分有，但支持它的响应在画框边缘而非内容；局部判 Not tampered，整图 Real，总体 Real。certainty 取 Medium：结论有支持，但 TruFor 高分本身仍是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"TruFor 高分仅来自画框右缘的窄条响应，乌鸦和背景内容无高响应；PROBE 低分支持整图 Real，局部不构成 Tampered，certainty Medium。\"}\n</verdict>",
+        "output": "<reasoning>\n在实际投递的裁剪内，TruFor 0.9723 高于阈值，但异常图的高响应只出现在裁剪右缘的一条窄带，可靠性图在同一窄带为高可靠；裁剪内的乌鸦主体、岩石、水面和文字区域没有对应高响应。裁剪之外的画面不在本面板内，不能据此扩大判断。PROBE 0.0008 低于阈值，支持整图 Real。局部结论只针对这批实际投递的裁剪：裁剪内没有内容区高响应，因此不写 Tampered；局部判 Not tampered，整图 Real，总体 Real。certainty 取 Medium：结论有支持，但 TruFor 高分和裁剪外不确定性仍是残余限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Real\", \"whole_image_generation\": \"Real\", \"local_manipulation\": \"Not tampered\", \"suspicious_regions\": [], \"certainty\": \"Medium\", \"primary_evidence\": [\"probe_dino_expert\", \"trufor_expert\"], \"report\": \"实际投递的裁剪内，TruFor 高分只对应裁剪右缘窄带，裁剪内乌鸦和背景无高响应；PROBE 低分支持整图 Real，局部 Not tampered，certainty Medium。\"}\n</verdict>",
         "history_len": 6
       }
     ],

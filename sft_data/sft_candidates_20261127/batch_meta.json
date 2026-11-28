@@ -7,7 +7,8 @@
   },
   "scripts": {
     "path": "sft_data/sft_candidates_20261127/candidate_scripts.json",
-    "sha256": "13732864655f80188f9d0b0468c2e447796b424e5ef4f40553628346c5292479"
+    "sha256": "13732864655f80188f9d0b0468c2e447796b424e5ef4f40553628346c5292479",
+    "patched_sha256": "a4634b8555c6ebbfbe657b40ef4639dfaf7963bc72f185a42969e3458b126b66"
   },
   "model": {
     "checkpoint": "none — assistant text scripted candidate writer",
@@ -66,5 +67,27 @@
   "note": "Assistant turns are candidate drafts; PROBE/TruFor, evidence tokens, artifacts and controller checks are real runtime.",
   "finished_at": "2026-11-28T11:22:01",
   "completed": 26,
-  "failed": 0
+  "failed": 0,
+  "post_run_patches": [
+    {
+      "sample_id": "autosplice__45749__1__q95",
+      "change": "补测理由改为“检查企鹅身体是否有局部篡改证据”",
+      "scope": "assistant prose only; labels/evidence unchanged"
+    },
+    {
+      "sample_id": "autosplice__51186__authentic__q95",
+      "change": "描述限定在实际投递的裁剪内；删除画框边缘/原图右缘的扩写",
+      "scope": "assistant prose only; labels/evidence unchanged"
+    },
+    {
+      "sample_id": "single_probe__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95",
+      "change": "把毛发偏软写成弱线索，PROBE 为主要支持",
+      "scope": "assistant prose only; labels/evidence unchanged"
+    },
+    {
+      "sample_id": "autosplice__57332__authentic__q95",
+      "change": "删除“整图右缘”，只保留“整图底边”",
+      "scope": "assistant prose only; labels/evidence unchanged"
+    }
+  ]
 }

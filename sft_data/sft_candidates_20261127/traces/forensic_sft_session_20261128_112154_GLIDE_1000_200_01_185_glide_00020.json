@@ -8,7 +8,7 @@
     "verdict_status": "model_concluded",
     "certainty": "High",
     "verdict_schema": "certainty_v1",
-    "report": "PROBE 0.9672 支持整图 AI-generated，毛发整体过度平滑；局部问题 Not applicable，单专家直接结案。",
+    "report": "PROBE 0.9672 支持整图 AI-generated；毛发偏软只是弱线索；局部 Not applicable，单专家直接结案。",
     "whole_image_generation": "AI-generated",
     "local_manipulation": "Not applicable",
     "suspicious_regions": [],
@@ -57,7 +57,7 @@
     },
     {
       "from": "gpt",
-      "value": "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向和口鼻边缘略显过度平滑，先测量整图来源。\nExpert Target & Hypothesis: probe — 整图来源尚未测量；PROBE 是整图来源的判别器。\n</planning>\n<call_probe></call_probe>"
+      "value": "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向偏软、口鼻边缘细节偏平滑，但这只是弱线索，先测量整图来源。\nExpert Target & Hypothesis: probe — 整图来源尚未测量；PROBE 是整图来源的判别器。\n</planning>\n<call_probe></call_probe>"
     },
     {
       "from": "user",
@@ -72,7 +72,7 @@
     },
     {
       "from": "gpt",
-      "value": "<reasoning>\nPROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要局部测量；本会话只用 PROBE 完成整图来源判断，直接结案。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 0.9672 支持整图 AI-generated，毛发整体过度平滑；局部问题 Not applicable，单专家直接结案。\"}\n</verdict>"
+      "value": "<reasoning>\nPROBE 0.9672 高于阈值，是整图 AI-generated 的主要支持；原图毛发偏软、口鼻边缘细节偏平滑，只能作为弱线索，不能单独支撑判断。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要局部测量；本会话只用 PROBE 完成整图来源判断，直接结案。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 0.9672 支持整图 AI-generated；毛发偏软只是弱线索；局部 Not applicable，单专家直接结案。\"}\n</verdict>"
     }
   ],
   "evidence_chain": [
@@ -165,12 +165,12 @@
     "model_calls": [
       {
         "turn": 1,
-        "output": "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向和口鼻边缘略显过度平滑，先测量整图来源。\nExpert Target & Hypothesis: probe — 整图来源尚未测量；PROBE 是整图来源的判别器。\n</planning>\n<call_probe></call_probe>",
+        "output": "<planning>\nSuspected Region: none\nVisual Observation: 狗脸特写，画面几乎被毛发和口鼻占满；毛发细节密集，眼睛和鼻头可见，背景虚化。\nSuspected Anomalies: 毛发走向偏软、口鼻边缘细节偏平滑，但这只是弱线索，先测量整图来源。\nExpert Target & Hypothesis: probe — 整图来源尚未测量；PROBE 是整图来源的判别器。\n</planning>\n<call_probe></call_probe>",
         "history_len": 0
       },
       {
         "turn": 2,
-        "output": "<reasoning>\nPROBE 0.9672 高于阈值，支持整图 AI-generated；原图毛发整体过度平滑、口鼻边缘缺少自然碎毛，和整图生成一致。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要局部测量；本会话只用 PROBE 完成整图来源判断，直接结案。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 0.9672 支持整图 AI-generated，毛发整体过度平滑；局部问题 Not applicable，单专家直接结案。\"}\n</verdict>",
+        "output": "<reasoning>\nPROBE 0.9672 高于阈值，是整图 AI-generated 的主要支持；原图毛发偏软、口鼻边缘细节偏平滑，只能作为弱线索，不能单独支撑判断。按协议，整图判 AI-generated 后局部问题为 Not applicable，不需要局部测量；本会话只用 PROBE 完成整图来源判断，直接结案。总体 Fake，certainty High。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 0.9672 支持整图 AI-generated；毛发偏软只是弱线索；局部 Not applicable，单专家直接结案。\"}\n</verdict>",
         "history_len": 3
       }
     ],

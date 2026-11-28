@@ -53,3 +53,15 @@ TruFor 三图，TruFor-only 页没有 PROBE 裁剪）。
 - 证据/覆盖/certainty 检查均 pass；target/record 26/26 一致。
 - `AUDIT_REPORT.md` 26/26 pass、0 问题；`review_assets/` 按 26 条重打包约 15.7 MB。
 - 相关测试 107 passed；core 834 passed、1 skipped。
+
+## 6. 2026-11-28 二次文字微调（标签不变）
+
+| sample | 改动 |
+|---|---|
+| `autosplice__45749__1__q95` | TruFor 补测理由改为「检查企鹅身体是否有局部篡改证据」 |
+| `autosplice__51186__authentic__q95` | 高响应描述限定在实际投递的裁剪内；删除「画框边缘/原图右缘」的扩写 |
+| `autosplice__57332__authentic__q95` | 删除「整图右缘」，只保留「整图底边」；标签仍 Real / Not tampered / Medium |
+| `single_probe__genimage__Glide__...` | 毛发偏软写成弱线索，PROBE 0.9672 作为主要支持；标签仍 Fake / AI-generated / Not applicable |
+
+四条只改助手文字，工具输出、evidence_id、标签、certainty、框和调用顺序不变；
+`AUDIT_REPORT.md` 26/26 pass、0 问题。
