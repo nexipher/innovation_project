@@ -2467,3 +2467,19 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `SUMMARY.md`；逐条 record/trace/页面齐全。助手文本是候选写手拟写（标注
   `sft_candidate_scripted`），PROBE/TruFor 与三图为真实运行；真值/mask 只写审核侧。
   不训练、不转 final_v2、不碰 test；等审核意见后再扩样或定判例。
+- **收尾审计（2026-11-28，无 GPU）**：新增只读审计
+  `scripts/audit_sft_candidates.py`，逐条检查证据引用时序、0.x 数字是否来自已投递
+  token、助手文本是否出现真值/mask 词、结论字段、页面原图/三图/分数表/调用顺序/
+  结案/链接，以及 8/6/6/4 组成和 train 侧划分；**24/24 pass、0 问题**
+  （`AUDIT_REPORT.md`、`audit.json`）。审计发现 Midjourney 229 的推理引用了未投递的
+  `0.39`（低可靠占比），已做**文字补丁**：删除数字、保留可靠性图的定性读数；工具输出、
+  evidence_id、score、bbox、调用顺序和结论均未变，旧/新 scripts sha256 记入
+  `batch_meta.json`，补丁说明见 `POST_RUN_PATCHES.md`，补丁后审计通过。
+- **测试**：`scripts/run_tests.sh core` **834 passed, 1 skipped**；`module`
+  **1434 passed, 5 failed, 1 skipped**，5 个失败在交付提交 `75b13ad` 的独立 worktree
+  中逐条复现，属既有测试期望未跟上 TruFor 映射/证据检查/Qwen 客户端，与本轮候选代码
+  无关；详见 `TEST_STATUS.md`。不把 Mock 或未跑测试冒充真实结果。
+- **待定判例**：`REVIEW_QUESTIONS.md` 把审核问题分成三组：A) TruFor 高分真图何时可写
+  Not tampered（51186 已按“边缘响应”排除；65547/52769/57332/70684/67006 仍 Uncertain）；
+  B) PROBE 高分的局部编辑为什么整图写 Real（与 Real ac71 的 Uncertain 如何区分）；
+  C) 调用顺序与是否需要保留一条单专家样板。审计是出处/结构检查，判例选择仍需人工决定。

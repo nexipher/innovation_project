@@ -263,7 +263,12 @@ system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</c
 <p><a href="records.json" download>下载 records.json</a> ·
 <a href="review_records.csv" download>下载 review_records.csv</a> ·
 <a href="CANDIDATE_CASES.md" download>下载重点案例清单（Markdown）</a> ·
-<a href="SUMMARY.md" download>下载汇总（Markdown）</a></p>
+<a href="SUMMARY.md" download>下载汇总（Markdown）</a> ·
+<a href="AUDIT_REPORT.md" download>下载收尾审计（Markdown）</a> ·
+<a href="TEST_STATUS.md" download>下载测试状态（Markdown）</a> ·
+<a href="REVIEW_QUESTIONS.md" download>下载待定判例问题（Markdown）</a> ·
+<a href="POST_RUN_PATCHES.md" download>下载文字补丁说明（Markdown）</a></p>
+<p class="muted">收尾审计 24/24 pass、0 问题；一处未投递数字的补丁不影响工具输出、证据 ID、框或结论。</p>
 <p class="muted">每条会话页顶部有“通过 / 待修 / 拒绝”审核控件；决定先存浏览器草稿，
 导出后用 <code>python scripts/g8_review_import.py &lt;文件&gt;</code> 写回仓库。</p>
 </body></html>"""
@@ -345,6 +350,12 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
         "",
         "## 边界",
         "",
+        "- 待定判例 `REVIEW_QUESTIONS.md`：TruFor 高分真图何时写 Not tampered、",
+        "  PROBE 高分的局部编辑整图维度怎么写、调用顺序/是否保留单专家样板。",
+        "- 收尾审计 `AUDIT_REPORT.md`：24/24 pass，0 问题（证据引用时序、数字出处、",
+        "  真值/mask 词、页面结构、链接、划分与组成）。",
+        "- 文字补丁 `POST_RUN_PATCHES.md`：Midjourney 229 的推理去掉了未投递的",
+        "  0.39 数字，改为定性读可靠性图；不影响工具输出、证据 ID、框或结论。",
         "- 候选文本是拟写稿，不是 Qwen 原始输出；运行记录明确标注 `sft_candidate_scripted`。",
         "- 真值与 mask 只在审核侧；助手上下文没有它们。",
         "- 本轮不扩样、不训练、不转 final_v2、不碰 test。",
@@ -370,6 +381,11 @@ def build_summary(out: Path, records: list[dict], batch_meta: dict,
         f"- 工具：真实 PROBE + TruFor；配置 `{batch_meta.get('config_sha256', '')}`；",
         f"  manifest `{batch_meta.get('manifest', {}).get('sha256', '')}`。",
         f"- 审核入口：`index.html`；重点案例：`CANDIDATE_CASES.md`。",
+        f"- 收尾审计：`AUDIT_REPORT.md`（24/24 pass，0 问题，2026-11-28）。",
+        f"- 待定判例：`REVIEW_QUESTIONS.md`（TruFor 高分真图、PROBE 高分的局部编辑、",
+        f"  调用顺序与是否保留单专家样板）。",
+        f"- 文字补丁：`POST_RUN_PATCHES.md`（Midjourney 一条去掉未投递的 0.39 数字；",
+        f"  不影响工具输出、证据 ID、框或标签）。",
         "",
         "## 与真值对照（仅供审核，不是验收）",
         "",

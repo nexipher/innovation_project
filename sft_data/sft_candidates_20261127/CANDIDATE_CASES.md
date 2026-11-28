@@ -63,6 +63,12 @@
 
 ## 边界
 
+- 待定判例 `REVIEW_QUESTIONS.md`：TruFor 高分真图何时写 Not tampered、
+  PROBE 高分的局部编辑整图维度怎么写、调用顺序/是否保留单专家样板。
+- 收尾审计 `AUDIT_REPORT.md`：24/24 pass，0 问题（证据引用时序、数字出处、
+  真值/mask 词、页面结构、链接、划分与组成）。
+- 文字补丁 `POST_RUN_PATCHES.md`：Midjourney 229 的推理去掉了未投递的
+  0.39 数字，改为定性读可靠性图；不影响工具输出、证据 ID、框或结论。
 - 候选文本是拟写稿，不是 Qwen 原始输出；运行记录明确标注 `sft_candidate_scripted`。
 - 真值与 mask 只在审核侧；助手上下文没有它们。
 - 本轮不扩样、不训练、不转 final_v2、不碰 test。

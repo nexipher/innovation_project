@@ -1169,3 +1169,17 @@
 * **涉及/修改的文件清单**：`mllm/scripted_candidate.py`、`scripts/sft_candidate_cases.py`、`scripts/draft_sft_candidates.py`、`scripts/run_sft_candidates.py`、`scripts/render_sft_candidate_pages.py`、`tests/test_scripted_candidate.py`、`scripts/g8_review_workstation.py`（候选横幅/字段行）、`sft_data/sft_candidates_20261127/**`、`plan.md`、`claude_operation_log.md`、`.gitignore`。
 * **执行结果与验证状态**：24/24 完成；24 个页面均含原图、3 张 TruFor 投送图（原图裁剪/异常图/可靠性图）、PROBE 裁剪、专家分数表、调用顺序和结案；`pytest -q tests/test_scripted_candidate.py tests/test_g8_review_workstation.py tests/test_controller.py tests/test_controller_v3.py` 107 passed。
 * **置信度或遗留待办（TODO）**：候选文本是拟写稿，不是 Qwen 原始输出；真值/mask 只在审核侧。6 条 Uncertain 是审核重点：维持 Uncertain，还是判 Real/Not tampered，需要用户定判例。等审核意见后再扩样或训练；本轮不转 final_v2、不碰 test。
+
+### [2026-11-28] - §13.6 收尾审计、文字补丁与测试状态
+
+* **当前操作动作**：不启用 GPU，对已交付的 24 条候选轨迹做只读收尾审计、修正一处未投递数字、跑 core/module 测试并记录既有失败。
+* **对应计划锚点**：`plan.md` §13.6；`sft_data/sft_candidates_20261127/`。
+* **核心变更说明**：
+  1. 新增 `scripts/audit_sft_candidates.py`：逐条检查助手引用的 evidence_id 是否在引用前已投递、所有 0.x 数字是否来自已投递 score/map 统计（或 0.5 阈值）、助手文本是否出现真值/mask 词、结论 JSON 与 record 是否一致、页面是否含原图/3 张 TruFor 图/PROBE 裁剪/分数表/候选调用顺序/结案/可用链接，以及 8/6/6/4 组成和 train 侧划分。结果 **24/24 pass、0 问题**，写 `AUDIT_REPORT.md`、`audit.json`。
+  2. **发现并修正一处**：Midjourney 229 的推理写了“低可靠占比约 0.39”，但 slim TruFor token 没有数字 `map_stats`，该数字来自预筛 CSV，助手当时未收到；已删除数字、改为“可靠性图在狗身区域明显偏低（蓝色/青色）”。只改助手文字，工具输出/evidence_id/score/bbox/调用顺序/结论均未变；trace 的 conversation 与 model_calls.output、页面、`candidate_scripts.json` 同步；`batch_meta.json` 记旧/新 scripts sha256，新增 `POST_RUN_PATCHES.md`。补丁后审计 0 问题。
+  3. 页面审计同时补上“候选调用顺序”行；`scripts/g8_review_workstation.py` 仅新增候选横幅/对话模式/助手来源/调用顺序的展示，不影响历史批次。
+  4. `scripts/run_tests.sh core`：**834 passed, 1 skipped**；`module`：**1434 passed, 5 failed, 1 skipped**。5 个失败在交付提交 `75b13ad` 的独立 worktree 中逐条复现，属既有测试期望未跟上 TruFor 映射 / 证据检查 / Qwen 客户端，与本轮候选代码无关；写 `TEST_STATUS.md`，不修改这些测试。
+  5. 写 `REVIEW_QUESTIONS.md`：A) TruFor 高分真图何时可写 Not tampered（51186 边缘例外，65547/52769/57332/70684/67006 仍 Uncertain）；B) PROBE 高分的局部编辑为什么整图写 Real、与 Real ac71 的 Uncertain 如何区分；C) 调用顺序与是否保留单专家样板。索引页与汇总已链接。
+* **涉及/修改的文件清单**：`scripts/audit_sft_candidates.py`、`scripts/g8_review_workstation.py`、`scripts/run_sft_candidates.py`、`scripts/sft_candidate_cases.py`、`sft_data/sft_candidates_20261127/{AUDIT_REPORT.md,audit.json,POST_RUN_PATCHES.md,TEST_STATUS.md,REVIEW_QUESTIONS.md,candidate_scripts.json,records.json,batch_meta.json,SUMMARY.md,CANDIDATE_CASES.md,001..024*.html,traces/...Midjourney...json}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：审计 24/24 pass；相关测试（scripted/workbench/controller）107 passed；core 834 passed；module 既有 5 failed 已定位为 pre-existing。无 GPU、无模型前向、无训练、无 test。
+* **置信度或遗留待办（TODO）**：5 个既有 module 测试失败建议单独维护提交；6 条 Uncertain 真图仍等用户定判例；候选文本仍是拟写稿，不是 Qwen 原始输出。

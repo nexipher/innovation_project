@@ -32,6 +32,9 @@ MLLM 驱动、法证证据锚定的 AI 生成图像检测，输出可解释的�
 > 候选写手按当前协议拟写（`sft_candidate_scripted`，不是 Qwen 原始输出）；24/24
 > 完成、0 工具失败、48 次专家调用，证据/覆盖/certainty 检查均 pass。真值/mask
 > 只用于审核；**状态 pending human review，不训练、不转 final_v2、不碰 test**。
+> 2026-11-28 收尾审计 `AUDIT_REPORT.md`：24/24 pass、0 问题；一处未投递数字已按
+> `POST_RUN_PATCHES.md` 改为定性表述（不影响工具输出/证据/结论）。`core` 834 passed；
+> `module` 5 个既有失败见 `TEST_STATUS.md`；待定判例问题见 `REVIEW_QUESTIONS.md`。
 > 详见 `plan.md` §13.6。
 > **2026-11-08 规则修订**：取消“局部 Uncertain 则总体必须 Uncertain”的机械推导，
 > 总体由 MLLM 综合；证据包增加五分档、PROBE 分类语义、TruFor 图的标题/固定色条/

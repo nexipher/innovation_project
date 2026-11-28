@@ -740,6 +740,8 @@ def session_page(sample: dict, page_dir: str, index_name: str,
         rows.insert(1, ("对话模式", record.get("dialogue_mode")))
     if record.get("assistant_source"):
         rows.insert(2, ("助手来源", record.get("assistant_source")))
+    if record.get("call_order"):
+        rows.insert(3, ("候选调用顺序", " → ".join(record["call_order"])))
     for name, value in rows:
         parts.append(f"<tr><td>{html.escape(name)}</td>"
                      f"<td>{html.escape(str(value))}</td></tr>")

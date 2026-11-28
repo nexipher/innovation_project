@@ -465,7 +465,7 @@ CASES = {
             "anomalies": "PROBE 0.9886 高于阈值，支持整图 AI-generated；补测 TruFor 看狗身是否有局部响应，以及该响应是否可靠。",
             "target": "trufor — 整图已倾向生成；补测局部并重点读可靠性图，避免把不可靠的高响应当成独立篡改。",
         },
-        "reasoning": "PROBE 0.9886 高于阈值，支持整图 AI-generated。TruFor 0.5149 仅略高于阈值，异常图的高响应覆盖狗身大部，但可靠性图在狗身区域明显偏低（蓝色/青色），低可靠占比约 0.39；该局部响应不能作为独立篡改证据。按协议，整图 AI-generated 后局部为 Not applicable；总体由整图生成支撑为 Fake，报告注明局部图不可靠这一限制。",
+        "reasoning": "PROBE 0.9886 高于阈值，支持整图 AI-generated。TruFor 0.5149 仅略高于阈值，异常图的高响应覆盖狗身大部，但可靠性图在狗身区域明显偏低（蓝色/青色）；该局部响应不能作为独立篡改证据。按协议，整图 AI-generated 后局部为 Not applicable；总体由整图生成支撑为 Fake，报告注明局部图不可靠这一限制。",
         "verdict": {
             "verdict": "Fake", "whole_image_generation": "AI-generated",
             "local_manipulation": "Not applicable",

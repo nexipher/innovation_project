@@ -5,6 +5,11 @@
 - 工具：真实 PROBE + TruFor；配置 `6eb4980f50971d5d`；
   manifest `9d1524944c97ee65f7fff118eb73e27ca4c2822b411c8d041453959b85f195d9`。
 - 审核入口：`index.html`；重点案例：`CANDIDATE_CASES.md`。
+- 收尾审计：`AUDIT_REPORT.md`（24/24 pass，0 问题，2026-11-28）。
+- 待定判例：`REVIEW_QUESTIONS.md`（TruFor 高分真图、PROBE 高分的局部编辑、
+  调用顺序与是否保留单专家样板）。
+- 文字补丁：`POST_RUN_PATCHES.md`（Midjourney 一条去掉未投递的 0.39 数字；
+  不影响工具输出、证据 ID、框或标签）。
 
 ## 与真值对照（仅供审核，不是验收）
 

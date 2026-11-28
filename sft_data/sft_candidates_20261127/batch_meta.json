@@ -7,7 +7,8 @@
   },
   "scripts": {
     "path": "sft_data/sft_candidates_20261127/candidate_scripts.json",
-    "sha256": "b86c251c380c6c35443f2b7dd7278f10caa7d50b22604816ac0c00a3c3961436"
+    "sha256": "b86c251c380c6c35443f2b7dd7278f10caa7d50b22604816ac0c00a3c3961436",
+    "patched_sha256": "f399a764b7364e3d638179e9627b238275fbb426ade710d297dbdc377a24454e"
   },
   "model": {
     "checkpoint": "none — assistant text scripted candidate writer",
@@ -66,5 +67,16 @@
   "note": "Assistant turns are candidate drafts; PROBE/TruFor, evidence tokens, artifacts and controller checks are real runtime.",
   "finished_at": "2026-11-27T15:30:44",
   "completed": 24,
-  "failed": 0
+  "failed": 0,
+  "post_run_patches": [
+    {
+      "date": "2026-11-28",
+      "sample_id": "genimage__Midjourney__229_midjourney_197__q95",
+      "change": "removed \"低可靠占比约 0.39\" from the assistant reasoning; kept the qualitative reliability-map reading",
+      "reason": "the slim TruFor token delivered to the model does not include numeric map_stats",
+      "scripts_sha256_as_run": "b86c251c380c6c35443f2b7dd7278f10caa7d50b22604816ac0c00a3c3961436",
+      "scripts_sha256_after_patch": "f399a764b7364e3d638179e9627b238275fbb426ade710d297dbdc377a24454e",
+      "scope": "assistant prose only; no tool output, score, evidence id, bbox or verdict changed"
+    }
+  ]
 }

@@ -646,7 +646,7 @@
    "outputs": [
     "<planning>\nSuspected Region: none\nVisual Observation: 黑色背景前的白色长毛犬，毛发蓬松，站姿端正；画面像棚拍，背景纯黑，狗身与背景对比强烈。\nSuspected Anomalies: 狗的毛发边缘非常整齐，先测量整图来源；局部细节稍后补测。\nExpert Target & Hypothesis: probe — 先回答整图是否 AI 生成；纯黑背景和整齐毛发需要整图判别器。\n</planning>\n<call_probe></call_probe>",
     "<planning>\nSuspected Region: none\nVisual Observation: 同一张白色长毛犬照片；狗身占据画面中部，黑色背景纯色。\nSuspected Anomalies: PROBE 0.9886 高于阈值，支持整图 AI-generated；补测 TruFor 看狗身是否有局部响应，以及该响应是否可靠。\nExpert Target & Hypothesis: trufor — 整图已倾向生成；补测局部并重点读可靠性图，避免把不可靠的高响应当成独立篡改。\n</planning>\n<call_trufor></call_trufor>",
-    "<reasoning>\nPROBE 0.9886 高于阈值，支持整图 AI-generated。TruFor 0.5149 仅略高于阈值，异常图的高响应覆盖狗身大部，但可靠性图在狗身区域明显偏低（蓝色/青色），低可靠占比约 0.39；该局部响应不能作为独立篡改证据。按协议，整图 AI-generated 后局部为 Not applicable；总体由整图生成支撑为 Fake，报告注明局部图不可靠这一限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated；TruFor 的狗身响应可靠性低，不能当作独立局部篡改，局部为 Not applicable。\"}\n</verdict>"
+    "<reasoning>\nPROBE 0.9886 高于阈值，支持整图 AI-generated。TruFor 0.5149 仅略高于阈值，异常图的高响应覆盖狗身大部，但可靠性图在狗身区域明显偏低（蓝色/青色）；该局部响应不能作为独立篡改证据。按协议，整图 AI-generated 后局部为 Not applicable；总体由整图生成支撑为 Fake，报告注明局部图不可靠这一限制。\n</reasoning>\n<verdict>\n{\"verdict\": \"Fake\", \"whole_image_generation\": \"AI-generated\", \"local_manipulation\": \"Not applicable\", \"suspicious_regions\": [], \"certainty\": \"High\", \"primary_evidence\": [\"probe_dino_expert\"], \"report\": \"PROBE 支持整图 AI-generated；TruFor 的狗身响应可靠性低，不能当作独立局部篡改，局部为 Not applicable。\"}\n</verdict>"
    ],
    "verdict": {
     "verdict": "Fake",
