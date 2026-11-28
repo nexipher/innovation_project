@@ -1237,3 +1237,17 @@
 * **涉及/修改的文件清单**：`scripts/sft_candidate_cases.py`、`sft_data/sft_candidates_20261127/{candidate_scripts.json,records.json,batch_meta.json,REVISION_NOTES.md,003/006/009/012*.html,traces/...}`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：`AUDIT_REPORT.md` 26/26 pass、0 问题；页面图片引用完整；提交 `07f0af9`。
 * **置信度或遗留待办（TODO）**：等复看这些措辞后再决定 LoRA 扩样；本轮未扩 250 条。
+
+### [2026-11-28] - §13.10 24 条清单校正与 Qwen3-VL dry-run
+
+* **当前操作动作**：保留 24 条样本选择，按 `sft_candidates_20261127/records.json` 重生成标签/统计；对全部 24 条跑 Qwen3-VL 数据 dry-run；未启动 GPU 训练。
+* **对应计划锚点**：`plan.md` §13.10；`sft_data/lora_small_20261128/`。
+* **核心变更说明**：
+  1. 标签统一为整图/局部/总体；65547、52769、70684 为 Real/Uncertain/Uncertain；57332 为 Real/Not tampered/Real。
+  2. 真值 16 Fake/8 Real；训练目标 16 Fake/5 Real/3 Uncertain；分项目标整图 9/8/7、局部 9/5/3/7（见清单）。
+  3. 训练入口 `train_lora_candidate_smoke.py` 增加 `--selection`/`--dry-run-out`，从审核清单读 24 条；校验调用顺序、tool turn 图片（TruFor 3 图、PROBE 1 图）、原图首轮、assistant span。
+  4. 24/24 dry-run 通过：token 6626–11677、图片 2–5；最长/图最多为 Midjourney 229（11677/5）；profiling 集改为 Midjourney 229、SD15 459、Real e4ce。
+  5. `Midjourney 229` 11677 token 超过当前 max_length 10000；未改训练参数，待确认是提高到 ≥12000 还是截断。
+* **涉及/修改的文件清单**：`scripts/train_lora_candidate_smoke.py`、`scripts/build_lora_small_review.py`、`sft_data/lora_small_20261128/{TRAINING_CANDIDATES.md,DRY_RUN.md,dry_run.json,selection_pending.json}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：24/24 dry-run 通过；标签/统计断言通过；未加载模型、未使用 GPU、未训练。
+* **置信度或遗留待办（TODO）**：等确认 21 条清单和 max_length 处理后再启动 10 步 profiling / 24×2 epoch；不扩 250 条。

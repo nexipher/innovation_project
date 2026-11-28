@@ -48,11 +48,11 @@ SYSTEM_PROMPT = build_forensic_prompt(("probe", "trufor"))
 LORA_TARGETS = ("q_proj", "k_proj", "v_proj", "o_proj")
 
 
-def _load_samples() -> list[dict]:
+def _load_samples(sample_ids=SAMPLE_IDS) -> list[dict]:
     records = {row["sample_id"]: row for row in json.loads(
         (CANDIDATE_DIR / "records.json").read_text(encoding="utf-8"))}
     samples = []
-    for sid in SAMPLE_IDS:
+    for sid in sample_ids:
         record = records[sid]
         trace = json.loads((ROOT / record["trace_path"]).read_text(encoding="utf-8"))
         samples.append({
@@ -60,6 +60,7 @@ def _load_samples() -> list[dict]:
             "image_path": record["image_path"],
             "source_image": record["source_image"],
             "ground_truth": record["ground_truth"],
+            "call_order": list(record.get("call_order") or []),
             "conversations": trace["conversations"],
             "metadata": {"tools_served": ["probe", "trufor"]},
         })
@@ -96,6 +97,16 @@ def validate_sample(sample: dict, processor=None) -> dict:
     gpt_turns = [turn for turn in sample["conversations"] if turn.get("from") == "gpt"]
     user_turns = [turn for turn in sample["conversations"] if turn.get("from") == "user"]
     tool_turns = [turn for turn in user_turns if turn.get("image_paths")]
+    expected = list(sample.get("call_order") or [])
+    if not expected:
+        raise SystemExit(f"{sample['id']}: no recorded call order")
+    if len(gpt_turns) != len(expected) + 1:
+        raise SystemExit(
+            f"{sample['id']}: {len(gpt_turns)} assistant turns != "
+            f"{len(expected)} calls + closing")
+    if len(tool_turns) != len(expected):
+        raise SystemExit(
+            f"{sample['id']}: {len(tool_turns)} tool turns != {len(expected)} calls")
     if not messages or messages[-1]["role"] != "assistant":
         raise SystemExit(f"{sample['id']}: no closing assistant turn")
 
@@ -108,21 +119,27 @@ def validate_sample(sample: dict, processor=None) -> dict:
         raise SystemExit(f"{sample['id']}: image count mismatch")
 
     panel_names = []
+    calls = []
     for turn in tool_turns:
         names = [os.path.basename(p) for p in turn.get("image_paths") or []]
         panel_names.append(names)
-    if len(tool_turns) >= 1:
-        first_names = panel_names[0]
-        for required in ("model_original_crop", "model_anomaly_map",
-                         "model_confidence_map"):
-            if not any(required in name for name in first_names):
-                raise SystemExit(f"{sample['id']}: first tool turn lacks {required}")
-    if len(tool_turns) >= 2 and not any("region_" in name for name in panel_names[1]):
-        raise SystemExit(f"{sample['id']}: second tool turn lacks PROBE crop")
-    if len(tool_turns) == 1 and len(gpt_turns) == 2:
-        # Single TruFor sample: one tool turn with three panels, no PROBE crop.
-        if len(panel_names[0]) != 3:
-            raise SystemExit(f"{sample['id']}: expected exactly three TruFor panels")
+        has_trufor = all(any(required in name for name in names) for required in (
+            "model_original_crop", "model_anomaly_map", "model_confidence_map"))
+        has_probe = any("region_" in name for name in names)
+        if has_trufor and has_probe:
+            raise SystemExit(f"{sample['id']}: mixed TruFor/PROBE tool turn")
+        if has_trufor:
+            calls.append("trufor")
+            if len(names) != 3:
+                raise SystemExit(f"{sample['id']}: TruFor turn has {len(names)} images")
+        elif has_probe:
+            calls.append("probe")
+            if len(names) != 1:
+                raise SystemExit(f"{sample['id']}: PROBE turn has {len(names)} images")
+        else:
+            raise SystemExit(f"{sample['id']}: tool turn has no recognizable images")
+    if calls != expected:
+        raise SystemExit(f"{sample['id']}: calls {calls} != recorded {expected}")
 
     info = {
         "sample_id": sample["id"],
@@ -130,8 +147,7 @@ def validate_sample(sample: dict, processor=None) -> dict:
         "tool_turns": len(tool_turns),
         "images_per_tool_turn": [len(names) for names in panel_names],
         "total_pil_images": len(images),
-        "calls": ["trufor" if any("model_original_crop" in n for n in names)
-                  else "probe" for names in panel_names],
+        "calls": calls,
     }
     if processor is None:
         return info
@@ -153,9 +169,9 @@ def validate_sample(sample: dict, processor=None) -> dict:
         "supervised_turns": len(spans),
         "supervised_tokens": supervised,
         "masked_tokens": int(input_ids.numel()) - supervised,
+        "span_token_lengths": [stop - start for start, stop in spans],
     })
     return info
-
 
 def _snapshot() -> str:
     from huggingface_hub import snapshot_download
@@ -312,18 +328,57 @@ def main() -> int:
     parser.add_argument("--alpha", type=int, default=32)
     parser.add_argument("--max-length", type=int, default=10000)
     parser.add_argument("--optimizer", choices=("adamw", "sgd"), default="adamw")
+    parser.add_argument("--selection", default=None,
+                        help="JSON with sample_ids; default is the 3 smoke samples")
+    parser.add_argument("--dry-run-out", default=None,
+                        help="write the dry-run summary JSON here")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     out = Path(args.out)
-    samples = _load_samples()
+    if args.selection:
+        selection = json.loads(Path(args.selection).read_text(encoding="utf-8"))
+        sample_ids = selection["sample_ids"]
+    else:
+        sample_ids = list(SAMPLE_IDS)
+    samples = _load_samples(sample_ids)
 
     if args.dry_run:
         from transformers import Qwen3VLProcessor
         snapshot = _snapshot()
         processor = Qwen3VLProcessor.from_pretrained(snapshot, local_files_only=True)
         infos = [validate_sample(sample, processor) for sample in samples]
-        print(json.dumps({"dry_run": True, "samples": infos}, ensure_ascii=False,
-                         indent=2))
+        by_tokens = sorted(infos, key=lambda row: (-row["input_tokens"],
+                                                    row["sample_id"]))
+        by_images = sorted(infos, key=lambda row: (-row["total_pil_images"],
+                                                    -row["input_tokens"],
+                                                    row["sample_id"]))
+        profiling = []
+        for row in by_tokens[:3] + by_images[:3]:
+            if row["sample_id"] not in {item["sample_id"] for item in profiling}:
+                profiling.append(row)
+        payload = {
+            "schema": "lora_dry_run/1",
+            "selection": args.selection,
+            "max_length": args.max_length,
+            "samples": infos,
+            "longest": by_tokens[0],
+            "most_images": by_images[0],
+            "top3_tokens": [row["sample_id"] for row in by_tokens[:3]],
+            "top3_images": [row["sample_id"] for row in by_images[:3]],
+            "profiling_set": [row["sample_id"] for row in profiling],
+            "over_max_length": [row["sample_id"] for row in infos
+                                if row["input_tokens"] > args.max_length],
+        }
+        if args.dry_run_out:
+            Path(args.dry_run_out).write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
+        print(json.dumps({"dry_run": True, "samples": len(infos),
+                          "longest": payload["longest"],
+                          "most_images": payload["most_images"],
+                          "profiling_set": payload["profiling_set"],
+                          "over_max_length": payload["over_max_length"]},
+                         ensure_ascii=False, indent=2))
         return 0
 
     if os.environ.get("FORENSIC_ALLOW_GPU") != "1":
@@ -336,7 +391,7 @@ def main() -> int:
         "schema": "lora_smoke/1",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "model": {"id": MODEL_ID, "revision": MODEL_REVISION},
-        "data": {"sample_ids": list(SAMPLE_IDS),
+        "data": {"sample_ids": [sample["id"] for sample in samples],
                  "system_prompt_sha256": __import__("hashlib").sha256(
                      SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
                  "samples": result["data"]},

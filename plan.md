@@ -2591,3 +2591,14 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
 - **验证**：约 30 张未参与训练、与 22 个训练源不同源的图；原版 vs LoRA 同一自主
   调用流程；汇报局部篡改检出、真图误报、两分项同时判对、弃权、调用次数和最大变化
   案例。先不扩 250 条；OOM 先报告。
+- **清单校正与 dry-run（2026-11-28）**：训练清单标签改为从
+  `sft_candidates_20261127/records.json` 生成，统一按「整图 / 局部 / 总体」展示。
+  24 条真值分布 **16 Fake / 8 Real**；训练目标（总体）**16 Fake / 5 Real /
+  3 Uncertain**；分项目标：整图 Real 9 / Uncertain 8 / AI-generated 7，局部
+  Tampered 9 / Not tampered 5 / Uncertain 3 / Not applicable 7。65547、52769、
+  70684 均为 Real / Uncertain / Uncertain；57332 为 Real / Not tampered / Real。
+  24/24 通过 Qwen3-VL dry-run：token 6626–11677、图片 2–5；最长且图最多为
+  Midjourney 229（11677 token、5 图）；10 步 profiling 集改为 Midjourney 229、
+  SD15 459、Real e4ce。**Midjourney 229 超过当前 max_length 10000**，正式
+  profiling/训练前需把 max_length 提到至少 12000 或决定截断策略；本次未改训练
+  参数、未开 GPU 训练。
