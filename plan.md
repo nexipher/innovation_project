@@ -2525,3 +2525,20 @@ TruFor 子进程失败（`failed_tool_calls` 有记录），模型按缺失测�
   `candidate_scripts.json` 76 轮；重跑真实工具并重写 records/traces/pages/
   review_assets；更新 `CANDIDATE_CASES.md`、`SUMMARY.md`、`REVIEW_QUESTIONS.md`、
   `AUDIT_REPORT.md`。不训练、不转 final_v2、不碰 test；等复看后再做 LoRA 冒烟。
+- **结果（2026-11-28）**：`manifest.json` 26 条（8 key + 2 single + 16 其余），
+  `candidate_scripts.json` 76 轮；真实 PROBE/TruFor 重放 **26/26 完成、0 失败**，
+  50 次专家调用（24×2 + 2×1），证据/覆盖/certainty 检查均 pass，target/record
+  26/26 一致；runtime config `255ea663511f1f44`，wall 36.5 s。
+  - 7 张 PROBE 高分的局部篡改图改为整图 Uncertain、局部 Tampered、总体 Fake：
+    `54029_1`、`45749_1`、`69868_0`、`48251_0`、`72548_1`、`64223_2`、`45914_2`；
+    `55310_1` 保留整图 Real + 局部 Tampered 作对照。
+  - `51186` 局部 Not tampered、总体 Real、certainty **Medium**；核对 `57332` 的裁剪
+    布局 [500,122,1000,494] 后确认高响应在整图底边/右缘，改为局部 Not tampered、
+    总体 Real、certainty **Medium**；`65547`、`52769` 保留局部 Uncertain。
+  - 所有 PROBE 调用理由只写整图来源判断（25 次 PROBE 调用，0 条含局部措辞）。
+  - 两条单专家样板：`single_probe__...Glide...`（1 call / 2 turns，probe-only，
+    停止 `model_concluded`）；`single_trufor__...54029_1`（1 call / 2 turns，
+    trufor-only，整体 Fake、整图 Uncertain，停止 `model_concluded`）。
+  - 审核对照（非验收）：总体 21/26、整图 16/26、局部 22/26；整体 Uncertain 5 条。
+    `review_assets/` 已按 26 条重打包（约 15.7 MB）；`AUDIT_REPORT.md` 26/26 pass、
+    0 问题。相关测试 107 passed；core 834 passed, 1 skipped。

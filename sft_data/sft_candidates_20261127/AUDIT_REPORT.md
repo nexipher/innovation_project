@@ -1,6 +1,6 @@
 # 首轮 SFT 候选样板 — 收尾审计
 
-- 审计样本：24/24；发现问题：0；全局问题：0。
+- 审计样本：26/26；发现问题：0；全局问题：0。
 - 审计不加载模型、不读 GPU；只读 manifest/split/records/traces/页面。
 - 检查项：证据引用时序、数字与已投递 token 对齐、真值/mask 词、结论字段、
   页面原图/三图/分数表/调用顺序/结案/链接、划分与组成。
@@ -21,6 +21,8 @@
 | 6 | `autosplice__51186__authentic__q95` | 3 | 2 | pass |
 | 7 | `autosplice__65547__authentic__q95` | 3 | 2 | pass |
 | 8 | `genimage__SD15__459_sdv5_00195__q95` | 3 | 2 | pass |
+|  | `single_probe__genimage__Glide__GLIDE_1000_200_01_185_glide_00020__q95` | 2 | 1 | pass |
+|  | `single_trufor__autosplice__54029__1__q95` | 2 | 1 | pass |
 |  | `autosplice__52769__authentic__q95` | 3 | 2 | pass |
 |  | `autosplice__57332__authentic__q95` | 3 | 2 | pass |
 |  | `autosplice__67006__authentic__q95` | 3 | 2 | pass |

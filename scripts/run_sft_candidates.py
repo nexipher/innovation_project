@@ -200,7 +200,8 @@ def write_csv(path: Path, records: list[dict]) -> None:
               "suspicious_regions", "joint_verdict_issues",
               "coverage_check", "certainty_check", "elapsed_s"]
     with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
+        writer = csv.DictWriter(handle, fieldnames=fields,
+                                extrasaction="ignore", lineterminator="\n")
         writer.writeheader()
         for row in records:
             out = dict(row)
@@ -261,7 +262,7 @@ th{{background:#f4f4f4;text-align:left}} .muted{{color:#666}}
 <p>配置 <code>{html.escape(batch_meta.get('config_sha256', ''))}</code>；manifest
 <code>{html.escape(batch_meta.get('manifest', {}).get('sha256', ''))}</code>；
 system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</code>。</p>
-<p class="muted">审核图片已打包在 <code>review_assets/</code>；每条页面里的原图、源图、TruFor 三图、PROBE 裁剪和预测框叠加都使用批次内相对路径，拉取仓库后可直接打开。原始 trace 仍保留运行时的路径，作为审计出处。</p>
+<p class="muted">审核图片已打包在 <code>review_assets/</code>；每条页面里的原图、源图、实际投送的专家图（有 TruFor 时为原图裁剪/异常图/可靠性图，有 PROBE 时为诊断裁剪）和预测框叠加都使用批次内相对路径，拉取仓库后可直接打开。原始 trace 仍保留运行时的路径，作为审计出处。</p>
 <h2>重点案例（{len(key)}）</h2>
 {table(key)}
 <h2>单专家样板（{len(single)}）</h2>
@@ -276,7 +277,8 @@ system prompt digest <code>{html.escape(batch_meta.get('prompt_digest', ''))}</c
 <a href="SUMMARY.md" download>下载汇总（Markdown）</a> ·
 <a href="AUDIT_REPORT.md" download>下载收尾审计（Markdown）</a> ·
 <a href="TEST_STATUS.md" download>下载测试状态（Markdown）</a> ·
-<a href="REVIEW_QUESTIONS.md" download>下载待定判例问题（Markdown）</a> ·
+<a href="REVIEW_QUESTIONS.md" download>下载已确认判例与复核点（Markdown）</a> ·
+<a href="REVISION_NOTES.md" download>下载判例修订清单（Markdown）</a> ·
 <a href="POST_RUN_PATCHES.md" download>下载文字补丁说明（Markdown）</a></p>
 <p class="muted">收尾审计 {len(records)}/{len(records)} pass、0 问题；一处未投递数字的补丁不影响工具输出、证据 ID、框或结论。</p>
 <p class="muted">每条会话页顶部有“通过 / 待修 / 拒绝”审核控件；决定先存浏览器草稿，
@@ -378,9 +380,10 @@ def build_candidate_cases(out: Path, records: list[dict]) -> None:
         "",
         "## 边界",
         "",
-        "- `REVIEW_QUESTIONS.md` 记录本轮已确认判例和剩余复核点。",
-        "- 审核图片 `review_assets/`：逐条复制运行时的输入图、源图、TruFor 三图、",
-        "  PROBE 裁剪和预测框叠加；页面改为批次内相对路径，拉取仓库后可直接打开。",
+        "- `REVIEW_QUESTIONS.md` 记录本轮已确认判例和复看点；`REVISION_NOTES.md`",
+        "  逐项列出改了标签、certainty 或调用理由的案例。",
+        "- 审核图片 `review_assets/`：逐条复制运行时的输入图、源图、实际投送的",
+        "  专家图和预测框叠加；单专家页按实际调用展示。页面改为批次内相对路径。",
         f"- 收尾审计 `AUDIT_REPORT.md`：{total}/{total} pass，0 问题（证据引用时序、数字出处、",
         "  真值/mask 词、页面结构、链接、划分与组成）。",
         "- 候选文本是拟写稿，不是 Qwen 原始输出；运行记录明确标注 `sft_candidate_scripted`。",
@@ -414,6 +417,7 @@ def build_summary(out: Path, records: list[dict], batch_meta: dict,
         f"  页面使用批次内相对路径）。",
         f"- 收尾审计：`AUDIT_REPORT.md`（{total}/{total} pass，0 问题）。",
         f"- 已确认判例与复核点：`REVIEW_QUESTIONS.md`。",
+        f"- 判例修订清单：`REVISION_NOTES.md`（标签/置信度/调用理由逐项列出）。",
         f"- 文字补丁：`POST_RUN_PATCHES.md`（Midjourney 一条去掉未投递的 0.39 数字；",
         f"  不影响工具输出、证据 ID、框或标签）。",
         "",

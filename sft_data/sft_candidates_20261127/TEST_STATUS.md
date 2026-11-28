@@ -30,3 +30,10 @@
 - 本轮没有修改这 5 个测试或它们对应的运行行为；建议单独做一次“退役/更新既有测试”
   的维护提交，而不是在候选样板收尾里顺手改掉。
 - 没有 GPU 依赖的测试被跳过或未运行；没有把 Mock 结果冒充真实专家。
+
+## 2026-11-28 判例修订后
+
+- 26 条候选重放使用同一控制器、同一 PROBE/TruFor 适配器；未改专家、阈值或输入。
+- `pytest -q tests/test_scripted_candidate.py tests/test_g8_review_workstation.py tests/test_controller.py tests/test_controller_v3.py`：**107 passed**。
+- `scripts/run_tests.sh core`：**834 passed, 1 skipped**。
+- module 的 5 个既有失败未变化，仍属交付提交 `75b13ad` 已复现的旧测试期望问题；本轮未修改它们。

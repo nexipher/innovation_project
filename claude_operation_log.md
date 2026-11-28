@@ -1195,3 +1195,17 @@
 * **涉及/修改的文件清单**：`scripts/package_sft_review_assets.py`、`scripts/audit_sft_candidates.py`（页面图片名适配）、`scripts/run_sft_candidates.py`（索引/汇总说明）、`sft_data/sft_candidates_20261127/review_assets/**`、`001..024*.html`、`index.html`、`SUMMARY.md`、`CANDIDATE_CASES.md`、`AUDIT_REPORT.md`、`audit.json`、`plan.md`、`claude_operation_log.md`。
 * **执行结果与验证状态**：打包脚本 24 条全部通过；页面链接检查 0 缺失；待提交后用干净目录模拟拉取，确认 index 24 条和图片引用。
 * **置信度或遗留待办（TODO）**：本次只复制图片，没有重跑或改判；GitHub 推送需网络可用。
+
+### [2026-11-28] - §13.8 按确认判例修订 26 条候选轨迹
+
+* **当前操作动作**：按已确认判例修订候选文本/标签，补 2 条单专家样板，用现有控制器和真实 PROBE/TruFor 重放 26 条，重写页面与审核图片。
+* **对应计划锚点**：`plan.md` §13.8；`sft_data/sft_candidates_20261127/`。
+* **核心变更说明**：
+  1. 7 张 PROBE 高分、局部证据充分但整图来源无独立支撑的篡改图改为整图 Uncertain、局部 Tampered、总体 Fake：54029_1、45749_1、69868_0、48251_0、72548_1、64223_2、45914_2；55310_1 保留整图 Real + 局部 Tampered 作对照。
+  2. 51186 保持局部 Not tampered、总体 Real，certainty 改 Medium；核对 57332 的裁剪布局 [500,122,1000,494]，确认高响应在整图底边/右缘，按同一口径改为局部 Not tampered、总体 Real、certainty Medium；65547、52769 保留局部 Uncertain。
+  3. 所有 PROBE 调用理由统一为整图来源判断：25 次 PROBE 调用，0 条含局部/篡改措辞。
+  4. 新增 2 条单专家样板：`single_probe__...Glide...`（PROBE-only，1 call/2 turns，Fake/AI-generated/Not applicable，停止 model_concluded）；`single_trufor__...54029_1`（TruFor-only，1 call/2 turns，Fake/Uncertain/Tampered，停止 model_concluded）。两条均通过证据/覆盖/certainty 检查。
+  5. manifest 26 条（8 key + 2 single + 16 其余），scripts 76 轮；重放 26/26 完成、0 失败、50 次专家调用；config `255ea663511f1f44`，wall 36.5 s。`review_assets/` 重打包约 15.7 MB；`AUDIT_REPORT.md` 26/26 pass、0 问题；相关测试 107 passed；core 834 passed、1 skipped。
+* **涉及/修改的文件清单**：`scripts/sft_candidate_cases.py`、`scripts/draft_sft_candidates.py`、`scripts/build_review2_manifest.py`、`scripts/run_sft_candidates.py`、`scripts/audit_sft_candidates.py`、`scripts/package_sft_review_assets.py`、`sft_data/sft_candidates_20261127/{manifest.json,manifest_round1.json,candidate_scripts.json,candidate_scripts_round1.json,records.json,traces/**,001..026*.html,index.html,SUMMARY.md,CANDIDATE_CASES.md,REVIEW_QUESTIONS.md,AUDIT_REPORT.md,audit.json,review_records.csv,review_assets/**}`、`plan.md`、`claude_operation_log.md`。
+* **执行结果与验证状态**：26/26 完成、0 失败；两条单专家停止理由均为 model_concluded；审计 0 问题；未改专家/阈值/输入，未训练、未碰 test。
+* **置信度或遗留待办（TODO）**：等用户复看 7 张整图 Uncertain、57332 边缘口径、51186 Medium，以及两条单专家样板；确认后再做 LoRA 冒烟。

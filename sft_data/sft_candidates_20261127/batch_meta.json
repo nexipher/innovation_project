@@ -1,14 +1,13 @@
 {
   "batch_id": "sft_candidates_20261127",
-  "started_at": "2026-11-27T15:29:44",
+  "started_at": "2026-11-28T11:21:24",
   "manifest": {
     "path": "sft_data/sft_candidates_20261127/manifest.json",
-    "sha256": "9d1524944c97ee65f7fff118eb73e27ca4c2822b411c8d041453959b85f195d9"
+    "sha256": "c3692a105990144d833fb90f1beaa2768d443a9e1882af84fe09c2028256fd6a"
   },
   "scripts": {
     "path": "sft_data/sft_candidates_20261127/candidate_scripts.json",
-    "sha256": "b86c251c380c6c35443f2b7dd7278f10caa7d50b22604816ac0c00a3c3961436",
-    "patched_sha256": "f399a764b7364e3d638179e9627b238275fbb426ade710d297dbdc377a24454e"
+    "sha256": "13732864655f80188f9d0b0468c2e447796b424e5ef4f40553628346c5292479"
   },
   "model": {
     "checkpoint": "none — assistant text scripted candidate writer",
@@ -52,31 +51,20 @@
       "weights_bytes": 281496429
     }
   },
-  "config_sha256": "6eb4980f50971d5d",
+  "config_sha256": "255ea663511f1f44",
   "code": {
-    "commit": "d01f674b46826d0a9f93a0366c15f5fe9edbbd7f",
+    "commit": "808fde3099619af9515da58e7afee07e9c06a564",
     "dirty": false,
     "dirty_paths": []
   },
   "cgroup": {
     "memory.max": "128849018880",
-    "memory.high": "max",
-    "memory.current": "5810638848"
+    "memory.high": "126701535232",
+    "memory.current": "1503203328"
   },
   "dialogue_mode": "sft_candidate_scripted",
   "note": "Assistant turns are candidate drafts; PROBE/TruFor, evidence tokens, artifacts and controller checks are real runtime.",
-  "finished_at": "2026-11-27T15:30:44",
-  "completed": 24,
-  "failed": 0,
-  "post_run_patches": [
-    {
-      "date": "2026-11-28",
-      "sample_id": "genimage__Midjourney__229_midjourney_197__q95",
-      "change": "removed \"低可靠占比约 0.39\" from the assistant reasoning; kept the qualitative reliability-map reading",
-      "reason": "the slim TruFor token delivered to the model does not include numeric map_stats",
-      "scripts_sha256_as_run": "b86c251c380c6c35443f2b7dd7278f10caa7d50b22604816ac0c00a3c3961436",
-      "scripts_sha256_after_patch": "f399a764b7364e3d638179e9627b238275fbb426ade710d297dbdc377a24454e",
-      "scope": "assistant prose only; no tool output, score, evidence id, bbox or verdict changed"
-    }
-  ]
+  "finished_at": "2026-11-28T11:22:01",
+  "completed": 26,
+  "failed": 0
 }
